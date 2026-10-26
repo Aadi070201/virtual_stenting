@@ -68,7 +68,7 @@ vstent/
   configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
   src/vstent/
-    physics/            # geometry.py, solver.py
+    physics/            # geometry.py, solver.py, report.py
     data/               # synth.py, arcade.py
     surrogate/          # features.py, model.py, train.py, evaluate.py, export.py
     imaging/            # segment.py, centerline.py, qca.py
@@ -76,6 +76,8 @@ vstent/
     inference/          # onnx_runtime.py, pipeline.py
     app/                # streamlit_app.py
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
+    units.py            # mmHg <-> Pa, mm <-> m
+    sysinfo.py          # CPU model for benchmarks
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
@@ -92,6 +94,7 @@ uv sync --all-extras            # or: python -m venv .venv && pip install -e ".[
 uv run ruff check . && uv run ruff format --check . && uv run pytest -m "not slow" -q
 
 # pipeline (Typer CLI: `vstent`)
+uv run vstent physics-report    # M1 sanity checks + reports/figures/ffr_vs_ds.png
 uv run vstent synth --config configs/synth_v1.yaml
 uv run vstent train-surrogate --config configs/surrogate.yaml
 uv run vstent eval-surrogate --run runs/<name>

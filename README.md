@@ -18,7 +18,8 @@ The build plan is in [docs/PLAN.md](docs/PLAN.md); progress is logged in
 
 ## Status
 
-Milestone M0 (project setup). Commands are stubs until their milestone is implemented.
+M0 (setup) and M1 (reduced-order physics solver) are done. The remaining commands are stubs
+until their milestone is implemented.
 
 ## Quickstart
 
@@ -44,6 +45,7 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 
 | Command | What it does | Milestone |
 |---|---|---|
+| `vstent physics-report` | physics sanity checks → `reports/physics_checks.md` + FFR-vs-%DS figure | M1 |
 | `vstent synth --config configs/synth_v1.yaml` | generate the synthetic vessel dataset | M2 |
 | `vstent train-surrogate --config configs/surrogate.yaml` | train the FFR surrogate | M3 |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver | M3 |
@@ -68,4 +70,4 @@ data/ models/ runs/   generated artefacts (git-ignored)
 ## Limitations
 
 Single vessel, no side branches, steady flow, Newtonian blood, geometry derived from a
-single 2D projection. See `docs/PHYSICS.md` (from M1) for the full list.
+single 2D projection. See [docs/PHYSICS.md](docs/PHYSICS.md) for the full list.

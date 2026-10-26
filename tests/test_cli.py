@@ -6,6 +6,7 @@ from vstent.cli import app
 runner = CliRunner()
 
 COMMANDS = [
+    "physics-report",
     "synth",
     "train-surrogate",
     "eval-surrogate",
