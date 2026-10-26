@@ -1,0 +1,29 @@
+# Generated datasets, trained models and run logs: never commit.
+# Anchored to the repo root so that src/vstent/data/ (code) is NOT ignored.
+/data/
+/models/
+/runs/
+*.onnx
+!tests/fixtures/**/*.onnx
+
+# Environment
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Secrets
+.streamlit/secrets.toml
+.env
+
+# Editors / OS
+.idea/
+.DS_Store
+Thumbs.db
