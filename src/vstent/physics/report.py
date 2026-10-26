@@ -267,7 +267,7 @@ def write_physics_report(out_dir: str | Path, params: PhysicsParams | None = Non
     }
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "physics_checks.json").write_text(
-        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
     )
-    (out_dir / "physics_checks.md").write_text(_markdown(report), encoding="utf-8")
+    (out_dir / "physics_checks.md").write_text(_markdown(report), encoding="utf-8", newline="\n")
     return report

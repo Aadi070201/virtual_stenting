@@ -48,7 +48,7 @@ def load_config(path: str | Path, model: type[ConfigT]) -> ConfigT:
 
 def dump_config(config: BaseModel, path: str | Path) -> None:
     """Write the fully resolved config (including defaults) to YAML."""
-    with Path(path).open("w", encoding="utf-8") as f:
+    with Path(path).open("w", encoding="utf-8", newline="\n") as f:
         yaml.safe_dump(config.model_dump(mode="json"), f, sort_keys=False)
 
 
@@ -89,6 +89,6 @@ def save_run_metadata(run_dir: str | Path, config: BaseModel) -> Path:
     }
     run_dir.mkdir(parents=True, exist_ok=True)
     dump_config(config, run_dir / CONFIG_FILENAME)
-    with (run_dir / META_FILENAME).open("w", encoding="utf-8") as f:
+    with (run_dir / META_FILENAME).open("w", encoding="utf-8", newline="\n") as f:
         yaml.safe_dump(meta, f, sort_keys=False)
     return run_dir

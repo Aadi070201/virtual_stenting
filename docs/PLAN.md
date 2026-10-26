@@ -43,20 +43,20 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 8. Two flow modes: `resistance` (default, steps 5–6) and `fixed_velocity` (Q = Q_ref, for comparison only; it overestimates pressure loss in severe lesions).
 
 ### Tasks
-- [ ] `geometry.py`: `VesselProfile` dataclass (s, r; validation), resampling to N points, area, `estimate_reference_radius`, percent diameter stenosis, lesion finder (contiguous runs with DS > 30%), minimal lumen diameter (MLD)
-- [ ] `solver.py`: `solve_ffr(profile, params, mode) -> FFRResult` (Q, a, b, ΔP(s), FFR(s), ffr_distal, loss breakdown)
-- [ ] Vectorised batch solver (NumPy) for dataset generation; target ≥ 5,000 profiles/s on a laptop CPU
-- [ ] `docs/PHYSICS.md`: equations, assumptions, limitations (no side branches, steady flow, Newtonian, 2D-derived geometry, no entrance-length effects)
-- [ ] Figure `reports/figures/ffr_vs_ds.png`: distal FFR vs %DS for 5, 10 and 20 mm lesions in a 3.0 mm vessel
+- [x] `geometry.py`: `VesselProfile` dataclass (s, r; validation), resampling to N points, area, `estimate_reference_radius`, percent diameter stenosis, lesion finder (contiguous runs with DS > 30%), minimal lumen diameter (MLD)
+- [x] `solver.py`: `solve_ffr(profile, params, mode) -> FFRResult` (Q, a, b, ΔP(s), FFR(s), ffr_distal, loss breakdown)
+- [x] Vectorised batch solver (NumPy) for dataset generation; target ≥ 5,000 profiles/s on a laptop CPU
+- [x] `docs/PHYSICS.md`: equations, assumptions, limitations (no side branches, steady flow, Newtonian, 2D-derived geometry, no entrance-length effects)
+- [x] Figure `reports/figures/ffr_vs_ds.png`: distal FFR vs %DS for 5, 10 and 20 mm lesions in a 3.0 mm vessel
 
 ### Tests (`tests/test_physics.py`)
-- [ ] Uniform tube with fixed Q: ΔP equals 8μLQ/(πr⁴) within 0.5%
-- [ ] Healthy 3.0 mm × 50 mm vessel, default params: `ffr_distal ≥ 0.95`
-- [ ] Distal FFR strictly decreases as DS goes 30% → 90% (10 mm cosine lesion)
-- [ ] FFR(s) is non-increasing along s, and FFR(0) = 1
-- [ ] Sanity bands for a 3.0 mm, 60 mm vessel with a 10 mm cosine lesion: 50% DS → FFR in [0.84, 0.94]; 70% DS → FFR in [0.45, 0.70]. If these fail, look for a bug; do **not** change constants.
-- [ ] Stenosed vessel flow < Q_ref; quadratic root is positive and finite
-- [ ] Restoring the lesion to the reference radius brings FFR to within 0.01 of the healthy vessel
+- [x] Uniform tube with fixed Q: ΔP equals 8μLQ/(πr⁴) within 0.5%
+- [x] Healthy 3.0 mm × 50 mm vessel, default params: `ffr_distal ≥ 0.95`
+- [x] Distal FFR strictly decreases as DS goes 30% → 90% (10 mm cosine lesion)
+- [x] FFR(s) is non-increasing along s, and FFR(0) = 1
+- [x] Sanity bands for a 3.0 mm, 60 mm vessel with a 10 mm cosine lesion: 50% DS → FFR in [0.84, 0.94]; 70% DS → FFR in [0.45, 0.70]. If these fail, look for a bug; do **not** change constants.
+- [x] Stenosed vessel flow < Q_ref; quadratic root is positive and finite
+- [x] Restoring the lesion to the reference radius brings FFR to within 0.01 of the healthy vessel
 
 **Done when:** all tests pass, PHYSICS.md is written, the figure is generated.
 
