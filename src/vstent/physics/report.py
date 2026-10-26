@@ -245,6 +245,7 @@ def write_physics_report(out_dir: str | Path, params: PhysicsParams | None = Non
     """Compute all checks and write the figure, JSON and Markdown into ``out_dir``."""
     params = params or PhysicsParams()
     out_dir = Path(out_dir)
+    provenance = git_info()  # before writing anything, so our own outputs don't count as dirty
     curves = ffr_vs_ds(params)
     plot_ffr_vs_ds(curves, DS_SWEEP_PCT, out_dir / "figures" / "ffr_vs_ds.png")
     report = {
@@ -259,7 +260,7 @@ def write_physics_report(out_dir: str | Path, params: PhysicsParams | None = Non
             "curves": {f"{k:g}": v.tolist() for k, v in curves.items()},
         },
         "provenance": {
-            **git_info(),
+            **provenance,
             "vstent_version": __version__,
             "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         },
