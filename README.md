@@ -62,6 +62,8 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent export-seg --run runs/<name>` | export segmentation to ONNX, parity → `reports/seg_onnx.md` | M5 |
 | `vstent analyse <image> [--start R C --end R C]` | segment an angiogram, QCA + FFR (solver and surrogate) for one vessel | M5 |
 | `vstent qca-gallery` | qualitative QCA gallery on 20 ARCADE stenosis images → `reports/qca_gallery.md` | M5 |
+| `vstent analyse <image> --plan` | … plus the virtual stent planner: shortest plan reaching FFR ≥ 0.90 (generic catalogue) | M6 |
+| `vstent plan-benchmark` | planner speed (5,000 candidates) and behaviour on synthetic vessels → `reports/planner_benchmark.md` | M6 |
 | `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
 | `vstent app` | launch the Streamlit app | M7 |
 

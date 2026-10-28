@@ -66,7 +66,7 @@ vstent/
   pyproject.toml        # deps, extras, ruff, pytest; torch from the CUDA 12.6 index via uv
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
-  configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog
+  configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog, planner
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
   src/vstent/
     physics/            # geometry.py, solver.py, report.py
@@ -76,7 +76,8 @@ vstent/
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
                         # synthetic.py (rendered test tubes)
-    planning/           # stent.py, optimizer.py
+    planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
+                        # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark)
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
                         # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
                         # solver + surrogate, torch-free), figures.py (analysis figure),
@@ -120,6 +121,8 @@ uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
 uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/seg_onnx.md
 uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
 uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
+uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
+uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent demo              # end-to-end synthetic case → report
 uv run vstent app               # launches the Streamlit app
 ```

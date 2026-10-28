@@ -1,0 +1,3 @@
+# Generic stent catalogue (docs/PLAN.md, M6): nominal sizes only, no commercial products.
+diameters_mm: [2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00]
+lengths_mm: [8, 12, 15, 18, 22, 26, 30, 34, 38]

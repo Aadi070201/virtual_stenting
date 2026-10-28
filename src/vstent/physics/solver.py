@@ -224,6 +224,7 @@ def solve_ffr_batch(
     pv=None,
     v_hyp=None,
     mode: FlowMode = "resistance",
+    r_micro=None,
 ) -> BatchFFRResult:
     """Solve the FFR pullback for a batch of vessels.
 
@@ -235,6 +236,9 @@ def solve_ffr_batch(
         pa, pv: per-sample aortic / venous pressure (Pa); default ``params.pa`` / ``params.pv``.
         v_hyp: per-sample hyperemic reference velocity (m/s); default ``params.v_hyp``.
         mode: ``"resistance"`` (Q from the R_micro model) or ``"fixed_velocity"`` (Q = Q_ref).
+        r_micro: per-sample microvascular resistance (Pa·s/m³) to use instead of the
+            calibration on ``r_ref``, e.g. after a virtual stent, when the microvasculature is
+            unchanged. ``r_micro_clamped`` is then False.
     """
     params = params or PhysicsParams()
     r = np.atleast_2d(np.asarray(r, dtype=float))
@@ -258,9 +262,16 @@ def solve_ffr_batch(
 
     a = viscous_coefficient(r, ds, params.mu)
     b = expansion_coefficient(r, params.rho, params.kt, params.expansion_threshold)
-    q_ref, r_micro, clamped = calibrate_microvascular_resistance(
+    q_ref, r_micro_cal, clamped = calibrate_microvascular_resistance(
         r_ref, ds, pa, pv, v_hyp, params.mu
     )
+    if r_micro is None:
+        r_micro = r_micro_cal
+    else:
+        r_micro = _per_sample(r_micro, n_batch, "r_micro")
+        if np.any(r_micro <= 0):
+            raise ValueError("r_micro must be positive")
+        clamped = np.zeros(n_batch, dtype=bool)
     if mode == "resistance":
         q = flow_from_resistance(a[:, -1], b[:, -1], r_micro, pa - pv)
     elif mode == "fixed_velocity":

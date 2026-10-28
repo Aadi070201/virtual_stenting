@@ -182,3 +182,23 @@ def test_qca_gallery_on_fake_arcade(tiny_arcade, dark_seg_dir, tiny_export, tmp_
     assert s["n_images"] == 3 and s["n_analysed"] + s["n_failed"] == 3
     assert (tmp_path / "gallery.md").exists() and (tmp_path / "gallery.json").exists()
     assert len(list((tmp_path / "figs").glob("*.png"))) == s["n_analysed"]
+
+
+def test_cli_analyse_with_plan(dark_seg_dir, tiny_export, tmp_path):
+    tube = _tube_prob()
+    path = tmp_path / "angio.png"
+    cv2.imwrite(str(path), ((1.0 - 0.6 * tube.image) * 255).astype(np.uint8))
+    args = [
+        "analyse",
+        str(path),
+        "--seg-model",
+        str(dark_seg_dir),
+        "--surrogate-model",
+        tiny_export["out_dir"],
+        "--plan",
+        "--mm-per-px",
+        "0.25",
+    ]
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert "Stent plans (surrogate" in result.output

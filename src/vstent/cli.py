@@ -26,6 +26,8 @@ RunOpt = Annotated[
     Path, typer.Option("--run", exists=True, file_okay=False, help="Run directory (runs/<name>).")
 ]
 PHYSICS_CONFIG = Path("configs/physics.yaml")
+PLANNER_CONFIG = Path("configs/planner.yaml")
+CATALOG_CONFIG = Path("configs/stent_catalog.yaml")
 
 
 def _not_implemented(milestone: str) -> None:
@@ -295,6 +297,21 @@ def export_seg(
         raise typer.Exit(code=1)
 
 
+def _echo_plans(planned) -> None:
+    typer.echo(
+        f"Stent plans ({planned.backend}; pre-PCI FFR {planned.pre_ffr:.3f}; "
+        f"{planned.n_feasible} feasible of {planned.n_candidates} candidates, "
+        f"{planned.n_pairs} pairs, {planned.seconds:.2f} s): {planned.message}"
+    )
+    for k, p in enumerate(planned.plans, 1):
+        stents = " + ".join(
+            f"{st.diameter * 1e3:.2f} x {st.length * 1e3:.0f} mm at {st.s_start * 1e3:.1f} mm"
+            for st in p.stents
+        )
+        check = f" (solver {p.ffr_solver:.3f})" if p.ffr_solver is not None else ""
+        typer.echo(f"  {k}. {stents}: post-PCI FFR {p.ffr:.3f}{check}")
+
+
 def _latest_model_dir(root: Path, filename: str) -> Path:
     dirs = sorted((p.parent for p in root.glob(f"*/{filename}")), key=lambda d: d.stat().st_mtime)
     if not dirs:
@@ -326,10 +343,18 @@ def analyse(
         Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
     ] = PHYSICS_CONFIG,
     figure: Annotated[Path | None, typer.Option("--figure", help="Save a PNG figure.")] = None,
+    plan: Annotated[bool, typer.Option("--plan", help="Also propose stent plans.")] = False,
+    planner: Annotated[
+        Path, typer.Option("--planner", dir_okay=False, help="Planner YAML (with --plan).")
+    ] = PLANNER_CONFIG,
+    catalog: Annotated[
+        Path, typer.Option("--catalog", dir_okay=False, help="Stent catalogue YAML (with --plan).")
+    ] = CATALOG_CONFIG,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
-    Without --start / --end the longest vessel path in the mask is used.
+    Without --start / --end the longest vessel path in the mask is used. With --plan the
+    virtual stent planner proposes the shortest plan reaching the target FFR.
     """
     import cv2
 
@@ -356,15 +381,10 @@ def analyse(
         start, end = longest_path_endpoints(prob >= THRESHOLD)
         typer.echo(f"Auto-selected path: start {start}, end {end} (row, col)")
     surrogate = SurrogateRunner.from_dir(sur_dir)
+    params = load_config(physics, PhysicsParams)
     result = analyse_vessel(
-        prob,
-        start,
-        end,
-        params=load_config(physics, PhysicsParams),
-        surrogate=surrogate,
-        mm_per_px=mm_per_px,
+        prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px
     )
-    surrogate.close()
     q = result.qca
     typer.echo(f"{DISCLAIMER}")
     typer.echo(
@@ -378,6 +398,18 @@ def analyse(
     )
     for w in result.warnings:
         typer.echo(f"Warning: {w}")
+    if plan:
+        from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
+
+        planned = plan_stents(
+            q.profile,
+            catalog=load_config(catalog, StentCatalog),
+            config=load_config(planner, PlannerConfig),
+            params=params,
+            runner=surrogate,
+        )
+        _echo_plans(planned)
+    surrogate.close()
     if figure is not None:
         from vstent.inference.figures import plot_analysis
 
@@ -424,6 +456,49 @@ def qca_gallery(
         f"{s['n_max_ds_in_box_given_crossing']}, MLD in {s['n_mld_in_box_given_crossing']}"
     )
     typer.echo("Wrote reports/qca_gallery.md and reports/figures/qca_examples/")
+
+
+@app.command()
+def plan_benchmark(
+    surrogate_model: Annotated[
+        Path | None,
+        typer.Option("--surrogate-model", help="Default: newest in models/surrogate/."),
+    ] = None,
+    n_vessels: Annotated[int, typer.Option("--n", min=1, help="Synthetic test vessels.")] = 100,
+    planner: Annotated[
+        Path, typer.Option("--planner", exists=True, dir_okay=False, help="Planner YAML.")
+    ] = PLANNER_CONFIG,
+    catalog: Annotated[
+        Path, typer.Option("--catalog", exists=True, dir_okay=False, help="Stent catalogue YAML.")
+    ] = CATALOG_CONFIG,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write planner_benchmark.md.")
+    ] = Path("reports"),
+) -> None:
+    """Planner speed (5,000 candidates) and behaviour on synthetic test vessels."""
+    from vstent.config import load_config
+    from vstent.inference.onnx_runtime import ONNX_FILE
+    from vstent.physics.solver import PhysicsParams
+    from vstent.planning.optimizer import PlannerConfig, StentCatalog
+    from vstent.planning.report import run_planner_benchmark
+
+    report = run_planner_benchmark(
+        surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE),
+        report_dir,
+        catalog=load_config(catalog, StentCatalog),
+        config=load_config(planner, PlannerConfig),
+        params=load_config(physics, PhysicsParams),
+        n_vessels=n_vessels,
+        log=typer.echo,
+    )
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'planner_benchmark.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
 
 
 @app.command()

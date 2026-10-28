@@ -22,15 +22,16 @@ from vstent.surrogate.features import NORM_STATS, NormStats, RawInputs, prepare_
 ONNX_FILE = "surrogate.onnx"
 INPUT_NAMES = ("x_point", "x_global")
 OUTPUT_NAME = "ffr"
-CHUNK_SIZE = 16
+CHUNK_SIZE = 8
+PARALLEL_PREP_MIN = 512  # vessels; below this one prepare_inputs call is cheaper
 SEG_ONNX_FILE = "seg.onnx"
 SEG_INPUT = "image"
 SEG_OUTPUT = "prob"
 
 
 def default_workers() -> int:
-    """Half the logical CPUs (≈ physical cores on SMT machines), at least 1."""
-    return max(1, (os.cpu_count() or 1) // 2)
+    """All logical CPUs, at least 1 (chunks are memory-bound, so SMT threads still help)."""
+    return max(1, os.cpu_count() or 1)
 
 
 class SurrogateRunner:
@@ -38,7 +39,7 @@ class SurrogateRunner:
 
     Large batches are split into chunks of ``chunk_size`` vessels that run in parallel on
     ``workers`` threads, each ONNX call single-threaded: activations of a small chunk stay in
-    the CPU cache, which is ~2.5x faster than one multi-threaded call on the whole batch
+    the CPU cache, which is ~3x faster than one multi-threaded call on the whole batch
     (DECISIONS D17). Results do not depend on the chunking.
 
     Args:
@@ -126,8 +127,20 @@ class SurrogateRunner:
         return np.concatenate(list(parts))
 
     def predict(self, raw: RawInputs) -> np.ndarray:
-        """FFR pullback (B, N), dimensionless, for vessels in SI units (see ``RawInputs``)."""
-        return self.predict_features(*prepare_inputs(raw, self.stats))
+        """FFR pullback (B, N), dimensionless, for vessels in SI units (see ``RawInputs``).
+
+        Large batches are pre-processed in ``workers`` slices in parallel (numpy releases the
+        GIL on large arrays); the result is identical to one ``prepare_inputs`` call.
+        """
+        n = len(raw)
+        if self._pool is None or n < PARALLEL_PREP_MIN:
+            return self.predict_features(*prepare_inputs(raw, self.stats))
+        bounds = np.linspace(0, n, self.workers + 1).astype(int)
+        slices = [slice(a, b) for a, b in zip(bounds[:-1], bounds[1:], strict=True) if b > a]
+        parts = list(self._pool.map(lambda sl: prepare_inputs(raw.subset(sl), self.stats), slices))
+        x_point = np.concatenate([p[0] for p in parts])
+        x_global = np.concatenate([p[1] for p in parts])
+        return self.predict_features(x_point, x_global)
 
     def predict_profile(
         self, profile: VesselProfile, pa: float, pv: float, r_micro: float

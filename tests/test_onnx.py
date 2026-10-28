@@ -131,3 +131,12 @@ def test_cli_export_surrogate(tiny_run, tmp_path):
     assert result.exit_code == 0, result.output
     assert (tmp_path / "model" / ONNX_FILE).exists()
     assert (tmp_path / "reports" / "onnx_benchmark.md").exists()
+
+
+def test_parallel_preprocessing_is_identical(tiny_export, tiny_data):
+    raw, _ = load_raw(tiny_data, "train")
+    big = raw.subset(np.arange(600) % len(raw))  # ≥ PARALLEL_PREP_MIN
+    runner = SurrogateRunner.from_dir(tiny_export["out_dir"], workers=4, chunk_size=8)
+    expected = runner.predict_features(*prepare_inputs(big, runner.stats))
+    np.testing.assert_array_equal(runner.predict(big), expected)
+    runner.close()

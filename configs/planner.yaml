@@ -1,0 +1,12 @@
+# Virtual stent planner (docs/PLAN.md, M6). Lengths in mm here, converted to SI internally.
+target_ffr: 0.90            # plans reaching this distal FFR are preferred; shortest total length wins
+start_step_mm: 0.5          # stent start positions on a 0.5 mm grid
+max_diameter_ratio: 1.1     # nominal diameter <= 1.1 x reference diameter at the distal stent end
+landing_zone_mm: 2.0        # first / last 2 mm of each stent must sit in segments with ...
+landing_max_ds_pct: 30.0    # ... diameter stenosis below 30%
+edge_mm: 1.0                # half-cosine blending inside each stent end
+expansion: 1.0              # stent expanded to its nominal diameter
+max_stents: 2               # up to two stents (pairs of single-stent candidates on different lesions)
+top_k_per_lesion: 20        # single-stent candidates per lesion kept for pairing
+n_plans: 3                  # plans returned
+backend: surrogate          # surrogate (ONNX) or solver
