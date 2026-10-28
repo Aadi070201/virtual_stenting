@@ -18,8 +18,9 @@ The build plan is in [docs/PLAN.md](docs/PLAN.md); progress is logged in
 
 ## Status
 
-M0 (setup), M1 (reduced-order physics solver) and M2 (synthetic data factory) are done. The
-remaining commands are stubs until their milestone is implemented.
+M0 (setup), M1 (reduced-order physics solver), M2 (synthetic data factory) and M3 (FFR
+surrogate, see [reports/surrogate_eval.md](reports/surrogate_eval.md)) are done. The remaining
+commands are stubs until their milestone is implemented.
 
 ## Quickstart
 

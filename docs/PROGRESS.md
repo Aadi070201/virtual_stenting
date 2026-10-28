@@ -77,3 +77,31 @@ Chose (3.0, 3.5) (DECISIONS D10).
 **Open issues / observations**
 - Train median max DS 55%; ~10% of vessels have no focal lesion (max DS mostly < 10% from noise / diffuse disease).
 - OOD is much more severe (median distal FFR 0.52), as expected for 3–4 lesions in 80–120 mm vessels.
+
+---
+
+## 2026-10-28 — M3: surrogate model
+
+**Done**
+- `surrogate/features.py`: the single pre-processing path (`RawInputs` → `prepare_inputs`) with 4 per-point channels, 5 global features and `NormStats` (training-set statistics saved as JSON, version-checked).
+- `surrogate/model.py`: 1D U-Net (4 levels, base 32, GroupNorm, GELU, FiLM conditioning, global-context bottleneck) with a monotone softplus–cumsum head (FFR(0) = 1, non-increasing by construction); 1,058,881 parameters.
+- `surrogate/dataset.py`, `surrogate/train.py` (`vstent train-surrogate`): AdamW + per-step cosine LR, float16 AMP, early stopping on val distal MAE, resumable via `vstent.checkpoints` (`vstent stop`, `vstent checkpoints`, `--resume`; DECISIONS D15).
+- `surrogate/baseline.py`: histogram gradient boosting on hand features (max DS, lesion length, D0, L, Pa, R_micro).
+- `surrogate/evaluate.py` (`vstent eval-surrogate`) → `reports/surrogate_eval.{md,json}` + 5 figures.
+- Tests: features, head monotonicity / FFR(0) = 1, shapes, training smoke, metrics, evaluation, exact stop/resume reproducibility.
+
+**Metrics** (from `reports/surrogate_eval.md`; run `runs/unet1d-20261028-125810` trained at commit deb7b35, evaluated at commit 4e93e88, both clean)
+- Test split (10,000) vs solver: distal MAE **0.0013** (target ≤ 0.015), bias +0.0000, 95% LoA **[−0.0057, +0.0056]** (target within ±0.04), agreement at 0.80 **99.76%** (target ≥ 97%), sensitivity 99.80%, specificity 99.72%, curve MAE 0.0009, max |error| 0.087. All three targets met.
+- Baseline on test: distal MAE 0.0342, LoA [−0.0906, +0.0891], agreement 93.39%.
+- OOD (5,000; 80–120 mm, 3–4 lesions; no target): surrogate MAE 0.0039, LoA [−0.0115, +0.0118], agreement 99.90%; baseline MAE 0.0505.
+- Test MAE by max DS bin: 0–30% 0.0002, 30–50% 0.0008, 50–70% 0.0016, 70–100% 0.0021.
+- Training: 50 epochs, 12.8 min on RTX 3060 Laptop GPU (≈ 15 s/epoch, AMP), best val distal MAE 0.0013 at epoch 50.
+- Checks: ruff clean; `pytest -m "not slow"`: 79 passed.
+
+**Open issues / observations**
+- Best epoch = last epoch: most of the final gain comes from the tail of the cosine schedule (LR → 0); training longer was not needed for the targets.
+- A few test vessels fall outside ±0.04 (max |error| 0.087; see the Bland–Altman figure), mostly in the 0.6–0.8 FFR range.
+- OOD specificity (98.48%) rests on few negatives: 96% of OOD vessels have FFR < 0.80.
+- The first M3 run (`runs/unet1d-20261028-091227`) was stopped at epoch 30 on request before checkpointing existed; it is superseded and not used in any report.
+- Stretch goal (5-seed ensemble with uncertainty) not done.
+- These numbers measure agreement with the reduced-order solver on synthetic data only; accuracy on real angiography-derived profiles is not measured until M5–M6.

@@ -93,11 +93,11 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 - **Training:** AdamW, lr 1e-3 with cosine decay, batch 256, up to 50 epochs, early stopping on val distal MAE, mixed precision on GPU. Logs go to `runs/<name>/` (`metrics.csv`, `config.yaml`, `best.pt`, normalisation stats).
 
 ### Tasks
-- [ ] Dataset/dataloader over `.npz` shards
-- [ ] Model + head + unit tests (output shape, monotonicity, FFR(0) = 1)
-- [ ] Training script and CLI command
-- [ ] Baseline for comparison: gradient boosting on hand features (max DS, lesion length, D0, L, Pa, R_micro) → distal FFR
-- [ ] `evaluate.py` → `reports/surrogate_eval.md` + figures: distal MAE, curve MAE, Bland–Altman (bias, 95% limits of agreement), agreement / sensitivity / specificity at the 0.80 cut-off vs the solver, error by DS bin, OOD results, baseline comparison
+- [x] Dataset/dataloader over `.npz` shards
+- [x] Model + head + unit tests (output shape, monotonicity, FFR(0) = 1)
+- [x] Training script and CLI command
+- [x] Baseline for comparison: gradient boosting on hand features (max DS, lesion length, D0, L, Pa, R_micro) → distal FFR
+- [x] `evaluate.py` → `reports/surrogate_eval.md` + figures: distal MAE, curve MAE, Bland–Altman (bias, 95% limits of agreement), agreement / sensitivity / specificity at the 0.80 cut-off vs the solver, error by DS bin, OOD results, baseline comparison
 - [ ] *(Stretch)* 5-seed ensemble; report the standard deviation as an uncertainty estimate
 
 **Done when (test set vs solver):** distal-FFR MAE ≤ 0.015; 95% limits of agreement within ±0.04; ≥ 97% agreement at the 0.80 cut-off; OOD numbers reported (no target).
