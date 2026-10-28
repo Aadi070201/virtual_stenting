@@ -12,6 +12,14 @@ import time
 _T0 = time.perf_counter()
 
 import numpy as np  # noqa: E402
+
+# Plotly and st.dataframe import pandas / pyarrow lazily, the first time a chart or table is
+# drawn. If the user clicks while that first import is running, Streamlit stops the script
+# mid-import and leaves a half-initialised module behind ("partially initialized module
+# 'pandas'"), breaking every later chart. Importing them here, before any widget exists,
+# closes that window.
+import pandas  # noqa: E402, F401
+import pyarrow  # noqa: E402, F401
 import streamlit as st  # noqa: E402
 
 from vstent.app import core  # noqa: E402
@@ -246,6 +254,7 @@ if state is not None:
             state.profile, stents, state.pre, state.params, state.pa, state.pv, models.surrogate
         )
         state.stents, state.post = stents, post
+        state.warnings += core.stent_warnings(state.profile, stents, planner_cfg.max_diameter_ratio)
     else:
         stented = None
     state.plans = plans

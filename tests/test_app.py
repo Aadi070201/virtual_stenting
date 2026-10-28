@@ -211,3 +211,11 @@ def test_new_vessel_resets_stent_controls(app_env):
     assert not at.exception
     assert at.toggle(key="place").value is False
     assert not any(m.delta for m in at.metric)  # no stent carried over from the synthetic case
+
+
+def test_oversized_manual_stent_is_flagged():
+    case = core.synthetic_case(core.PRESETS[0], 0, PARAMS)
+    ok = core.stent_warnings(case.profile, [Stent(0.02, 0.018, 3.25e-3)], 1.1)
+    assert ok == []
+    big = core.stent_warnings(case.profile, [Stent(0.02, 0.018, 4.0e-3)], 1.1)
+    assert len(big) == 1 and "1.3×" in big[0] and "1.1×" in big[0]

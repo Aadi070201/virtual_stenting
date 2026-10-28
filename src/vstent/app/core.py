@@ -254,6 +254,22 @@ def evaluate(
     return Curves(profile.s, res.ffr[0], s_sur, ffr_sur, rm, float(res.q[0]))
 
 
+def stent_warnings(profile: VesselProfile, stents: list[Stent], max_ratio: float) -> list[str]:
+    """Manual stents that the planner's sizing rule would reject (diameter vs distal reference)."""
+    ref_d = 2.0 * profile.reference_radius()
+    out = []
+    for st in stents:
+        distal_ref = float(np.interp(st.s_end, profile.s, ref_d))
+        if st.diameter > max_ratio * distal_ref:
+            out.append(
+                f"Stent {m_to_mm(st.diameter):.2f} mm is {st.diameter / distal_ref:.1f}× the "
+                f"reference diameter at its distal end ({m_to_mm(distal_ref):.2f} mm); the planner "
+                f"allows at most {max_ratio:g}×. An oversized stent creates an abrupt widening "
+                "that the model treats as an expansion loss."
+            )
+    return out
+
+
 def stent_update(
     profile: VesselProfile,
     stents: list[Stent],
