@@ -4,18 +4,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pytest
-import torch
 from typer.testing import CliRunner
 
 from vstent.cli import app
 from vstent.imaging.centerline import longest_path_endpoints
 from vstent.imaging.seg_eval import evaluate_seg_run
-from vstent.imaging.seg_export import export_seg_onnx, export_seg_run
+from vstent.imaging.seg_export import export_seg_run
 from vstent.imaging.seg_train import SegConfig, SegModelConfig, SegTrainConfig, train_seg
-from vstent.imaging.segment import PIXEL_MEAN, PIXEL_STD
 from vstent.imaging.synthetic import render_tube, sine_centerline, stenosis_diameter
 from vstent.inference.figures import plot_analysis
-from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner, SurrogateRunner
+from vstent.inference.onnx_runtime import SegmentationRunner, SurrogateRunner
 from vstent.inference.pipeline import analyse_image, analyse_vessel, range_warnings
 from vstent.physics.geometry import cosine_lesion_profile
 from vstent.units import mmhg_to_pa
@@ -26,21 +24,6 @@ def _tube_prob(shape=(240, 240)):
     pts = pts - (pts.min(axis=0) + pts.max(axis=0)) / 2 + np.array(shape) / 2
     d = stenosis_diameter(s, 12.0, 0.6, s[-1] / 2, 30.0)
     return render_tube(shape, pts, s, d, blur_sigma=1.0, noise_std=0.02)
-
-
-class _DarkIsVessel(torch.nn.Module):
-    """Logits > 0 where the grey value is below 0.5 (a stand-in segmenter for tests)."""
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return 20.0 * ((0.5 - PIXEL_MEAN) / PIXEL_STD - x)
-
-
-@pytest.fixture(scope="module")
-def dark_seg_dir(tmp_path_factory):
-    out = tmp_path_factory.mktemp("seg_model")
-    meta = {"task": "vessel_segmentation", "image_size": "128"}
-    export_seg_onnx(_DarkIsVessel(), out / SEG_ONNX_FILE, 128, meta)
-    return out
 
 
 @pytest.fixture(scope="module")

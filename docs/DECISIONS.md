@@ -141,3 +141,20 @@ The M1 estimator is left unchanged for synthetic profiles, which have no branche
 - **Surrogate backend:** the returned plans are re-evaluated with the solver (`Plan.ffr_solver`).
 **Reason:** the plan's objective and constraints. Keeping only the top candidates by FFR made every pool consist of the longest stents, and the first tandem test then returned 38 + 12 mm instead of 12 + 12 mm. The solver re-check shows how far the surrogate's choice can be trusted.
 **Alternatives:** exhaustive pairs (≈ 10⁶ for two lesions; too slow with the surrogate); a tie-break on diameter closest to the reference (clinically appealing, but not what the plan specifies); overlapping stents for lesions longer than 38 mm (not supported in the MVP).
+
+### D25 — Streamlit app design (2026-10-28)
+**Decision:**
+- **Code split:** `app/core.py` holds all logic without Streamlit: inputs, presets, pre/post-PCI evaluation, Plotly figures, the image overlay and the case report. `app/streamlit_app.py` only wires widgets.
+- **Caching:** segmentation (per image SHA-256) and QCA + pipeline (per image, points, calibration and pressures) are cached with `st.cache_resource`, so a stent-control change only re-runs the stent, both FFR models and the plots.
+- **Post-PCI physics:** uses the pre-PCI R_micro, Pa and Pv (D23).
+- **Points:** chosen by clicking (`streamlit-image-coordinates`), with "Auto path" and a manual row/col form as alternatives that tests can drive.
+- **State reset:** a new vessel (preset/seed, or image + points) resets the stent controls and the plan selection. The browser check showed the previous case's stent being applied while the toggle looked off.
+- **Calibration:** "assumed 0.30 mm/px" unless entered, or taken from DICOM `ImagerPixelSpacing` with a note that magnification is not corrected. DICOM uses the first frame.
+- **Case report:** prepared on demand (JSON + matplotlib PNG of the plots) with the disclaimer, every assumption and the model provenance, and **no image pixels** (only the SHA-256 and size).
+- **Launch:** `vstent app` binds to **localhost** by default (`--address` to change).
+- **Testing hooks:** environment variables `VSTENT_SURROGATE_MODEL`, `VSTENT_SEG_MODEL` and `VSTENT_ARCADE_DIR` override the model and example folders for tests. The app shows its own server-side rerun time, which `vstent app-latency` reads.
+**Reason:**
+- The < 300 ms target applies to updates after segmentation, so the slow steps must be cached and everything else kept to a few tens of ms (measured ≈ 50–80 ms).
+- Testable logic outside Streamlit keeps the app thin.
+- Binding to localhost and keeping pixels out of reports limit accidental exposure of uploaded images.
+**Alternatives:** Plotly → PNG export via kaleido (an extra Chrome-dependent package; matplotlib is already used for all report figures); launching on all interfaces (Streamlit's default).

@@ -66,7 +66,27 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent analyse <image> --plan` | … plus the virtual stent planner: shortest plan reaching FFR ≥ 0.90 (generic catalogue) | M6 |
 | `vstent plan-benchmark` | planner speed (5,000 candidates) and behaviour on synthetic vessels → `reports/planner_benchmark.md` | M6 |
 | `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
-| `vstent app` | launch the Streamlit app | M7 |
+| `vstent app` | launch the Streamlit app on http://localhost:8501 | M7 |
+| `vstent app-latency` | time the app's response to stent-control changes → `reports/app_latency.md` | M7 |
+
+## Using the app
+
+`uv run vstent app` opens the planner in your browser (it listens on this computer only). The
+red banner is permanent: **research use only**.
+
+1. **Synthetic vessel** (sidebar): pick a preset (focal, tandem) or a random synthetic vessel.
+   **Angiogram image**: upload a PNG / JPG / DICOM or pick an ARCADE example; the vessel is
+   segmented automatically. Click the start (proximal) and end points on the image, or use
+   *Auto path* / the manual row-col form. Set the pixel size (otherwise 0.30 mm/px is assumed
+   and flagged).
+2. Read the diameter profile (reference, lesions, MLD) and the FFR pullback from the solver and
+   the surrogate, with their difference.
+3. **Virtual stent** (sidebar): switch on *Place a stent*, choose catalogue length and diameter,
+   move the start slider. Post-PCI FFR updates immediately.
+4. **Suggest plan**: the shortest plan reaching FFR ≥ 0.90 (top 3, with the solver check); pick
+   one under *Show on plots* to draw it.
+5. **Prepare case report** → download the JSON (all assumptions, model versions, no image
+   pixels) and a PNG of the plots.
 
 ## Repository layout
 

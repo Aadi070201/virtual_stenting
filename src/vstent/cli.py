@@ -313,11 +313,13 @@ def _echo_plans(planned) -> None:
 
 
 def _latest_model_dir(root: Path, filename: str) -> Path:
-    dirs = sorted((p.parent for p in root.glob(f"*/{filename}")), key=lambda d: d.stat().st_mtime)
-    if not dirs:
+    from vstent.inference.models import latest_model_dir
+
+    found = latest_model_dir(root, filename)
+    if found is None:
         typer.echo(f"No exported model in {root}/ (run the export command first).", err=True)
         raise typer.Exit(code=1)
-    return dirs[-1]
+    return found
 
 
 @app.command()
@@ -507,10 +509,57 @@ def demo() -> None:
     _not_implemented("M8")
 
 
+APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"
+
+
+@app.command()
+def app_latency(
+    n: Annotated[int, typer.Option("--n", min=1, help="Start-slider updates per mode.")] = 20,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write app_latency.md.")
+    ] = Path("reports"),
+) -> None:
+    """Time the app's response to stent-control changes (synthetic and image mode)."""
+    from vstent.app.latency import write_latency_report
+
+    report = write_latency_report(report_dir, n, log=typer.echo)
+    typer.echo(f"[{'PASS' if report['passed'] else 'FAIL'}] every update < 300 ms (server time)")
+    typer.echo(f"Wrote {report_dir / 'app_latency.md'}")
+    if not report["passed"]:
+        raise typer.Exit(code=1)
+
+
 @app.command("app")
-def launch_app() -> None:
-    """Launch the Streamlit app."""
-    _not_implemented("M7")
+def launch_app(
+    port: Annotated[int, typer.Option("--port", help="Server port.")] = 8501,
+    address: Annotated[
+        str, typer.Option("--address", help="Bind address (default: this computer only).")
+    ] = "localhost",
+    headless: Annotated[
+        bool, typer.Option("--headless", help="Do not open a browser window.")
+    ] = False,
+) -> None:
+    """Launch the Streamlit app (research use only)."""
+    import subprocess
+    import sys
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(APP_SCRIPT),
+        "--server.port",
+        str(port),
+        "--browser.gatherUsageStats",
+        "false",
+        "--server.address",
+        address,
+    ]
+    if headless:
+        cmd += ["--server.headless", "true"]
+    typer.echo(f"{DISCLAIMER} Starting the app on http://{address}:{port} (Ctrl+C to stop).")
+    raise typer.Exit(code=subprocess.call(cmd))
 
 
 if __name__ == "__main__":

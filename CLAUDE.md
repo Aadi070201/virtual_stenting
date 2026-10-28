@@ -81,8 +81,10 @@ vstent/
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
                         # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
                         # solver + surrogate, torch-free), figures.py (analysis figure),
-                        # gallery.py (QCA gallery on ARCADE stenosis images)
-    app/                # streamlit_app.py
+                        # gallery.py (QCA gallery on ARCADE stenosis images), models.py
+                        # (locate exported models)
+    app/                # core.py (app logic, no Streamlit), streamlit_app.py (UI),
+                        # latency.py (AppTest-driven update timing)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
@@ -124,7 +126,8 @@ uv run vstent qca-gallery                          # → reports/qca_gallery.md 
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent demo              # end-to-end synthetic case → report
-uv run vstent app               # launches the Streamlit app
+uv run vstent app               # launches the Streamlit app on localhost:8501 (--port, --address)
+uv run vstent app-latency       # → reports/app_latency.md (stent-control update times)
 ```
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)

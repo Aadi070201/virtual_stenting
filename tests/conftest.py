@@ -107,3 +107,22 @@ def tiny_export(tiny_run, tmp_path_factory):
     from vstent.surrogate.export import export_run
 
     return export_run(tiny_run, tmp_path_factory.mktemp("models") / "tiny")
+
+
+@pytest.fixture(scope="session")
+def dark_seg_dir(tmp_path_factory):
+    """A stand-in ONNX 'segmenter' (dark pixels = vessel) exported like the real one."""
+    import torch
+
+    from vstent.imaging.seg_export import export_seg_onnx
+    from vstent.imaging.segment import PIXEL_MEAN, PIXEL_STD
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+
+    class DarkIsVessel(torch.nn.Module):
+        def forward(self, x):
+            return 20.0 * ((0.5 - PIXEL_MEAN) / PIXEL_STD - x)
+
+    out = tmp_path_factory.mktemp("seg_model")
+    meta = {"task": "vessel_segmentation", "image_size": "128"}
+    export_seg_onnx(DarkIsVessel(), out / SEG_ONNX_FILE, 128, meta)
+    return out
