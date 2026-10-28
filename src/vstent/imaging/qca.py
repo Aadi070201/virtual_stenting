@@ -179,6 +179,11 @@ class QCAResult:
         return float(self.percent_stenosis.max())
 
     @property
+    def max_ds_point_px(self) -> np.ndarray:
+        """Image position (row, col) of the largest diameter stenosis (px)."""
+        return self.centerline.points[int(np.argmax(self.percent_stenosis))]
+
+    @property
     def mld_mm(self) -> float:
         """Minimal lumen diameter (mm)."""
         return float(m_to_mm(self.profile.mld()[0]))

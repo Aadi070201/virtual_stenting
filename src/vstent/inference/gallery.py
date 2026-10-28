@@ -85,6 +85,7 @@ def qca_gallery(
                 "n_boxes": len(boxes),
                 "path_crosses_box": bool(_inside(q.centerline.points, boxes).any()),
                 "mld_in_box": bool(_inside(q.mld_point_px, boxes)[0]),
+                "max_ds_in_box": bool(_inside(q.max_ds_point_px, boxes)[0]),
                 "n_warnings": len(res.warnings),
                 "out_of_range": any("training range" in w for w in res.warnings),
             }
@@ -102,6 +103,7 @@ def qca_gallery(
         "n_failed": len(rows) - len(ok),
         "n_path_crosses_box": len(crossing),
         "n_mld_in_box_given_crossing": sum(r["mld_in_box"] for r in crossing),
+        "n_max_ds_in_box_given_crossing": sum(r["max_ds_in_box"] for r in crossing),
         "n_out_of_surrogate_range": sum(r["out_of_range"] for r in ok),
         "median_abs_ffr_diff": float(
             np.median([abs(r["ffr_solver"] - r["ffr_surrogate"]) for r in ok])
@@ -137,29 +139,35 @@ def _markdown(report: dict[str, Any], out_dir: Path, split: str) -> str:
         "longest path of the largest segmented vessel component is selected automatically, so "
         "it often is **not** the vessel with the annotated stenosis. Pixel size: 0.30 mm/px "
         "**assumed** (ARCADE has no calibration), so lengths, diameters and FFR are "
-        "illustrative only. Dashed orange boxes: ARCADE stenosis annotations.",
+        "illustrative only. The model has no side branches: the full inflow is carried along "
+        "the whole path, so long paths that taper into thin distal branches show large "
+        "viscous pressure losses that real flow, which leaves through the branches, would not "
+        "produce. Dashed orange boxes: ARCADE stenosis annotations.",
         "",
         f"- Analysed: {s['n_analysed']} of {s['n_images']} (failed: {s['n_failed']}).",
         f"- Auto-selected path crosses an annotated stenosis box: {s['n_path_crosses_box']}; "
-        f"of those, MLD inside a box: {s['n_mld_in_box_given_crossing']}.",
+        f"of those, point of maximum %DS inside a box: {s['n_max_ds_in_box_given_crossing']}, "
+        f"MLD (narrowest absolute diameter, often in a thin distal branch) inside a box: "
+        f"{s['n_mld_in_box_given_crossing']}.",
         f"- Outside the surrogate's training range (mostly vessel length): "
         f"{s['n_out_of_surrogate_range']} of {s['n_analysed']}.",
         "- Median |distal FFR solver − surrogate|: "
         + (f"{s['median_abs_ffr_diff']:.3f}" if s["median_abs_ffr_diff"] is not None else "n/a"),
         "",
         "| Image | Path (mm) | Max DS (%) | MLD (mm) | FFR solver | FFR surrogate | Boxes "
-        "| Path crosses box | MLD in box |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Path crosses box | Max DS in box | MLD in box |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in report["rows"]:
         if "error" in r:
-            lines.append(f"| {r['image']} | failed: {r['error']} | | | | | | | |")
+            lines.append(f"| {r['image']} | failed: {r['error']} | | | | | | | | |")
             continue
         lines.append(
             f"| [{r['image']}](figures/qca_examples/{r['image']}.png) | {r['path_mm']:.0f} "
             f"| {r['max_ds_pct']:.0f} | {r['mld_mm']:.2f} | {r['ffr_solver']:.2f} "
             f"| {r['ffr_surrogate']:.2f} | {r['n_boxes']} "
-            f"| {'yes' if r['path_crosses_box'] else 'no'} | {'yes' if r['mld_in_box'] else 'no'} |"
+            f"| {'yes' if r['path_crosses_box'] else 'no'} "
+            f"| {'yes' if r['max_ds_in_box'] else 'no'} | {'yes' if r['mld_in_box'] else 'no'} |"
         )
     lines += [
         "",

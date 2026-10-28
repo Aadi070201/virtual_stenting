@@ -420,7 +420,8 @@ def qca_gallery(
     s = report["summary"]
     typer.echo(
         f"Analysed {s['n_analysed']}/{s['n_images']}; path crosses a stenosis box in "
-        f"{s['n_path_crosses_box']}, MLD inside the box in {s['n_mld_in_box_given_crossing']}"
+        f"{s['n_path_crosses_box']}; max-DS point inside a box in "
+        f"{s['n_max_ds_in_box_given_crossing']}, MLD in {s['n_mld_in_box_given_crossing']}"
     )
     typer.echo("Wrote reports/qca_gallery.md and reports/figures/qca_examples/")
 
