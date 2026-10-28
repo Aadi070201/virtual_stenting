@@ -74,3 +74,7 @@ addopts = "-ra --strict-markers"
 markers = [
     "slow: long-running test (deselect with -m \"not slow\")",
 ]
+filterwarnings = [
+    # pycocotools' mask decoding under numpy 2 (third-party code, harmless)
+    "ignore:__array__ implementation doesn't accept a copy keyword:DeprecationWarning",
+]

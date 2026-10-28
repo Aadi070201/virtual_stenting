@@ -17,3 +17,69 @@ def tiny_data(tmp_path_factory):
     out = tmp_path_factory.mktemp("synth")
     generate_dataset(cfg.model_copy(update={"splits": splits}), out_dir=out, workers=1)
     return out
+
+
+def _write_fake_arcade(root: Path, sizes: dict[str, int], size: int = 64, seed: int = 0) -> Path:
+    """A tiny ARCADE-like folder: one random thick curve per image, COCO polygons / boxes."""
+    import json
+
+    import cv2
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    for task in ("syntax", "stenosis"):
+        for split, n in sizes.items():
+            folder = root / "arcade" / task / split
+            (folder / "images").mkdir(parents=True)
+            (folder / "annotations").mkdir()
+            images, anns = [], []
+            for k in range(n):
+                image_id = k + 1
+                mask = np.zeros((size, size), np.uint8)
+                pts = np.cumsum(rng.uniform(-6, 12, size=(6, 2)), axis=0) + size * 0.2
+                pts = np.clip(pts, 2, size - 3).astype(np.int32)
+                cv2.polylines(mask, [pts], False, 1, thickness=int(rng.integers(3, 7)))
+                img = (rng.normal(150, 12, (size, size)) - 70 * mask).clip(0, 255).astype(np.uint8)
+                cv2.imwrite(str(folder / "images" / f"{image_id}.png"), img)
+                images.append(
+                    {"id": image_id, "file_name": f"{image_id}.png", "width": size, "height": size}
+                )
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                for c in contours:
+                    if task == "syntax" and len(c) >= 3:
+                        poly = c[:, 0, :].astype(float).ravel().tolist()
+                        anns.append(
+                            {
+                                "id": len(anns) + 1,
+                                "image_id": image_id,
+                                "category_id": 5,
+                                "segmentation": [poly],
+                                "iscrowd": 0,
+                            }
+                        )
+                    elif task == "stenosis":
+                        x, y, w, h = cv2.boundingRect(c)
+                        anns.append(
+                            {
+                                "id": len(anns) + 1,
+                                "image_id": image_id,
+                                "category_id": 26,
+                                "bbox": [x, y, w, h],
+                                "iscrowd": 0,
+                                "segmentation": [[x, y, x + w, y, x + w, y + h]],
+                            }
+                        )
+            coco = {
+                "images": images,
+                "annotations": anns,
+                "categories": [{"id": 5, "name": "5"}, {"id": 26, "name": "stenosis"}],
+            }
+            (folder / "annotations" / f"{split}.json").write_text(json.dumps(coco))
+    return root
+
+
+@pytest.fixture(scope="session")
+def tiny_arcade(tmp_path_factory):
+    """A fake ARCADE raw folder (train 12, val 4, test 4 images of 64 x 64 px)."""
+    root = tmp_path_factory.mktemp("arcade_raw")
+    return _write_fake_arcade(root, {"train": 12, "val": 4, "test": 4})

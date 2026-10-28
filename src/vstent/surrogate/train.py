@@ -210,6 +210,8 @@ def _fit(
             "epochs": tc.epochs,
             "best_epoch": best_epoch,
             "best_val_distal_mae": best_mae if rows else None,
+            "best_metric": "val_distal_mae",
+            "best_value": best_mae if rows else None,
             "resume_command": resume_command,
             "resumes": resumes,
         }

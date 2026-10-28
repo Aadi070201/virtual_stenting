@@ -136,8 +136,11 @@ def checkpoints() -> None:
         typer.echo("No checkpoints.")
         return
     for r in rows:
-        best = r.get("best_val_distal_mae")
-        best_txt = f", best {best:.4f} (epoch {r['best_epoch']})" if best is not None else ""
+        metric = r.get("best_metric", "val_distal_mae")
+        best = r.get("best_value", r.get("best_val_distal_mae"))
+        best_txt = ""
+        if best is not None:
+            best_txt = f", best {metric} {best:.4f} (epoch {r['best_epoch']})"
         typer.echo(
             f"{r['name']}  [{r['kind']}]  {r['status']}  epoch {r['epoch']}/{r['epochs']}"
             f"{best_txt}  updated {r['updated_utc']}"
@@ -206,15 +209,49 @@ def export_surrogate(
 
 
 @data_app.command()
-def arcade() -> None:
-    """Download and verify the ARCADE angiography dataset."""
-    _not_implemented("M5")
+def arcade(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/arcade"),
+    force: Annotated[bool, typer.Option("--force", help="Delete and download again.")] = False,
+) -> None:
+    """Download, verify (MD5) and extract the ARCADE angiography dataset (Zenodo 10390295)."""
+    from urllib.error import URLError
+
+    from vstent.data.arcade import URL, fetch_arcade
+
+    try:
+        source = fetch_arcade(out, force=force, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(
+            f"ARCADE download failed: {exc}\nDownload {URL} manually into {out}/ "
+            "and run this command again (the archive is verified, then extracted).",
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"ARCADE ready in {out} (licence {source['licence']}, MD5 {source['md5']})")
 
 
 @app.command()
-def train_seg(config: ConfigOpt) -> None:
-    """Train the vessel segmentation model."""
-    _not_implemented("M5")
+def train_seg(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config (new run)."),
+    ] = None,
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Continue a stopped run (name or path).")
+    ] = None,
+) -> None:
+    """Train the vessel segmentation model (new run with --config, or continue with --resume)."""
+    from vstent.config import load_config
+    from vstent.imaging.seg_train import SegConfig, resume_seg, train_seg
+
+    if (config is None) == (resume is None):
+        typer.echo("Give exactly one of --config (new run) or --resume (continue).", err=True)
+        raise typer.Exit(code=2)
+    if resume is not None:
+        run_dir = resume_seg(resume, log=typer.echo)
+    else:
+        run_dir = train_seg(load_config(config, SegConfig), log=typer.echo)
+    typer.echo(f"Run directory: {run_dir}")
 
 
 @app.command()
