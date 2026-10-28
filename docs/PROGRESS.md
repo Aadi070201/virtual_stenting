@@ -220,3 +220,40 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - **Unreachable targets:** 16/100 vessels cannot reach 0.90 under the constraints, e.g. disease in the landing zones, more than two lesions, or narrow distal references limiting the diameter. The planner then returns the highest-FFR plan and says so.
 - **Pairs are heuristic:** pools hold the best candidates per stent length, not an exhaustive search; overlapping stents (lesions longer than 38 mm) are not supported.
 - **Tie-break:** at equal length the highest FFR wins, so the largest allowed diameter (≤ 1.1 × distal reference) is chosen. A sizing-to-reference rule could be considered with clinical input.
+
+---
+
+## 2026-10-28 — M7: Streamlit app
+
+**Done**
+- `app/core.py` (no Streamlit), covering:
+  - model loading (newest exports, or environment overrides);
+  - PNG / JPG / DICOM reading (DICOM: first frame, `ImagerPixelSpacing` with a magnification note);
+  - synthetic presets (focal, tandem, random from the synthetic sampler);
+  - pre-PCI and post-PCI evaluation (post-PCI keeps R_micro, Pa, Pv);
+  - Plotly figures (diameter with reference / lesions / MLD / stents; FFR from solver and surrogate with their difference and the 0.80 line);
+  - the image overlay (mask, centreline, points, stents);
+  - the case report (JSON with disclaimer, assumptions and model provenance, no pixels; PNG of the plots).
+- `app/streamlit_app.py`:
+  - a permanent research-use banner;
+  - synthetic and image modes (upload or ARCADE example; click points / auto path / manual form; calibration choice);
+  - Pa / Pv inputs; virtual-stent controls (catalogue length and diameter, start slider) with instant post-PCI FFR;
+  - "Suggest plan" (top 3 with the solver check, plans drawable, Pareto front);
+  - case report download;
+  - cached segmentation and QCA, and its own server rerun time shown.
+- `vstent app` (localhost by default, `--port`, `--address`, `--headless`); `vstent app-latency` → `reports/app_latency.md`. `inference/models.py` locates exported models (shared with the CLI).
+- Tests: 9 new in `tests/test_app.py`, including `AppTest` smoke tests of synthetic mode end to end (stent, slider < 300 ms, plan, plan display, report, random preset) and image mode (example, auto path, stent, reset), plus the regression test below. Full suite: 153 passed.
+- Checked in a real browser: Edge, driven by a temporary Playwright install that was not added to the project. Synthetic mode, a stent + suggested plan, and image mode all render with no console errors.
+
+**Metrics** (`reports/app_latency.md`, commit 9eebddb, clean; real models; AMD Ryzen 7 6800H)
+- Stent-control updates (26 per mode: start slider, length, diameter), server rerun time:
+  - synthetic: median **50 ms**, max 130 ms;
+  - image (ARCADE `stenosis/val` 1, after segmentation): median **76 ms**, max 80 ms.
+  - Target < 300 ms: met. Including the test harness: 72 / 98 ms median.
+- One-off image costs, cached afterwards: segmentation ≈ 0.12 s; automatic path + QCA + both FFR models ≈ 0.2 s.
+
+**Open issues / observations**
+- **Bug found in the browser, now fixed:** after switching from a synthetic case to an image, the previous stent was applied while the toggle looked off. A new vessel now resets the stent controls and plan selection; regression test added.
+- The click-to-select component cannot be exercised by `AppTest`; the same path is reachable through the auto-path button and the manual form, which are tested.
+- Browser rendering time is not part of the latency numbers.
+- The app runs without a DICOM viewer: multi-frame DICOM uses frame 1, and no frame selection or ECG gating is offered.

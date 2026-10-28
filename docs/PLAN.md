@@ -160,18 +160,18 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 
 ## M7: Streamlit app (`src/vstent/app/streamlit_app.py`)
 
-- [ ] Permanent banner: "Research use only — not for clinical decisions"
-- [ ] **Image mode:**
+- [x] Permanent banner: "Research use only — not for clinical decisions"
+- [x] **Image mode:**
   1. Upload PNG/JPG (DICOM optional via `pydicom`: use the first frame; read pixel spacing from `ImagerPixelSpacing` if present and note that magnification is not corrected)
   2. Segmentation overlay
   3. Click start and end points (`streamlit-image-coordinates`)
   4. Calibration input
-- [ ] **Synthetic mode:** pick or generate a synthetic vessel (for demos without images)
-- [ ] Plots (Plotly): diameter profile with reference and lesions marked; FFR pullback from the solver and the surrogate (with their difference); 0.80 line
-- [ ] Virtual stent controls (start, catalogue length, catalogue diameter) → instant post-PCI FFR curve and distal value
-- [ ] "Suggest plan" button → top-3 table; the selected plan is drawn on the profile and the image
-- [ ] Export the case report (JSON + PNG of the plots); the report includes the disclaimer and all assumptions (calibration, flow mode, model versions)
-- [ ] Smoke test with `streamlit.testing.v1.AppTest` running synthetic mode end-to-end
+- [x] **Synthetic mode:** pick or generate a synthetic vessel (for demos without images)
+- [x] Plots (Plotly): diameter profile with reference and lesions marked; FFR pullback from the solver and the surrogate (with their difference); 0.80 line
+- [x] Virtual stent controls (start, catalogue length, catalogue diameter) → instant post-PCI FFR curve and distal value
+- [x] "Suggest plan" button → top-3 table; the selected plan is drawn on the profile and the image
+- [x] Export the case report (JSON + PNG of the plots); the report includes the disclaimer and all assumptions (calibration, flow mode, model versions)
+- [x] Smoke test with `streamlit.testing.v1.AppTest` running synthetic mode end-to-end
 
 **Done when:** `vstent app` launches, the smoke test passes, and any slider update after segmentation takes < 300 ms.
 
