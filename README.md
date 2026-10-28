@@ -66,7 +66,9 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent qca-gallery` | qualitative QCA gallery on 20 ARCADE stenosis images → `reports/qca_gallery.md` | M5 |
 | `vstent analyse <image> --plan` | … plus the virtual stent planner: shortest plan reaching FFR ≥ 0.90 (generic catalogue) | M6 |
 | `vstent plan-benchmark` | planner speed (5,000 candidates) and behaviour on synthetic vessels → `reports/planner_benchmark.md` | M6 |
-| `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
+| `vstent qca-synthetic` | QCA accuracy on rendered synthetic tubes → `reports/qca_synthetic.md` | M5 |
+| `vstent demo` | synthetic case end-to-end (FFR → plan → post-PCI) → `reports/demo/` | M8 |
+| `vstent mvp-report` | assemble `reports/mvp_report.md` from all generated reports | M8 |
 | `vstent app` | launch the Streamlit app on http://localhost:8501 | M7 |
 | `vstent app-latency` | time the app's response to stent-control changes → `reports/app_latency.md` | M7 |
 

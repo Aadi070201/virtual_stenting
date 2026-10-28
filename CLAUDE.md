@@ -75,7 +75,7 @@ vstent/
                         # baseline.py, evaluate.py, export.py
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
-                        # synthetic.py (rendered test tubes)
+                        # synthetic.py (rendered test tubes), qca_validation.py
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark)
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
@@ -87,6 +87,7 @@ vstent/
                         # latency.py (AppTest-driven update timing)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
+    reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
     checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
     units.py            # mmHg <-> Pa, mm <-> m
     sysinfo.py          # CPU model for benchmarks
@@ -125,7 +126,9 @@ uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--fig
 uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
-uv run vstent demo              # end-to-end synthetic case → report
+uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
+uv run vstent demo              # end-to-end synthetic case → reports/demo/
+uv run vstent mvp-report        # → reports/mvp_report.md, assembled from the other reports
 uv run vstent app               # launches the Streamlit app on localhost:8501 (--port, --address)
 uv run vstent app-latency       # → reports/app_latency.md (stent-control update times)
 ```

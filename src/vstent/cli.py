@@ -1,7 +1,4 @@
-"""Command-line interface: ``vstent <command>``.
-
-Commands are stubs until their milestone in docs/PLAN.md is implemented.
-"""
+"""Command-line interface: ``vstent <command>`` (research use only)."""
 
 from pathlib import Path
 from typing import Annotated
@@ -28,11 +25,6 @@ RunOpt = Annotated[
 PHYSICS_CONFIG = Path("configs/physics.yaml")
 PLANNER_CONFIG = Path("configs/planner.yaml")
 CATALOG_CONFIG = Path("configs/stent_catalog.yaml")
-
-
-def _not_implemented(milestone: str) -> None:
-    typer.echo(f"Not implemented yet (planned in {milestone}, see docs/PLAN.md).", err=True)
-    raise typer.Exit(code=1)
 
 
 @app.command()
@@ -504,9 +496,47 @@ def plan_benchmark(
 
 
 @app.command()
-def demo() -> None:
-    """Run a synthetic case end-to-end and write reports/demo/."""
-    _not_implemented("M8")
+def demo(
+    out: Annotated[Path, typer.Option("--out", help="Output folder.")] = Path("reports/demo"),
+) -> None:
+    """Run a synthetic case end-to-end (profile → FFR → optimise → report) into reports/demo/."""
+    from vstent.reporting.demo import run_demo
+
+    typer.echo(DISCLAIMER)
+    run_demo(out, log=typer.echo)
+    typer.echo(f"Wrote {out / 'demo.md'}, {out / 'demo.json'} and {out / 'demo.png'}")
+
+
+@app.command()
+def qca_synthetic(
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write qca_synthetic.md.")
+    ] = Path("reports"),
+) -> None:
+    """QCA accuracy on rendered synthetic tubes with a known 60% stenosis."""
+    from vstent.imaging.qca_validation import write_qca_validation
+
+    report = write_qca_validation(report_dir)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'qca_synthetic.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def mvp_report(
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Folder with the generated reports.")
+    ] = Path("reports"),
+) -> None:
+    """Assemble reports/mvp_report.md from the generated report files."""
+    from vstent.reporting.mvp import write_mvp_report
+
+    data = write_mvp_report(report_dir, log=typer.echo)
+    typer.echo(f"Wrote {report_dir / 'mvp_report.md'}")
+    if not data["all_targets_met"]:
+        raise typer.Exit(code=1)
 
 
 APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"

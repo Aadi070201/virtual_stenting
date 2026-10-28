@@ -158,3 +158,18 @@ The M1 estimator is left unchanged for synthetic profiles, which have no branche
 - Testable logic outside Streamlit keeps the app thin.
 - Binding to localhost and keeping pixels out of reports limit accidental exposure of uploaded images.
 **Alternatives:** Plotly → PNG export via kaleido (an extra Chrome-dependent package; matplotlib is already used for all report figures); launching on all interfaces (Streamlit's default).
+
+### D26 — Demo and the assembled MVP report (2026-10-28)
+**Decision:**
+- **`vstent demo`** runs the tandem-lesion preset through the whole chain: profile → FFR → plan optimisation → best plan → post-PCI FFR → `reports/demo/` (Markdown, JSON case report, figure). It uses the newest exported surrogate if there is one, else the solver, and says which.
+- **`vstent qca-synthetic`** turns the QCA test cases into a report; `tests/test_qca.py` imports the same cases and metric code.
+- **`vstent mvp-report`** assembles `reports/mvp_report.md` only from the other reports' JSON files:
+  - a target table normalised from each report's own target list;
+  - facts without targets;
+  - a provenance table (the commit and dirty flag of every source);
+  - fixed prose limitations without numbers;
+  - the Phase 2 list parsed from `docs/PLAN.md`.
+
+  Missing reports are listed rather than skipped. Each report is generated from a clean commit and committed before the next one is generated, so every provenance line reads `dirty: False`.
+**Reason:** the plan requires no hand-typed numbers; the demo must work on a fresh clone, where no trained model exists (models are never committed).
+**Alternatives:** a notebook (not a source of truth here); templated numbers in Markdown (drift from the data).

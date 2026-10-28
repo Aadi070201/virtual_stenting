@@ -1,7 +1,6 @@
 import networkx as nx
 import numpy as np
 import pytest
-from scipy.spatial import cKDTree
 
 from vstent.imaging.centerline import (
     clean_mask,
@@ -13,40 +12,42 @@ from vstent.imaging.centerline import (
     trace_centerline,
 )
 from vstent.imaging.qca import DEFAULT_MM_PER_PX, qca_from_centerline, run_qca
-from vstent.imaging.synthetic import render_tube, sine_centerline, stenosis_diameter
+from vstent.imaging.qca_validation import (
+    CASES,
+    SHAPE,
+    TARGET_DS_ERROR_PCT,
+    TARGET_MEDIAN_ERROR_PX,
+    TARGET_MLD_LOCATION_PX,
+    measure_case,
+    render_case,
+    write_qca_validation,
+)
+from vstent.imaging.synthetic import render_tube, sine_centerline
 from vstent.units import m_to_mm
-
-SHAPE = (400, 400)
-# (angle °, amplitude px, reference diameter px, blur sigma px, noise std)
-CASES = [
-    (0.0, 0.0, 12.0, 1.0, 0.03),
-    (20.0, 25.0, 12.0, 1.0, 0.03),
-    (-35.0, 30.0, 10.0, 1.2, 0.05),
-    (60.0, 20.0, 14.0, 1.0, 0.03),
-    (100.0, 35.0, 8.0, 1.0, 0.03),
-]
 
 
 def _tube(angle, amplitude, ref, blur, noise, seed=0, severity=0.6, length=280.0):
-    pts, s = sine_centerline((0.0, 0.0), length, angle_deg=angle, amplitude_px=amplitude)
-    pts = pts - (pts.min(axis=0) + pts.max(axis=0)) / 2 + np.array(SHAPE) / 2  # centred
-    d = stenosis_diameter(s, ref, severity, s[-1] / 2, 40.0)
-    return render_tube(SHAPE, pts, s, d, blur_sigma=blur, noise_std=noise, seed=seed)
+    return render_case(
+        angle, amplitude, ref, blur, noise, seed=seed, severity=severity, length=length
+    )
 
 
 @pytest.mark.parametrize("case", CASES)
 def test_qca_on_synthetic_stenosis_meets_targets(case):
-    tube = _tube(*case, seed=CASES.index(case))
-    p, d = tube.points, tube.diameter
-    res = run_qca(tube.image, p[0] + [1.5, -2.0], p[-1] + [-2.0, 1.0])  # imprecise clicks
-    _, idx = cKDTree(p).query(res.centerline.points)
-    err = res.diameters.diameter_px - d[idx]
-    assert np.median(np.abs(err)) <= 0.7
-    throat = p[np.argmin(np.abs(tube.s - tube.s[-1] / 2))]
-    assert np.linalg.norm(res.mld_point_px - throat) <= 3.0
-    assert abs(res.max_percent_stenosis - 60.0) <= 7.0
-    assert res.fallback_fraction < 0.05
-    assert res.centerline.length > 0.9 * tube.s[-1]
+    tube = render_case(*case, seed=CASES.index(case))
+    res, m = measure_case(tube)
+    assert m["median_abs_diameter_error_px"] <= TARGET_MEDIAN_ERROR_PX
+    assert m["mld_location_error_px"] <= TARGET_MLD_LOCATION_PX
+    assert abs(m["ds_error_pct"]) <= TARGET_DS_ERROR_PCT
+    assert m["passed"] and m["fallback_fraction"] < 0.05
+    assert m["traced_length_fraction"] > 0.9 - 2 * 14.0 / 280.0  # minus end trimming
+
+
+def test_qca_validation_report(tmp_path):
+    report = write_qca_validation(tmp_path)
+    assert report["targets_met"] and len(report["rows"]) == len(CASES)
+    md = (tmp_path / "qca_synthetic.md").read_text(encoding="utf-8")
+    assert "Research use only" in md
 
 
 def test_qca_units_and_calibration_flag():

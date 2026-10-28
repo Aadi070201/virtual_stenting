@@ -15,6 +15,12 @@ COMMANDS = [
     "train-seg",
     "demo",
     "app",
+    "app-latency",
+    "qca-synthetic",
+    "mvp-report",
+    "plan-benchmark",
+    "qca-gallery",
+    "analyse",
 ]
 
 
@@ -35,8 +41,3 @@ def test_data_group_lists_arcade():
     result = runner.invoke(app, ["data", "--help"])
     assert result.exit_code == 0
     assert "arcade" in result.output
-
-
-def test_stub_exits_nonzero():
-    result = runner.invoke(app, ["demo"])
-    assert result.exit_code == 1
