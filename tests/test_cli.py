@@ -41,3 +41,18 @@ def test_data_group_lists_arcade():
     result = runner.invoke(app, ["data", "--help"])
     assert result.exit_code == 0
     assert "arcade" in result.output
+
+
+def test_console_output_never_crashes_on_legacy_code_page(monkeypatch):
+    import io
+    import sys
+
+    from vstent.cli import _safe_console
+
+    buf = io.BytesIO()
+    stream = io.TextIOWrapper(buf, encoding="cp1252", newline="\n")
+    monkeypatch.setattr(sys, "stdout", stream)
+    _safe_console()
+    print("DS 30% → 90%, FFR ≥ 0.90")  # → and ≥ are not in cp1252
+    stream.flush()
+    assert buf.getvalue() == b"DS 30% ? 90%, FFR ? 0.90\n"

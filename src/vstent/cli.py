@@ -1,5 +1,6 @@
 """Command-line interface: ``vstent <command>`` (research use only)."""
 
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -15,6 +16,22 @@ app = typer.Typer(
 )
 data_app = typer.Typer(help="Download and prepare datasets.", no_args_is_help=True)
 app.add_typer(data_app, name="data")
+
+
+def _safe_console() -> None:
+    # Messages contain characters such as "→", "≥" or "×". A Windows console or pipe in a
+    # legacy code page (cp1252) cannot encode some of them; print a replacement instead of
+    # crashing after the work is done (found in the fresh-clone test).
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if hasattr(stream, "reconfigure") and encoding != "utf8":
+            stream.reconfigure(errors="replace")
+
+
+@app.callback()
+def _main() -> None:
+    _safe_console()
+
 
 ConfigOpt = Annotated[
     Path, typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config file.")
