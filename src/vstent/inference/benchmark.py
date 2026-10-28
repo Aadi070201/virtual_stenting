@@ -361,7 +361,9 @@ def _markdown(report: dict[str, Any]) -> str:
         "",
         "Weights quantised to unsigned 8-bit with ONNX Runtime `quantize_dynamic` (activations "
         "quantised at run time). Kept only if the distal-FFR MAE rises by less than "
-        f"{INT8_MAX_MAE_RISE} and a batch runs at least {INT8_MIN_SPEEDUP}× faster.",
+        f"{INT8_MAX_MAE_RISE} and a batch runs at least {INT8_MIN_SPEEDUP}× faster. FP32 is "
+        "timed again here, just before INT8, so its latency differs slightly from the table "
+        "above (run-to-run variation).",
         "",
         "| | FP32 | INT8 |",
         "|---|---|---|",
