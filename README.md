@@ -19,9 +19,11 @@ The build plan is in [docs/PLAN.md](docs/PLAN.md); progress is logged in
 ## Status
 
 Done: M0 (setup), M1 (reduced-order physics solver), M2 (synthetic data factory), M3 (FFR
-surrogate, see [reports/surrogate_eval.md](reports/surrogate_eval.md)) and M4 (ONNX export and
-runtime, see [reports/onnx_benchmark.md](reports/onnx_benchmark.md)). The remaining commands
-are stubs until their milestone is implemented.
+surrogate, see [reports/surrogate_eval.md](reports/surrogate_eval.md)), M4 (ONNX export and
+runtime, see [reports/onnx_benchmark.md](reports/onnx_benchmark.md)) and M5 (ARCADE vessel
+segmentation, QCA and the end-to-end pipeline, see [reports/seg_eval.md](reports/seg_eval.md)
+and [reports/qca_gallery.md](reports/qca_gallery.md)). The remaining commands are stubs until
+their milestone is implemented.
 
 ## Quickstart
 
@@ -59,6 +61,7 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
 | `vstent export-seg --run runs/<name>` | export segmentation to ONNX, parity → `reports/seg_onnx.md` | M5 |
 | `vstent analyse <image> [--start R C --end R C]` | segment an angiogram, QCA + FFR (solver and surrogate) for one vessel | M5 |
+| `vstent qca-gallery` | qualitative QCA gallery on 20 ARCADE stenosis images → `reports/qca_gallery.md` | M5 |
 | `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
 | `vstent app` | launch the Streamlit app | M7 |
 

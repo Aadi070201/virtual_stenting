@@ -117,7 +117,7 @@ One short paragraph per decision: decision, reason, alternatives.
 - **Reference and capping:** the reference is a two-sided robust line, a Theil–Sen start refined on points within 0.85–1.15 × the line. Diameters above 1.15 × the reference are capped before the physics, because a spike from an overlapping vessel would otherwise act as a narrowing plus an expansion loss (ARCADE val 107: reference 16.6 mm before, 2.3 mm after).
 
 The M1 estimator is left unchanged for synthetic profiles, which have no branches. Pixels are converted to mm with 0.30 mm/px unless a calibration is given; `QCAResult.calibration_assumed` and the pipeline warnings say so. Reference diameter, %DS, lesions and MLD reuse the M1 functions on the SI `VesselProfile`.
-**Reason:** the plan's method. On synthetic curved tubes with blur and noise the median diameter error is 0.05–0.12 px (target ≤ 0.7), the MLD is within 1 px and the %DS within 2.5 points of the true 60%.
+**Reason:** the plan's method. `tests/test_qca.py` checks the plan's targets on five synthetic curved tubes with blur, noise and a 60% stenosis (median diameter error ≤ 0.7 px, MLD within 3 px, %DS within ±7 points) and all pass; an exploratory run during development (not a saved report) showed median errors around 0.1 px.
 **Alternatives:** distance transform only (quantised to ±0.5 px); edge detection on the raw image (the probability map is smoother and is what the model outputs).
 
 ### D22 — End-to-end pipeline conventions (2026-10-28)

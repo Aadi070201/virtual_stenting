@@ -119,22 +119,22 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 ## M5: Imaging: ARCADE segmentation + 2D QCA (`src/vstent/imaging/`)
 
 ### Data
-- [ ] `vstent data arcade`: download the ARCADE dataset from Zenodo (record 10390295, `arcade.zip`, ~450 MB) into `data/raw/arcade/`, then verify the MD5 checksum shown on the Zenodo page. If the download is blocked, **stop and ask the human** to download it manually.
-- [ ] Inspect the real folder structure and COCO categories (do not assume them); document both and the licence in `docs/DATA.md`
-- [ ] Build binary vessel masks = union of all segment polygons from the `syntax` task. Use the `stenosis` task only for evaluation.
+- [x] `vstent data arcade`: download the ARCADE dataset from Zenodo (record 10390295, `arcade.zip`, ~450 MB) into `data/raw/arcade/`, then verify the MD5 checksum shown on the Zenodo page. If the download is blocked, **stop and ask the human** to download it manually.
+- [x] Inspect the real folder structure and COCO categories (do not assume them); document both and the licence in `docs/DATA.md`
+- [x] Build binary vessel masks = union of all segment polygons from the `syntax` task. Use the `stenosis` task only for evaluation.
 
 ### Segmentation
-- [ ] U-Net (`segmentation-models-pytorch`, `resnet34` or `efficientnet-b0` encoder, ImageNet weights, `in_channels=1`), 512 × 512 input, Dice + BCE loss
-- [ ] Augmentations: rotation ±15°, scale 0.9–1.1, brightness / contrast / gamma, Gaussian noise, CLAHE. No vertical flips.
-- [ ] Evaluation → `reports/seg_eval.md`. Target: val Dice ≥ 0.75 (stretch 0.80). If it is not reached after reasonable tuning, report the real value and continue.
-- [ ] Export the segmentation model to ONNX + parity test
+- [x] U-Net (`segmentation-models-pytorch`, `resnet34` or `efficientnet-b0` encoder, ImageNet weights, `in_channels=1`), 512 × 512 input, Dice + BCE loss
+- [x] Augmentations: rotation ±15°, scale 0.9–1.1, brightness / contrast / gamma, Gaussian noise, CLAHE. No vertical flips.
+- [x] Evaluation → `reports/seg_eval.md`. Target: val Dice ≥ 0.75 (stretch 0.80). If it is not reached after reasonable tuning, report the real value and continue.
+- [x] Export the segmentation model to ONNX + parity test
 
 ### Centreline and QCA
-- [ ] `centerline.py`: skeletonise the mask, prune spurs < 10 px, build a pixel graph, snap the user's start and end points to the nearest skeleton nodes, find the shortest path (networkx), smooth it (Savitzky–Golay), resample at uniform arc length
-- [ ] `qca.py`: diameter at each centreline point = width of the probability map along the local normal at the 0.5 level, with sub-pixel interpolation (fallback: 2 × distance transform). Convert px → mm with a calibration factor (default 0.30 mm/px, configurable and clearly flagged as an assumption). Then compute the reference diameter, %DS, lesions and MLD using the M1 functions
-- [ ] Synthetic image tests: render curved tubes with a known diameter function including a 60% stenosis, plus blur and noise. Targets: median absolute diameter error ≤ 0.7 px; MLD location within 3 px; DS within ±7 percentage points
-- [ ] `inference/pipeline.py`: image → mask → path → `VesselProfile` → solver and surrogate
-- [ ] *(Stretch)* qualitative gallery `reports/figures/qca_examples/`: 20 val images, longest path auto-selected, with ARCADE stenosis boxes overlaid
+- [x] `centerline.py`: skeletonise the mask, prune spurs < 10 px, build a pixel graph, snap the user's start and end points to the nearest skeleton nodes, find the shortest path (networkx), smooth it (Savitzky–Golay), resample at uniform arc length
+- [x] `qca.py`: diameter at each centreline point = width of the probability map along the local normal at the 0.5 level, with sub-pixel interpolation (fallback: 2 × distance transform). Convert px → mm with a calibration factor (default 0.30 mm/px, configurable and clearly flagged as an assumption). Then compute the reference diameter, %DS, lesions and MLD using the M1 functions
+- [x] Synthetic image tests: render curved tubes with a known diameter function including a 60% stenosis, plus blur and noise. Targets: median absolute diameter error ≤ 0.7 px; MLD location within 3 px; DS within ±7 percentage points
+- [x] `inference/pipeline.py`: image → mask → path → `VesselProfile` → solver and surrogate
+- [x] *(Stretch)* qualitative gallery `reports/figures/qca_examples/`: 20 val images, longest path auto-selected, with ARCADE stenosis boxes overlaid
 
 **Done when:** the segmentation report exists, the QCA synthetic tests pass, and the pipeline runs on an ARCADE image end-to-end.
 

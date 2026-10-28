@@ -131,3 +131,49 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - The TorchScript exporter is deprecated in torch; it works with the pinned torch 2.14.1. Moving to the dynamo exporter means opset 18 and the `onnxscript` dependency (D16).
 - Signed INT8 weights were about 10× slower in an exploration run; only unsigned weights are checked (D18).
 - Timings are wall-clock on one laptop and vary by a few percent between runs (e.g. FP32 batch 205 ms in the main table vs 222 ms in the INT8 comparison pass).
+
+---
+
+## 2026-10-28 — M5: ARCADE segmentation, 2D QCA and the end-to-end pipeline
+
+**Done**
+- **Data:** `vstent data arcade` streams Zenodo 10390295 `arcade.zip` (451.6 MB), verifies MD5 `c5b1973a…`, extracts with path checks and writes `SOURCE.json`. Licence verified from the Zenodo record: **CC0 1.0**. Structure, categories, duplicates and cross-task overlap are documented in `docs/DATA.md` (D19). Masks are the union of the `syntax` segment polygons (pycocotools).
+- **Segmentation:** `imaging/segment.py` (shared pre-processing, augmentation, Dice; torch-free); `seg_train.py` (smp U-Net resnet34, ImageNet weights, BCE + Dice, AMP, resumable via `vstent.checkpoints`, augmentation seeds follow the checkpointed generator; D20); `seg_eval.py` → `reports/seg_eval.md`; `seg_export.py` → `models/seg/<run>/seg.onnx` + `reports/seg_onnx.md`; `SegmentationRunner` in `inference/onnx_runtime.py`.
+- **QCA:** `imaging/centerline.py` (clean mask → skeleton → 8-connected graph → spur pruning < 10 px → snapping → shortest path → Savitzky–Golay → 1 px resampling; longest-path auto-selection, wider end first). `imaging/qca.py` measures the 0.5-level width along normals, with sub-pixel interpolation, a one-sided branch rule, fallbacks, end trimming, a two-sided robust reference and capping, and a 0.30 mm/px default flagged as assumed (D21). `imaging/synthetic.py` renders test tubes.
+- **Pipeline:** `inference/pipeline.py` (torch-free) runs image → probability → QCA → solver and surrogate with the same Pa, Pv and R_micro. It warns about an assumed calibration, many fallbacks or capped points, R_micro at its floor, out-of-range surrogate inputs, and a surrogate FFR below Pv/Pa (D22). `inference/figures.py` draws an analysis figure; `inference/gallery.py` runs the gallery.
+- **CLI:** `data arcade`, `train-seg` (`--resume`), `eval-seg`, `export-seg`, `analyse <image> [--start R C --end R C]`, `qca-gallery`.
+- `vstent/plotting.py` holds the shared chart style (surrogate eval moved onto it).
+- Tests: 127 in total (124 fast + 3 slow). Covered: downloader (local `file://`), fake-ARCADE loader, pre-processing and augmentation, exact segmentation stop/resume, segmentation export parity and eval report, QCA targets on 5 synthetic tubes, branch, crossing and off-vessel cases, robust reference, end trimming, orientation, pipeline, the `analyse` CLI end-to-end with a stand-in ONNX segmenter, and the gallery.
+
+**Metrics** (from committed reports)
+- `reports/seg_eval.md` (run `seg_unet_r34-20261028-141743`, trained at 0d4afee, evaluated at 226fc57, both clean):
+
+  | Split | Mean Dice | Median | Min | Pixel precision | Pixel recall |
+  |---|---|---|---|---|---|
+  | val | **0.8325** (target ≥ 0.75, stretch 0.80: met) | 0.8473 | 0.62 | 0.841 | 0.825 |
+  | test | **0.7925** | 0.8183 | 0.21 | 0.836 | 0.768 |
+
+  Training: early stop at epoch 53 (best 38), 27.0 min on the RTX 3060 Laptop GPU (≈ 30 s/epoch).
+- `reports/seg_onnx.md`: parity max |prob_torch − prob_onnx| **1.8e-05** on 16 val images (< 1e-4); 97.7 MB; CPU ≈ 104 ms per 512 × 512 image.
+- QCA synthetic tests: all 5 configurations meet the plan's targets (median diameter error ≤ 0.7 px, MLD within 3 px, %DS within ±7 points).
+- `reports/qca_gallery.md` (20 `stenosis/val` images, auto-selected longest paths, 0.30 mm/px assumed):
+  - 20/20 analysed end-to-end;
+  - the point of maximum %DS falls inside an annotated stenosis box in 8/20, the MLD in 2/20;
+  - 19/20 paths lie outside the surrogate's training range (length);
+  - median |distal FFR solver − surrogate| 0.033.
+
+**Open issues / observations**
+- **Test Dice is lower than val** (0.79 vs 0.83), with a long low tail (minimum 0.21). ARCADE annotates only the SYNTAX segments, so correctly segmented side branches count as false positives (visible in `seg_examples.png`).
+- **Pixel size is unknown** for ARCADE: 0.30 mm/px is assumed, so absolute diameters, lengths and FFR are illustrative.
+- **Real images needed four QCA fixes:**
+  1. Auto-selected paths had to be oriented proximal-first.
+  2. End trimming removes the mask-tip artefact.
+  3. One-sided branches and centreline points that left the vessel needed their own rules.
+  4. A two-sided robust reference and capping stop overlap spikes from inflating the reference (16.6 → 2.3 mm on val 107) or acting as fake stenoses.
+
+  All are documented in D21. Two problems remain:
+  - crossing vessels can leave thin bridges in the mask, which read as severe narrowings (val 107, MLD 0.33 mm);
+  - the wider-end-first rule can pick the wrong end when both ends are thin.
+- **Auto-selected paths are long** (68–265 mm) and run into thin distal branches. With constant flow and no side branches the model then overstates pressure losses (val 10: 31% max DS, FFR 0.06). User-selected single segments (the app in M7) are the intended use.
+- **Surrogate out of range:** it extrapolates on most real paths (length > 80 mm) and once went below Pv/Pa before the warning was added. Retraining on longer and larger synthetic vessels would be a Phase 2 or M6+ consideration.
+- The superseded first M3 run folder (`runs/unet1d-20261028-091227`) is still on disk.

@@ -79,7 +79,8 @@ vstent/
     planning/           # stent.py, optimizer.py
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
                         # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
-                        # solver + surrogate, torch-free), figures.py (analysis figure)
+                        # solver + surrogate, torch-free), figures.py (analysis figure),
+                        # gallery.py (QCA gallery on ARCADE stenosis images)
     app/                # streamlit_app.py
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
@@ -118,6 +119,7 @@ uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>
 uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
 uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/seg_onnx.md
 uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
+uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
 uv run vstent demo              # end-to-end synthetic case → report
 uv run vstent app               # launches the Streamlit app
 ```
