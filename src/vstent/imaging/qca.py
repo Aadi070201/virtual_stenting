@@ -2,21 +2,26 @@
 
 The lumen diameter at each centreline point is the distance between the two crossings of the
 probability map with the 0.5 level along the local normal (bilinear sampling, linear sub-pixel
-interpolation of the crossing). Where that fails (centre below the level, or no crossing within
-the search range) the fallback is 2 × the distance transform of the binary mask.
+interpolation of the crossing). If one edge is much farther than the other (a side branch or
+an overlapping vessel on that side), 2 × the nearer edge distance is used. Fallbacks: no
+crossing within the search range → 2 × the distance transform of the binary mask; centreline
+point outside the vessel (smoothing cut a sharp bend) → interpolation from its neighbours.
 
 One median vessel diameter is trimmed from both ends of the centreline (end effects of the
 mask, not lumen narrowing). Pixels are converted to millimetres with a calibration factor.
 **Without a calibration from the image (e.g. DICOM pixel spacing or a catheter of known size)
 the default 0.30 mm/px is an assumption**, and every result records whether it was assumed.
-The profile is then handed to the M1 functions (reference diameter, %DS, lesions, MLD) in SI
-units.
+
+The reference diameter is a two-sided robust line fit (:func:`robust_reference`); diameters
+above 1.15 × reference (branches, overlaps) are capped before the profile, in SI units with
+that explicit reference, goes to the M1 functions (%DS, lesions, MLD) and the physics.
 """
 
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.ndimage import distance_transform_edt, map_coordinates
+from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
 from vstent.physics.geometry import Lesion, VesselProfile
@@ -28,6 +33,16 @@ EDGE_STEP_PX = 0.1
 MIN_DIAMETER_PX = 0.5
 END_TRIM_DIAMETERS = 1.0
 MIN_POINTS_AFTER_TRIM = 10
+# One edge farther than BRANCH_RATIO × the other + BRANCH_SLACK_PX → side branch on that side.
+# The slack keeps a sub-pixel off-centre centreline in a thin vessel from triggering it.
+BRANCH_RATIO = 1.5
+BRANCH_SLACK_PX = 1.0
+# Reference fit: points within [REF_LOWER, REF_UPPER] × the line count as healthy. Diameters
+# above REF_UPPER × reference are capped before the physics (a spike would otherwise act as a
+# narrowing followed by an expansion loss).
+REF_LOWER = 0.85
+REF_UPPER = 1.15
+REF_MAX_ITER = 5
 
 
 @dataclass(frozen=True, eq=False)
@@ -38,13 +53,17 @@ class DiameterProfile:
         diameter_px: (n,) diameter.
         left_px, right_px: (n,) signed edge offsets along the normal (left ≤ 0 ≤ right);
             NaN where the fallback was used.
-        fallback: (n,) True where 2 × distance transform was used.
+        fallback: (n,) True where an edge was not found (2 × distance transform, or
+            interpolation from neighbours where the centreline left the vessel).
+        branch: (n,) True where one edge was much farther than the other (a side branch or
+            overlap on that side) and 2 × the nearer edge distance was used.
     """
 
     diameter_px: np.ndarray
     left_px: np.ndarray
     right_px: np.ndarray
     fallback: np.ndarray
+    branch: np.ndarray
 
 
 def _first_crossing(vals: np.ndarray, t: np.ndarray, level: float) -> tuple[np.ndarray, np.ndarray]:
@@ -84,26 +103,45 @@ def measure_diameters(
 
     right, ok_r = _first_crossing(sample(+1.0), t, level)
     left, ok_l = _first_crossing(sample(-1.0), t, level)
-    ok = ok_r & ok_l
-    fallback_d = 2.0 * map_coordinates(edt, [pts[:, 0], pts[:, 1]], order=1, mode="nearest")
-    diameter = np.where(ok, right + left, fallback_d)
+    both, either = ok_r & ok_l, ok_r | ok_l
+    near = np.where(both, np.minimum(left, right), np.where(ok_l, left, right))
+    far = np.maximum(left, right)
+    # A side branch / overlap on one side: that edge is much farther, or beyond the search range.
+    branch = (both & (far > BRANCH_RATIO * near + BRANCH_SLACK_PX)) | (either & ~both)
+    diameter = np.where(branch, 2.0 * near, right + left)
+    # Fallbacks. Centre inside the vessel but no edge found: 2 × distance transform.
+    # Centre outside (smoothing cut a sharp bend): interpolate from the measured neighbours.
+    coords = [pts[:, 0], pts[:, 1]]
+    inside = map_coordinates(prob, coords, order=1, mode="nearest") >= level
+    edt_d = 2.0 * map_coordinates(edt, coords, order=1, mode="nearest")
+    diameter = np.where(either, diameter, edt_d)
+    if (~inside).any() and inside.any():
+        s = centerline.s
+        diameter[~inside] = np.interp(s[~inside], s[inside], diameter[inside])
     return DiameterProfile(
         diameter_px=np.maximum(diameter, MIN_DIAMETER_PX),
-        left_px=np.where(ok, -left, np.nan),
-        right_px=np.where(ok, right, np.nan),
-        fallback=~ok,
+        left_px=np.where(ok_l, -left, np.nan),
+        right_px=np.where(ok_r, right, np.nan),
+        fallback=~either | ~inside,
+        branch=branch & inside,
     )
 
 
 @dataclass(frozen=True, eq=False)
 class QCAResult:
-    """QCA of one vessel path. ``profile`` is in SI units (m) for the physics solver."""
+    """QCA of one vessel path.
+
+    ``profile`` (SI units, m) is what the physics solver and the surrogate receive: diameters
+    above REF_UPPER × the reference (``capped``) are capped there, and ``r_ref`` is the
+    two-sided robust reference. ``diameters`` keeps the raw measurements in pixels.
+    """
 
     centerline: Centerline
     diameters: DiameterProfile
     mm_per_px: float
     calibration_assumed: bool
     profile: VesselProfile
+    capped: np.ndarray
 
     @property
     def s_mm(self) -> np.ndarray:
@@ -112,13 +150,23 @@ class QCAResult:
 
     @property
     def diameter_mm(self) -> np.ndarray:
-        """Measured lumen diameter (mm)."""
+        """Lumen diameter used for the physics (mm): measured, capped at REF_UPPER × reference."""
         return m_to_mm(self.profile.diameter)
 
     @property
+    def measured_diameter_mm(self) -> np.ndarray:
+        """Raw measured diameter (mm), before capping."""
+        return self.diameters.diameter_px * self.mm_per_px
+
+    @property
     def reference_diameter_mm(self) -> np.ndarray:
-        """Estimated healthy reference diameter (mm), robust linear fit (M1)."""
+        """Healthy reference diameter (mm), see :func:`robust_reference`."""
         return m_to_mm(2.0 * self.profile.reference_radius())
+
+    @property
+    def capped_fraction(self) -> float:
+        """Share of points capped at REF_UPPER × reference (branches, overlaps)."""
+        return float(self.capped.mean())
 
     @property
     def percent_stenosis(self) -> np.ndarray:
@@ -156,6 +204,27 @@ class QCAResult:
         return float(self.diameters.fallback.mean())
 
 
+def robust_reference(s: np.ndarray, d: np.ndarray) -> np.ndarray:
+    """Healthy reference diameter along the vessel (same units as ``d``).
+
+    A Theil–Sen line (insensitive to up to ~29% outliers) is refined by least-squares refits on
+    the points within [REF_LOWER, REF_UPPER] × the current line, at most REF_MAX_ITER times.
+    Points below are narrowing; points above are side branches or overlapping vessels, which
+    the M1 estimator (made for synthetic profiles without them) does not exclude.
+    """
+    slope, intercept, _, _ = theilslopes(d, s)
+    fit = intercept + slope * s
+    for _ in range(REF_MAX_ITER):
+        keep = (d >= REF_LOWER * fit) & (d <= REF_UPPER * fit)
+        if keep.sum() < 3:
+            break
+        new = np.polyval(np.polyfit(s[keep], d[keep], 1), s)
+        if np.allclose(new, fit):
+            break
+        fit = new
+    return np.maximum(fit, MIN_DIAMETER_PX)
+
+
 def trim_ends(
     centerline: Centerline, diameters: DiameterProfile, trim_px: float
 ) -> tuple[Centerline, DiameterProfile]:
@@ -173,6 +242,7 @@ def trim_ends(
         left_px=diameters.left_px[keep],
         right_px=diameters.right_px[keep],
         fallback=diameters.fallback[keep],
+        branch=diameters.branch[keep],
     )
     return cl, d
 
@@ -197,11 +267,16 @@ def qca_from_centerline(
     if trim_diameters > 0:
         trim = trim_diameters * float(np.median(diameters.diameter_px))
         centerline, diameters = trim_ends(centerline, diameters, trim)
+    d = diameters.diameter_px
+    d_ref = robust_reference(centerline.s, d)
+    capped = d > REF_UPPER * d_ref
+    d_used = np.where(capped, REF_UPPER * d_ref, d)
     profile = VesselProfile(
         s=mm_to_m(centerline.s * scale),
-        r=mm_to_m(diameters.diameter_px * scale) / 2.0,
+        r=mm_to_m(d_used * scale) / 2.0,
+        r_ref=mm_to_m(d_ref * scale) / 2.0,
     )
-    return QCAResult(centerline, diameters, scale, assumed, profile)
+    return QCAResult(centerline, diameters, scale, assumed, profile, capped)
 
 
 def run_qca(

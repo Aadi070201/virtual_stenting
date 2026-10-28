@@ -22,6 +22,7 @@ from vstent.physics.solver import FFRResult, PhysicsParams, solve_ffr
 from vstent.units import m_to_mm, pa_to_mmhg
 
 MAX_FALLBACK_FRACTION = 0.10
+MAX_CAPPED_FRACTION = 0.10
 
 
 class Segmenter(Protocol):
@@ -106,12 +107,23 @@ def analyse_vessel(
             f"{qca.fallback_fraction:.0%} of diameters used the distance-transform fallback "
             "(edges not found along the normal)"
         )
+    if qca.capped_fraction > MAX_CAPPED_FRACTION:
+        warnings.append(
+            f"{qca.capped_fraction:.0%} of diameters exceeded 1.15 × the reference (side "
+            "branches or overlapping vessels) and were capped"
+        )
     if solver.r_micro_clamped:
         warnings.append("R_micro hit its lower bound during calibration")
     s = ffr = None
     if surrogate is not None:
         s, ffr = surrogate.predict_profile(qca.profile, solver.pa, solver.pv, solver.r_micro)
         warnings += range_warnings(qca.profile, solver.pa, solver.pv, sampling)
+        floor = solver.pv / solver.pa  # FFR cannot fall below Pv / Pa (zero flow)
+        if ffr.min() < floor:
+            warnings.append(
+                f"Surrogate FFR reaches {ffr.min():.2f}, below the physical minimum "
+                f"Pv/Pa = {floor:.2f}: the input is far outside what it was trained on"
+            )
     return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings)
 
 

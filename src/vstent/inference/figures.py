@@ -7,6 +7,7 @@ from matplotlib.patches import Rectangle
 
 from vstent.inference.pipeline import VesselAnalysis
 from vstent.plotting import (
+    AXIS,
     BAND,
     INK_MUTED,
     INK_SECONDARY,
@@ -61,19 +62,28 @@ def plot_analysis(
 
     s_mm = qca.s_mm
     style_axes(ax_d)
-    ax_d.plot(s_mm, qca.diameter_mm, color=SERIES_1, lw=1.6, label="Lumen", zorder=3)
+    if qca.capped.any():
+        ax_d.plot(
+            s_mm, qca.measured_diameter_mm, color=AXIS, lw=0.8, label="Measured (raw)",
+            zorder=2,
+        )  # fmt: skip
+    ax_d.plot(s_mm, qca.diameter_mm, color=SERIES_1, lw=1.6, label="Lumen (used)", zorder=3)
     ax_d.plot(
         s_mm, qca.reference_diameter_mm, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)),
         label="Reference", zorder=2,
     )  # fmt: skip
     ax_d.axvline(s_mm[qca.mld_index], color=SERIES_2, lw=0.8, zorder=1)
-    ax_d.set_ylim(0, max(qca.diameter_mm.max(), qca.reference_diameter_mm.max()) * 1.15)
+    # raw spikes may run off the top; the axis is scaled to what the physics uses
+    ax_d.set_ylim(0, max(qca.diameter_mm.max(), qca.reference_diameter_mm.max()) * 1.6)
     ax_d.set_xlabel("Distance from start (mm)", fontsize=8, color=INK_SECONDARY)
     ax_d.set_ylabel("Diameter (mm)", fontsize=8, color=INK_SECONDARY)
     ax_d.legend(frameon=False, fontsize=7.5, labelcolor=INK_SECONDARY, loc="lower left")
 
     style_axes(ax_f)
-    lo = min(0.5, float(solver.ffr.min()) - 0.05)
+    lowest = float(solver.ffr.min())
+    if analysis.surrogate_ffr is not None:
+        lowest = min(lowest, float(analysis.surrogate_ffr.min()))
+    lo = min(0.5, lowest - 0.05)
     ax_f.axhspan(lo, CUTOFF, color=BAND, zorder=0.5)
     ax_f.plot(m_to_mm(solver.s), solver.ffr, color=INK_SECONDARY, lw=2.0, label="Solver", zorder=2)
     if analysis.surrogate_ffr is not None:

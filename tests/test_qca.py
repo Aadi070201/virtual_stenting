@@ -121,3 +121,61 @@ def test_longest_path_starts_at_wider_end():
         tube = render_tube(SHAPE, pts, s, diameter, noise_std=0.0)
         a, _ = longest_path_endpoints(tube.image >= 0.5)
         assert np.hypot(a[0] - wide_end[0], a[1] - wide_end[1]) < 15
+
+
+def test_side_branch_does_not_inflate_diameter():
+    ref = 10.0
+    pts, s = sine_centerline((0.0, 0.0), 240.0, amplitude_px=0.0)
+    pts = pts + np.array([200.0, 80.0])  # horizontal vessel, row 200
+    main = render_tube(SHAPE, pts, s, np.full(s.size, ref), noise_std=0.0, blur_sigma=0.8)
+    bpts = np.stack([np.linspace(200.0, 60.0, 2000), np.full(2000, 200.0)], axis=1)
+    bs = np.linspace(0.0, 140.0, 2000)
+    branch = render_tube(SHAPE, bpts, bs, np.full(2000, 8.0), noise_std=0.0, blur_sigma=0.8)
+    image = np.maximum(main.image, branch.image)
+    res = run_qca(image, pts[0], pts[-1])
+    assert res.diameters.branch.any()
+    near_branch = np.abs(res.centerline.points[:, 1] - 200.0) < 6
+    assert near_branch.any()
+    assert np.all(res.diameters.diameter_px[near_branch] < 1.3 * ref)
+    assert np.median(np.abs(res.diameters.diameter_px - ref)) < 0.5
+
+
+def test_centreline_outside_vessel_is_interpolated():
+    from vstent.imaging.centerline import Centerline
+    from vstent.imaging.qca import measure_diameters
+
+    tube = _tube(0.0, 0.0, 12.0, 1.0, 0.0, severity=0.0)
+    cl = trace_centerline(tube.image >= 0.5, tube.points[0], tube.points[-1])
+    pts = cl.points.copy()
+    mid = len(pts) // 2
+    pts[mid] = pts[mid] + 15.0 * cl.normals[mid]  # push one point well outside the tube
+    d = measure_diameters(tube.image, Centerline(points=pts, s=cl.s))
+    assert d.fallback[mid]
+    assert d.diameter_px[mid] == pytest.approx(12.0, abs=1.0)
+
+
+def test_robust_reference_ignores_spikes_and_dips():
+    from vstent.imaging.qca import robust_reference
+
+    s = np.arange(300.0)
+    d = 12.0 - 0.01 * s
+    d_meas = d.copy()
+    d_meas[40:55] = 40.0  # overlap / branch spikes
+    d_meas[150:180] = 5.0  # stenosis
+    ref = robust_reference(s, d_meas)
+    np.testing.assert_allclose(ref, d, atol=0.3)
+
+
+def test_crossing_vessel_is_capped_not_a_stenosis():
+    ref = 10.0
+    pts, s = sine_centerline((0.0, 0.0), 260.0, amplitude_px=0.0)
+    pts = pts + np.array([200.0, 70.0])
+    main = render_tube(SHAPE, pts, s, np.full(s.size, ref), noise_std=0.0, blur_sigma=0.8)
+    cpts = np.stack([np.linspace(60.0, 340.0, 2000), np.full(2000, 200.0)], axis=1)
+    cs = np.linspace(0.0, 280.0, 2000)
+    cross = render_tube(SHAPE, cpts, cs, np.full(2000, 10.0), noise_std=0.0, blur_sigma=0.8)
+    res = run_qca(np.maximum(main.image, cross.image), pts[0], pts[-1])
+    assert res.capped.any() and res.capped_fraction < 0.2
+    np.testing.assert_allclose(res.reference_diameter_mm / res.mm_per_px, ref, atol=0.5)
+    assert np.all(res.diameter_mm <= 1.15 * res.reference_diameter_mm + 1e-9)
+    assert res.max_percent_stenosis < 10.0
