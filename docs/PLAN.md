@@ -179,12 +179,12 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 
 ## M8: Reports, docs, demo
 
-- [ ] `vstent demo`: runs a synthetic case end-to-end (profile → FFR → optimise → report) and writes `reports/demo/`
-- [ ] `reports/mvp_report.md`, **assembled by a script** from the generated report files (no hand-typed numbers): physics checks, dataset card summary, surrogate metrics, ONNX benchmark, segmentation Dice, QCA test results, optimiser tests, limitations, Phase 2 next steps
-- [ ] `docs/INVENTION_NOTES.md`: dated technical notes on potentially novel elements, for discussion with a patent attorney. Candidates: the monotone-increment surrogate head, the optimiser formulation, planned sim-to-real training. Note that this is a record of ideas, not a patent draft or legal advice.
-- [ ] README: setup, commands, screenshots, limitations, disclaimer
-- [ ] Fresh-clone test: follow the README from scratch in a new directory; fix anything that breaks
-- [ ] All checks pass; `git tag v0.1.0`
+- [x] `vstent demo`: runs a synthetic case end-to-end (profile → FFR → optimise → report) and writes `reports/demo/`
+- [x] `reports/mvp_report.md`, **assembled by a script** from the generated report files (no hand-typed numbers): physics checks, dataset card summary, surrogate metrics, ONNX benchmark, segmentation Dice, QCA test results, optimiser tests, limitations, Phase 2 next steps
+- [x] `docs/INVENTION_NOTES.md`: dated technical notes on potentially novel elements, for discussion with a patent attorney. Candidates: the monotone-increment surrogate head, the optimiser formulation, planned sim-to-real training. Note that this is a record of ideas, not a patent draft or legal advice.
+- [x] README: setup, commands, screenshots, limitations, disclaimer
+- [x] Fresh-clone test: follow the README from scratch in a new directory; fix anything that breaks
+- [x] All checks pass; `git tag v0.1.0`
 
 ---
 

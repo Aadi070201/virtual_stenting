@@ -257,3 +257,49 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - The click-to-select component cannot be exercised by `AppTest`; the same path is reachable through the auto-path button and the manual form, which are tested.
 - Browser rendering time is not part of the latency numbers.
 - The app runs without a DICOM viewer: multi-frame DICOM uses frame 1, and no frame selection or ECG gating is offered.
+
+---
+
+## 2026-10-28 — M8: reports, docs, demo; MVP complete (v0.1.0)
+
+**Done**
+- **`vstent demo`** (`reporting/demo.py`): the tandem-lesion preset end to end (profile → FFR → plan optimisation → best plan → post-PCI FFR) → `reports/demo/` (Markdown, JSON case report, figure). It uses the exported surrogate if present, else the solver, and says so.
+- **`vstent qca-synthetic`** (`imaging/qca_validation.py`): the five synthetic QCA cases as a report; `tests/test_qca.py` imports the same cases.
+- **`vstent mvp-report`** (`reporting/mvp.py`) → `reports/mvp_report.md`, assembled only from the generated JSON reports:
+  - the target table, facts and provenance per source;
+  - fixed limitations;
+  - the Phase 2 list parsed from the plan.
+
+  Missing reports are listed rather than skipped.
+- **`docs/INVENTION_NOTES.md`:** dated notes, with commit references, on the monotone-increment head, the constrained optimiser with solver re-check, and the two-sided QCA reference with capping, plus the planned sim-to-real idea. Each lists the prior art to check, with a clear "not legal advice" and disclosure caution.
+- **README** rewritten: screenshots (app in synthetic and image mode), setup, what works without models, full reproduction steps with timings, the command table, app guide and limitations.
+- **Fresh-clone test** (`git clone` into a new folder, `uv sync --all-extras`, README steps):
+  - checks: 157 passed;
+  - `physics-report`, `qca-synthetic` and `demo` all run; the demo falls back to the solver without trained models;
+  - `vstent app` serves and works in synthetic mode with solver planning (driven in Edge: no exceptions, no console errors).
+
+**Bugs found and fixed in M8**
+- `vstent physics-report` crashed when its output went to a Windows pipe in code page cp1252 ("→" in a check name). The CLI now replaces unencodable characters instead of crashing, for every command; regression test added.
+- A real-browser run hit "partially initialized module 'pandas'". Plotly and `st.dataframe` import pandas / pyarrow lazily on first use, and a click during that first import interrupted it. The app now imports both up front; re-checked on a fresh server.
+- Manual stents could be much larger than the vessel without warning (e.g. 3.0 mm in a ~1 mm distal segment, which the model then sees as a sudden widening). The app and the report now warn when a stent exceeds the planner's 1.1 × distal-reference rule.
+- The MVP report showed no creation time for the demo (field location); fixed and tested.
+
+**Final metrics** (all from `reports/mvp_report.md`, assembled at a clean commit; every source report was generated at a clean commit)
+- **21 of 21 acceptance targets met, M1–M7.** Highlights:
+  - surrogate test distal-FFR MAE 0.0013 (≤ 0.015);
+  - ONNX parity 5.4e-07;
+  - segmentation val Dice 0.8325 (≥ 0.75; stretch 0.80 met); test 0.7925;
+  - QCA synthetic worst-case median diameter error 0.10 px (≤ 0.7);
+  - planner, 5,000 candidates: 0.959 s (< 1 s);
+  - app stent-control updates ≤ 179 ms (< 300 ms).
+- Demo: distal FFR 0.705 → 0.976 (solver) with 3.25 × 12 mm + 3.25 × 12 mm; planning 0.37 s.
+- Tests: 162 in total (159 fast + 3 slow).
+
+**Open issues / not done**
+- **M3 stretch:** the 5-seed ensemble with uncertainty was not done.
+- **Thin margins:**
+  - the planner's 5,000-candidate time is ≈ 4% under target;
+  - the app's worst update varies between runs (80–180 ms in image mode).
+- **Physics limits:** all of them are recorded in the MVP report and `docs/PHYSICS.md`, in particular single vessel without side branches, synthetic-only surrogate validation, an assumed pixel size on ARCADE, and 2D overlap artefacts.
+- **Superseded run:** the first M3 run folder (`runs/unet1d-20261028-091227`) is still on disk (git-ignored).
+- **Phase 2** has not been started; it needs explicit approval (CLAUDE.md).
