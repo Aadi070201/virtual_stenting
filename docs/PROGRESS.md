@@ -303,3 +303,15 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - **Physics limits:** all of them are recorded in the MVP report and `docs/PHYSICS.md`, in particular single vessel without side branches, synthetic-only surrogate validation, an assumed pixel size on ARCADE, and 2D overlap artefacts.
 - **Superseded run:** the first M3 run folder (`runs/unet1d-20261028-091227`) is still on disk (git-ignored).
 - **Phase 2** has not been started; it needs explicit approval (CLAUDE.md).
+
+---
+
+## 2026-10-28 — Phase 2 approved and planned
+
+The human approved Phase 2 ("go ahead with phase 2"). The backlog was turned into milestones P1–P8 with tasks and acceptance criteria in `docs/PLAN.md`; the ordering rationale is D27. CLAUDE.md now records the approval and that [needs human] items wait for the human. No Phase 2 code yet.
+
+**Needs the human, in time:**
+- **P6:** register for ImageCAS (Kaggle) and / or ASOCA (grand-challenge.org) and accept their licences; decide on a compute budget for 3D CFD.
+- **P4:** a hospital partner and ethics approval for comparison with wire FFR.
+- **P7:** de-identified, licensed cine DICOM examples, if available.
+- **P8:** a regulatory adviser to review the drafts.

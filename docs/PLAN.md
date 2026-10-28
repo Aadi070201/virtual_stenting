@@ -188,7 +188,7 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 
 ---
 
-## Phase 2 backlog (do NOT start without human approval)
+## Phase 2 backlog (approved by the human on 2026-10-28; worked through as P1–P8 below)
 
 - 3D CFD labels: coronary trees from ImageCAS / ASOCA, steady hyperemic simulations (SimVascular or OpenFOAM); multi-fidelity surrogate training
 - Graph neural network / graph transformer surrogate for vessel trees with side branches; flow split by Murray's law
@@ -198,3 +198,135 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 - Calibrated uncertainty and conformal intervals; grey-zone flagging
 - Retrospective clinical validation against wire FFR with a partner hospital (needs ethics approval; human-led)
 - Regulatory groundwork: IEC 62304 software lifecycle docs, ISO 14971 risk file
+
+---
+
+## Phase 2 plan
+
+Order: what removes the biggest known weakness, and can run on this laptop (RTX 3060 6 GB, Ryzen 7 6800H) without outside help, comes first. Items that need data registrations, paid compute or a hospital partner come later and are marked **[needs human]**. The MVP stays tagged `v0.1.0`. Phase 2 milestones keep the same rules: tests, reports from clean commits, decisions, progress log, no patient data in the repo, and a check-in with the human after each milestone.
+
+| # | Milestone | Main weakness addressed | Needs from the human |
+|---|---|---|---|
+| P1 | Uncertainty and grey-zone flagging | single numbers without confidence | — |
+| P2 | Vessel trees with side branches (physics + image) | single-tube physics overstates loss in long paths | — |
+| P3 | Tree surrogate (graph network) + ONNX | surrogate only handles single tubes | — |
+| P4 | Clinical-validation readiness (protocol + analysis tools) | no comparison with wire FFR | a hospital partner, ethics approval (later) |
+| P5 | Projection geometry and two-view 3D reconstruction | assumed pixel size, foreshortening, overlap | multi-view DICOM data (later; built on synthetic first) |
+| P6 | 3D CFD labels and multi-fidelity training | reduced-order model error unknown | dataset registration (ImageCAS / ASOCA), compute budget |
+| P7 | Cine angiography: frame selection and frame-count flow | fixed hyperemic velocity for everyone | cine DICOM examples |
+| P8 | Sim-to-real angiograms and regulatory groundwork documents | domain gap; regulatory path | regulatory adviser to review |
+
+## P1: Uncertainty and grey-zone flagging
+
+- [ ] **Model uncertainty:** an ensemble of 5 surrogates (M3 config, seeds 0–4; resumable training). The mean and spread are exported to ONNX and used by `SurrogateRunner`.
+- [ ] **Split-conformal 90% intervals** for distal FFR, calibrated on `val`, reported on `test` and `ood`.
+- [ ] **Input-uncertainty propagation:** Monte Carlo through the solver over the assumptions that matter most, giving a 90% FFR interval per case:
+  - pixel size (±10% when assumed);
+  - hyperemic velocity (its sampling range);
+  - Pa / Pv;
+  - QCA diameter error (from `reports/qca_synthetic.md`).
+- [ ] **Grey-zone flag:** a case or plan is flagged when its interval crosses 0.80 (pre-PCI) or the planner target (post-PCI). Shown in the app, the case report and `vstent analyse`.
+- [ ] Report `reports/uncertainty.md`.
+
+**Done when:**
+- conformal coverage on `test` is 88–92% for a 90% target;
+- OOD coverage is reported (no target);
+- the ensemble-mean distal MAE is ≤ the single model's;
+- the app shows intervals and flags, while slider updates stay < 300 ms.
+
+The report must state that model intervals cover only surrogate-vs-solver error, and input intervals cover only the listed assumptions.
+
+## P2: Vessel trees with side branches
+
+- [ ] **Tree physics** (`physics/tree.py`):
+  - segments use the M1 viscous and expansion coefficients;
+  - each terminal branch gets one outlet resistance, split from the total microvascular resistance by Murray's law (flow ∝ diameter^k, k configurable, default 2.33);
+  - calibrated so the stenosis-free tree carries the reference flow;
+  - the steady nonlinear network is solved by Newton iteration, giving FFR at every node.
+- [ ] **Sanity checks:**
+  - a tree with one segment reproduces the M1 solver exactly;
+  - mass is conserved at every junction;
+  - a healthy tree splits flow as Murray's law;
+  - adding a side branch raises distal main-vessel FFR for the same upstream geometry.
+- [ ] **Synthetic tree generator:** a main vessel plus 1–4 side branches, with lesions anywhere, including at bifurcations; dataset card.
+- [ ] **Image path:** QCA on the skeleton *tree* between a start point and every reachable end point (or user-chosen branches) → tree profile → tree physics. Adds `vstent analyse --tree` and virtual stents on a branch path.
+- [ ] Re-run the ARCADE gallery with tree physics and compare with the single-path version.
+
+**Done when:**
+- all sanity checks pass;
+- tree solver throughput is ≥ 1,000 trees/s;
+- on the ARCADE gallery, cases with extreme single-path FFR (< 0.30 without a severe focal lesion) are reported before and after. There is no target; this is a qualitative check that the side-branch effect behaves plausibly.
+
+## P3: Tree surrogate (graph network) + ONNX
+
+- [ ] A graph network over segment graphs: message passing in plain PyTorch (no extra graph library), with node-wise FFR from a head that is monotone along the flow (generalising M3).
+- [ ] Training on synthetic trees (resumable); evaluation against the tree solver; OOD trees.
+- [ ] ONNX export with padded graphs (fixed maximum nodes / edges) plus a parity test. Integration in the runner, the planner (stents on branch paths) and the app.
+
+**Done when:**
+- node-wise FFR MAE ≤ 0.015 and distal MAE ≤ 0.015 on test trees;
+- ONNX parity < 1e-4;
+- the planner on trees meets its speed target (to be set from P2 measurements).
+
+## P4: Clinical-validation readiness [needs human: partner, ethics approval]
+
+- [ ] `docs/validation/PROTOCOL.md` template:
+  - retrospective design;
+  - wire FFR (or iFR) as the reference;
+  - primary endpoint (agreement at 0.80, AUC);
+  - sample-size calculation;
+  - inclusion / exclusion criteria;
+  - blinding;
+  - analysis plan.
+- [ ] Data specification:
+  - required DICOM fields (cine runs, angles, distances, pixel spacing);
+  - pressure-wire position and values;
+  - a de-identification checklist;
+  - local-only processing: no patient data ever enters this repository.
+- [ ] `vstent validate --manifest <csv>`: runs the pipeline on a local, de-identified case list and reports Bland–Altman, AUC, sensitivity / specificity and per-vessel tables. Tested only on synthetic stand-in cases.
+
+**Done when:** the protocol and data specification exist, and the validation tool runs end to end on synthetic stand-in data. Real data only after the human confirms ethics approval and a data agreement.
+
+## P5: Projection geometry and two-view 3D reconstruction
+
+- [ ] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
+- [ ] Synthetic 3D trees projected into two views with known geometry, as test data.
+- [ ] Epipolar matching of two-view centrelines → 3D centreline; diameters from both views; lengths free of foreshortening.
+
+**Done when:**
+- on synthetic two-view pairs, the 3D centreline error is ≤ 1 mm (median) and the length error is ≤ 5%;
+- the length error of single-view QCA vs two-view is reported.
+
+## P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute]
+
+- [ ] Coronary trees from ImageCAS and / or ASOCA (registration and licence acceptance by the human).
+- [ ] Surface and volume meshing, then steady hyperemic CFD (OpenFOAM or SimVascular; the choice is recorded). Verified on an analytic Poiseuille pipe and a published stenosis benchmark.
+- [ ] Reduced-order vs CFD comparison: the first measurement of the reduced-order model's error.
+- [ ] Multi-fidelity surrogate: pre-trained on reduced-order labels, fine-tuned on CFD labels.
+
+**Done when:**
+- verification cases are within 5% of the reference;
+- the reduced-order vs CFD error is reported for every simulated case;
+- the multi-fidelity surrogate beats the reduced-order model against CFD on held-out cases, or the real result is reported.
+
+## P7: Cine angiography
+
+- [ ] Multi-frame DICOM: end-diastolic frame selection (ECG if present, image-based otherwise).
+- [ ] TIMI frame count → a patient-specific flow velocity instead of a fixed hyperemic velocity, with its uncertainty feeding P1.
+
+**Done when:** frame selection and frame counting are tested on synthetic cine sequences, and on real cine examples if the human supplies de-identified, licensed ones.
+
+## P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review]
+
+- [ ] Render synthetic angiograms from 3D trees (projection, contrast, noise, overlap) to train and test segmentation and angiogram → FFR models.
+- [ ] Regulatory groundwork drafts (not regulatory advice):
+  - intended-use statement;
+  - IEC 62304 software safety class rationale;
+  - software development plan;
+  - requirements and architecture;
+  - SOUP list;
+  - ISO 14971 hazard analysis draft.
+
+**Done when:**
+- rendered angiograms improve segmentation on the ARCADE test split, or the real result is reported;
+- the regulatory drafts exist and are marked for review by a qualified person.

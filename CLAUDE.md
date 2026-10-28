@@ -32,7 +32,7 @@ The detailed, step-by-step plan with acceptance criteria is in **`docs/PLAN.md`*
 - credentials, paid services or cloud accounts are needed
 - an acceptance criterion is still not met after 2 serious attempts (write the analysis and options in `PROGRESS.md` first)
 - anything would involve real patient data
-- you think Phase 2 work should begin
+- a Phase 2 item is marked [needs human] and its prerequisite is not confirmed
 
 ## Ground rules
 
@@ -46,7 +46,7 @@ The detailed, step-by-step plan with acceptance criteria is in **`docs/PLAN.md`*
 - **Generic stent catalogue only** (diameters and lengths). No commercial brand names.
 - **Keep it simple first.** Get a working, tested version, then improve. No notebooks as source of truth (`notebooks/` is for exploration only).
 - **No GPU? Don't block.** Train with smaller configs on CPU, note it in `PROGRESS.md`, and continue.
-- **Do not start Phase 2** (listed at the end of `PLAN.md`) without explicit approval.
+- **Phase 2** was approved by the human on 2026-10-28 and is planned as P1–P8 at the end of `PLAN.md`. Items marked **[needs human]** wait for the human (data registration, compute, partners). Check in with the human after each Phase 2 milestone.
 
 ## Tech stack
 

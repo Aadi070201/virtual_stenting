@@ -173,3 +173,17 @@ The M1 estimator is left unchanged for synthetic profiles, which have no branche
   Missing reports are listed rather than skipped. Each report is generated from a clean commit and committed before the next one is generated, so every provenance line reads `dirty: False`.
 **Reason:** the plan requires no hand-typed numbers; the demo must work on a fresh clone, where no trained model exists (models are never committed).
 **Alternatives:** a notebook (not a source of truth here); templated numbers in Markdown (drift from the data).
+
+### D27 — Phase 2 ordering (2026-10-28)
+**Decision:** Phase 2 runs as milestones P1–P8 (`docs/PLAN.md`), in this order:
+- **P1, uncertainty:** the quickest step and the one that makes every number safer to read.
+- **P2, P3, vessel trees with side branches** (physics, image path, graph surrogate): they fix the largest known modelling error seen on ARCADE.
+- **P4, validation readiness:** tools and protocol only, until a hospital partner exists.
+- **P5, two-view geometry:** built on synthetic data first.
+- **P6, 3D CFD labels** and multi-fidelity training.
+- **P7, cine** angiography.
+- **P8, sim-to-real** angiograms and regulatory drafts.
+
+Items that depend on the human (data registration, compute budget, a hospital partner, a regulatory reviewer) are marked **[needs human]**.
+**Reason:** the MVP showed three main gaps: no confidence information, single-tube physics without side branches, and no comparison with measured FFR. P1–P3 can be done locally and remove the first two. The third needs a partner, so P4 prepares everything that can be prepared without patient data.
+**Alternatives:** starting with 3D CFD (the original Phase 2 headline). It needs dataset registrations, meshing and simulation tooling, and probably more compute than this laptop for a training-sized dataset, so it would block on decisions only the human can make.
