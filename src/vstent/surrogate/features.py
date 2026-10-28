@@ -20,6 +20,7 @@ from vstent.units import m_to_mm, pa_to_mmhg
 
 N_POINTS = 256
 FEATURE_VERSION = 1
+NORM_STATS = "norm_stats.json"
 POINT_CHANNELS = ("r_over_r0", "log_r_over_r0", "s_over_L", "d_area_ratio_ds_per_mm")
 GLOBAL_FEATURES = ("length_mm", "r_ref0_mm", "pa_mmhg", "pv_mmhg", "log_r_micro")
 
@@ -62,6 +63,19 @@ class RawInputs:
             pa=np.array([pa], dtype=np.float64),
             pv=np.array([pv], dtype=np.float64),
             r_micro=np.array([r_micro], dtype=np.float64),
+        )
+
+    def __len__(self) -> int:
+        return np.atleast_2d(self.r).shape[0]
+
+    def subset(self, idx) -> "RawInputs":
+        """Vessels selected by an index, slice or boolean mask (always 2-D / 1-D arrays)."""
+        idx = np.atleast_1d(np.arange(len(self))[idx])
+        return type(self)(
+            *(
+                (np.atleast_2d if k in ("r", "r_ref") else np.atleast_1d)(getattr(self, k))[idx]
+                for k in self.__dataclass_fields__
+            )
         )
 
 

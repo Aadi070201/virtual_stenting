@@ -35,12 +35,11 @@ from vstent.checkpoints import (
 )
 from vstent.config import CONFIG_FILENAME, StrictModel, git_info, load_config, save_run_metadata
 from vstent.surrogate.dataset import SurrogateDataset, load_raw
-from vstent.surrogate.features import NormStats
+from vstent.surrogate.features import NORM_STATS, NormStats
 from vstent.surrogate.model import FFRUNet, ModelConfig, count_parameters
 
 KIND = "surrogate"
 CHECKPOINT = "best.pt"
-NORM_STATS = "norm_stats.json"
 METRICS = "metrics.csv"
 SUMMARY = "summary.json"
 

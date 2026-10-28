@@ -75,7 +75,8 @@ vstent/
                         # baseline.py, evaluate.py, export.py
     imaging/            # segment.py, centerline.py, qca.py
     planning/           # stent.py, optimizer.py
-    inference/          # onnx_runtime.py, pipeline.py
+    inference/          # onnx_runtime.py (SurrogateRunner, torch-free), benchmark.py (ONNX
+                        # latency + INT8 check report), pipeline.py
     app/                # streamlit_app.py
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
@@ -84,7 +85,8 @@ vstent/
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
-  data/  models/  runs/ # git-ignored
+  data/  models/  runs/ # git-ignored; models/surrogate/<run-name>/{surrogate.onnx,
+                        # norm_stats.json, config.yaml, export_meta.json}
   checkpoints/          # git-ignored; checkpoints/<run-name>/{last.pt, state.json, STOP}
 ```
 
@@ -105,7 +107,7 @@ uv run vstent train-surrogate --resume <run-name>   # continue a stopped / inter
 uv run vstent stop <run-name>                       # pause a running training after this epoch
 uv run vstent checkpoints                           # list resumable runs + resume commands
 uv run vstent eval-surrogate --run runs/<name>
-uv run vstent export-surrogate --run runs/<name>
+uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
 uv run vstent data arcade
 uv run vstent train-seg --config configs/seg.yaml
 uv run vstent demo              # end-to-end synthetic case → report

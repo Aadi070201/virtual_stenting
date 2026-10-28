@@ -182,9 +182,27 @@ def eval_surrogate(
 
 
 @app.command()
-def export_surrogate(run: RunOpt) -> None:
-    """Export a trained surrogate to ONNX."""
-    _not_implemented("M4")
+def export_surrogate(
+    run: RunOpt,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Model directory (default: models/surrogate/<run-name>)."),
+    ] = None,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write onnx_benchmark.md.")
+    ] = Path("reports"),
+) -> None:
+    """Export a trained surrogate to ONNX, check parity with torch and benchmark it on CPU."""
+    from vstent.inference.benchmark import run_benchmark
+    from vstent.surrogate.export import export_run
+
+    meta = export_run(run, out, log=typer.echo)
+    report = run_benchmark(meta["out_dir"], report_dir, export_meta=meta, log=typer.echo)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Model in {meta['out_dir']}; wrote {report_dir / 'onnx_benchmark.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
 
 
 @data_app.command()

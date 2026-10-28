@@ -52,7 +52,7 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent stop <run-name>` / `vstent checkpoints` | pause a training after the current epoch / list resumable runs | — |
 | `vstent train-surrogate --resume <run-name>` | continue a stopped or interrupted training exactly | M3 |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver | M3 |
-| `vstent export-surrogate --run runs/<name>` | export the surrogate to ONNX | M4 |
+| `vstent export-surrogate --run runs/<name>` | export to ONNX (`models/surrogate/<name>/`), check parity with torch, CPU benchmark → `reports/onnx_benchmark.md` | M4 |
 | `vstent data arcade` | download the ARCADE dataset | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation | M5 |
 | `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
