@@ -1,0 +1,131 @@
+{
+  "targets": [
+    {
+      "metric": "Median abs. diameter error (worst case)",
+      "value": "0.10 px",
+      "target": "\u2264 0.7 px",
+      "passed": true
+    },
+    {
+      "metric": "MLD location error (worst case)",
+      "value": "1.9 px",
+      "target": "\u2264 3 px",
+      "passed": true
+    },
+    {
+      "metric": "DS error (worst case)",
+      "value": "0.7 points",
+      "target": "within \u00b17 points",
+      "passed": true
+    }
+  ],
+  "rows": [
+    {
+      "case": {
+        "angle_deg": 0.0,
+        "amplitude_px": 0.0,
+        "ref_diameter_px": 12.0,
+        "blur_sigma_px": 1.0,
+        "noise_std": 0.03
+      },
+      "median_abs_diameter_error_px": 0.08470455035567426,
+      "p95_abs_diameter_error_px": 0.21708337653516807,
+      "median_diameter_bias_px": -0.003746533393858442,
+      "mld_location_error_px": 1.052334011990189,
+      "mld_px": 4.838054777681828,
+      "true_mld_px": 4.800054433270388,
+      "max_ds_pct": 59.540265139691485,
+      "ds_error_pct": -0.4597348603085152,
+      "fallback_fraction": 0.0,
+      "traced_length_fraction": 0.9143995597939656,
+      "passed": true
+    },
+    {
+      "case": {
+        "angle_deg": 20.0,
+        "amplitude_px": 25.0,
+        "ref_diameter_px": 12.0,
+        "blur_sigma_px": 1.0,
+        "noise_std": 0.03
+      },
+      "median_abs_diameter_error_px": 0.055570250749589434,
+      "p95_abs_diameter_error_px": 0.171065029105824,
+      "median_diameter_bias_px": 0.010765216127039068,
+      "mld_location_error_px": 1.6888198298377703,
+      "mld_px": 4.870971816778184,
+      "true_mld_px": 4.800045239208931,
+      "max_ds_pct": 59.33559880871856,
+      "ds_error_pct": -0.664401191281442,
+      "fallback_fraction": 0.0,
+      "traced_length_fraction": 0.9155188877290509,
+      "passed": true
+    },
+    {
+      "case": {
+        "angle_deg": -35.0,
+        "amplitude_px": 30.0,
+        "ref_diameter_px": 10.0,
+        "blur_sigma_px": 1.2,
+        "noise_std": 0.05
+      },
+      "median_abs_diameter_error_px": 0.10452531129121745,
+      "p95_abs_diameter_error_px": 0.2976049102522238,
+      "median_diameter_bias_px": 0.004913751745596162,
+      "mld_location_error_px": 0.09315907548731127,
+      "mld_px": 3.9347248218953608,
+      "true_mld_px": 4.000008404663707,
+      "max_ds_pct": 60.53342701581998,
+      "ds_error_pct": 0.5334270158199814,
+      "fallback_fraction": 0.0,
+      "traced_length_fraction": 0.9487193693237207,
+      "passed": true
+    },
+    {
+      "case": {
+        "angle_deg": 60.0,
+        "amplitude_px": 20.0,
+        "ref_diameter_px": 14.0,
+        "blur_sigma_px": 1.0,
+        "noise_std": 0.03
+      },
+      "median_abs_diameter_error_px": 0.0557216420769695,
+      "p95_abs_diameter_error_px": 0.15765806287527218,
+      "median_diameter_bias_px": 0.010339765250684252,
+      "mld_location_error_px": 1.9098008853256776,
+      "mld_px": 5.613897600769997,
+      "true_mld_px": 5.600000375737546,
+      "max_ds_pct": 59.8345341910457,
+      "ds_error_pct": -0.16546580895430196,
+      "fallback_fraction": 0.0,
+      "traced_length_fraction": 0.9030228114897239,
+      "passed": true
+    },
+    {
+      "case": {
+        "angle_deg": 100.0,
+        "amplitude_px": 35.0,
+        "ref_diameter_px": 8.0,
+        "blur_sigma_px": 1.0,
+        "noise_std": 0.03
+      },
+      "median_abs_diameter_error_px": 0.054257962852716,
+      "p95_abs_diameter_error_px": 0.15412339949401102,
+      "median_diameter_bias_px": 0.0021829450502997005,
+      "mld_location_error_px": 1.351645659070435,
+      "mld_px": 3.222390443086624,
+      "true_mld_px": 3.2000269024986556,
+      "max_ds_pct": 59.6301478579005,
+      "ds_error_pct": -0.36985214209949646,
+      "fallback_fraction": 0.0,
+      "traced_length_fraction": 0.9388208195993902,
+      "passed": true
+    }
+  ],
+  "provenance": {
+    "git_commit": "24acff05b518217d6bf9d3c0947e6bb29a7f08b4",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-10-28T16:37:38+00:00"
+  },
+  "targets_met": true
+}
