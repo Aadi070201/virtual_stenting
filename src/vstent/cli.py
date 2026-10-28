@@ -255,6 +255,177 @@ def train_seg(
 
 
 @app.command()
+def eval_seg(
+    run: RunOpt,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write seg_eval.md.")
+    ] = Path("reports"),
+    device: Annotated[str, typer.Option("--device", help="auto, cpu or cuda.")] = "auto",
+) -> None:
+    """Evaluate a segmentation run on ARCADE syntax val / test (Dice)."""
+    from vstent.imaging.seg_eval import evaluate_seg_run
+
+    report = evaluate_seg_run(run, report_dir, device=device, log=typer.echo)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'seg_eval.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def export_seg(
+    run: RunOpt,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Model directory (default: models/seg/<run-name>)."),
+    ] = None,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write seg_onnx.md.")
+    ] = Path("reports"),
+) -> None:
+    """Export a segmentation run to ONNX and check parity with torch."""
+    from vstent.imaging.seg_export import export_seg_run
+
+    meta = export_seg_run(run, out, report_dir, log=typer.echo)
+    passed = meta["parity"]["passed"]
+    typer.echo(f"[{'PASS' if passed else 'FAIL'}] parity {meta['parity']['max_abs_diff']:.1e}")
+    typer.echo(f"Model in {meta['out_dir']}; wrote {report_dir / 'seg_onnx.md'}")
+    if not passed:
+        raise typer.Exit(code=1)
+
+
+def _latest_model_dir(root: Path, filename: str) -> Path:
+    dirs = sorted((p.parent for p in root.glob(f"*/{filename}")), key=lambda d: d.stat().st_mtime)
+    if not dirs:
+        typer.echo(f"No exported model in {root}/ (run the export command first).", err=True)
+        raise typer.Exit(code=1)
+    return dirs[-1]
+
+
+@app.command()
+def analyse(
+    image: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Angiogram image.")],
+    start: Annotated[
+        tuple[int, int] | None, typer.Option("--start", help="Start point: ROW COL (px).")
+    ] = None,
+    end: Annotated[
+        tuple[int, int] | None, typer.Option("--end", help="End point: ROW COL (px).")
+    ] = None,
+    mm_per_px: Annotated[
+        float | None, typer.Option("--mm-per-px", help="Pixel size; default 0.30 (assumed).")
+    ] = None,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    surrogate_model: Annotated[
+        Path | None,
+        typer.Option("--surrogate-model", help="Default: newest in models/surrogate/."),
+    ] = None,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    figure: Annotated[Path | None, typer.Option("--figure", help="Save a PNG figure.")] = None,
+) -> None:
+    """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
+
+    Without --start / --end the longest vessel path in the mask is used.
+    """
+    import cv2
+
+    from vstent.config import load_config
+    from vstent.imaging.centerline import longest_path_endpoints
+    from vstent.imaging.segment import THRESHOLD
+    from vstent.inference.onnx_runtime import (
+        ONNX_FILE,
+        SEG_ONNX_FILE,
+        SegmentationRunner,
+        SurrogateRunner,
+    )
+    from vstent.inference.pipeline import analyse_vessel
+    from vstent.physics.solver import PhysicsParams
+
+    img = cv2.imread(str(image), cv2.IMREAD_UNCHANGED)
+    if img is None:
+        typer.echo(f"Cannot read {image}", err=True)
+        raise typer.Exit(code=1)
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    sur_dir = surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
+    prob = SegmentationRunner.from_dir(seg_dir).predict(img)
+    if not start or not end or start[0] is None or end[0] is None:
+        start, end = longest_path_endpoints(prob >= THRESHOLD)
+        typer.echo(f"Auto-selected path: start {start}, end {end} (row, col)")
+    surrogate = SurrogateRunner.from_dir(sur_dir)
+    result = analyse_vessel(
+        prob,
+        start,
+        end,
+        params=load_config(physics, PhysicsParams),
+        surrogate=surrogate,
+        mm_per_px=mm_per_px,
+    )
+    surrogate.close()
+    q = result.qca
+    typer.echo(f"{DISCLAIMER}")
+    typer.echo(
+        f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
+        f"({'assumed' if q.calibration_assumed else 'given'}); MLD {q.mld_mm:.2f} mm; "
+        f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}"
+    )
+    typer.echo(
+        f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
+        f"{result.ffr_distal_surrogate:.3f}"
+    )
+    for w in result.warnings:
+        typer.echo(f"Warning: {w}")
+    if figure is not None:
+        from vstent.inference.figures import plot_analysis
+
+        gray = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        plot_analysis(result, gray, figure, title=f"Vessel analysis: {image.name}")
+        typer.echo(f"Wrote {figure}")
+
+
+@app.command()
+def qca_gallery(
+    n_images: Annotated[int, typer.Option("--n", min=1, help="Number of images.")] = 20,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="ARCADE folder.")] = Path(
+        "data/raw/arcade"
+    ),
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    surrogate_model: Annotated[
+        Path | None,
+        typer.Option("--surrogate-model", help="Default: newest in models/surrogate/."),
+    ] = None,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+) -> None:
+    """Qualitative QCA gallery on ARCADE stenosis/val images → reports/qca_gallery.md."""
+    from vstent.config import load_config
+    from vstent.inference.gallery import qca_gallery as run_gallery
+    from vstent.inference.onnx_runtime import ONNX_FILE, SEG_ONNX_FILE
+    from vstent.physics.solver import PhysicsParams
+
+    report = run_gallery(
+        raw_dir,
+        seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE),
+        surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE),
+        params=load_config(physics, PhysicsParams),
+        n_images=n_images,
+        log=typer.echo,
+    )
+    s = report["summary"]
+    typer.echo(
+        f"Analysed {s['n_analysed']}/{s['n_images']}; path crosses a stenosis box in "
+        f"{s['n_path_crosses_box']}, MLD inside the box in {s['n_mld_in_box_given_crossing']}"
+    )
+    typer.echo("Wrote reports/qca_gallery.md and reports/figures/qca_examples/")
+
+
+@app.command()
 def demo() -> None:
     """Run a synthetic case end-to-end and write reports/demo/."""
     _not_implemented("M8")

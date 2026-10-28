@@ -93,3 +93,29 @@ One short paragraph per decision: decision, reason, alternatives.
 **Decision:** every `vstent export-surrogate` also builds a dynamically quantised INT8 model (unsigned 8-bit weights, `onnxruntime.quantization.quantize_dynamic`) in a temporary directory, measures its distal-FFR MAE on the whole test split and its batch latency, reports both next to FP32, and keeps it only if the MAE rises by < 0.002 (plan) **and** a batch is ≥ 1.1× faster. The INT8 file is not saved; the app uses FP32.
 **Reason:** quantisation is only worth an accuracy loss if it buys speed. Measured on this CPU: the accuracy criterion is met but there is no speed-up (see the report), because the time goes to memory-bound element-wise ops, not to the convolutions that INT8 accelerates. Signed 8-bit weights were also tried once during exploration and were about 10× slower on this CPU, so the check uses unsigned weights.
 **Alternatives:** static quantisation with calibration data (more work, same bottleneck); keep INT8 for the smaller file (4.3 MB is not a constraint).
+
+### D19 — ARCADE masks and splits (2026-10-28)
+**Decision:** the vessel mask of an image is the union of all its `syntax`-task segment polygons, rasterised with pycocotools. Segmentation trains on `syntax/train`, selects the model on `syntax/val` (mean per-image Dice) and reports `syntax/val` and `syntax/test`. The `stenosis` task is used only for overlays (its boxes on `stenosis/val` images). Duplicates are left as provided. Inspection details are in docs/DATA.md.
+**Reason:** the plan specifies the union of segment polygons. Pixel-level hashing showed the `syntax` splits are disjoint, the 5 duplicates sit inside `syntax/train` (no leakage), and the only cross-task overlap is 123 images between the two test splits, which never meet in training.
+**Alternatives:** per-segment multi-class segmentation (not needed for QCA); merging both tasks (`stenosis` images have no vessel polygons).
+
+### D20 — Segmentation training set-up (2026-10-28)
+**Decision:**
+- Model: smp U-Net with a `resnet34` encoder, ImageNet weights from Hugging Face `smp-hub/resnet34.imagenet` (pinned revision in smp 0.5.0), `in_channels=1`, 512 px input.
+- Input scaling: the inputs are standardised with the channel-mean ImageNet statistics (0.449 / 0.226) in `imaging/segment.py`, shared with ONNX and the app.
+- Loss: BCE + soft Dice.
+- Optimiser: AdamW 3e-4 with cosine decay, batch 8, AMP, early stopping on mean val Dice.
+- Augmentation: done on the CPU in 2 DataLoader workers. Each sample's random generator is seeded from (a per-epoch seed drawn from the checkpointed generator, sample index), so a resumed run repeats the same augmentations regardless of worker count; stop and resume were tested to be bit-identical on CPU.
+- Memory format: the default NCHW layout. `channels_last` was measured to be 4× slower per step on the RTX 3060 Laptop (694 vs 182 ms per batch of 8); cuDNN benchmark mode is on.
+**Reason:** the plan's model and loss. Two workers keep augmentation (≈ 7 ms per image) off the critical path without copying the image arrays (≈ 0.5 GB) into more processes on Windows.
+**Alternatives:** `efficientnet-b0` encoder (allowed by the plan; resnet34 reached the target first); GPU augmentation (CLAHE is awkward on the GPU); `channels_last` (slower here).
+
+### D21 — QCA method and the pixel-size assumption (2026-10-28)
+**Decision:** centreline = pruned skeleton (spurs < 10 px removed), shortest path between the snapped user points, Savitzky–Golay smoothing (15 px window, order 3), resampled every 1 px. The diameter is measured along the normal at the 0.5 crossings of the probability map: bilinear sampling every 0.1 px, linear sub-pixel interpolation of each crossing, with 2 × distance transform as the fallback. Pixels are converted to mm with 0.30 mm/px unless a calibration is given; `QCAResult.calibration_assumed` and the pipeline warnings say so. Reference diameter, %DS, lesions and MLD reuse the M1 functions on the SI `VesselProfile`.
+**Reason:** the plan's method. On synthetic curved tubes with blur and noise the median diameter error is 0.05–0.12 px (target ≤ 0.7), the MLD is within 1 px and the %DS within 2.5 points of the true 60%.
+**Alternatives:** distance transform only (quantised to ±0.5 px); edge detection on the raw image (the probability map is smoother and is what the model outputs).
+
+### D22 — End-to-end pipeline conventions (2026-10-28)
+**Decision:** `inference/pipeline.py` (torch-free) runs segmentation → QCA → the solver on the QCA profile; R_micro is calibrated by the solver on the QCA reference, and the same Pa, Pv and R_micro go to the surrogate. Warnings are returned for: an assumed pixel size, > 10% fallback diameters, R_micro at its floor, and vessel length, proximal reference diameter, Pa or Pv outside the surrogate's synthetic training ranges (`SamplingConfig`). Without user points, `longest_path_endpoints` picks the longest path of the largest skeleton component (double sweep).
+**Reason:** solver and surrogate must see identical inputs to be comparable. Real angiogram paths can be longer than the 30–80 mm training vessels, especially at an assumed pixel size, and the user must know when the surrogate extrapolates.
+**Alternatives:** clipping inputs to the training range (hides the problem); refusing out-of-range vessels (the solver result is still valid).

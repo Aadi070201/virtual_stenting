@@ -1,8 +1,10 @@
-"""ONNX Runtime inference for the FFR surrogate (no torch needed).
+"""ONNX Runtime inference for the FFR surrogate and the vessel segmentation (no torch needed).
 
-Inputs go through :func:`vstent.surrogate.features.prepare_inputs`, the same pre-processing as
-training. A model directory (``models/surrogate/<run-name>/``) holds ``surrogate.onnx`` and
-``norm_stats.json``; the ONNX file carries metadata that is checked against the statistics.
+Surrogate inputs go through :func:`vstent.surrogate.features.prepare_inputs` and images through
+:func:`vstent.imaging.segment.preprocess_image`, the same pre-processing as in training. A
+surrogate model directory (``models/surrogate/<run-name>/``) holds ``surrogate.onnx`` and
+``norm_stats.json``; a segmentation directory (``models/seg/<run-name>/``) holds ``seg.onnx``.
+The ONNX files carry metadata that is checked when they are loaded.
 """
 
 import os
@@ -13,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
+from vstent.imaging.segment import preprocess_image, probability_to_image
 from vstent.physics.geometry import VesselProfile
 from vstent.surrogate.features import NORM_STATS, NormStats, RawInputs, prepare_inputs
 
@@ -20,6 +23,9 @@ ONNX_FILE = "surrogate.onnx"
 INPUT_NAMES = ("x_point", "x_global")
 OUTPUT_NAME = "ffr"
 CHUNK_SIZE = 16
+SEG_ONNX_FILE = "seg.onnx"
+SEG_INPUT = "image"
+SEG_OUTPUT = "prob"
 
 
 def default_workers() -> int:
@@ -133,3 +139,42 @@ class SurrogateRunner:
         raw = RawInputs.from_profile(profile, pa, pv, r_micro, n=self.n_points)
         s = np.linspace(profile.s[0], profile.s[-1], self.n_points)
         return s, self.predict(raw)[0]
+
+
+class SegmentationRunner:
+    """Vessel probability map for an angiogram with an exported segmentation model.
+
+    Args:
+        model_path: the ``seg.onnx`` file (input ``image`` (B, 1, S, S), output ``prob``).
+        intra_op_threads: ONNX Runtime threads; ``None`` = ONNX Runtime default.
+        providers: ONNX Runtime execution providers.
+    """
+
+    def __init__(
+        self,
+        model_path: str | Path,
+        *,
+        intra_op_threads: int | None = None,
+        providers: Sequence[str] = ("CPUExecutionProvider",),
+    ) -> None:
+        self.model_path = Path(model_path)
+        opts = ort.SessionOptions()
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        if intra_op_threads is not None:
+            opts.intra_op_num_threads = intra_op_threads
+        self.session = ort.InferenceSession(str(self.model_path), opts, providers=list(providers))
+        self.metadata = dict(self.session.get_modelmeta().custom_metadata_map)
+        if self.metadata.get("task") != "vessel_segmentation" or "image_size" not in self.metadata:
+            raise ValueError(f"{self.model_path} is not a vstent segmentation model")
+        self.image_size = int(self.metadata["image_size"])
+
+    @classmethod
+    def from_dir(cls, model_dir: str | Path, **kwargs) -> "SegmentationRunner":
+        """Load ``seg.onnx`` from a model directory."""
+        return cls(Path(model_dir) / SEG_ONNX_FILE, **kwargs)
+
+    def predict(self, image: np.ndarray) -> np.ndarray:
+        """Vessel probability (H, W) float32 in [0, 1] for a greyscale image (H, W)."""
+        x = preprocess_image(image, self.image_size)[None]
+        prob = self.session.run([SEG_OUTPUT], {SEG_INPUT: x})[0][0, 0]
+        return probability_to_image(prob, np.asarray(image).shape[:2])

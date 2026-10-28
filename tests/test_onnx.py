@@ -12,32 +12,13 @@ from vstent.inference.benchmark import run_benchmark
 from vstent.inference.onnx_runtime import ONNX_FILE, SurrogateRunner
 from vstent.physics.geometry import cosine_lesion_profile
 from vstent.surrogate.dataset import load_raw
-from vstent.surrogate.export import EXPORT_META, OPSET, export_run, sha256
+from vstent.surrogate.export import EXPORT_META, OPSET, sha256
 from vstent.surrogate.features import NORM_STATS, RawInputs, prepare_inputs
 from vstent.surrogate.model import ModelConfig
-from vstent.surrogate.train import SurrogateConfig, TrainConfig, load_checkpoint, train_surrogate
+from vstent.surrogate.train import load_checkpoint
 from vstent.units import mmhg_to_pa
 
 SMALL_MODEL = ModelConfig(base_channels=8, levels=3, groups=4, cond_dim=16)
-
-
-@pytest.fixture(scope="module")
-def tiny_run(tiny_data, tmp_path_factory):
-    """A small surrogate trained for 2 epochs on the tiny dataset (CPU)."""
-    root = tmp_path_factory.mktemp("onnx")
-    cfg = SurrogateConfig(
-        data_dir=str(tiny_data),
-        runs_dir=str(root / "runs"),
-        model=SMALL_MODEL,
-        train=TrainConfig(epochs=2, batch_size=32, device="cpu"),
-    )
-    return train_surrogate(cfg, run_dir=root / "runs" / "tiny", checkpoint_root=root / "ckpt")
-
-
-@pytest.fixture(scope="module")
-def tiny_export(tiny_run, tmp_path_factory):
-    out = tmp_path_factory.mktemp("models") / "tiny"
-    return export_run(tiny_run, out)
 
 
 def test_export_writes_model_dir_with_provenance(tiny_export):

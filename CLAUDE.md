@@ -73,20 +73,25 @@ vstent/
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py
-    imaging/            # segment.py, centerline.py, qca.py
+    imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
+                        # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
+                        # synthetic.py (rendered test tubes)
     planning/           # stent.py, optimizer.py
-    inference/          # onnx_runtime.py (SurrogateRunner, torch-free), benchmark.py (ONNX
-                        # latency + INT8 check report), pipeline.py
+    inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
+                        # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
+                        # solver + surrogate, torch-free), figures.py (analysis figure)
     app/                # streamlit_app.py
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
+    plotting.py         # shared chart style for report figures
     checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
     units.py            # mmHg <-> Pa, mm <-> m
     sysinfo.py          # CPU model for benchmarks
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
-  data/  models/  runs/ # git-ignored; models/surrogate/<run-name>/{surrogate.onnx,
-                        # norm_stats.json, config.yaml, export_meta.json}
+  data/  models/  runs/ # git-ignored; data/raw/arcade/ (ARCADE, see docs/DATA.md);
+                        # models/surrogate/<run-name>/{surrogate.onnx, norm_stats.json, config.yaml,
+                        # export_meta.json}; models/seg/<run-name>/{seg.onnx, config.yaml, export_meta.json}
   checkpoints/          # git-ignored; checkpoints/<run-name>/{last.pt, state.json, STOP}
 ```
 
@@ -108,8 +113,11 @@ uv run vstent stop <run-name>                       # pause a running training a
 uv run vstent checkpoints                           # list resumable runs + resume commands
 uv run vstent eval-surrogate --run runs/<name>
 uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
-uv run vstent data arcade
-uv run vstent train-seg --config configs/seg.yaml
+uv run vstent data arcade                           # download + MD5-verify + extract ARCADE
+uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>
+uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
+uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/seg_onnx.md
+uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
 uv run vstent demo              # end-to-end synthetic case → report
 uv run vstent app               # launches the Streamlit app
 ```

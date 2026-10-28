@@ -15,11 +15,20 @@ from typing import Any
 import numpy as np
 import torch
 import yaml
-from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 
 from vstent import DISCLAIMER, __version__
 from vstent.config import META_FILENAME, git_info, load_config
+from vstent.plotting import (
+    BAND,
+    INK_MUTED,
+    INK_SECONDARY,
+    SERIES_1,
+    SERIES_2,
+    new_figure,
+    save_figure,
+    style_axes,
+)
 from vstent.surrogate.baseline import fit_baseline, hand_features
 from vstent.surrogate.dataset import load_raw
 from vstent.surrogate.features import NormStats, prepare_inputs
@@ -41,16 +50,9 @@ DS_BINS = (0.0, 30.0, 50.0, 70.0, 100.0)
 SPLITS = ("val", "test", "ood")
 EXAMPLE_TARGETS = (0.95, 0.85, 0.75, 0.55)
 
-# Chart tokens (reference palette, light mode). Surrogate = slot 1, baseline = slot 2.
-SURROGATE = "#2a78d6"
-BASELINE = "#eb6834"
-SURFACE = "#fcfcfb"
-INK_PRIMARY = "#0b0b0b"
-INK_SECONDARY = "#52514e"
-INK_MUTED = "#898781"
-GRIDLINE = "#e1e0d9"
-AXIS = "#c3c2b7"
-BAND = "#f0efec"
+# Surrogate = series 1, baseline = series 2.
+SURROGATE = SERIES_1
+BASELINE = SERIES_2
 
 
 def distal_metrics(pred: np.ndarray, true: np.ndarray, cutoff: float = CUTOFF) -> dict[str, float]:
@@ -96,30 +98,8 @@ def _signed(x: float, digits: int = 4) -> str:
     return f"{round(x, digits) + 0.0:+.{digits}f}"
 
 
-def _style(ax) -> None:
-    ax.set_facecolor(SURFACE)
-    ax.grid(True, color=GRIDLINE, lw=0.6, zorder=0)
-    ax.tick_params(colors=INK_MUTED, labelcolor=INK_SECONDARY, labelsize=7.5, length=0)
-    for side in ("top", "right", "left"):
-        ax.spines[side].set_visible(False)
-    ax.spines["bottom"].set_color(AXIS)
-
-
-def _figure(width: float, height: float, title: str, subtitle: str) -> Figure:
-    fig = Figure(figsize=(width, height), dpi=150, facecolor=SURFACE)
-    fig.text(0.07, 0.94, title, fontsize=11, color=INK_PRIMARY)
-    fig.text(0.07, 0.895, subtitle, fontsize=8, color=INK_SECONDARY)
-    fig.text(0.07, 0.02, DISCLAIMER, fontsize=7, color=INK_MUTED)
-    return fig
-
-
-def _save(fig: Figure, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, facecolor=SURFACE)
-
-
 def plot_scatter(true, pred_sur, pred_base, path: Path) -> None:
-    fig = _figure(
+    fig = new_figure(
         8.0,
         4.4,
         "Predicted vs solver distal FFR (test)",
@@ -131,7 +111,7 @@ def plot_scatter(true, pred_sur, pred_base, path: Path) -> None:
         (axes[0], pred_sur, SURROGATE, "Surrogate (1D U-Net)"),
         (axes[1], pred_base, BASELINE, "Baseline (gradient boosting)"),
     ):
-        _style(ax)
+        style_axes(ax)
         ax.plot([0, 1], [0, 1], color=INK_MUTED, lw=1.0, zorder=1)
         ax.axvline(CUTOFF, color=INK_MUTED, lw=0.8, ls=(0, (4, 3)), zorder=1)
         ax.axhline(CUTOFF, color=INK_MUTED, lw=0.8, ls=(0, (4, 3)), zorder=1)
@@ -142,11 +122,11 @@ def plot_scatter(true, pred_sur, pred_base, path: Path) -> None:
         ax.set_title(label, loc="left", fontsize=9, color=INK_SECONDARY)
         ax.set_xlabel("Solver distal FFR", fontsize=8, color=INK_SECONDARY)
     axes[0].set_ylabel("Predicted distal FFR", fontsize=8, color=INK_SECONDARY)
-    _save(fig, path)
+    save_figure(fig, path)
 
 
 def plot_bland_altman(true, pred, stats: dict[str, float], path: Path) -> None:
-    fig = _figure(
+    fig = new_figure(
         7.2,
         4.4,
         "Bland–Altman: surrogate vs solver distal FFR (test)",
@@ -155,7 +135,7 @@ def plot_bland_altman(true, pred, stats: dict[str, float], path: Path) -> None:
         f"shaded band = target ±{TARGET_LOA}",
     )
     ax = fig.add_axes((0.10, 0.14, 0.86, 0.68))
-    _style(ax)
+    style_axes(ax)
     mean, diff = (true + pred) / 2, pred - true
     ax.axhspan(-TARGET_LOA, TARGET_LOA, color=BAND, zorder=0.5)
     ax.scatter(mean, diff, s=2, color=SURROGATE, alpha=0.25, linewidths=0, zorder=2)
@@ -169,18 +149,18 @@ def plot_bland_altman(true, pred, stats: dict[str, float], path: Path) -> None:
     ax.set_ylim(-lim, lim)
     ax.set_xlabel("Mean of surrogate and solver distal FFR", fontsize=8, color=INK_SECONDARY)
     ax.set_ylabel("Surrogate − solver", fontsize=8, color=INK_SECONDARY)
-    _save(fig, path)
+    save_figure(fig, path)
 
 
 def plot_error_by_ds(by_sur: list[dict], by_base: list[dict], path: Path) -> None:
-    fig = _figure(
+    fig = new_figure(
         7.2,
         4.2,
         "Distal FFR error by maximum diameter stenosis (test)",
         "Mean absolute error vs the solver; bins of the vessel's maximum measured %DS",
     )
     ax = fig.add_axes((0.10, 0.14, 0.86, 0.66))
-    _style(ax)
+    style_axes(ax)
     ax.grid(False, axis="x")
     x = np.arange(len(by_sur))
     w = 0.38
@@ -192,11 +172,11 @@ def plot_error_by_ds(by_sur: list[dict], by_base: list[dict], path: Path) -> Non
     ax.set_xticks(x, [f"{r['bin']}\nn = {r['n']:,}" for r in by_sur])
     ax.set_ylabel("Distal FFR MAE", fontsize=8, color=INK_SECONDARY)
     ax.legend(frameon=False, fontsize=8, labelcolor=INK_SECONDARY, loc="upper left")
-    _save(fig, path)
+    save_figure(fig, path)
 
 
 def plot_examples(s_norm, true_curves, pred_curves, idx, path: Path) -> None:
-    fig = _figure(
+    fig = new_figure(
         8.0,
         5.0,
         "FFR pullback curves: solver vs surrogate (test examples)",
@@ -205,7 +185,7 @@ def plot_examples(s_norm, true_curves, pred_curves, idx, path: Path) -> None:
     axes = fig.subplots(2, 2, gridspec_kw={"hspace": 0.45, "wspace": 0.15})
     fig.subplots_adjust(left=0.07, right=0.98, top=0.82, bottom=0.10)
     for k, (ax, i) in enumerate(zip(axes.flat, idx, strict=True)):
-        _style(ax)
+        style_axes(ax)
         ax.plot(s_norm, true_curves[i], color=INK_SECONDARY, lw=2.0, label="Solver", zorder=2)
         ax.plot(
             s_norm,
@@ -226,7 +206,7 @@ def plot_examples(s_norm, true_curves, pred_curves, idx, path: Path) -> None:
         )
         if k == 0:
             ax.legend(frameon=False, fontsize=7.5, labelcolor=INK_SECONDARY, loc="lower left")
-    _save(fig, path)
+    save_figure(fig, path)
 
 
 def plot_training(run_dir: Path, path: Path) -> None:
@@ -234,14 +214,14 @@ def plot_training(run_dir: Path, path: Path) -> None:
         rows = list(csv.DictReader(f))
     epochs = [int(r["epoch"]) for r in rows]
     mae = [float(r["val_distal_mae"]) for r in rows]
-    fig = _figure(
+    fig = new_figure(
         7.2,
         4.0,
         "Validation distal FFR MAE per epoch",
         "Log scale. The acceptance target applies to the test split.",
     )
     ax = fig.add_axes((0.10, 0.14, 0.86, 0.66))
-    _style(ax)
+    style_axes(ax)
     ax.plot(epochs, mae, color=SURROGATE, lw=2.0, marker="o", ms=3, zorder=2)
     ax.axhline(TARGET_DISTAL_MAE, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
     ax.annotate(
@@ -260,7 +240,7 @@ def plot_training(run_dir: Path, path: Path) -> None:
     ax.tick_params(which="minor", length=0)
     ax.set_xlabel("Epoch", fontsize=8, color=INK_SECONDARY)
     ax.set_ylabel("Distal FFR MAE (log scale)", fontsize=8, color=INK_SECONDARY)
-    _save(fig, path)
+    save_figure(fig, path)
 
 
 def _targets(test: dict[str, Any]) -> list[dict[str, Any]]:

@@ -83,3 +83,27 @@ def tiny_arcade(tmp_path_factory):
     """A fake ARCADE raw folder (train 12, val 4, test 4 images of 64 x 64 px)."""
     root = tmp_path_factory.mktemp("arcade_raw")
     return _write_fake_arcade(root, {"train": 12, "val": 4, "test": 4})
+
+
+@pytest.fixture(scope="session")
+def tiny_run(tiny_data, tmp_path_factory):
+    """A small surrogate trained for 2 epochs on the tiny dataset (CPU)."""
+    from vstent.surrogate.model import ModelConfig
+    from vstent.surrogate.train import SurrogateConfig, TrainConfig, train_surrogate
+
+    root = tmp_path_factory.mktemp("onnx")
+    cfg = SurrogateConfig(
+        data_dir=str(tiny_data),
+        runs_dir=str(root / "runs"),
+        model=ModelConfig(base_channels=8, levels=3, groups=4, cond_dim=16),
+        train=TrainConfig(epochs=2, batch_size=32, device="cpu"),
+    )
+    return train_surrogate(cfg, run_dir=root / "runs" / "tiny", checkpoint_root=root / "ckpt")
+
+
+@pytest.fixture(scope="session")
+def tiny_export(tiny_run, tmp_path_factory):
+    """The tiny surrogate exported to ONNX (model directory in ``["out_dir"]``)."""
+    from vstent.surrogate.export import export_run
+
+    return export_run(tiny_run, tmp_path_factory.mktemp("models") / "tiny")

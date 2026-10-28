@@ -54,8 +54,11 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent train-surrogate --resume <run-name>` | continue a stopped or interrupted training exactly | M3 |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver | M3 |
 | `vstent export-surrogate --run runs/<name>` | export to ONNX (`models/surrogate/<name>/`), check parity with torch, CPU benchmark → `reports/onnx_benchmark.md` | M4 |
-| `vstent data arcade` | download the ARCADE dataset | M5 |
-| `vstent train-seg --config configs/seg.yaml` | train vessel segmentation | M5 |
+| `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0, ~450 MB) into `data/raw/arcade/` | M5 |
+| `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
+| `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
+| `vstent export-seg --run runs/<name>` | export segmentation to ONNX, parity → `reports/seg_onnx.md` | M5 |
+| `vstent analyse <image> [--start R C --end R C]` | segment an angiogram, QCA + FFR (solver and surrogate) for one vessel | M5 |
 | `vstent demo` | synthetic case end-to-end → `reports/demo/` | M8 |
 | `vstent app` | launch the Streamlit app | M7 |
 
