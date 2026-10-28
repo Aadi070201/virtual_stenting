@@ -76,7 +76,7 @@ def collect(reports: Path) -> dict[str, Any]:
                 "title": title,
                 "commit": p.get("git_commit"),
                 "dirty": p.get("git_dirty"),
-                "created": p.get("created_utc"),
+                "created": p.get("created_utc") or d.get("created_utc"),
             }
         )
         return d

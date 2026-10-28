@@ -63,3 +63,8 @@ def test_cli_demo_and_qca_synthetic(tmp_path, monkeypatch):
     assert (tmp_path / "demo" / "demo.md").exists()
     result = CliRunner().invoke(app, ["qca-synthetic", "--report-dir", str(tmp_path)])
     assert result.exit_code == 0 and "[PASS]" in result.output
+
+
+def test_mvp_provenance_has_creation_times():
+    data = collect(Path("reports"))
+    assert all(p["created"] for p in data["provenance"])
