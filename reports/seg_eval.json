@@ -1,0 +1,119 @@
+{
+  "targets": [
+    {
+      "metric": "Mean val Dice",
+      "value": "0.8325",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true,
+      "stretch_passed": true
+    }
+  ],
+  "targets_met": true,
+  "splits": {
+    "val": {
+      "n": 200,
+      "dice_mean": 0.8325396909860134,
+      "dice_median": 0.8473487314399677,
+      "dice_p10": 0.7327128356427485,
+      "dice_min": 0.6215867807299801,
+      "precision": 0.840858942399676,
+      "recall": 0.8244762306867197,
+      "pooled_dice": 0.8325870041933481
+    },
+    "test": {
+      "n": 300,
+      "dice_mean": 0.7924933148585589,
+      "dice_median": 0.8182606898225542,
+      "dice_p10": 0.6705737872915726,
+      "dice_min": 0.21319903472654286,
+      "precision": 0.8360294087156287,
+      "recall": 0.767576972424322,
+      "pooled_dice": 0.8003421911347883
+    }
+  },
+  "training": {
+    "best_epoch": 38,
+    "best_val_dice": 0.83253429929528,
+    "epochs_run": 53,
+    "train_seconds": 1620.4568594000084,
+    "resumes": [],
+    "n_parameters": 24430097,
+    "n_train": 1000,
+    "n_val": 200,
+    "image_size": 512,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "amp": true,
+    "torch": "2.14.1+cu126",
+    "smp": "0.5.0"
+  },
+  "config": {
+    "name": "seg_unet_r34",
+    "raw_dir": "data/raw/arcade",
+    "runs_dir": "runs",
+    "seed": 0,
+    "model": {
+      "encoder": "resnet34",
+      "encoder_weights": "imagenet",
+      "image_size": 512
+    },
+    "train": {
+      "epochs": 60,
+      "batch_size": 8,
+      "lr": 0.0003,
+      "weight_decay": 0.0001,
+      "dice_weight": 1.0,
+      "patience": 15,
+      "grad_clip": 1.0,
+      "amp": true,
+      "device": "auto",
+      "workers": 2,
+      "eval_batch_size": 16,
+      "max_train_images": null,
+      "max_val_images": null
+    },
+    "augment": {
+      "rotation_deg": 15.0,
+      "scale": [
+        0.9,
+        1.1
+      ],
+      "brightness": 0.1,
+      "contrast": [
+        0.8,
+        1.2
+      ],
+      "gamma": [
+        0.8,
+        1.25
+      ],
+      "noise_std": [
+        0.0,
+        0.03
+      ],
+      "p_noise": 0.5,
+      "p_clahe": 0.3,
+      "clahe_clip": 2.0
+    }
+  },
+  "provenance": {
+    "run": "runs/seg_unet_r34-20261028-141743",
+    "run_meta": {
+      "git_commit": "0d4afee9344af03ff8a89e0dd47485b102f7dc5f",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-10-28T14:17:43+00:00",
+      "python": "3.14.5",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "config_class": "SegConfig"
+    },
+    "eval": {
+      "git_commit": "226fc57e72235d9e021cc5f8f8f2ef7e06d1eb92",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-10-28T14:46:21+00:00"
+    },
+    "device": "cuda",
+    "torch": "2.14.1+cu126"
+  }
+}
