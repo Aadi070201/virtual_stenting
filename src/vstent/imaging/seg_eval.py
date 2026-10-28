@@ -66,7 +66,15 @@ def _plot_hist(dice: dict[str, np.ndarray], path: Path) -> None:
     style_axes(ax)
     bins = np.linspace(0.0, 1.0, 41)
     for (split, d), color in zip(dice.items(), (SERIES_1, SERIES_2), strict=False):
-        ax.hist(d, bins=bins, color=color, alpha=0.55, label=f"{split} (n = {d.size})", zorder=2)
+        ax.hist(
+            d,
+            bins=bins,
+            histtype="step",
+            lw=1.8,
+            color=color,
+            label=f"{split} (n = {d.size})",
+            zorder=2,
+        )
     ax.axvline(TARGET_DICE, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)), zorder=3)
     ax.set_xlabel("Dice", fontsize=8, color=INK_SECONDARY)
     ax.set_ylabel("Images", fontsize=8, color=INK_SECONDARY)
