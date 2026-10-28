@@ -16,6 +16,7 @@ import numpy as np
 import torch
 import yaml
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 
 from vstent import DISCLAIMER, __version__
 from vstent.config import META_FILENAME, git_info, load_config
@@ -90,6 +91,11 @@ def mae_by_ds_bin(pred: np.ndarray, true: np.ndarray, max_ds: np.ndarray) -> lis
     return out
 
 
+def _signed(x: float, digits: int = 4) -> str:
+    """Format with an explicit sign; values that round to zero print as +0.000… (not -0.000…)."""
+    return f"{round(x, digits) + 0.0:+.{digits}f}"
+
+
 def _style(ax) -> None:
     ax.set_facecolor(SURFACE)
     ax.grid(True, color=GRIDLINE, lw=0.6, zorder=0)
@@ -144,30 +150,21 @@ def plot_bland_altman(true, pred, stats: dict[str, float], path: Path) -> None:
         7.2,
         4.4,
         "Bland–Altman: surrogate vs solver distal FFR (test)",
-        f"Shaded band = target limits of agreement ±{TARGET_LOA}",
+        f"Solid = bias {_signed(stats['bias'])}; dashed = 95% limits of agreement "
+        f"[{_signed(stats['loa_low'])}, {_signed(stats['loa_high'])}]; "
+        f"shaded band = target ±{TARGET_LOA}",
     )
-    ax = fig.add_axes((0.10, 0.14, 0.76, 0.68))
+    ax = fig.add_axes((0.10, 0.14, 0.86, 0.68))
     _style(ax)
     mean, diff = (true + pred) / 2, pred - true
     ax.axhspan(-TARGET_LOA, TARGET_LOA, color=BAND, zorder=0.5)
     ax.scatter(mean, diff, s=2, color=SURROGATE, alpha=0.25, linewidths=0, zorder=2)
-    for y, name, ls in (
-        (stats["bias"], "bias", "-"),
-        (stats["loa_low"], "−1.96 SD", (0, (4, 3))),
-        (stats["loa_high"], "+1.96 SD", (0, (4, 3))),
+    for y, ls in (
+        (stats["bias"], "-"),
+        (stats["loa_low"], (0, (4, 3))),
+        (stats["loa_high"], (0, (4, 3))),
     ):
         ax.axhline(y, color=INK_SECONDARY, lw=1.0, ls=ls, zorder=3)
-        ax.annotate(
-            f"{name} {y:+.4f}",
-            xy=(1.0, y),
-            xycoords=("axes fraction", "data"),
-            xytext=(4, 0),
-            textcoords="offset points",
-            va="center",
-            fontsize=7.5,
-            color=INK_SECONDARY,
-            annotation_clip=False,
-        )
     lim = max(TARGET_LOA * 1.5, float(np.abs(diff).max()) * 1.05)
     ax.set_ylim(-lim, lim)
     ax.set_xlabel("Mean of surrogate and solver distal FFR", fontsize=8, color=INK_SECONDARY)
@@ -241,13 +238,26 @@ def plot_training(run_dir: Path, path: Path) -> None:
         7.2,
         4.0,
         "Validation distal FFR MAE per epoch",
-        f"Dashed = target {TARGET_DISTAL_MAE} (evaluated on the test split)",
+        "Log scale. The acceptance target applies to the test split.",
     )
     ax = fig.add_axes((0.10, 0.14, 0.86, 0.66))
     _style(ax)
     ax.plot(epochs, mae, color=SURROGATE, lw=2.0, marker="o", ms=3, zorder=2)
     ax.axhline(TARGET_DISTAL_MAE, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
+    ax.annotate(
+        f"target {TARGET_DISTAL_MAE}",
+        xy=(0.0, TARGET_DISTAL_MAE),
+        xycoords=("axes fraction", "data"),
+        xytext=(2, 3),
+        textcoords="offset points",
+        fontsize=7.5,
+        color=INK_SECONDARY,
+    )
     ax.set_yscale("log")
+    ax.yaxis.set_major_locator(LogLocator(subs=(1.0, 2.0, 5.0)))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+    ax.yaxis.set_minor_formatter(NullFormatter())
+    ax.tick_params(which="minor", length=0)
     ax.set_xlabel("Epoch", fontsize=8, color=INK_SECONDARY)
     ax.set_ylabel("Distal FFR MAE (log scale)", fontsize=8, color=INK_SECONDARY)
     _save(fig, path)
@@ -264,7 +274,7 @@ def _targets(test: dict[str, Any]) -> list[dict[str, Any]]:
         },
         {
             "metric": "95% limits of agreement",
-            "value": f"[{m['loa_low']:+.4f}, {m['loa_high']:+.4f}]",
+            "value": f"[{_signed(m['loa_low'])}, {_signed(m['loa_high'])}]",
             "target": f"within ±{TARGET_LOA}",
             "passed": m["loa_low"] >= -TARGET_LOA and m["loa_high"] <= TARGET_LOA,
         },
@@ -315,8 +325,8 @@ def _markdown(report: dict[str, Any]) -> str:
             m = res[model]
             curve = f"{m['curve_mae']:.4f}" if "curve_mae" in m else "n/a"
             lines.append(
-                f"| {split} | {model} | {m['n']:,} | {m['mae']:.4f} | {m['bias']:+.4f} "
-                f"| [{m['loa_low']:+.4f}, {m['loa_high']:+.4f}] | {m['agreement']:.2%} "
+                f"| {split} | {model} | {m['n']:,} | {m['mae']:.4f} | {_signed(m['bias'])} "
+                f"| [{_signed(m['loa_low'])}, {_signed(m['loa_high'])}] | {m['agreement']:.2%} "
                 f"| {m['sensitivity']:.2%} | {m['specificity']:.2%} | {m['max_abs_error']:.3f} "
                 f"| {curve} |"
             )

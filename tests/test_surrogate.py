@@ -9,7 +9,7 @@ from vstent.physics.geometry import cosine_lesion_profile
 from vstent.physics.solver import solve_ffr
 from vstent.surrogate.baseline import BASELINE_FEATURES, hand_features
 from vstent.surrogate.dataset import SurrogateDataset, load_raw
-from vstent.surrogate.evaluate import distal_metrics, evaluate_run, mae_by_ds_bin
+from vstent.surrogate.evaluate import _signed, distal_metrics, evaluate_run, mae_by_ds_bin
 from vstent.surrogate.features import (
     GLOBAL_FEATURES,
     POINT_CHANNELS,
@@ -141,6 +141,12 @@ def test_distal_metrics():
     assert m["specificity"] == pytest.approx(1.0)
     bins = mae_by_ds_bin(pred, true, np.array([10.0, 40.0, 60.0, 95.0]))
     assert [b["n"] for b in bins] == [1, 1, 1, 1]
+
+
+def test_signed_format_has_no_negative_zero():
+    assert _signed(-0.00002) == "+0.0000"
+    assert _signed(-0.0057) == "-0.0057"
+    assert _signed(0.0056) == "+0.0056"
 
 
 def test_train_and_evaluate_smoke(tmp_path, tiny_data):
