@@ -11,30 +11,30 @@ End-to-end = pre-processing with `surrogate.features.prepare_inputs` (the same f
 | Metric | Value | Target | Pass |
 |---|---|---|---|
 | Parity: max abs(FFR_torch - FFR_onnx) over 1,000 test vessels, all points | 5.4e-07 | < 0.0001 | yes |
-| Single-vessel latency, median (end-to-end) | 1.40 ms | < 10 ms | yes |
-| Batch of 1,024 vessels, median (end-to-end) | 204.7 ms | < 300 ms | yes |
+| Single-vessel latency, median (end-to-end) | 1.53 ms | < 10 ms | yes |
+| Batch of 1,024 vessels, median (end-to-end) | 187.7 ms | < 300 ms | yes |
 
 ## Latency
 
-- **Runner default** (used for the targets and by the app): batches split into chunks of 16 vessels, run in parallel on 8 threads, 1 ONNX Runtime thread per call.
+- **Runner default** (used for the targets and by the app): batches split into chunks of 8 vessels, run in parallel on 16 threads, 1 ONNX Runtime thread per call.
 - **One call**: the whole batch in a single ONNX Runtime call with its default intra-op threading (all physical cores).
 
 | Configuration | Case | Median | p95 | Min | Runs |
 |---|---|---|---|---|---|
-| Runner default | 1 vessel, end-to-end | 1.40 ms | 1.58 ms | 1.32 ms | 200 |
-| Runner default | 1 vessel, inference only | 1.27 ms | 1.49 ms | 1.22 ms | 200 |
-| Runner default | 1,024 vessels, end-to-end | 204.68 ms | 217.56 ms | 198.84 ms | 20 |
-| Runner default | 1,024 vessels, inference only | 195.38 ms | 202.98 ms | 187.43 ms | 20 |
-| One call | 1 vessel, end-to-end | 0.96 ms | 1.22 ms | 0.84 ms | 200 |
-| One call | 1 vessel, inference only | 0.85 ms | 1.08 ms | 0.74 ms | 200 |
-| One call | 1,024 vessels, end-to-end | 582.42 ms | 594.66 ms | 571.12 ms | 20 |
-| One call | 1,024 vessels, inference only | 567.21 ms | 585.62 ms | 543.88 ms | 20 |
+| Runner default | 1 vessel, end-to-end | 1.53 ms | 2.00 ms | 1.38 ms | 200 |
+| Runner default | 1 vessel, inference only | 1.32 ms | 1.65 ms | 1.24 ms | 200 |
+| Runner default | 1,024 vessels, end-to-end | 187.73 ms | 206.47 ms | 177.91 ms | 20 |
+| Runner default | 1,024 vessels, inference only | 191.10 ms | 198.82 ms | 183.75 ms | 20 |
+| One call | 1 vessel, end-to-end | 1.38 ms | 1.78 ms | 1.00 ms | 200 |
+| One call | 1 vessel, inference only | 1.15 ms | 1.52 ms | 0.88 ms | 200 |
+| One call | 1,024 vessels, end-to-end | 640.11 ms | 657.97 ms | 589.08 ms | 20 |
+| One call | 1,024 vessels, inference only | 553.50 ms | 580.10 ms | 540.88 ms | 20 |
 
 Single-vessel runs use a different test vessel each time; batch runs repeat the same 1,024 vessels. 5 untimed warm-up calls precede each case. With one call on the whole batch, the activations (≈ 34 MB per tensor at full resolution) no longer fit in the CPU cache and the normalisation / element-wise operations become memory-bound; small chunks keep them in cache (DECISIONS D17).
 
 ## Context: reduced-order solver
 
-The reduced-order batch solver computes the same 1,024 vessels in 17.3 ms (median of 20 runs, same CPU). In this MVP the solver is already fast and the surrogate is **not** claimed to be faster: it exists to build and validate the training → ONNX → app pipeline, so that in Phase 2 its labels can be swapped for 3D CFD, where a surrogate gives the real speed-up.
+The reduced-order batch solver computes the same 1,024 vessels in 18.1 ms (median of 20 runs, same CPU). In this MVP the solver is already fast and the surrogate is **not** claimed to be faster: it exists to build and validate the training → ONNX → app pipeline, so that in Phase 2 its labels can be swapped for 3D CFD, where a surrogate gives the real speed-up.
 
 ## Optional: dynamic INT8 quantisation
 
@@ -42,12 +42,12 @@ Weights quantised to unsigned 8-bit with ONNX Runtime `quantize_dynamic` (activa
 
 | | FP32 | INT8 |
 |---|---|---|
-| Distal FFR MAE vs solver (10,000 test vessels) | 0.0013 | 0.0030 (+0.0017) |
-| Max abs. difference from FP32, any point | — | 0.0842 |
-| 1,024 vessels, median end-to-end | 221.5 ms | 214.6 ms (1.03×) |
+| Distal FFR MAE vs solver (10,000 test vessels) | 0.0013 | 0.0026 (+0.0013) |
+| Max abs. difference from FP32, any point | — | 0.0641 |
+| 1,024 vessels, median end-to-end | 192.7 ms | 194.1 ms (0.99×) |
 | File size | 4.30 MB | 1.47 MB |
 
-**INT8 kept: no** (accuracy criterion met; speed-up 1.03× vs ≥ 1.1× required). The app uses the FP32 model.
+**INT8 kept: no** (accuracy criterion met; speed-up 0.99× vs ≥ 1.1× required). The app uses the FP32 model.
 
 ## Environment
 
@@ -63,8 +63,8 @@ Weights quantised to unsigned 8-bit with ONNX Runtime `quantize_dynamic` (activa
 ## Provenance
 
 - Training run `runs/unet1d-20261028-125810`, commit `deb7b35a42b322302b89ddfbc0e03a45bb21e4f1` (dirty: False)
-- Export commit `d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf` (dirty: False), 2026-10-28T13:52:54+00:00
-- Report commit `d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf` (dirty: False), vstent 0.1.0, 2026-10-28T13:52:55+00:00
+- Export commit `49c9b40fa69dee2ac15629d80f990843c54d8eb7` (dirty: False), 2026-10-28T16:01:14+00:00
+- Report commit `49c9b40fa69dee2ac15629d80f990843c54d8eb7` (dirty: False), vstent 0.1.0, 2026-10-28T16:01:16+00:00
 
 ## Limitations
 

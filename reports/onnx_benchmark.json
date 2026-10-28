@@ -8,13 +8,13 @@
     },
     {
       "metric": "Single-vessel latency, median (end-to-end)",
-      "value": "1.40 ms",
+      "value": "1.53 ms",
       "target": "< 10 ms",
       "passed": true
     },
     {
       "metric": "Batch of 1,024 vessels, median (end-to-end)",
-      "value": "204.7 ms",
+      "value": "187.7 ms",
       "target": "< 300 ms",
       "passed": true
     }
@@ -23,59 +23,59 @@
   "timings": {
     "default": {
       "single_end_to_end": {
-        "median_ms": 1.3985,
-        "p95_ms": 1.5833549999999998,
-        "min_ms": 1.3224,
+        "median_ms": 1.5275,
+        "p95_ms": 1.9966499999999998,
+        "min_ms": 1.3822,
         "runs": 200
       },
       "single_inference": {
-        "median_ms": 1.267,
-        "p95_ms": 1.4900449999999998,
-        "min_ms": 1.218,
+        "median_ms": 1.3179500000000002,
+        "p95_ms": 1.6522799999999995,
+        "min_ms": 1.2361,
         "runs": 200
       },
       "batch_end_to_end": {
-        "median_ms": 204.67860000000002,
-        "p95_ms": 217.56072500000002,
-        "min_ms": 198.838,
+        "median_ms": 187.7277,
+        "p95_ms": 206.47425500000003,
+        "min_ms": 177.9082,
         "runs": 20
       },
       "batch_inference": {
-        "median_ms": 195.37869999999998,
-        "p95_ms": 202.982095,
-        "min_ms": 187.4275,
+        "median_ms": 191.09525000000002,
+        "p95_ms": 198.821055,
+        "min_ms": 183.7534,
         "runs": 20
       },
       "batch_size": 1024,
       "settings": {
-        "workers": 8,
-        "chunk_size": 16,
+        "workers": 16,
+        "chunk_size": 8,
         "intra_op_threads": 1
       }
     },
     "one_call": {
       "single_end_to_end": {
-        "median_ms": 0.9599,
-        "p95_ms": 1.217685,
-        "min_ms": 0.8415,
+        "median_ms": 1.3793,
+        "p95_ms": 1.7847549999999999,
+        "min_ms": 1.0025,
         "runs": 200
       },
       "single_inference": {
-        "median_ms": 0.84935,
-        "p95_ms": 1.0835299999999999,
-        "min_ms": 0.7376,
+        "median_ms": 1.15205,
+        "p95_ms": 1.5202049999999998,
+        "min_ms": 0.8792,
         "runs": 200
       },
       "batch_end_to_end": {
-        "median_ms": 582.42,
-        "p95_ms": 594.6576699999999,
-        "min_ms": 571.1174,
+        "median_ms": 640.1131499999999,
+        "p95_ms": 657.9689050000001,
+        "min_ms": 589.0845,
         "runs": 20
       },
       "batch_inference": {
-        "median_ms": 567.2084500000001,
-        "p95_ms": 585.61583,
-        "min_ms": 543.8825,
+        "median_ms": 553.4961000000001,
+        "p95_ms": 580.096055,
+        "min_ms": 540.8844,
         "runs": 20
       },
       "batch_size": 1024,
@@ -87,9 +87,9 @@
     }
   },
   "solver": {
-    "median_ms": 17.3072,
-    "p95_ms": 17.93381,
-    "min_ms": 17.0003,
+    "median_ms": 18.122700000000002,
+    "p95_ms": 19.306235,
+    "min_ms": 17.2388,
     "runs": 20,
     "batch_size": 1024
   },
@@ -97,13 +97,13 @@
     "weight_type": "QUInt8",
     "n": 10000,
     "distal_mae_fp32": 0.001285392208956182,
-    "distal_mae_int8": 0.002975764684379101,
-    "mae_rise": 0.0016903724754229188,
-    "max_abs_diff": 0.08419442176818848,
+    "distal_mae_int8": 0.002617087448015809,
+    "mae_rise": 0.001331695239059627,
+    "max_abs_diff": 0.06412369012832642,
     "batch_size": 1024,
-    "batch_median_ms_fp32": 221.54485,
-    "batch_median_ms_int8": 214.56754999999998,
-    "speedup": 1.03251796462233,
+    "batch_median_ms_fp32": 192.68725,
+    "batch_median_ms_int8": 194.1467,
+    "speedup": 0.9924827462944258,
     "fp32_bytes": 4298023,
     "int8_bytes": 1465651,
     "accuracy_ok": true,
@@ -144,15 +144,15 @@
     "run_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1",
     "run_git_dirty": false,
     "export": {
-      "git_commit": "d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf",
+      "git_commit": "49c9b40fa69dee2ac15629d80f990843c54d8eb7",
       "git_dirty": false,
-      "created_utc": "2026-10-28T13:52:54+00:00"
+      "created_utc": "2026-10-28T16:01:14+00:00"
     },
     "report": {
-      "git_commit": "d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf",
+      "git_commit": "49c9b40fa69dee2ac15629d80f990843c54d8eb7",
       "git_dirty": false,
       "vstent_version": "0.1.0",
-      "created_utc": "2026-10-28T13:52:55+00:00"
+      "created_utc": "2026-10-28T16:01:16+00:00"
     }
   }
 }
