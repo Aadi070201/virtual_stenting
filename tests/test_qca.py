@@ -5,6 +5,7 @@ from scipy.spatial import cKDTree
 
 from vstent.imaging.centerline import (
     clean_mask,
+    longest_path_endpoints,
     prune_spurs,
     skeleton_graph,
     smooth_and_resample,
@@ -55,7 +56,7 @@ def test_qca_units_and_calibration_flag():
     given = qca_from_centerline(tube.image, assumed.centerline, mm_per_px=0.2)
     assert not given.calibration_assumed
     np.testing.assert_allclose(given.diameter_mm, given.diameters.diameter_px * 0.2)
-    assert given.s_mm[-1] == pytest.approx(assumed.centerline.length * 0.2)
+    assert given.s_mm[-1] == pytest.approx(given.centerline.length * 0.2)
     assert m_to_mm(given.profile.ds) == pytest.approx(0.2 * assumed.centerline.s[1])
     assert given.mld_mm == pytest.approx(given.diameter_mm.min())
     assert len(given.lesions) == 1 and given.reference_diameter_mm.shape == given.s_mm.shape
@@ -98,3 +99,25 @@ def test_smooth_and_resample_is_uniform():
     assert np.allclose(steps, steps[0]) and steps[0] == pytest.approx(1.0, rel=0.05)
     assert np.allclose(np.linalg.norm(cl.normals, axis=1), 1.0)
     assert np.allclose((cl.normals * cl.tangents).sum(axis=1), 0.0, atol=1e-9)
+
+
+def test_end_trimming_removes_one_diameter_per_end():
+    tube = _tube(0.0, 0.0, 12.0, 1.0, 0.0)
+    full = run_qca(tube.image, tube.points[0], tube.points[-1])
+    untrimmed = qca_from_centerline(tube.image, full.centerline, trim_diameters=0.0)
+    assert untrimmed.centerline.length == pytest.approx(full.centerline.length)
+    raw = trace_centerline(tube.image >= 0.5, tube.points[0], tube.points[-1])
+    trimmed = qca_from_centerline(tube.image, raw)
+    removed = raw.length - trimmed.centerline.length
+    assert removed == pytest.approx(2 * 12.0, abs=2.0)  # median diameter ≈ reference 12 px
+    assert trimmed.centerline.s[0] == 0.0
+
+
+def test_longest_path_starts_at_wider_end():
+    pts, s = sine_centerline((0.0, 0.0), 250.0, angle_deg=30.0, amplitude_px=10.0)
+    pts = pts - (pts.min(axis=0) + pts.max(axis=0)) / 2 + np.array(SHAPE) / 2
+    wide_first = np.linspace(16.0, 6.0, s.size)  # tapering vessel
+    for diameter, wide_end in ((wide_first, pts[0]), (wide_first[::-1], pts[-1])):
+        tube = render_tube(SHAPE, pts, s, diameter, noise_std=0.0)
+        a, _ = longest_path_endpoints(tube.image >= 0.5)
+        assert np.hypot(a[0] - wide_end[0], a[1] - wide_end[1]) < 15

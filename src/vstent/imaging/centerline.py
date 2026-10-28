@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 import networkx as nx
 import numpy as np
+from scipy.ndimage import distance_transform_edt
 from scipy.signal import savgol_filter
 from scipy.spatial import cKDTree
 from skimage.morphology import remove_small_holes, remove_small_objects, skeletonize
@@ -181,10 +182,12 @@ def vessel_graph(mask: np.ndarray, min_spur_px: float = MIN_SPUR_PX) -> nx.Graph
 def longest_path_endpoints(
     mask: np.ndarray, min_spur_px: float = MIN_SPUR_PX
 ) -> tuple[Pixel, Pixel]:
-    """Two far-apart skeleton points of the largest vessel component (double sweep).
+    """Two far-apart skeleton points of the largest vessel component, wider end first.
 
-    From any node, the farthest node ``a`` (path length); from ``a``, the farthest ``b``. Exact
-    for tree-shaped skeletons. Used to pick a path automatically (gallery, demo).
+    Double sweep: from any node, the farthest node ``a`` (path length); from ``a``, the
+    farthest ``b`` (exact for tree-shaped skeletons). The pair is ordered so that the end where
+    the vessel is wider (median distance transform over the first / last tenth of the path)
+    comes first: flow enters at the proximal, wider end. Used to pick a path automatically.
     """
     graph = vessel_graph(mask, min_spur_px)
     if graph.number_of_nodes() == 0:
@@ -193,5 +196,8 @@ def longest_path_endpoints(
     start = next(iter(component.nodes))
     dist = nx.single_source_dijkstra_path_length(component, start, weight="weight")
     a = max(dist, key=dist.get)
-    dist = nx.single_source_dijkstra_path_length(component, a, weight="weight")
-    return a, max(dist, key=dist.get)
+    dist, paths = nx.single_source_dijkstra(component, a, weight="weight")
+    b = max(dist, key=dist.get)
+    width = distance_transform_edt(clean_mask(mask))[tuple(np.asarray(paths[b]).T)]
+    k = max(3, len(width) // 10)
+    return (a, b) if np.median(width[:k]) >= np.median(width[-k:]) else (b, a)
