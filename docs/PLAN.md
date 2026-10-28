@@ -106,11 +106,11 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 
 ## M4: ONNX export and runtime (`surrogate/export.py`, `inference/onnx_runtime.py`)
 
-- [ ] Export with opset 17 and a dynamic batch axis (N fixed at 256; resampling happens in pre-processing)
-- [ ] `SurrogateRunner` class: loads the `.onnx` file + normalisation stats and uses the shared `features.py`
-- [ ] Parity test: max |FFR_torch − FFR_onnx| < 1e-4 on 1,000 test samples
-- [ ] Benchmark → `reports/onnx_benchmark.md` (record CPU model): median single-sample latency < 10 ms; batch of 1,024 < 300 ms
-- [ ] *(Optional)* dynamic INT8 quantisation; keep it only if distal MAE rises by < 0.002
+- [x] Export with opset 17 and a dynamic batch axis (N fixed at 256; resampling happens in pre-processing)
+- [x] `SurrogateRunner` class: loads the `.onnx` file + normalisation stats and uses the shared `features.py`
+- [x] Parity test: max |FFR_torch − FFR_onnx| < 1e-4 on 1,000 test samples
+- [x] Benchmark → `reports/onnx_benchmark.md` (record CPU model): median single-sample latency < 10 ms; batch of 1,024 < 300 ms
+- [x] *(Optional)* dynamic INT8 quantisation; keep it only if distal MAE rises by < 0.002 — evaluated in every export, not kept: no speed-up (DECISIONS D18)
 
 **Done when:** parity and benchmark targets are met and documented.
 

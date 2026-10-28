@@ -105,3 +105,29 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - The first M3 run (`runs/unet1d-20261028-091227`) was stopped at epoch 30 on request before checkpointing existed; it is superseded and not used in any report.
 - Stretch goal (5-seed ensemble with uncertainty) not done.
 - These numbers measure agreement with the reduced-order solver on synthetic data only; accuracy on real angiography-derived profiles is not measured until M5–M6.
+
+---
+
+## 2026-10-28 — M4: ONNX export and runtime
+
+**Done**
+- `surrogate/export.py`: TorchScript exporter at opset 17 (the dynamo exporter cannot target 17 for this model; DECISIONS D16), dynamic batch axis, N = 256, metadata embedded (feature version, N, channels, run, disclaimer) and `onnx.checker` full check. Writes `models/surrogate/<run>/` with `surrogate.onnx`, `norm_stats.json`, `config.yaml` and `export_meta.json` (run and export commits, versions, SHA-256, parity).
+- `inference/onnx_runtime.py`: torch-free `SurrogateRunner` (`predict(RawInputs)`, `predict_features`, `predict_profile(VesselProfile, pa, pv, r_micro)`), using the shared `features.prepare_inputs`, checking model metadata against the normalisation stats, and splitting large batches into chunks of 16 run in parallel (D17).
+- `inference/benchmark.py`: CPU latency (runner default and single-call), reduced-order solver on the same vessels for context, optional INT8 check → `reports/onnx_benchmark.{md,json}`.
+- `vstent export-surrogate --run runs/<name>`: export + parity + benchmark; exit code 1 if a target is missed.
+- `RawInputs.subset`; `NORM_STATS` moved to `features.py` so the runtime does not import torch.
+- 10 new tests (1 slow): files and provenance, opset / metadata / dynamic axis, parity, batch sizes 1 / 7 / 33 with chunked = serial, profile prediction vs torch, metadata mismatch rejected, subset, report, CLI.
+
+**Metrics** (from `reports/onnx_benchmark.md`; model from run `runs/unet1d-20261028-125810`, exported and reported at commit d9c8d1e, clean; AMD Ryzen 7 6800H)
+- Parity: max |FFR_torch − FFR_onnx| = **5.4e-07** over 1,000 test vessels, all 256 points (target < 1e-4).
+- Single vessel, end-to-end median: **1.40 ms** (target < 10 ms).
+- Batch of 1,024, end-to-end median: **204.7 ms** (target < 300 ms). The same batch in one ONNX call: 582.4 ms (missed the target; see open issues).
+- Context: the reduced-order solver computes the same 1,024 vessels in 17.3 ms. No speed-up over the solver is claimed.
+- Optional INT8 (unsigned weights): distal MAE 0.0030 vs 0.0013 (+0.0017, within the 0.002 allowance) but only 1.03× faster → not kept; the app uses FP32.
+- Checks: ruff clean; `pytest -m "not slow"`: 88 passed; full suite 91 passed.
+
+**Open issues / observations**
+- The first benchmark (one multi-threaded ONNX call on the whole batch) missed the batch target at ≈ 0.57 s. Profiling showed the model is memory-bound at batch 1,024 (≈ 43% of the time in normalisation / element-wise ops; no gain beyond 4 threads). Chunked parallel inference fixed it without touching the model (D17). The cost is single-vessel latency, up from ≈ 0.95 ms to ≈ 1.4 ms.
+- The TorchScript exporter is deprecated in torch; it works with the pinned torch 2.14.1. Moving to the dynamo exporter means opset 18 and the `onnxscript` dependency (D16).
+- Signed INT8 weights were about 10× slower in an exploration run; only unsigned weights are checked (D18).
+- Timings are wall-clock on one laptop and vary by a few percent between runs (e.g. FP32 batch 205 ms in the main table vs 222 ms in the INT8 comparison pass).

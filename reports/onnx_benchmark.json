@@ -1,0 +1,158 @@
+{
+  "targets": [
+    {
+      "metric": "Parity: max abs(FFR_torch - FFR_onnx) over 1,000 test vessels, all points",
+      "value": "5.4e-07",
+      "target": "< 0.0001",
+      "passed": true
+    },
+    {
+      "metric": "Single-vessel latency, median (end-to-end)",
+      "value": "1.40 ms",
+      "target": "< 10 ms",
+      "passed": true
+    },
+    {
+      "metric": "Batch of 1,024 vessels, median (end-to-end)",
+      "value": "204.7 ms",
+      "target": "< 300 ms",
+      "passed": true
+    }
+  ],
+  "targets_met": true,
+  "timings": {
+    "default": {
+      "single_end_to_end": {
+        "median_ms": 1.3985,
+        "p95_ms": 1.5833549999999998,
+        "min_ms": 1.3224,
+        "runs": 200
+      },
+      "single_inference": {
+        "median_ms": 1.267,
+        "p95_ms": 1.4900449999999998,
+        "min_ms": 1.218,
+        "runs": 200
+      },
+      "batch_end_to_end": {
+        "median_ms": 204.67860000000002,
+        "p95_ms": 217.56072500000002,
+        "min_ms": 198.838,
+        "runs": 20
+      },
+      "batch_inference": {
+        "median_ms": 195.37869999999998,
+        "p95_ms": 202.982095,
+        "min_ms": 187.4275,
+        "runs": 20
+      },
+      "batch_size": 1024,
+      "settings": {
+        "workers": 8,
+        "chunk_size": 16,
+        "intra_op_threads": 1
+      }
+    },
+    "one_call": {
+      "single_end_to_end": {
+        "median_ms": 0.9599,
+        "p95_ms": 1.217685,
+        "min_ms": 0.8415,
+        "runs": 200
+      },
+      "single_inference": {
+        "median_ms": 0.84935,
+        "p95_ms": 1.0835299999999999,
+        "min_ms": 0.7376,
+        "runs": 200
+      },
+      "batch_end_to_end": {
+        "median_ms": 582.42,
+        "p95_ms": 594.6576699999999,
+        "min_ms": 571.1174,
+        "runs": 20
+      },
+      "batch_inference": {
+        "median_ms": 567.2084500000001,
+        "p95_ms": 585.61583,
+        "min_ms": 543.8825,
+        "runs": 20
+      },
+      "batch_size": 1024,
+      "settings": {
+        "workers": 1,
+        "chunk_size": null,
+        "intra_op_threads": "ORT default"
+      }
+    }
+  },
+  "solver": {
+    "median_ms": 17.3072,
+    "p95_ms": 17.93381,
+    "min_ms": 17.0003,
+    "runs": 20,
+    "batch_size": 1024
+  },
+  "int8": {
+    "weight_type": "QUInt8",
+    "n": 10000,
+    "distal_mae_fp32": 0.001285392208956182,
+    "distal_mae_int8": 0.002975764684379101,
+    "mae_rise": 0.0016903724754229188,
+    "max_abs_diff": 0.08419442176818848,
+    "batch_size": 1024,
+    "batch_median_ms_fp32": 221.54485,
+    "batch_median_ms_int8": 214.56754999999998,
+    "speedup": 1.03251796462233,
+    "fp32_bytes": 4298023,
+    "int8_bytes": 1465651,
+    "accuracy_ok": true,
+    "kept": false
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
+    "logical_cpus": 16,
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "onnxruntime": "1.31.0",
+    "python": "3.14.5",
+    "platform": "Windows-11-10.0.26300-SP0"
+  },
+  "model": {
+    "onnx_file": "surrogate.onnx",
+    "onnx_sha256": "5dea854feeb2d5b5437ba66b8aabf23a46b473ef4c37b5a5dfa48943922a5b55",
+    "onnx_bytes": 4298023,
+    "opset": 17,
+    "dir": "models/surrogate/unet1d-20261028-125810",
+    "n_points": 256,
+    "base_channels": 32,
+    "versions": {
+      "vstent": "0.1.0",
+      "torch": "2.14.1+cu126",
+      "onnx": "1.23.2",
+      "onnxruntime": "1.31.0"
+    }
+  },
+  "data": {
+    "dir": "data/synth/v1",
+    "split": "test",
+    "n_vessels": 1024
+  },
+  "provenance": {
+    "run": "runs/unet1d-20261028-125810",
+    "run_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1",
+    "run_git_dirty": false,
+    "export": {
+      "git_commit": "d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf",
+      "git_dirty": false,
+      "created_utc": "2026-10-28T13:52:54+00:00"
+    },
+    "report": {
+      "git_commit": "d9c8d1e23e6c5663c67e7b753aeaba450f1e67bf",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-10-28T13:52:55+00:00"
+    }
+  }
+}
