@@ -70,7 +70,8 @@ vstent/
   src/vstent/
     physics/            # geometry.py, solver.py, report.py
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py
-    surrogate/          # features.py, model.py, train.py, evaluate.py, export.py
+    surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
+                        # baseline.py, evaluate.py, export.py
     imaging/            # segment.py, centerline.py, qca.py
     planning/           # stent.py, optimizer.py
     inference/          # onnx_runtime.py, pipeline.py

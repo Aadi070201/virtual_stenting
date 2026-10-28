@@ -1,0 +1,25 @@
+# FFR surrogate training (docs/PLAN.md, M3). Run outputs go to runs/<name>-<UTC timestamp>/.
+name: unet1d
+data_dir: data/synth/v1
+runs_dir: runs
+seed: 0
+
+model:                   # 1D U-Net, FiLM-conditioned on global features, monotone FFR head
+  base_channels: 32
+  levels: 4              # channels 32, 64, 128, 256
+  groups: 8              # GroupNorm groups
+  cond_dim: 128
+
+train:
+  epochs: 50
+  batch_size: 256
+  lr: 1.0e-3             # AdamW, cosine decay to 0 over all steps
+  weight_decay: 1.0e-4
+  distal_weight: 2.0     # loss = MSE(curve) + 2 × MSE(distal FFR)
+  patience: 10           # early stopping on validation distal MAE
+  grad_clip: 1.0
+  amp: true              # float16 autocast on CUDA; head and loss in float32
+  device: auto           # cuda if available, else cpu
+  eval_batch_size: 4096
+  max_train_samples: null
+  max_val_samples: null

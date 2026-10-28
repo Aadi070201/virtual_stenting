@@ -15,6 +15,7 @@ dependencies = [
     "onnx>=1.16",
     "onnxruntime>=1.18",
     "matplotlib>=3.9",
+    "scikit-learn>=1.5",
 ]
 
 [project.optional-dependencies]

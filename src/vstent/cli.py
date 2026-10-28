@@ -99,15 +99,38 @@ def synth(
 
 
 @app.command()
-def train_surrogate(config: ConfigOpt) -> None:
-    """Train the FFR surrogate model."""
-    _not_implemented("M3")
+def train_surrogate(
+    config: ConfigOpt,
+    name: Annotated[str | None, typer.Option("--name", help="Override the run name.")] = None,
+) -> None:
+    """Train the FFR surrogate model; prints the run directory."""
+    from vstent.config import load_config
+    from vstent.surrogate.train import SurrogateConfig, train_surrogate
+
+    cfg = load_config(config, SurrogateConfig)
+    if name is not None:
+        cfg = cfg.model_copy(update={"name": name})
+    run_dir = train_surrogate(cfg, log=typer.echo)
+    typer.echo(f"Run directory: {run_dir}")
 
 
 @app.command()
-def eval_surrogate(run: RunOpt) -> None:
-    """Evaluate a trained surrogate against the physics solver."""
-    _not_implemented("M3")
+def eval_surrogate(
+    run: RunOpt,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write surrogate_eval.md.")
+    ] = Path("reports"),
+    device: Annotated[str, typer.Option("--device", help="auto, cpu or cuda.")] = "auto",
+) -> None:
+    """Evaluate a trained surrogate against the physics solver and the baseline."""
+    from vstent.surrogate.evaluate import evaluate_run
+
+    report = evaluate_run(run, report_dir, device=device, log=typer.echo)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'surrogate_eval.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
 
 
 @app.command()
