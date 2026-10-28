@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from vstent.config import load_config
-from vstent.data.synth import SynthConfig, generate_dataset, load_split
+from vstent.data.synth import load_split
 from vstent.physics.geometry import cosine_lesion_profile
 from vstent.physics.solver import solve_ffr
 from vstent.surrogate.baseline import BASELINE_FEATURES, hand_features
@@ -30,16 +29,6 @@ from vstent.surrogate.train import (
 
 MM = 1e-3
 SMALL_MODEL = ModelConfig(base_channels=8, levels=3, groups=4, cond_dim=16)
-
-
-@pytest.fixture(scope="module")
-def tiny_data(tmp_path_factory):
-    cfg = load_config("configs/synth_v1.yaml", SynthConfig)
-    sizes = {"train": 96, "val": 32, "test": 32, "ood": 16}
-    splits = {k: v.model_copy(update={"n": sizes[k]}) for k, v in cfg.splits.items()}
-    out = tmp_path_factory.mktemp("synth")
-    generate_dataset(cfg.model_copy(update={"splits": splits}), out_dir=out, workers=1)
-    return out
 
 
 def _raw_from_profile():
@@ -161,7 +150,9 @@ def test_train_and_evaluate_smoke(tmp_path, tiny_data):
         model=SMALL_MODEL,
         train=TrainConfig(epochs=2, batch_size=32, device="cpu", patience=5),
     )
-    run_dir = train_surrogate(cfg, run_dir=tmp_path / "runs" / "smoke")
+    run_dir = train_surrogate(
+        cfg, run_dir=tmp_path / "runs" / "smoke", checkpoint_root=tmp_path / "checkpoints"
+    )
     for name in (
         "config.yaml",
         "run_meta.yaml",

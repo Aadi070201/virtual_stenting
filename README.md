@@ -48,6 +48,8 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | `vstent physics-report` | physics sanity checks → `reports/physics_checks.md` + FFR-vs-%DS figure | M1 |
 | `vstent synth --config configs/synth_v1.yaml` | generate the synthetic dataset (~0.5 GB in `data/synth/v1/`) + `reports/dataset_card.md` | M2 |
 | `vstent train-surrogate --config configs/surrogate.yaml` | train the FFR surrogate | M3 |
+| `vstent stop <run-name>` / `vstent checkpoints` | pause a training after the current epoch / list resumable runs | — |
+| `vstent train-surrogate --resume <run-name>` | continue a stopped or interrupted training exactly | M3 |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver | M3 |
 | `vstent export-surrogate --run runs/<name>` | export the surrogate to ONNX | M4 |
 | `vstent data arcade` | download the ARCADE dataset | M5 |
@@ -65,6 +67,7 @@ tests/        pytest suite (slow tests marked @pytest.mark.slow)
 reports/      generated metrics and figures
 notebooks/    exploration only, never the source of truth
 data/ models/ runs/   generated artefacts (git-ignored)
+checkpoints/          resumable training state, one folder per run (git-ignored)
 ```
 
 ## Limitations

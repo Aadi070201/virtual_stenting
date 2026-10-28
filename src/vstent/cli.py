@@ -100,18 +100,66 @@ def synth(
 
 @app.command()
 def train_surrogate(
-    config: ConfigOpt,
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config (new run)."),
+    ] = None,
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Continue a stopped run (name or path).")
+    ] = None,
     name: Annotated[str | None, typer.Option("--name", help="Override the run name.")] = None,
 ) -> None:
-    """Train the FFR surrogate model; prints the run directory."""
+    """Train the FFR surrogate (new run with --config, or continue one with --resume)."""
     from vstent.config import load_config
-    from vstent.surrogate.train import SurrogateConfig, train_surrogate
+    from vstent.surrogate.train import SurrogateConfig, resume_surrogate, train_surrogate
 
-    cfg = load_config(config, SurrogateConfig)
-    if name is not None:
-        cfg = cfg.model_copy(update={"name": name})
-    run_dir = train_surrogate(cfg, log=typer.echo)
+    if (config is None) == (resume is None):
+        typer.echo("Give exactly one of --config (new run) or --resume (continue).", err=True)
+        raise typer.Exit(code=2)
+    if resume is not None:
+        run_dir = resume_surrogate(resume, log=typer.echo)
+    else:
+        cfg = load_config(config, SurrogateConfig)
+        if name is not None:
+            cfg = cfg.model_copy(update={"name": name})
+        run_dir = train_surrogate(cfg, log=typer.echo)
     typer.echo(f"Run directory: {run_dir}")
+
+
+@app.command()
+def checkpoints() -> None:
+    """List resumable training runs in checkpoints/ with their status."""
+    from vstent.checkpoints import list_checkpoints
+
+    rows = list_checkpoints()
+    if not rows:
+        typer.echo("No checkpoints.")
+        return
+    for r in rows:
+        best = r.get("best_val_distal_mae")
+        best_txt = f", best {best:.4f} (epoch {r['best_epoch']})" if best is not None else ""
+        typer.echo(
+            f"{r['name']}  [{r['kind']}]  {r['status']}  epoch {r['epoch']}/{r['epochs']}"
+            f"{best_txt}  updated {r['updated_utc']}"
+        )
+        if r["status"] != "finished":
+            typer.echo(f"    resume: {r['resume_command']}")
+
+
+@app.command()
+def stop(
+    run: Annotated[str, typer.Argument(help="Run name (as shown by `vstent checkpoints`).")],
+) -> None:
+    """Ask a running training to save its state and exit after the current epoch."""
+    from vstent.checkpoints import request_stop, resolve_checkpoint
+
+    try:
+        ckpt_dir = resolve_checkpoint(run)
+    except FileNotFoundError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+    request_stop(ckpt_dir)
+    typer.echo(f"Stop requested for {ckpt_dir.name}; it will stop after the current epoch.")
 
 
 @app.command()

@@ -25,6 +25,7 @@ The detailed, step-by-step plan with acceptance criteria is in **`docs/PLAN.md`*
 4. Continue to the next task **without waiting for confirmation**, until milestone M8 is complete or you are blocked.
 5. Record every non-trivial design decision in `docs/DECISIONS.md` (one short paragraph: decision, reason, alternatives).
 6. Keep this file up to date if commands or structure change.
+7. **Every training loop must be stoppable and resumable** through `vstent.checkpoints`: save the full state (model, optimiser, scheduler, AMP scaler, RNG, history) to `checkpoints/<run-name>/` after every epoch, honour the `STOP` file, and offer `--resume <run-name>` on its CLI command. To pause a run: `vstent stop <run-name>` (it exits after the current epoch); `vstent checkpoints` lists runs and their resume commands.
 
 **Stop and ask the human only when:**
 - a dataset download fails or needs a manual licence acceptance
@@ -77,12 +78,14 @@ vstent/
     inference/          # onnx_runtime.py, pipeline.py
     app/                # streamlit_app.py
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
+    checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
     units.py            # mmHg <-> Pa, mm <-> m
     sysinfo.py          # CPU model for benchmarks
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
   data/  models/  runs/ # git-ignored
+  checkpoints/          # git-ignored; checkpoints/<run-name>/{last.pt, state.json, STOP}
 ```
 
 ## Commands (create these in M0, keep them working)
@@ -98,6 +101,9 @@ uv run ruff check . && uv run ruff format --check . && uv run pytest -m "not slo
 uv run vstent physics-report    # M1 sanity checks + reports/figures/ffr_vs_ds.png
 uv run vstent synth --config configs/synth_v1.yaml
 uv run vstent train-surrogate --config configs/surrogate.yaml
+uv run vstent train-surrogate --resume <run-name>   # continue a stopped / interrupted run
+uv run vstent stop <run-name>                       # pause a running training after this epoch
+uv run vstent checkpoints                           # list resumable runs + resume commands
 uv run vstent eval-surrogate --run runs/<name>
 uv run vstent export-surrogate --run runs/<name>
 uv run vstent data arcade
