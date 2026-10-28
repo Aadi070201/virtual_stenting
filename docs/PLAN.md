@@ -142,17 +142,17 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 
 ## M6: Virtual stent + plan optimiser (`src/vstent/planning/`)
 
-- [ ] `stent.py`: `apply_stent(profile, s_start, length, diameter, expansion=1.0, edge_mm=1.0)`. Over the stented segment, r_new(s) = max(r(s), expansion · diameter/2), with cosine blending at the edges over `edge_mm`. The lumen is never reduced. Support multiple stents.
-- [ ] `configs/stent_catalog.yaml` (generic): diameters 2.25–4.00 mm in 0.25 mm steps; lengths 8, 12, 15, 18, 22, 26, 30, 34, 38 mm
-- [ ] `optimizer.py`:
+- [x] `stent.py`: `apply_stent(profile, s_start, length, diameter, expansion=1.0, edge_mm=1.0)`. Over the stented segment, r_new(s) = max(r(s), expansion · diameter/2), with cosine blending at the edges over `edge_mm`. The lumen is never reduced. Support multiple stents.
+- [x] `configs/stent_catalog.yaml` (generic): diameters 2.25–4.00 mm in 0.25 mm steps; lengths 8, 12, 15, 18, 22, 26, 30, 34, 38 mm
+- [x] `optimizer.py`:
   - **Candidates:** catalogue diameters × lengths × start positions (0.5 mm steps) that cover the lesion MLD
   - **Constraints:** diameter ≤ 1.1 × reference diameter at the distal landing zone; both landing zones in segments with DS < 30%; stent inside the vessel
   - **Objective:** among plans reaching the target post-FFR (default 0.90), choose the minimum total stent length; if none reaches it, maximise post-FFR
   - **Output:** top 3 plans + Pareto front (length vs post-FFR)
   - **Multi-lesion:** allow up to 2 stents (combine the top-k single-stent candidates for each lesion)
   - Evaluate in batches through the ONNX surrogate, with the solver as a switchable backend
-- [ ] Performance: ~5,000 candidates in < 1 s on CPU
-- [ ] Tests: focal lesion → the best plan covers the MLD, post-FFR ≥ 0.90 and is the shortest such plan; tandem lesions → handled with one long or two stents; every constraint enforced
+- [x] Performance: ~5,000 candidates in < 1 s on CPU
+- [x] Tests: focal lesion → the best plan covers the MLD, post-FFR ≥ 0.90 and is the shortest such plan; tandem lesions → handled with one long or two stents; every constraint enforced
 
 **Done when:** all tests pass and the performance target is met.
 

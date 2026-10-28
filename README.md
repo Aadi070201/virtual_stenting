@@ -20,10 +20,11 @@ The build plan is in [docs/PLAN.md](docs/PLAN.md); progress is logged in
 
 Done: M0 (setup), M1 (reduced-order physics solver), M2 (synthetic data factory), M3 (FFR
 surrogate, see [reports/surrogate_eval.md](reports/surrogate_eval.md)), M4 (ONNX export and
-runtime, see [reports/onnx_benchmark.md](reports/onnx_benchmark.md)) and M5 (ARCADE vessel
+runtime, see [reports/onnx_benchmark.md](reports/onnx_benchmark.md)), M5 (ARCADE vessel
 segmentation, QCA and the end-to-end pipeline, see [reports/seg_eval.md](reports/seg_eval.md)
-and [reports/qca_gallery.md](reports/qca_gallery.md)). The remaining commands are stubs until
-their milestone is implemented.
+and [reports/qca_gallery.md](reports/qca_gallery.md)) and M6 (virtual stent and plan optimiser,
+see [reports/planner_benchmark.md](reports/planner_benchmark.md)). The remaining commands are
+stubs until their milestone is implemented.
 
 ## Quickstart
 

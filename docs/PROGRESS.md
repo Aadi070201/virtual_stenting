@@ -177,3 +177,46 @@ Chose (3.0, 3.5) (DECISIONS D10).
 - **Auto-selected paths are long** (68–265 mm) and run into thin distal branches. With constant flow and no side branches the model then overstates pressure losses (val 10: 31% max DS, FFR 0.06). User-selected single segments (the app in M7) are the intended use.
 - **Surrogate out of range:** it extrapolates on most real paths (length > 80 mm) and once went below Pv/Pa before the warning was added. Retraining on longer and larger synthetic vessels would be a Phase 2 or M6+ consideration.
 - The superseded first M3 run folder (`runs/unet1d-20261028-091227`) is still on disk.
+
+---
+
+## 2026-10-28 — M6: virtual stent and plan optimiser
+
+**Done**
+- `planning/stent.py`: `Stent`, `stent_weight`, `stented_radius`, `apply_stent(s)`. The lumen is never reduced, edges are half-cosine blended inside the stent ends, multiple stents are supported, and stents outside the vessel are rejected (D23).
+- `solve_ffr_batch(..., r_micro=...)`: post-PCI evaluation with the pre-PCI R_micro, Pa and Pv (API addition only).
+- `configs/stent_catalog.yaml` (generic: 2.25–4.00 mm in 0.25 mm steps; 8–38 mm) and `configs/planner.yaml`.
+- `planning/optimizer.py` (D24):
+  - candidates covering a lesion MLD on a 0.5 mm grid;
+  - vectorised constraints: inside the vessel, diameter ≤ 1.1 × distal reference, DS < 30% over 2 mm landing zones;
+  - ranking: shortest plan reaching FFR ≥ 0.90, else the highest FFR;
+  - up to two stents (per-length pools per lesion, deduplicated, non-overlapping) and a Pareto front;
+  - surrogate or solver backend; surrogate plans are re-checked by the solver.
+- `planning/report.py` + `vstent plan-benchmark` → `reports/planner_benchmark.md`; `vstent analyse <image> --plan`.
+- **Runner tuning for the 5,000-candidate target:** `SurrogateRunner` now defaults to chunks of 8 on all logical CPUs and pre-processes batches of ≥ 512 vessels in parallel (bit-identical results). The M4 report was regenerated with these defaults: batch of 1,024 now 188 ms (was 205 ms), single vessel 1.53 ms.
+- Tests: 19 new planning/CLI tests, including:
+  - focal lesion: the plan is the shortest feasible one reaching the target (brute force over all candidates);
+  - tandem lesions: one long or two stents;
+  - the two-stent optimum against exhaustive pairs;
+  - every constraint checked on every returned plan;
+  - no lesion; unreachable target; Pareto monotonicity; surrogate backend; solver throughput.
+
+  Full suite: 145 passed.
+
+**Metrics** (`reports/planner_benchmark.md`, commit 8c89eb0, clean; AMD Ryzen 7 6800H)
+- 5,000 candidates (stented radii + evaluation): **surrogate 0.959 s median** (max 1.024 s over 7 runs; target < 1 s); solver 0.154 s.
+- 100 synthetic test vessels with pre-PCI FFR < 0.80:
+  - both backends reach FFR ≥ 0.90 in 84/100;
+  - the solver confirms 82 of the surrogate's 84 plans;
+  - median |surrogate − solver| post-PCI FFR of the chosen plan: 0.0003;
+  - same total stent length in 81/84;
+  - 25 two-stent plans;
+  - planning time per vessel: 0.09 s median (0.35 s p95) with the surrogate, 0.01 s with the solver.
+- On ARCADE `stenosis/val` 110 (assumed 0.30 mm/px): 588 feasible candidates and 188 pairs in 0.17 s; best plan 3.00 × 12 mm + 2.75 × 15 mm, surrogate 0.907 (solver 0.948).
+
+**Open issues / observations**
+- **Narrow throughput margin:** the 5,000-candidate target is met by about 4%, and the slowest of 7 runs took 1.02 s. Real plans evaluate far fewer candidates (median 382 feasible), so planning itself takes ~0.1 s.
+- **Two surrogate plans fail the solver check:** for 2 of 84 vessels the surrogate predicts ≥ 0.90 but the solver gives < 0.90. The app should show the solver check next to the surrogate value (the planner already returns it).
+- **Unreachable targets:** 16/100 vessels cannot reach 0.90 under the constraints, e.g. disease in the landing zones, more than two lesions, or narrow distal references limiting the diameter. The planner then returns the highest-FFR plan and says so.
+- **Pairs are heuristic:** pools hold the best candidates per stent length, not an exhaustive search; overlapping stents (lesions longer than 38 mm) are not supported.
+- **Tie-break:** at equal length the highest FFR wins, so the largest allowed diameter (≤ 1.1 × distal reference) is chosen. A sizing-to-reference rule could be considered with clinical input.
