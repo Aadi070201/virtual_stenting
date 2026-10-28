@@ -74,10 +74,10 @@ Inputs: positions `s_i` (m, uniform spacing Δs, i = 0..N−1), radii `r_i` (m),
 - Pa ~ U(70, 110) mmHg; Pv ~ U(2, 8) mmHg; v_hyp ~ U(0.25, 0.45) m/s (microvascular variability)
 
 ### Tasks
-- [ ] Generator with per-split seeds: train 100k, val 10k, test 10k, plus `ood` 5k (L 80–120 mm, 3–4 lesions)
-- [ ] Store per sample: r (N), L, r_ref (N), Pa, Pv, R_micro, Q, FFR(s) (N), ΔP(s) (N), lesion metadata. Save as `.npz` shards in `data/synth/v1/` with the config
-- [ ] Multiprocessing; full generation < 15 min on a laptop CPU
-- [ ] `reports/dataset_card.md` + histograms (D0, L, DS, distal FFR, Q)
+- [x] Generator with per-split seeds: train 100k, val 10k, test 10k, plus `ood` 5k (L 80–120 mm, 3–4 lesions)
+- [x] Store per sample: r (N), L, r_ref (N), Pa, Pv, R_micro, Q, FFR(s) (N), ΔP(s) (N), lesion metadata. Save as `.npz` shards in `data/synth/v1/` with the config
+- [x] Multiprocessing; full generation < 15 min on a laptop CPU
+- [x] `reports/dataset_card.md` + histograms (D0, L, DS, distal FFR, Q)
 
 **Done when:** the dataset card shows ≥ 30% of samples with distal FFR < 0.80 and ≥ 15% in the grey zone [0.75, 0.85] (adjust sampling, never physics), and generation is reproducible from the seed.
 

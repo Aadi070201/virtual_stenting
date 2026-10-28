@@ -44,3 +44,36 @@ Newest entries at the bottom. Each entry: date, what was done, key metrics, open
 - In this model FFR is only weakly sensitive to lesion length (the expansion term depends only on A_min/A_max); e.g. at 70% DS: 5 mm → 0.639, 20 mm → 0.594. Documented as a limitation in PHYSICS.md.
 - `fixed_velocity` mode gives FFR < 0 for very severe lesions (≈ −80 at 90% DS); kept unclipped as a comparison mode, documented.
 - Measurement noise can split an expansion into several diverging runs and lower the expansion loss; relevant to M2 noisy labels (labels are computed from the same noisy profile, so they stay self-consistent).
+
+---
+
+## 2026-10-28 — M2: synthetic data factory
+
+**Done**
+- `data/synth.py`: `SynthConfig` / `SamplingConfig` (`configs/synth_v1.yaml`), `sample_vessel` (tapered reference, 0–4 lesions of 4 shapes with exact throat DS, diffuse disease, smoothed noise, Pa/Pv/v_hyp), `generate_shard` (float32 profile → labels from that exact profile), `generate_dataset` (multiprocessing, shard seeds = (split seed, shard index), per-shard content SHA-256, resolved config + git commit), `load_split`.
+- `data/card.py` + `vstent synth` → `reports/dataset_card.{md,json}`, `reports/figures/dataset_hist.png`.
+- 14 tests: config/ranges, shape bumps, placement constraints (margins, gaps, counts), exact nominal DS, OOD overrides, shard reproducibility, labels = solver on stored profile, worker-count independence, overwrite protection, card, CLI.
+
+**Sampling tuning (allowed; physics untouched).** With lesion DS ~ Beta(2, 2) the train grey zone was 14.3% (< 15%). Sweep on 10k samples each (seed (7, 0)):
+
+| Beta(a, b) | mass in 40–80% DS | FFR < 0.80 | grey zone | median FFR |
+|---|---|---|---|---|
+| (2.0, 2.0) | 0.746 | 59.1% | 14.2% | 0.728 |
+| (2.0, 2.5) | 0.715 | 51.4% | 16.6% | 0.791 |
+| (2.5, 2.5) | 0.796 | 59.3% | 15.2% | 0.733 |
+| (2.5, 3.0) | 0.765 | 52.9% | 17.5% | 0.783 |
+| (3.0, 3.0) | 0.832 | 59.8% | 17.0% | 0.738 |
+| **(3.0, 3.5)** | **0.803** | **52.7%** | **18.4%** | **0.783** |
+| (3.0, 4.0) | 0.765 | 47.4% | 19.2% | 0.811 |
+
+Chose (3.0, 3.5) (DECISIONS D10).
+
+**Metrics** (from `reports/dataset_card.md`, generated at commit 86ec53c, clean tree)
+- FFR < 0.80 / grey zone [0.75, 0.85]: train 53.3% / 18.4%, val 54.2% / 18.1%, test 53.8% / 17.8% (targets ≥ 30% / ≥ 15%: met). OOD: 96.1% / 7.4% (no target).
+- 125,000 samples in 8.4 s (13 processes, AMD Ryzen 7 6800H); target < 15 min. 504 MB on disk.
+- Reproducibility: full regeneration with 4 workers gave 13/13 identical shard content hashes.
+- R_micro clamped: 0 samples. Checks: ruff clean; `pytest -m "not slow"`: 59 passed.
+
+**Open issues / observations**
+- Train median max DS 55%; ~10% of vessels have no focal lesion (max DS mostly < 10% from noise / diffuse disease).
+- OOD is much more severe (median distal FFR 0.52), as expected for 3–4 lesions in 80–120 mm vessels.
