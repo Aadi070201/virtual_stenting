@@ -18,8 +18,8 @@ The build plan is in [docs/PLAN.md](docs/PLAN.md); progress is logged in
 
 ## Status
 
-M0 (setup) and M1 (reduced-order physics solver) are done. The remaining commands are stubs
-until their milestone is implemented.
+M0 (setup), M1 (reduced-order physics solver) and M2 (synthetic data factory) are done. The
+remaining commands are stubs until their milestone is implemented.
 
 ## Quickstart
 
@@ -46,7 +46,7 @@ Without uv: `python -m venv .venv`, activate it, then `pip install -e ".[dev,ima
 | Command | What it does | Milestone |
 |---|---|---|
 | `vstent physics-report` | physics sanity checks → `reports/physics_checks.md` + FFR-vs-%DS figure | M1 |
-| `vstent synth --config configs/synth_v1.yaml` | generate the synthetic vessel dataset | M2 |
+| `vstent synth --config configs/synth_v1.yaml` | generate the synthetic dataset (~0.5 GB in `data/synth/v1/`) + `reports/dataset_card.md` | M2 |
 | `vstent train-surrogate --config configs/surrogate.yaml` | train the FFR surrogate | M3 |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver | M3 |
 | `vstent export-surrogate --run runs/<name>` | export the surrogate to ONNX | M4 |

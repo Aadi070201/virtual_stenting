@@ -56,9 +56,46 @@ def physics_report(
 
 
 @app.command()
-def synth(config: ConfigOpt) -> None:
-    """Generate the synthetic vessel dataset."""
-    _not_implemented("M2")
+def synth(
+    config: ConfigOpt,
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Output directory (default: out_dir in config).")
+    ] = None,
+    workers: Annotated[
+        int | None, typer.Option("--workers", min=1, help="Worker processes (default: all cores).")
+    ] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Replace existing data.")] = False,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write the dataset card.")
+    ] = Path("reports"),
+) -> None:
+    """Generate the synthetic vessel dataset and its dataset card."""
+    from vstent.config import load_config
+    from vstent.data.card import write_dataset_card
+    from vstent.data.synth import SynthConfig, generate_dataset
+
+    cfg = load_config(config, SynthConfig)
+    try:
+        manifest = generate_dataset(
+            cfg, out_dir=out, workers=workers, overwrite=overwrite, log=typer.echo
+        )
+    except FileExistsError as exc:
+        typer.echo(f"{exc}. Pass --overwrite to replace it.", err=True)
+        raise typer.Exit(code=1) from exc
+    n_total = sum(split["n"] for split in manifest["splits"].values())
+    typer.echo(
+        f"Generated {n_total:,} samples in {manifest['generation_seconds']:.1f} s "
+        f"({manifest['workers']} workers)"
+    )
+    card = write_dataset_card(out or Path(cfg.out_dir), report_dir)
+    for t in card["targets"]:
+        typer.echo(
+            f"[{'PASS' if t['passed'] else 'FAIL'}] {t['split']}: FFR < 0.80 "
+            f"{t['frac_ffr_below_cutoff']:.1%}, grey zone {t['frac_grey_zone']:.1%}"
+        )
+    typer.echo(f"Wrote {report_dir / 'dataset_card.md'}")
+    if not card["targets_met"]:
+        raise typer.Exit(code=1)
 
 
 @app.command()
