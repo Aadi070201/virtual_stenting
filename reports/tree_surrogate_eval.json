@@ -1,0 +1,112 @@
+{
+  "targets": [
+    {
+      "metric": "MAE, every sample of every branch (node-wise)",
+      "value": 0.0038267774507403374,
+      "target": 0.015,
+      "passed": true
+    },
+    {
+      "metric": "MAE at every outlet (distal)",
+      "value": 0.004292123951017857,
+      "target": 0.015,
+      "passed": true
+    }
+  ],
+  "targets_met": true,
+  "splits": {
+    "test": {
+      "n_trees": 4000,
+      "n_branches": 12817,
+      "node_mae": 0.0038267774507403374,
+      "node_max": 0.28064942359924316,
+      "outlet_mae": 0.004292123951017857,
+      "outlet_p95": 0.015713239088654518,
+      "outlet_max": 0.23409976065158844,
+      "main_outlet_mae": 0.0046315970830619335,
+      "side_outlet_mae": 0.004138115327805281,
+      "outlet_agreement": {
+        "sensitivity": 0.9920384806767292,
+        "specificity": 0.9939599292869771,
+        "accuracy": 0.9930560973706796
+      },
+      "single_path_main_outlet_mae": 0.15224149823188782,
+      "by_side_branches": {
+        "1": {
+          "n_trees": 1201,
+          "outlet_mae": 0.003964746370911598,
+          "node_mae": 0.0034342471044510603
+        },
+        "2": {
+          "n_trees": 1385,
+          "outlet_mae": 0.003954504616558552,
+          "node_mae": 0.0034492220729589462
+        },
+        "3": {
+          "n_trees": 810,
+          "outlet_mae": 0.004328181501477957,
+          "node_mae": 0.003973093349486589
+        },
+        "4": {
+          "n_trees": 604,
+          "outlet_mae": 0.004978328477591276,
+          "node_mae": 0.004501456394791603
+        }
+      }
+    },
+    "ood": {
+      "n_trees": 2000,
+      "n_branches": 10000,
+      "node_mae": 0.00896047055721283,
+      "node_max": 0.2864004969596863,
+      "outlet_mae": 0.009366662241518497,
+      "outlet_p95": 0.032066330313682556,
+      "outlet_max": 0.2180415391921997,
+      "main_outlet_mae": 0.010477397590875626,
+      "side_outlet_mae": 0.009088978171348572,
+      "outlet_agreement": {
+        "sensitivity": 0.990018805149718,
+        "specificity": 0.9857466796242307,
+        "accuracy": 0.9887
+      },
+      "single_path_main_outlet_mae": 0.3256768584251404,
+      "by_side_branches": {
+        "4": {
+          "n_trees": 2000,
+          "outlet_mae": 0.009366662241518497,
+          "node_mae": 0.00896047055721283
+        }
+      }
+    }
+  },
+  "training": {
+    "best_epoch": 50,
+    "best_val_outlet_mae": 0.004337754566222429,
+    "epochs_run": 50,
+    "train_seconds": 1401.403427299927,
+    "resumes": [],
+    "n_parameters": 1308737,
+    "n_train": 40000,
+    "n_val": 4000,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "amp": true,
+    "torch": "2.14.1+cu126"
+  },
+  "run": "runs/tree_unet-20261030-191415",
+  "run_meta": {
+    "git_commit": "3903b2d74cf43259fa3dcf3e3c1c14afa9bbc0a1",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-10-30T19:14:15+00:00",
+    "python": "3.14.5",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "config_class": "TreeSurrogateConfig"
+  },
+  "provenance": {
+    "git_commit": "af2c87cd20c78cf9a80ceec1d632f849cd2dd6b6",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-10-30T19:38:21+00:00"
+  }
+}
