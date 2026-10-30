@@ -180,3 +180,16 @@ def test_train_and_evaluate_smoke(tmp_path, tiny_data):
     assert "Research use only" in (tmp_path / "reports" / "surrogate_eval.md").read_text(
         encoding="utf-8"
     )
+
+
+def test_min_epochs_delays_early_stopping(tmp_path, tiny_data):
+    cfg = SurrogateConfig(
+        data_dir=str(tiny_data),
+        runs_dir=str(tmp_path / "runs"),
+        model=SMALL_MODEL,
+        train=TrainConfig(epochs=4, batch_size=32, device="cpu", patience=1, min_epochs=4),
+    )
+    run_dir = train_surrogate(
+        cfg, run_dir=tmp_path / "runs" / "m", checkpoint_root=tmp_path / "checkpoints"
+    )
+    assert json.loads((run_dir / "summary.json").read_text())["epochs_run"] == 4

@@ -16,7 +16,9 @@ train:
   lr: 1.0e-3             # AdamW, cosine decay to 0 over all steps
   weight_decay: 1.0e-4
   distal_weight: 2.0     # loss = MSE(curve) + 2 × MSE(distal FFR)
-  patience: 10           # early stopping on validation distal MAE
+  patience: 10           # early stopping on validation distal MAE ...
+  min_epochs: 40         # ... counted only from epoch 40, when the cosine LR is < 10% of its peak
+                         # (validation is noisy at high LR; DECISIONS D31)
   grad_clip: 1.0
   amp: true              # float16 autocast on CUDA; head and loss in float32
   device: auto           # cuda if available, else cpu

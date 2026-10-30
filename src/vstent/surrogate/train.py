@@ -53,6 +53,7 @@ class TrainConfig(StrictModel):
     weight_decay: float = Field(1e-4, ge=0)
     distal_weight: float = Field(2.0, ge=0)
     patience: int = Field(10, gt=0)
+    min_epochs: int = Field(0, ge=0)  # early stopping only from this epoch on
     grad_clip: float = Field(1.0, gt=0)
     amp: bool = True
     device: str = "auto"
@@ -298,8 +299,8 @@ def _fit(
             writer = csv.DictWriter(f, fieldnames=list(row), lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
-        if stale >= tc.patience:
-            log(f"Early stop: no improvement for {tc.patience} epochs")
+        if stale >= tc.patience and epoch >= tc.min_epochs:
+            log(f"Early stop: no improvement for {stale} epochs")
             break
         if stop_requested(ckpt_dir):
             save_checkpoint("stopped")

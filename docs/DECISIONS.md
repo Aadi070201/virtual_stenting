@@ -232,3 +232,11 @@ The model interval and the input interval are reported side by side, not combine
 - Gaussian ranges with clinical SDs: no source in the repo.
 - Combining the two intervals by summing variances.
 - Scaling the stent length with the pixel size, which would hide the "stent too short" risk when the pixel size is underestimated.
+
+### D31 — Early stopping only after the learning rate has decayed (2026-10-30)
+**Decision:** Early stopping on validation distal MAE (patience 10) counts only from epoch 40 of 50 (`train.min_epochs: 40`), when the cosine learning rate is below 10% of its peak. The first P1 ensemble (`runs/unet1d_ens5-20261030-100555`) was discarded and retrained with this setting.
+**Reason:** In the first ensemble, seed 3 hit a low validation value at epoch 11 (0.0030, a high-learning-rate fluctuation) and was stopped at epoch 21 with the learning rate still at 62% of its peak. Its best validation distal MAE stayed at 0.0030. The four other seeds trained to their best at epoch 49–50 (0.0013–0.0014). During the high-learning-rate phase the validation error swings between 0.003 and 0.007 for every seed, so a 10-epoch patience can fire on noise. The decision was made on `val` only, before any test-split evaluation. The M3 single model trained all 50 epochs, so its result is unaffected.
+**Alternatives:**
+- Keeping the weak member: an avoidable training artefact.
+- Retraining only seed 3: mixed member configs make provenance harder.
+- No early stopping at all: equivalent in practice for this schedule, but this keeps the guard for longer schedules.
