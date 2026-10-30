@@ -1,0 +1,58 @@
+{
+  "disclaimer": "Research use only \u2014 not for clinical decisions.",
+  "created_utc": "2026-10-30T23:05:02+00:00",
+  "vstent_version": "0.1.0",
+  "git_commit": "fc64006c04461915f970233dc5af16648515d788",
+  "git_dirty": false,
+  "manifest": {
+    "path": "data/validation_synthetic/cases.csv",
+    "sha256": "f60e58f85e6a9e153f7ad5b0d6de9f1043f55fe19133fbe293ecd4c29bdf983b",
+    "n_cases": 102
+  },
+  "use_masks": false,
+  "index_tests": [
+    "single_solver",
+    "single_surrogate",
+    "tree_solver"
+  ],
+  "models": {
+    "segmentation": {
+      "dir": "models/seg/seg_unet_r34-20261028-141743",
+      "file": "seg.onnx",
+      "sha256": "d4fe13dcb97974de22fd9be0ec924221792277d18c93ab226081171748280475"
+    },
+    "surrogate": {
+      "dir": "models/surrogate/unet1d_ens5-20261030-113237",
+      "file": "surrogate.onnx",
+      "sha256": "780064ab4eceace05513f1d61d3f1616726bab85d4bcab534ba0ad189cc9620b"
+    }
+  },
+  "physics": {
+    "mu": 0.0035,
+    "rho": 1060.0,
+    "pa_mmhg": 90.0,
+    "pv_mmhg": 5.0,
+    "kt": 1.52,
+    "v_hyp": 0.35,
+    "expansion_threshold": 1.05,
+    "murray_exponent": 2.33
+  },
+  "uncertainty": {
+    "level": 0.9,
+    "pre_pci_threshold": 0.8,
+    "conformal_score": "normalised",
+    "sigma_floor": 0.0002,
+    "calibration_split": "cal",
+    "inputs": {
+      "n_samples": 500,
+      "seed": 0,
+      "pixel_size_rel": 0.1,
+      "v_hyp_halfwidth": 0.1,
+      "pa_halfwidth_mmhg": 20.0,
+      "pv_halfwidth_mmhg": 3.0,
+      "qca_error_report": "reports/qca_synthetic.json"
+    }
+  },
+  "predictions_file": "predictions_segmenter.csv",
+  "predictions_sha256": "0e2e320006a354f73831cd61b395a0e437e314bf147990c28681f565bdd096f4"
+}
