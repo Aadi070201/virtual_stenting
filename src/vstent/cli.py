@@ -245,6 +245,39 @@ def train_tree_surrogate(
 
 
 @app.command()
+def eval_tree_surrogate(
+    run: Annotated[Path, typer.Option("--run", exists=True, file_okay=False, help="Run dir.")],
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+    device: Annotated[str, typer.Option("--device", help="auto, cpu or cuda.")] = "auto",
+) -> None:
+    """Evaluate a tree surrogate against the tree solver → reports/tree_surrogate_eval.md."""
+    from vstent.surrogate.tree_evaluate import evaluate_tree_run
+
+    report = evaluate_tree_run(run, report_dir, device)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']:.4f}")
+    typer.echo(f"Wrote {report_dir / 'tree_surrogate_eval.md'}")
+
+
+@app.command()
+def export_tree_surrogate(
+    run: Annotated[Path, typer.Option("--run", exists=True, file_okay=False, help="Run dir.")],
+    out: Annotated[
+        Path | None, typer.Option("--out", help="Default: models/tree_surrogate/<run-name>/.")
+    ] = None,
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """Export a tree surrogate to ONNX (padded graphs), parity + CPU latency → tree_onnx.md."""
+    from vstent.surrogate.tree_export import export_tree_run
+
+    meta = export_tree_run(run, out, report_dir, log=typer.echo)
+    typer.echo(f"[{'PASS' if meta['parity']['passed'] else 'FAIL'}] ONNX parity")
+    typer.echo(f"Model in {meta['out_dir']}")
+    if not meta["parity"]["passed"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def train_ensemble(
     config: Annotated[
         Path | None,

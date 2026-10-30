@@ -12,6 +12,8 @@ COMMANDS = [
     "tree-report",
     "train-surrogate",
     "train-tree-surrogate",
+    "eval-tree-surrogate",
+    "export-tree-surrogate",
     "eval-surrogate",
     "export-surrogate",
     "data",

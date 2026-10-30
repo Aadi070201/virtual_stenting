@@ -99,3 +99,24 @@ def test_stop_and_resume_matches_uninterrupted_run(tiny_tree_data, tmp_path):
     a, b = load_tree_checkpoint(straight), load_tree_checkpoint(run)
     for (name, pa), (_, pb) in zip(a.state_dict().items(), b.state_dict().items(), strict=True):
         assert torch.equal(pa, pb), name
+
+
+def test_export_parity_runner_and_eval(tiny_tree_run, tiny_tree_data, tmp_path):
+    from vstent.inference.tree_runtime import TreeSurrogateRunner
+    from vstent.surrogate.tree_evaluate import evaluate_tree_run
+    from vstent.surrogate.tree_export import export_tree_run
+
+    meta = export_tree_run(tiny_tree_run, tmp_path / "model", tmp_path / "reports",
+                           parity_samples=8)  # fmt: skip
+    assert meta["parity"]["passed"] and meta["parity"]["n_trees"] == 8
+    assert (tmp_path / "reports" / "tree_onnx.md").exists()
+    runner = TreeSurrogateRunner.from_dir(tmp_path / "model")
+    arrays = load_split(tiny_tree_data, "test")
+    tree = tree_from_arrays(arrays, 0)
+    s, ffr = runner.predict_tree(tree, arrays["pa"][0], arrays["pv"][0], arrays["r_outlet"][0])
+    assert len(s) == len(ffr) == tree.n_branches and ffr[0][0] == pytest.approx(1.0)
+    runner.close()
+    report = evaluate_tree_run(tiny_tree_run, tmp_path / "reports", device="cpu")
+    assert set(report["splits"]) == {"test", "ood"} and len(report["targets"]) == 2
+    md = (tmp_path / "reports" / "tree_surrogate_eval.md").read_text(encoding="utf-8")
+    assert "Research use only" in md and "single-path" in md

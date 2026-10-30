@@ -74,6 +74,11 @@ class TreeRawInputs:
     def __len__(self) -> int:
         return self.r.shape[0]
 
+    def subset(self, idx) -> "TreeRawInputs":
+        """Trees selected by an index, slice or boolean mask (array shapes kept)."""
+        idx = np.atleast_1d(np.arange(len(self))[idx])
+        return type(self)(*(getattr(self, k)[idx] for k in self.__dataclass_fields__))
+
     @classmethod
     def from_arrays(cls, arrays: dict[str, np.ndarray]) -> "TreeRawInputs":
         """From a dict with the keys of a synthetic-tree split (see ``data.synth_tree``)."""
