@@ -217,6 +217,34 @@ def train_surrogate(
 
 
 @app.command()
+def train_tree_surrogate(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config (new run)."),
+    ] = None,
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Continue a stopped run (name or path).")
+    ] = None,
+) -> None:
+    """Train the tree FFR surrogate (P3; new run with --config, or continue with --resume)."""
+    from vstent.config import load_config
+    from vstent.surrogate.tree_train import (
+        TreeSurrogateConfig,
+        resume_tree_surrogate,
+        train_tree_surrogate,
+    )
+
+    if (config is None) == (resume is None):
+        typer.echo("Give exactly one of --config (new run) or --resume (continue).", err=True)
+        raise typer.Exit(code=2)
+    if resume is not None:
+        run_dir = resume_tree_surrogate(resume, log=typer.echo)
+    else:
+        run_dir = train_tree_surrogate(load_config(config, TreeSurrogateConfig), log=typer.echo)
+    typer.echo(f"Run directory: {run_dir}")
+
+
+@app.command()
 def train_ensemble(
     config: Annotated[
         Path | None,

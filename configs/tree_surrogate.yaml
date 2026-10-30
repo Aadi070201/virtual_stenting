@@ -1,0 +1,27 @@
+# Tree FFR surrogate (docs/PLAN.md, P3). Run outputs go to runs/<name>-<UTC timestamp>/.
+name: tree_unet
+data_dir: data/synth/tree_v1
+runs_dir: runs
+seed: 0
+
+model:                   # 1D U-Net per branch (as M3) + message passing between branches
+  base_channels: 32
+  levels: 4              # channels 32, 64, 128, 256
+  groups: 8              # GroupNorm groups
+  cond_dim: 128
+  message_layers: 3      # rounds along the tree (children, parent, whole tree)
+
+train:
+  epochs: 50
+  batch_size: 128        # trees (up to 5 branches each)
+  lr: 1.0e-3             # AdamW, cosine decay to 0 over all steps
+  weight_decay: 1.0e-4
+  distal_weight: 2.0     # loss = MSE(every sample) + 2 × MSE(every outlet)
+  patience: 10           # early stopping on validation outlet MAE ...
+  min_epochs: 40         # ... counted only from epoch 40 (DECISIONS D31)
+  grad_clip: 1.0
+  amp: true              # float16 autocast on CUDA; message passing, head and loss in float32
+  device: auto
+  eval_batch_size: 512
+  max_train_samples: null
+  max_val_samples: null

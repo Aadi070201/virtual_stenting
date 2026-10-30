@@ -157,3 +157,34 @@ def dark_seg_dir(tmp_path_factory):
     meta = {"task": "vessel_segmentation", "image_size": "128"}
     export_seg_onnx(DarkIsVessel(), out / SEG_ONNX_FILE, 128, meta)
     return out
+
+
+@pytest.fixture(scope="session")
+def tiny_tree_data(tmp_path_factory):
+    """A tiny synthetic tree dataset (train 64, val 16, test 16, cal 16, ood 8) from tree_v1."""
+    from vstent.data.synth import generate_dataset
+    from vstent.data.synth_tree import TreeSynthConfig
+
+    cfg = load_config(ROOT / "configs" / "synth_tree_v1.yaml", TreeSynthConfig)
+    sizes = {"train": 64, "val": 16, "test": 16, "cal": 16, "ood": 8}
+    splits = {k: v.model_copy(update={"n": sizes[k]}) for k, v in cfg.splits.items()}
+    out = tmp_path_factory.mktemp("synth_tree")
+    generate_dataset(cfg.model_copy(update={"splits": splits}), out_dir=out, workers=1)
+    return out
+
+
+@pytest.fixture(scope="session")
+def tiny_tree_run(tiny_tree_data, tmp_path_factory):
+    """A small tree surrogate trained for 2 epochs on the tiny tree dataset (CPU)."""
+    from vstent.surrogate.train import TrainConfig
+    from vstent.surrogate.tree_model import TreeModelConfig
+    from vstent.surrogate.tree_train import TreeSurrogateConfig, train_tree_surrogate
+
+    root = tmp_path_factory.mktemp("tree_run")
+    cfg = TreeSurrogateConfig(
+        data_dir=str(tiny_tree_data),
+        runs_dir=str(root / "runs"),
+        model=TreeModelConfig(base_channels=8, levels=3, groups=4, cond_dim=16, message_layers=2),
+        train=TrainConfig(epochs=2, batch_size=16, device="cpu"),
+    )
+    return train_tree_surrogate(cfg, run_dir=root / "runs" / "tree", checkpoint_root=root / "ck")

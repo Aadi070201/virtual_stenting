@@ -11,6 +11,7 @@ COMMANDS = [
     "synth-tree",
     "tree-report",
     "train-surrogate",
+    "train-tree-surrogate",
     "eval-surrogate",
     "export-surrogate",
     "data",
