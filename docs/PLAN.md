@@ -249,8 +249,8 @@ The report must state that model intervals cover only surrogate-vs-solver error,
   - a healthy tree splits flow as Murray's law;
   - adding a side branch raises distal main-vessel FFR for the same upstream geometry.
 - [x] **Synthetic tree generator:** a main vessel plus 1–4 side branches, with lesions anywhere, including at bifurcations; dataset card.
-- [ ] **Image path:** QCA on the skeleton *tree* between a start point and every reachable end point (or user-chosen branches) → tree profile → tree physics. Adds `vstent analyse --tree` and virtual stents on a branch path.
-- [ ] Re-run the ARCADE gallery with tree physics and compare with the single-path version.
+- [x] **Image path:** QCA on the skeleton *tree* between a start point and every reachable end point (or user-chosen branches) → tree profile → tree physics. Adds `vstent analyse --tree` and virtual stents on a branch path.
+- [x] Re-run the ARCADE gallery with tree physics and compare with the single-path version.
 
 **Done when:**
 - all sanity checks pass;
