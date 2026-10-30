@@ -408,3 +408,56 @@ An independent read-only review covered physics, data, surrogate, imaging, plann
 **Not changed (documented):** the surrogate still resamples image paths to 256 points (D34). This only downsamples paths longer than about 77 mm at 0.30 mm/px, already outside the surrogate's training range.
 
 **Reports regenerated:** `seg_eval.md` (same numbers, honest labels). App latency, planner benchmark and demo are unaffected for synthetic cases; they will be regenerated together at the end of P2.
+
+---
+
+## 2026-10-30 — P2: Vessel trees with side branches (done)
+
+**What was done**
+- **Tree physics** (`physics/tree.py`, D32, D33):
+  - Each branch keeps one continuous radius profile with the M1 coefficients, and the flow drops at every take-off.
+  - Outlet resistances are calibrated so the stenosis-free tree splits flow by Murray's law (k = 2.33, `murray_exponent` in `configs/physics.yaml`).
+  - A batched Newton solve on the outlet flows gives FFR at every sample of every branch.
+- **Synthetic trees** (`vstent synth-tree`, `configs/synth_tree_v1.yaml`, `reports/tree_dataset_card.md`):
+  - a main vessel with 1–4 side branches, stepping down after each take-off;
+  - bifurcation and ostial lesions;
+  - 54,000 trees in 13.4 s;
+  - the main vessel's single-path FFR is stored for comparison.
+- **Tree checks** (`vstent tree-report`, `reports/tree_physics.md`), all passing:
+  - a one-branch tree reproduces M1 to 4e-16;
+  - mass is conserved and pressure continuous at every junction (≤ 3e-16 on 1,000 test trees);
+  - outlet equations hold to 2e-14;
+  - the Murray split holds to 9e-16 (one tree whose outlet resistance hit its floor is excluded and counted);
+  - a side branch raises distal main FFR in all 9 controlled cases (+0.007 to +0.126);
+  - a side branch with almost no flow inside a lesion's expansion run changes main FFR by only 2e-5.
+- **Throughput:** **3,474 trees/s** on one process (target ≥ 1,000).
+- **Trees from the image** (`imaging/qca_tree.py`, D35):
+  - shortest-path tree on the skeleton, with side branches of the chosen path;
+  - each side branch is measured from the parent's wall, so ostial lesions are kept.
+- **Tree analysis:** `vstent analyse --tree`, with an optional `--stent START LEN DIA --outlet K` on any root-to-outlet path (outlet resistances kept from before the stent), and a tree figure.
+- **Tree gallery** (`vstent qca-gallery --tree`, `reports/qca_tree_gallery.md`):
+  - the same 20 ARCADE images and paths as the single-path gallery;
+  - side branches were found in 14 (24 modelled, 10 too short, thin or deep);
+  - median change of main-path distal FFR where side branches were found: **+0.149**.
+
+**"Done when" (PLAN.md)**
+- All sanity checks pass: yes.
+- Throughput ≥ 1,000 trees/s: yes (3,474).
+- Extreme single-path cases reported before and after: 3 cases with FFR < 0.30 and no lesion ≥ 70% DS. They remain extreme as trees:
+  - in 2 of them no side branch was segmented;
+  - in val_10 the low value comes from the path's thin distal tail, downstream of its only side branch.
+
+**Also in this session:** the code review of P1 and of the MVP, with all fixes (see the two entries above), and the `cal` split.
+
+**Reports regenerated after the fixes (clean commits):**
+- app latency: worst 224 ms (< 300 ms);
+- demo: unchanged;
+- uncertainty: test coverage 89.72%;
+- **planner benchmark: 1.345 s (fail; target < 1 s)**. It was measured while a game and other apps kept the CPU about 70% busy. The solver in the same run was also 48% slower (0.226 vs 0.153 s). The code path is unchanged, and earlier runs measured 0.874–0.984 s. It needs re-measuring on an idle machine; the thin margin was already an open issue.
+
+**Open issues**
+- **Few side branches in real images.** The segmentation model, trained on ARCADE's SYNTAX-segment masks, rarely segments small side branches, so real-image trees have few of them. Better segmentation (annotated side branches, or P8's synthetic angiograms) would help more than physics.
+- **Automatic start point.** The automatic start (the wider end of the longest path) is not always the ostium. In val_107 the vessel to the true inlet became a "side branch". Users set the start point in the app and the CLI.
+- **Model simplifications:** junction losses are neglected, the healthy split follows Murray's law, and skeleton junctions sit up to about one vessel width downstream of where the centrelines cross.
+- **Not yet available for trees:** surrogate, intervals, planner, and the app (P3).
+- **Tests:** 223 fast and 3 slow pass.
