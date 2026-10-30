@@ -343,31 +343,46 @@ The human approved Phase 2 ("go ahead with phase 2"). The backlog was turned int
 - **App random synthetic preset (from M7):** pre-PCI FFR used the default velocity of 0.35 m/s, although the caption said the velocity came from the sampler. Fixed and tested.
 - **Benchmarks on an ensemble model folder:** `vstent plan-benchmark` (and the ONNX benchmark) crashed. They read the ensemble's `config.yaml` as a single-model config. A shared `surrogate_config()` now reads the member config. Regression tests added.
 
-**Metrics** (all reports generated at clean commits)
+**Code review of P1 (after the first reports), and fixes**
+
+A review of the P1 code found ten issues; all were checked against the code before changing anything.
+- **Lost stop request (would break the stoppable-training rule):** `vstent stop <ensemble>` sent while a member was still loading data was lost, and that member then trained every epoch. Members now watch the ensemble's own STOP file. Regression test added; it fails on the old code.
+- **Interval labels:** plan model intervals were labelled with the config's level, not the level they were calibrated at. They were the same (90%), so no output was wrong. Each interval now carries its own level.
+- **Pareto front vs plan table:** with the ensemble, the Pareto front kept the screening model's FFRs while the plan table showed the ensemble's. The front is now re-scored by the ensemble, which adds about 50 ms per plan search.
+- **Stent edge:** the input Monte Carlo and the app's manual stents used a hard-coded 1 mm edge, the planner `edge_mm` from its config (also 1 mm). Everything now uses the planner's value. A test proves the Monte Carlo reproduces the planner's solver value exactly, also at 3 mm; the old code was off by 4.6e-4.
+- **Positions:** stent and lesion positions assumed profiles start at s = 0. Every producer already did; `VesselProfile` now enforces it.
+- **Calibration split (research rigour):** conformal calibration used `val`, which had chosen each member's best epoch and the σ floor, so the 90% guarantee did not formally hold. A new `cal` split (10,000 vessels, seed 1005, used for nothing else) was added. Train, val, test and ood are byte-identical (same shard hashes). Decision D29 updated.
+- **Smaller fixes:**
+  - one shared `load_uncertainty` / `model_interval` instead of three copies;
+  - removed dead code;
+  - the report no longer runs 500 identical solves for one nominal value;
+  - the report's plan summary handles an empty set.
+
+**Metrics** (final; all reports generated at clean commits after the fixes)
 - **Acceptance targets, from `reports/uncertainty.md`:**
-  - conformal coverage on test: **90.15%** (target 88–92%);
+  - conformal coverage on test: **89.72%** (target 88–92%); `cal` 90.01%, `val` 89.56%;
   - ensemble-mean distal MAE on test: **0.00099** vs 0.00129 for the single M3 model (target ≤);
-  - app worst stent-control update: **210 ms** server time (< 300 ms).
+  - app worst stent-control update: **211 ms** server time (< 300 ms).
 - **OOD (no target):**
-  - coverage 78.64%; an absolute score would give 44.74%;
+  - coverage 77.96%; an absolute score would give 44.80%;
   - distal MAE 0.00376 (ensemble) vs 0.00391 (single).
-- **Grey zone (model interval):** 0.67% of test vessels are flagged. 15 of the 16 test vessels that the surrogate and solver put on opposite sides of 0.80 are flagged.
+- **Grey zone (model interval):** 0.65% of test vessels are flagged. 14 of the 16 test vessels that the surrogate and solver put on opposite sides of 0.80 are flagged.
 - **Input intervals, 500 test vessels:**
   - median width 0.128 (synthetic geometry) and 0.129 (image-derived, assumed pixel size);
   - flagged at 0.80: 26.8% and 28.6%.
-- **Planner benchmark** (ensemble, 5,000 candidates): 0.874 s (< 1 s). 83 of 100 plans reach FFR ≥ 0.90; the solver confirms 81.
-- **App latency:** median 72 ms (synthetic) and 121 ms (image), up from 50 / 77 ms (ensemble plus Monte Carlo).
+- **Planner benchmark** (ensemble, 5,000 candidates): 0.984 s (< 1 s). The same code measured 0.874 s an hour earlier, so the margin depends on background load (browser and chat apps were running). 83 of 100 plans reach FFR ≥ 0.90; the solver confirms 81.
+- **App latency:** median 69 ms (synthetic) and 116 ms (image), up from 50 / 77 ms (ensemble plus Monte Carlo).
 - **Demo:**
   - pre-PCI 0.705: input interval 0.622–0.791, model interval 0.704–0.708;
   - post-PCI 0.976: input interval 0.967–0.984, model interval 0.975–0.976;
   - no grey-zone flag.
-- **Tests:** 187 fast tests pass.
+- **Tests:** 190 fast tests and 3 slow tests pass.
 - **Seed 0 check:** member seed 0 reproduces the M3 single model (same seed and configuration: test distal MAE 0.00129 for both).
 
 **Open issues**
-- **Coverage falls with stenosis severity.** On test it goes from 99% (0–30% DS) to 85.8% (70–100% DS). OOD coverage is 78–80% in every bin. The guarantee is marginal; per-bin coverage is not guaranteed.
+- **Coverage falls with stenosis severity.** On test it goes from 99% (0–30% DS) to 85.0% (70–100% DS). OOD coverage is 76–79% in every bin. The guarantee is marginal; per-bin coverage is not guaranteed.
 - **Input intervals are wide** (median ≈ 0.13), mostly because of the ±0.10 m/s velocity range. With these ranges, 85–91% of vessels with FFR 0.70–0.80 are flagged. The ranges are the synthetic sampling ranges, not measured patient-level uncertainties.
 - **QCA error model:** it comes from idealised rendered tubes, so real QCA error is likely larger.
-- **Calibration split reuse:** the calibration split (`val`) was also used for early stopping and for choosing the σ floor. Test coverage (90.15%) suggests this does not matter here.
+- **Thin planner margin:** 0.87–0.98 s against the 1 s target, depending on background load.
 - **`reports/mvp_report.md` is still the v0.1.0 snapshot.** Its planner (0.959 s) and app-latency numbers predate the ensemble; the current values are in the source reports.
 - **Old run folders:** the discarded first ensemble is still on disk (git-ignored).
