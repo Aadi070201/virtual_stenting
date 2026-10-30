@@ -1,9 +1,8 @@
 """Split-conformal intervals for the surrogate's distal FFR (P1). Torch-free.
 
 Calibrated once on a split used for nothing else (``cal``) with the deployed (ONNX) ensemble.
-Nonconformity
-score per vessel, with ŷ the ensemble-mean distal FFR, σ the ensemble standard deviation of
-distal FFR and y the solver's distal FFR:
+Nonconformity score per vessel, with ŷ the ensemble-mean distal FFR, σ the ensemble standard
+deviation of distal FFR and y the solver's distal FFR:
 
 - ``"normalised"``: |y − ŷ| / (σ + σ_floor), so intervals widen where the members disagree;
 - ``"absolute"``:   |y − ŷ|, one width for every vessel.
