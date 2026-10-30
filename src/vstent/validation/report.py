@@ -304,7 +304,7 @@ def validation_figure(
         fpr, tpr = roc_points(-p, pos)
         auc = auc_delong(-p, pos)[0]
         ax_r.plot(fpr, tpr, color=COLORS[test], lw=1.8, drawstyle="steps-post",
-                  label=f"{SHORT[test]}: AUC {auc:.2f}")  # fmt: skip
+                  label=f"{SHORT[test]}: AUC {auc:.3f}")  # fmt: skip
     ax_r.set_xlabel("1 − specificity", fontsize=8, color=INK_SECONDARY)
     ax_r.set_ylabel("Sensitivity", fontsize=8, color=INK_SECONDARY)
     ax_r.set_title(f"ROC, wire FFR ≤ {cut:.2f}", fontsize=9, color=INK_SECONDARY, loc="left")

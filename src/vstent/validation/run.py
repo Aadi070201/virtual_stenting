@@ -228,7 +228,7 @@ def run_predictions(
         "vstent_version": __version__,
         **git,
         "manifest": {
-            "path": str(manifest),
+            "path": manifest.as_posix(),
             "sha256": sha256_file(manifest),
             "n_cases": len(cases),
         },  # fmt: skip
@@ -254,7 +254,7 @@ def model_info(path: str | Path | None, filename: str) -> dict[str, str] | None:
     """Directory, file name and SHA-256 of an exported model (``None`` if not used)."""
     if path is None:
         return None
-    return {"dir": str(path), "file": filename, "sha256": sha256_file(Path(path) / filename)}
+    return {"dir": Path(path).as_posix(), "file": filename, "sha256": sha256_file(Path(path) / filename)}
 
 
 def read_predictions(path: str | Path) -> tuple[list[dict[str, str]], dict[str, Any] | None]:
