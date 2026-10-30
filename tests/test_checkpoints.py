@@ -67,6 +67,21 @@ def test_stop_and_resume_matches_uninterrupted_run(tiny_data, tmp_path):
         assert torch.equal(pa, pb), name
 
 
+def test_resume_restores_best_pt_lost_between_the_two_writes(tiny_data, tmp_path):
+    cfg = _config(tiny_data, tmp_path, epochs=1)
+    roots = tmp_path / "ckpt"
+    run = train_surrogate(cfg, run_dir=tmp_path / "runs" / "r", checkpoint_root=roots)
+    before = load_checkpoint(run)
+    (run / "best.pt").unlink()  # as if killed after the state was saved, before best.pt
+    resume_surrogate("r", checkpoint_root=roots)  # finished run: restores best.pt, trains nothing
+    assert ck.saved_epoch(run / "best.pt") == 1
+    after = load_checkpoint(run)
+    for (name, a), (_, b) in zip(
+        before.state_dict().items(), after.state_dict().items(), strict=True
+    ):
+        assert torch.equal(a, b), name
+
+
 def test_resume_finished_run_is_a_no_op(tiny_data, tmp_path):
     cfg = _config(tiny_data, tmp_path, epochs=1)
     roots = tmp_path / "ckpt"

@@ -9,6 +9,7 @@ Slow steps (segmentation, QCA, the pre-PCI Monte Carlo) are cached so slider upd
 recompute the stent, its post-PCI draws and the plots.
 """
 
+import hashlib
 import time
 
 _T0 = time.perf_counter()
@@ -219,15 +220,17 @@ stents: list[Stent] = []
 show = "Manual stent"
 if state is not None:
     # A different vessel (not just different pressures) starts with no stent and no plan shown,
-    # instead of carrying the previous case's controls over.
-    vessel_id = f"{mode}:{state.description}:{state.points}"
+    # instead of carrying the previous case's controls over. The geometry hash makes a new pixel
+    # size a new vessel (its length and diameters change).
+    geometry = hashlib.sha1(state.profile.s.tobytes() + state.profile.r.tobytes()).hexdigest()
+    vessel_id = f"{mode}:{state.description}:{state.points}:{geometry}"
     if st.session_state.get("vessel_id") != vessel_id:
         st.session_state.vessel_id = vessel_id
         st.session_state.place = False
         st.session_state.pop("stent_start", None)
         st.session_state.pop("show", None)
     length_mm_total = m_to_mm(state.profile.length)
-    plan_key = f"{mode}:{state.description}:{state.points}:{state.pa:.1f}"
+    plan_key = f"{vessel_id}:{state.pa:.1f}:{state.pv:.1f}:{state.params.v_hyp:.4f}"
     plans = st.session_state.get("plans") if st.session_state.get("plan_key") == plan_key else None
     with st.sidebar:
         st.header("Virtual stent")

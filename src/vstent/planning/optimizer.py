@@ -90,8 +90,9 @@ class Plan:
 
     @property
     def total_length(self) -> float:
-        """Sum of stent lengths (m)."""
-        return float(sum(st.length for st in self.stents))
+        """Sum of stent lengths (m), rounded to 1 nm so that equal catalogue sums compare equal
+        (12 + 26 mm is 0.038000000000000006 m in floating point, 38 mm is 0.038)."""
+        return round(float(sum(st.length for st in self.stents)), 9)
 
 
 @dataclass(frozen=True, eq=False)

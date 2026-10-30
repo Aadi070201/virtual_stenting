@@ -32,6 +32,7 @@ from vstent.checkpoints import (
     restore_rng_states,
     rng_states,
     save_state,
+    saved_epoch,
     stop_requested,
     utc_now,
     write_status,
@@ -285,6 +286,18 @@ def _fit(
     best_dice, best_epoch, stale, train_seconds = -1.0, -1, 0, 0.0
     rows: list[dict[str, Any]] = []
     resumes: list[dict[str, Any]] = []
+
+    def save_best() -> None:  # the current weights are the best so far
+        torch.save(
+            {
+                "model_config": config.model.model_dump(mode="json"),
+                "state_dict": model.state_dict(),
+                "epoch": best_epoch,
+                "val_dice": best_dice,
+            },
+            run_dir / CHECKPOINT,
+        )
+
     if resume and (ckpt_dir / STATE_FILE).exists():
         state = load_state(ckpt_dir)
         model.load_state_dict(state["model"])
@@ -295,6 +308,8 @@ def _fit(
         rows, resumes = state["history"], state["resumes"]
         best_dice, best_epoch = state["best_dice"], state["best_epoch"]
         stale, train_seconds = state["stale"], state["train_seconds"]
+        if rows and best_epoch == len(rows) and saved_epoch(run_dir / CHECKPOINT) != best_epoch:
+            save_best()  # interrupted after the state was saved, before best.pt
         if state["finished"]:
             log(f"Run {run_dir.name} already finished ({len(rows)} epochs); nothing to resume")
             return run_dir
@@ -382,17 +397,8 @@ def _fit(
         rows.append(row)
         train_seconds += row["seconds"]
         improved = row["val_dice"] > best_dice
-        if improved:
+        if improved:  # best.pt is written after the state (see ``saved_epoch``)
             best_dice, best_epoch, stale = row["val_dice"], epoch, 0
-            torch.save(
-                {
-                    "model_config": config.model.model_dump(mode="json"),
-                    "state_dict": model.state_dict(),
-                    "epoch": epoch,
-                    "val_dice": best_dice,
-                },
-                run_dir / CHECKPOINT,
-            )
         else:
             stale += 1
         log(
@@ -409,10 +415,14 @@ def _fit(
             break
         if stop_requested(ckpt_dir):
             save_checkpoint("stopped")
+            if improved:
+                save_best()
             clear_stop(ckpt_dir)
             log(f"Stopped after epoch {epoch}. Resume with: {resume_command}")
             return run_dir
         save_checkpoint("running")
+        if improved:
+            save_best()
 
     save_checkpoint("finished")
     summary: dict[str, Any] = {

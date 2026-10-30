@@ -61,6 +61,18 @@ def load_state(ckpt_dir: Path, map_location: torch.device | str = "cpu") -> dict
     return torch.load(ckpt_dir / STATE_FILE, map_location=map_location, weights_only=True)
 
 
+def saved_epoch(path: Path) -> int | None:
+    """Epoch stored in a best-weights file (``best.pt``), or ``None`` if there is none.
+
+    Trainers write ``best.pt`` *after* the resumable state. If a run is interrupted between
+    the two writes, its state's best epoch is the last epoch while ``best.pt`` still holds an
+    older one; on resume the trainer rewrites ``best.pt`` from the state's model weights.
+    """
+    if not path.exists():
+        return None
+    return int(torch.load(path, map_location="cpu", weights_only=True)["epoch"])
+
+
 def write_status(ckpt_dir: Path, status: dict[str, Any]) -> None:
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     text = json.dumps({**status, "updated_utc": utc_now()}, indent=2)

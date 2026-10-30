@@ -252,3 +252,13 @@ def test_pareto_front_helper():
     b = Plan((Stent(0, 0.015, 3e-3),), 0.84, False)  # dominated by a
     c = Plan((Stent(0, 0.018, 3e-3),), 0.93, True)
     assert pareto_front([c, b, a]) == [a, c]
+
+
+def test_equal_total_lengths_tie_on_ffr():
+    """12 + 26 mm and one 38 mm stent have the same length, so the higher FFR ranks first."""
+    from vstent.planning.optimizer import Plan, _rank
+
+    pair = Plan((Stent(0, mm_to_m(12), 3e-3), Stent(0.02, mm_to_m(26), 3e-3)), 0.95, True)
+    single = Plan((Stent(0, mm_to_m(38), 3e-3),), 0.92, True)
+    assert pair.total_length == single.total_length
+    assert _rank([single, pair]) == [pair, single]

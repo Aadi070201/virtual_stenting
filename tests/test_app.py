@@ -188,6 +188,25 @@ def test_app_image_mode_with_example(app_env):
     assert not at.exception and any("start and an end point" in i.value for i in at.info)
 
 
+def test_plans_and_stents_belong_to_one_geometry_and_pressure(app_env):
+    """Plans are dropped when Pv changes; the stent controls reset when the pixel size changes
+    (a new geometry: old stents could lie outside the shorter vessel)."""
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
+    at.button(key="suggest").click().run()
+    assert not at.exception and at.dataframe  # plans for the focal preset
+    pv = next(n for n in at.number_input if n.label.startswith("Venous pressure"))
+    pv.set_value(8.0).run()
+    assert not at.exception and not at.dataframe
+
+    at.radio(key="mode").set_value("Angiogram image").run()
+    at.radio(key="source").set_value("ARCADE example").run()
+    at.button(key="auto").click().run()
+    at.toggle(key="place").set_value(True).run()
+    at.radio(key="calib").set_value("Enter pixel size").run()
+    at.number_input(key="mm_px").set_value(0.10).run()
+    assert not at.exception and at.toggle(key="place").value is False
+
+
 def test_cli_app_launches_streamlit_on_localhost(monkeypatch):
     import subprocess
 
