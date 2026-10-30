@@ -1,17 +1,17 @@
 {
   "disclaimer": "Research use only \u2014 not for clinical decisions. This research prototype is not a medical device, is not validated, and must never be used to make decisions about real patients.",
-  "created_utc": "2026-10-28T16:37:43+00:00",
+  "created_utc": "2026-10-30T14:17:01+00:00",
   "software": {
     "vstent": "0.1.0",
-    "git_commit": "686bdf9e72cbabbf84f32394a564762867b32fc7",
+    "git_commit": "c9db628e0e0a6c1921f4eb7f00801496790b67ad",
     "git_dirty": false
   },
   "models": {
     "surrogate": {
-      "dir": "models/surrogate/unet1d-20261028-125810",
-      "run": "runs/unet1d-20261028-125810",
-      "run_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1",
-      "onnx_sha256": "5dea854feeb2d5b5437ba66b8aabf23a46b473ef4c37b5a5dfa48943922a5b55"
+      "dir": "models/surrogate/unet1d_ens5-20261030-113237",
+      "run": "runs/unet1d_ens5-20261030-113237",
+      "run_git_commit": "8b8e09c97a5141abb4e3f4ea39942448dc518cf9",
+      "onnx_sha256": "780064ab4eceace05513f1d61d3f1616726bab85d4bcab534ba0ad189cc9620b"
     },
     "segmentation": {
       "dir": null,
@@ -62,7 +62,7 @@
   },
   "pre_pci": {
     "ffr_distal_solver": 0.7053,
-    "ffr_distal_surrogate": 0.7073
+    "ffr_distal_surrogate": 0.7056
   },
   "stents": [
     {
@@ -106,7 +106,22 @@
         "total_length_mm": 24.0,
         "ffr": 0.9756,
         "ffr_solver_check": 0.9764,
-        "meets_target": true
+        "meets_target": true,
+        "uncertainty": {
+          "threshold": 0.9,
+          "level": 0.9,
+          "model_interval": [
+            0.9749,
+            0.9763
+          ],
+          "input_interval": [
+            0.9665,
+            0.9835
+          ],
+          "grey_zone": false,
+          "grey_zone_model": false,
+          "grey_zone_inputs": false
+        }
       },
       {
         "stents": [
@@ -124,9 +139,24 @@
           }
         ],
         "total_length_mm": 24.0,
-        "ffr": 0.9755,
+        "ffr": 0.9756,
         "ffr_solver_check": 0.9764,
-        "meets_target": true
+        "meets_target": true,
+        "uncertainty": {
+          "threshold": 0.9,
+          "level": 0.9,
+          "model_interval": [
+            0.9749,
+            0.9763
+          ],
+          "input_interval": [
+            0.9665,
+            0.9835
+          ],
+          "grey_zone": false,
+          "grey_zone_model": false,
+          "grey_zone_inputs": false
+        }
       },
       {
         "stents": [
@@ -144,11 +174,64 @@
           }
         ],
         "total_length_mm": 24.0,
-        "ffr": 0.9755,
+        "ffr": 0.9756,
         "ffr_solver_check": 0.9764,
-        "meets_target": true
+        "meets_target": true,
+        "uncertainty": {
+          "threshold": 0.9,
+          "level": 0.9,
+          "model_interval": [
+            0.9748,
+            0.9763
+          ],
+          "input_interval": [
+            0.9665,
+            0.9835
+          ],
+          "grey_zone": false,
+          "grey_zone_model": false,
+          "grey_zone_inputs": false
+        }
       }
     ]
+  },
+  "uncertainty": {
+    "note": "Model intervals cover only the surrogate's error against the reduced-order solver (split-conformal, calibrated on synthetic vessels). Input intervals cover only the listed assumptions. Neither covers the error of the reduced-order model itself.",
+    "input_assumptions_varied": [
+      "hyperemic velocity",
+      "Pa / Pv"
+    ],
+    "input_samples": 500,
+    "pre_pci": {
+      "threshold": 0.8,
+      "level": 0.9,
+      "model_interval": [
+        0.7036,
+        0.7076
+      ],
+      "input_interval": [
+        0.6224,
+        0.7915
+      ],
+      "grey_zone": false,
+      "grey_zone_model": false,
+      "grey_zone_inputs": false
+    },
+    "post_pci": {
+      "threshold": 0.9,
+      "level": 0.9,
+      "model_interval": [
+        0.9749,
+        0.9763
+      ],
+      "input_interval": [
+        0.9665,
+        0.9835
+      ],
+      "grey_zone": false,
+      "grey_zone_model": false,
+      "grey_zone_inputs": false
+    }
   },
   "demo": {
     "preset": "Tandem lesions (2 \u00d7 60% DS)",
@@ -158,10 +241,11 @@
     "n_feasible": 1720,
     "n_pairs": 176,
     "timings_s": {
-      "load_s": 0.056187600013799965,
-      "pre_pci_s": 0.00253649998921901,
-      "planning_s": 0.3745853000000352,
-      "post_pci_s": 0.0021280999935697764
+      "load_s": 0.5752313999983016,
+      "pre_pci_s": 0.009379299997817725,
+      "planning_s": 0.4325922999996692,
+      "post_pci_s": 0.008205999998608604,
+      "uncertainty_s": 0.010562999988906085
     }
   }
 }
