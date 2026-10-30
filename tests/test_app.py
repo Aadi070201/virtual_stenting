@@ -349,3 +349,47 @@ def test_random_preset_uses_its_own_velocity(app_env):
     expected = core.evaluate(case.profile, params, case.pa, case.pv).distal_solver
     shown = next(m.value for m in at.metric if m.label == "Distal FFR (solver)")
     assert shown == f"{expected:.3f}"
+
+
+def test_app_tree_mode(app_env, tiny_tree_export, monkeypatch):
+    from vstent.app import tree_view
+
+    monkeypatch.setenv(tree_view.ENV_TREE_SURROGATE, tiny_tree_export["out_dir"])
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
+    at.radio(key="mode").set_value("Angiogram image").run()
+    at.radio(key="source").set_value("ARCADE example").run()
+    at.toggle(key="tree_mode").set_value(True).run()
+    assert not at.exception and any("vessel tree" in i.value for i in at.info)
+    at.button(key="auto").click().run()
+    assert not at.exception
+    assert any(h.value == "Vessel tree" for h in at.subheader)
+    assert any(m.label == "Main path as a single vessel" for m in at.metric)
+    assert "Outlet FFR (tree surrogate)" in at.dataframe[0].value.columns
+    at.toggle(key="tree_place").set_value(True).run()
+    # the fake image's path (~5 mm) is shorter than any catalogue stent: no stent, slider off
+    assert not at.exception and at.slider(key="tree_start").disabled
+    at.button(key="tree_suggest").click().run()
+    assert not at.exception
+    at.toggle(key="tree_mode").set_value(False).run()  # back to the single path
+    assert not at.exception and any(m.label == "Distal FFR (solver)" for m in at.metric)
+
+
+def test_tree_view_pieces():
+    import json as _json
+
+    from tests.test_qca_tree import MM_PER_PX, y_vessel
+    from vstent.app import tree_view
+    from vstent.inference.pipeline import analyse_tree
+    from vstent.planning.stent import Stent
+
+    img = y_vessel()
+    res = analyse_tree(img, (100, 12), (100, 388), params=PARAMS, mm_per_px=MM_PER_PX)
+    stent = Stent(0.06, 0.012, 3e-3)
+    overlay = tree_view.tree_overlay((img * 255).astype(np.uint8), img, res.qca, 0, [stent])
+    assert overlay.shape == (*img.shape, 3)
+    fig = tree_view.tree_ffr_figure(res, 1)
+    assert sum("pre-PCI" in (t.name or "") for t in fig.data) == res.qca.tree.n_branches
+    rows = tree_view.branch_table(res)
+    assert [r["Branch"] for r in rows] == ["main", "side 1"]
+    rep = _json.loads(tree_view.tree_report_json(res, 0, [stent], None, None, "y.png"))
+    assert rep["disclaimer"].startswith("Research use only") and len(rep["branches"]) == 2

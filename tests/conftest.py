@@ -188,3 +188,12 @@ def tiny_tree_run(tiny_tree_data, tmp_path_factory):
         train=TrainConfig(epochs=2, batch_size=16, device="cpu"),
     )
     return train_tree_surrogate(cfg, run_dir=root / "runs" / "tree", checkpoint_root=root / "ck")
+
+
+@pytest.fixture(scope="session")
+def tiny_tree_export(tiny_tree_run, tmp_path_factory):
+    """The tiny tree surrogate exported to ONNX (model directory in ``["out_dir"]``)."""
+    from vstent.surrogate.tree_export import export_tree_run
+
+    root = tmp_path_factory.mktemp("tree_models")
+    return export_tree_run(tiny_tree_run, root / "tree", root / "reports", parity_samples=4)

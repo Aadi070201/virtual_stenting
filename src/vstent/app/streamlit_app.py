@@ -25,13 +25,18 @@ import pandas  # noqa: E402, F401
 import pyarrow  # noqa: E402, F401
 import streamlit as st  # noqa: E402
 
-from vstent.app import core  # noqa: E402
+from vstent.app import core, tree_view  # noqa: E402
 from vstent.imaging.centerline import longest_path_endpoints  # noqa: E402
 from vstent.imaging.image_io import ImageInput, read_image  # noqa: E402
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
-from vstent.inference.pipeline import analyse_vessel, range_warnings  # noqa: E402
+from vstent.inference.pipeline import analyse_tree, analyse_vessel, range_warnings  # noqa: E402
+from vstent.inference.tree_runtime import (  # noqa: E402
+    TreeSurrogateRunner,
+)
+from vstent.physics.tree import solve_tree  # noqa: E402
 from vstent.planning.optimizer import plan_stents  # noqa: E402
-from vstent.planning.stent import Stent  # noqa: E402
+from vstent.planning.stent import Stent, apply_path_stents  # noqa: E402
+from vstent.planning.tree_planner import plan_tree_stents  # noqa: E402
 from vstent.uncertainty.greyzone import load_uncertainty, plan_assessments  # noqa: E402
 from vstent.uncertainty.inputs import SOURCE_LABELS, Measurement  # noqa: E402
 from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa, pa_to_mmhg  # noqa: E402
@@ -65,6 +70,19 @@ def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob):
     return analyse_vessel(
         _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px
     )
+
+
+@st.cache_resource(max_entries=16, show_spinner="Measuring the vessel tree…")
+def analyse_tree_cached(sha: str, start, end, mm_per_px, pa, pv, _prob):
+    pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
+    params = get_settings()[0].model_copy(update=pressures)
+    return analyse_tree(_prob, start, end, params=params, mm_per_px=mm_per_px)
+
+
+@st.cache_resource
+def get_tree_runner() -> TreeSurrogateRunner | None:
+    model_dir = tree_view.tree_model_dir()
+    return None if model_dir is None else TreeSurrogateRunner.from_dir(model_dir)
 
 
 @st.cache_resource
@@ -110,6 +128,10 @@ with st.sidebar:
 state: core.CaseState | None = None
 image_input: ImageInput | None = None
 prob = qca = None
+tree_mode = False
+tree_res = tree_post = tree_plans = None
+tree_stents: list[Stent] = []
+tree_outlet = 0
 
 if mode == "Synthetic vessel":
     with st.sidebar:
@@ -156,6 +178,10 @@ else:
         elif calib == "DICOM ImagerPixelSpacing":
             mm_per_px = image_input.pixel_spacing_mm
             st.caption(f"{mm_per_px:.4f} mm/px. {image_input.note}")
+        tree_mode = st.toggle(
+            "Side branches (tree model)", key="tree_mode",
+            help="Measure the side branches leaving the path and compute FFR on the whole tree.",
+        )  # fmt: skip
     if image_input is None:
         st.info("Upload an angiogram (or pick an ARCADE example) to start.")
         st.stop()
@@ -193,7 +219,12 @@ if mode == "Angiogram image":
             if st.form_submit_button("Set points"):
                 st.session_state.update(start=(int(sr), int(sc)), end=(int(er), int(ec)))
     start, end = st.session_state.get("start"), st.session_state.get("end")
-    if start and end:
+    if start and end and tree_mode:
+        try:
+            tree_res = analyse_tree_cached(image_input.sha256, start, end, mm_per_px, pa, pv, prob)
+        except ValueError as exc:
+            st.error(f"Could not trace the vessel tree: {exc}")
+    elif start and end:
         try:
             result = analyse(image_input.sha256, start, end, mm_per_px, pa, pv, prob)
         except ValueError as exc:
@@ -294,16 +325,63 @@ if state is not None:
     if plans is not None:
         state.plan_assessments = plan_assessments(plans, state.uncertainty, ucfg.level)
 
+# --- tree mode: path, stent and plan controls (read before drawing the overlay) -------------
+if tree_res is not None:
+    tree = tree_res.qca.tree
+    tree_key = (
+        f"{image_input.sha256}:{st.session_state.get('start')}:{st.session_state.get('end')}:"
+        f"{mm_per_px}:{pa:.1f}:{pv:.1f}"
+    )
+    if st.session_state.get("tree_key") != tree_key:  # a new tree starts without stent / plans
+        st.session_state.tree_key = tree_key
+        for key in ("tree_place", "tree_start", "tree_show", "tree_plans"):
+            st.session_state.pop(key, None)
+    with st.sidebar:
+        st.header("Virtual stent (tree)")
+        tree_outlet = st.selectbox(
+            "Path to", range(tree.n_branches), format_func=lambda k: tree.names[k],
+            key="tree_outlet",
+        )  # fmt: skip
+        path_mm = m_to_mm(tree.path_length(tree_outlet))
+        place = st.toggle("Place a stent on this path", key="tree_place")
+        t_len = st.selectbox("Length (mm)", lengths, index=lengths.index(18) if 18 in lengths
+                             else 0, key="tree_len")  # fmt: skip
+        t_dia = st.selectbox("Diameter (mm)", diameters, index=diameters.index(3.0)
+                             if 3.0 in diameters else 0, key="tree_dia")  # fmt: skip
+        max_start = max(0.0, float(np.floor((path_mm - t_len) * 2) / 2))
+        if st.session_state.get("tree_start", 0.0) > max_start:
+            st.session_state.tree_start = max_start
+        t_start = st.slider("Start (mm along the path)", 0.0, max(max_start, 0.5), step=0.5,
+                            key="tree_start", disabled=t_len > path_mm)  # fmt: skip
+        stored = st.session_state.get("tree_plans")
+        tree_plans = stored if stored is not None and stored.outlet == tree_outlet else None
+        show = "Manual stent"
+        if tree_plans is not None and tree_plans.plans:
+            show = st.radio(
+                "Show on plots",
+                ["Manual stent"] + [f"Plan {k}" for k in range(1, len(tree_plans.plans) + 1)],
+                key="tree_show",
+            )
+    if show != "Manual stent" and tree_plans is not None:
+        tree_stents = list(tree_plans.plans[int(show.split()[1]) - 1].stents)
+    elif place and t_len <= path_mm:
+        tree_stents = [Stent(mm_to_m(t_start), mm_to_m(t_len), mm_to_m(t_dia))]
+    if tree_stents:
+        stented = apply_path_stents(
+            tree, tree_outlet, tree_stents, edge=mm_to_m(planner_cfg.edge_mm)
+        )
+        tree_post = solve_tree(stented, tree_res.params, r_outlet=tree_res.result.r_outlet)
+
 # --- image panel --------------------------------------------------------------------------------
 if mode == "Angiogram image":
     with img_col:
-        overlay = core.overlay_image(
-            image_input.image,
-            prob,
-            qca,
-            stents,
-            [p for p in (st.session_state.get("start"), st.session_state.get("end")) if p],
-        )
+        points = [p for p in (st.session_state.get("start"), st.session_state.get("end")) if p]
+        if tree_res is not None:
+            overlay = tree_view.tree_overlay(
+                image_input.image, prob, tree_res.qca, tree_outlet, tree_stents, points
+            )
+        else:
+            overlay = core.overlay_image(image_input.image, prob, qca, stents, points)
         try:
             from streamlit_image_coordinates import streamlit_image_coordinates
 
@@ -329,9 +407,77 @@ if mode == "Angiogram image":
             f"{image_input.name}: blue = segmented vessel (p ≥ {THRESHOLD}), yellow = "
             "centreline, green dot = start, orange = end / stent."
         )
-    if state is None:
+    if tree_mode and tree_res is None:
+        st.info("Set a start and an end point to analyse the vessel tree.")
+        st.stop()
+    elif not tree_mode and state is None:
         st.info("Set a start and an end point to analyse the vessel.")
         st.stop()
+
+# --- tree mode: results, planner, export ------------------------------------------------------
+if tree_res is not None:
+    tree, pre_t = tree_res.qca.tree, tree_res.result
+    st.subheader("Vessel tree")
+    m = st.columns(4)
+    m[0].metric("Branches modelled", tree.n_branches)
+    main_post = None if tree_post is None else float(tree_post.ffr[0][-1])
+    m[1].metric(
+        "Main-path distal FFR (tree)", f"{pre_t.ffr[0][-1]:.3f}",
+        None if main_post is None else f"{main_post - pre_t.ffr[0][-1]:+.3f}",
+    )  # fmt: skip
+    m[2].metric("Main path as a single vessel", f"{tree_res.single.ffr[-1]:.3f}")
+    m[3].metric(f"FFR at {tree.names[tree_outlet]}", f"{pre_t.ffr[tree_outlet][-1]:.3f}")
+    runner = get_tree_runner()
+    sur = None
+    if runner is not None:
+        try:
+            sur = runner.predict_tree(tree, pre_t.pa, pre_t.pv, pre_t.r_outlet)[1]
+        except ValueError as exc:
+            st.caption(f"Tree surrogate not used: {exc}")
+    st.dataframe(tree_view.branch_table(tree_res, tree_post, sur), hide_index=True)
+    st.plotly_chart(tree_view.tree_ffr_figure(tree_res, tree_outlet, tree_post))
+    for w in tree_res.warnings:
+        st.warning(w)
+    st.caption(tree_view.TREE_NOTE)
+    if st.button(f"Suggest plan on the path to {tree.names[tree_outlet]}", key="tree_suggest"):
+        st.session_state.tree_plans = plan_tree_stents(
+            tree, tree_outlet, catalog=catalog, config=planner_cfg, params=tree_res.params,
+            pa=pre_t.pa, pv=pre_t.pv,
+        )  # fmt: skip
+        st.session_state.pop("tree_show", None)
+        st.rerun()
+    if tree_plans is not None:
+        st.write(
+            f"{tree_plans.message} (tree {tree_plans.backend}; {tree_plans.n_feasible} feasible "
+            f"of {tree_plans.n_candidates} candidates, {tree_plans.n_pairs} pairs; "
+            f"{tree_plans.seconds:.2f} s)"
+        )
+        if tree_plans.plans:
+            st.dataframe(
+                [
+                    {
+                        "Plan": k,
+                        "Stents (mm along the path)": " + ".join(
+                            f"{m_to_mm(s.diameter):.2f} × {m_to_mm(s.length):.0f} mm "
+                            f"@ {m_to_mm(s.s_start):.1f} mm" for s in p.stents
+                        ),
+                        "Total length (mm)": round(m_to_mm(p.total_length), 1),
+                        f"FFR at {tree.names[tree_outlet]}": round(p.ffr, 3),
+                        "Meets target": p.meets_target,
+                        **{f"FFR {nm}": round(f, 3)
+                           for nm, f in zip(tree.names, p.ffr_outlets, strict=True)},
+                    }
+                    for k, p in enumerate(tree_plans.plans, 1)
+                ],
+                hide_index=True,
+            )  # fmt: skip
+    st.download_button(
+        "Download tree case report (JSON)",
+        tree_view.tree_report_json(tree_res, tree_outlet, tree_stents, tree_post, tree_plans,
+                                   image_input.name),
+        file_name="vstent_tree_case.json", mime="application/json", key="tree_report",
+    )  # fmt: skip
+    st.stop()
 
 # --- results ----------------------------------------------------------------------------------
 p, pre, post = state.profile, state.pre, state.post
