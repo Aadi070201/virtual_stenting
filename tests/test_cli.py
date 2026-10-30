@@ -9,6 +9,7 @@ COMMANDS = [
     "physics-report",
     "synth",
     "synth-tree",
+    "tree-report",
     "train-surrogate",
     "eval-surrogate",
     "export-surrogate",

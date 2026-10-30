@@ -111,3 +111,15 @@ def test_tree_dataset_card(tmp_path):
 def test_sampling_validation(bad):
     with pytest.raises(ValueError):
         TreeSamplingConfig(**bad)
+
+
+def test_tree_report_on_a_small_dataset(tmp_path):
+    from vstent.physics.tree_report import write_tree_report
+
+    generate_dataset(_small(), out_dir=tmp_path / "data", workers=1)
+    report = write_tree_report(tmp_path / "data", tmp_path / "reports", PARAMS, n_trees=20)
+    assert report["checks_passed"], {k: v["passed"] for k, v in report["checks"].items()}
+    assert report["benchmark"]["n_trees"] == 20 and report["benchmark"]["trees_per_s"] > 0
+    md = (tmp_path / "reports" / "tree_physics.md").read_text(encoding="utf-8")
+    assert "Research use only" in md and "Murray" in md
+    assert (tmp_path / "reports" / "figures" / "tree_example.png").stat().st_size > 0

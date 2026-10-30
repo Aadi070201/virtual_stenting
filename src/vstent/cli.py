@@ -155,6 +155,40 @@ def synth_tree(
 
 
 @app.command()
+def tree_report(
+    data: Annotated[
+        Path, typer.Option("--data", help="Synthetic tree dataset (vstent synth-tree).")
+    ] = Path("data/synth/tree_v1"),
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    n_trees: Annotated[int, typer.Option("--n", min=10, help="Test trees to check.")] = 1000,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write tree_physics.md.")
+    ] = Path("reports"),
+) -> None:
+    """Tree physics sanity checks and solver throughput (P2) → reports/tree_physics.md."""
+    from vstent.config import load_config
+    from vstent.physics.solver import PhysicsParams
+    from vstent.physics.tree_report import write_tree_report
+
+    if not (data / "manifest.json").exists():
+        typer.echo(f"No tree dataset in {data}: run vstent synth-tree first.", err=True)
+        raise typer.Exit(code=1)
+    report = write_tree_report(data, report_dir, load_config(physics, PhysicsParams), n_trees)
+    for name, check in report["checks"].items():
+        typer.echo(f"[{'PASS' if check['passed'] else 'FAIL'}] {name}")
+    b = report["benchmark"]
+    typer.echo(
+        f"[{'PASS' if b['passed'] else 'FAIL'}] throughput {b['trees_per_s']:,.0f} trees/s "
+        f"(target {b['target']:,.0f})"
+    )
+    typer.echo(f"Wrote {report_dir / 'tree_physics.md'}")
+    if not (report["checks_passed"] and b["passed"]):
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def train_surrogate(
     config: Annotated[
         Path | None,
