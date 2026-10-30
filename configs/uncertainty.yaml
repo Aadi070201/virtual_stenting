@@ -1,0 +1,16 @@
+# Uncertainty and grey-zone flagging (docs/PLAN.md, P1). Units as named.
+level: 0.90                    # central interval probability (model and input intervals)
+pre_pci_threshold: 0.80        # grey zone: a pre-PCI interval containing this value is flagged
+                               # (post-PCI plans use the planner target, configs/planner.yaml)
+conformal_score: normalised    # |y − ŷ| / (σ + sigma_floor), σ = ensemble SD; or "absolute"
+sigma_floor: 0.001             # FFR units; keeps scores finite where the members agree exactly
+calibration_split: val         # calibrated at export (vstent export-ensemble), reported on test / ood
+
+inputs:                        # Monte Carlo through the solver, per case
+  n_samples: 500
+  seed: 0                      # fixed draws: the same case always gets the same interval
+  pixel_size_rel: 0.10         # ± 10%, uniform; only when the pixel size is assumed
+  v_hyp_halfwidth: 0.10        # m/s, ± half the synthetic sampling range [0.25, 0.45]
+  pa_halfwidth_mmhg: 20.0      # ± half the synthetic sampling range [70, 110]
+  pv_halfwidth_mmhg: 3.0       # ± half the synthetic sampling range [2, 8]; Pv ≥ 0
+  qca_error_report: reports/qca_synthetic.json   # QCA diameter error SD + correlation (px)

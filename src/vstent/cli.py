@@ -42,6 +42,7 @@ RunOpt = Annotated[
 PHYSICS_CONFIG = Path("configs/physics.yaml")
 PLANNER_CONFIG = Path("configs/planner.yaml")
 CATALOG_CONFIG = Path("configs/stent_catalog.yaml")
+UNCERTAINTY_CONFIG = Path("configs/uncertainty.yaml")
 
 
 @app.command()
@@ -253,6 +254,32 @@ def export_surrogate(
         raise typer.Exit(code=1)
 
 
+@app.command()
+def export_ensemble(
+    run: RunOpt,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Model directory (default: models/surrogate/<run-name>)."),
+    ] = None,
+    uncertainty: Annotated[
+        Path, typer.Option("--uncertainty", exists=True, dir_okay=False, help="Uncertainty YAML.")
+    ] = UNCERTAINTY_CONFIG,
+) -> None:
+    """Export a surrogate ensemble to ONNX (mean + spread), check parity, calibrate intervals."""
+    from vstent.config import load_config
+    from vstent.surrogate.export import export_ensemble as run_export
+    from vstent.uncertainty.greyzone import UncertaintyConfig
+
+    meta = run_export(
+        run, out, uncertainty=load_config(uncertainty, UncertaintyConfig), log=typer.echo
+    )
+    passed = meta["parity"]["passed"] and meta["parity_screen"]["passed"]
+    typer.echo(f"[{'PASS' if passed else 'FAIL'}] ONNX parity (ensemble mean, SD and screen)")
+    typer.echo(f"Model in {meta['out_dir']}")
+    if not passed:
+        raise typer.Exit(code=1)
+
+
 @data_app.command()
 def arcade(
     out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/arcade"),
@@ -340,7 +367,14 @@ def export_seg(
         raise typer.Exit(code=1)
 
 
-def _echo_plans(planned) -> None:
+def _interval_text(a) -> str:
+    parts = [f"inputs {a.inputs.text()}"] if a.inputs else []
+    parts += [f"model {a.model.text()}"] if a.model else []
+    flag = "GREY ZONE" if a.flagged else "clear"
+    return f"{', '.join(parts)}; {a.threshold:.2f}: {flag}"
+
+
+def _echo_plans(planned, assessments=None) -> None:
     typer.echo(
         f"Stent plans ({planned.backend}; pre-PCI FFR {planned.pre_ffr:.3f}; "
         f"{planned.n_feasible} feasible of {planned.n_candidates} candidates, "
@@ -353,6 +387,8 @@ def _echo_plans(planned) -> None:
         )
         check = f" (solver {p.ffr_solver:.3f})" if p.ffr_solver is not None else ""
         typer.echo(f"  {k}. {stents}: post-PCI FFR {p.ffr:.3f}{check}")
+        if assessments:
+            typer.echo(f"     intervals: {_interval_text(assessments[k - 1])}")
 
 
 def _latest_model_dir(root: Path, filename: str) -> Path:
@@ -395,11 +431,15 @@ def analyse(
     catalog: Annotated[
         Path, typer.Option("--catalog", dir_okay=False, help="Stent catalogue YAML (with --plan).")
     ] = CATALOG_CONFIG,
+    uncertainty: Annotated[
+        Path, typer.Option("--uncertainty", dir_okay=False, help="Uncertainty YAML.")
+    ] = UNCERTAINTY_CONFIG,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
     Without --start / --end the longest vessel path in the mask is used. With --plan the
-    virtual stent planner proposes the shortest plan reaching the target FFR.
+    virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
+    reported with 90% intervals (surrogate ensemble; input assumptions) and grey-zone flags.
     """
     import cv2
 
@@ -441,6 +481,41 @@ def analyse(
         f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
         f"{result.ffr_distal_surrogate:.3f}"
     )
+    from vstent.uncertainty.greyzone import UncertaintyConfig, assessment, plan_assessments
+    from vstent.uncertainty.inputs import (
+        SOURCE_LABELS,
+        InputUncertainty,
+        Measurement,
+        QCAErrorModel,
+    )
+
+    ucfg = load_config(uncertainty, UncertaintyConfig) if uncertainty.exists() else None
+    ucfg = ucfg or UncertaintyConfig()
+    mc = InputUncertainty(
+        q.profile,
+        params,
+        result.solver.pa,
+        result.solver.pv,
+        measurement=Measurement(q.mm_per_px, q.calibration_assumed),
+        config=ucfg.inputs,
+        qca_error=QCAErrorModel.from_report(ucfg.inputs.qca_error_report),
+    )
+    pre = assessment(
+        ucfg.pre_pci_threshold,
+        result.ffr_distal_solver,
+        result.ffr_distal_surrogate,
+        result.model_interval,
+        mc.pre_samples,
+        ucfg.level,
+    )
+    typer.echo(f"{ucfg.level:.0%} intervals: {_interval_text(pre)}")
+    typer.echo(
+        f"  inputs varied: {', '.join(SOURCE_LABELS[s] for s in mc.sources)} "
+        f"({mc.n_samples} draws); model = surrogate-vs-solver error only"
+        + ("" if result.model_interval else " (no calibrated ensemble: no model interval)")
+    )
+    for reason in pre.reasons("Pre-PCI distal FFR"):
+        typer.echo(f"Grey zone: {reason}")
     for w in result.warnings:
         typer.echo(f"Warning: {w}")
     if plan:
@@ -453,7 +528,7 @@ def analyse(
             params=params,
             runner=surrogate,
         )
-        _echo_plans(planned)
+        _echo_plans(planned, plan_assessments(planned, mc, ucfg.level))
     surrogate.close()
     if figure is not None:
         from vstent.inference.figures import plot_analysis
@@ -542,6 +617,69 @@ def plan_benchmark(
     for t in report["targets"]:
         typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
     typer.echo(f"Wrote {report_dir / 'planner_benchmark.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def uncertainty_report(
+    model: Annotated[
+        Path | None,
+        typer.Option("--model", help="Ensemble model dir (default: newest calibrated one)."),
+    ] = None,
+    single_model: Annotated[
+        Path | None,
+        typer.Option("--single-model", help="Single model to compare (default: the M3 model)."),
+    ] = None,
+    n_vessels: Annotated[int, typer.Option("--n", min=1, help="Test vessels, input MC.")] = 500,
+    n_plans: Annotated[int, typer.Option("--n-plans", min=1, help="Vessels to plan.")] = 50,
+    uncertainty: Annotated[
+        Path, typer.Option("--uncertainty", exists=True, dir_okay=False, help="Uncertainty YAML.")
+    ] = UNCERTAINTY_CONFIG,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    planner: Annotated[
+        Path, typer.Option("--planner", exists=True, dir_okay=False, help="Planner YAML.")
+    ] = PLANNER_CONFIG,
+    catalog: Annotated[
+        Path, typer.Option("--catalog", exists=True, dir_okay=False, help="Stent catalogue YAML.")
+    ] = CATALOG_CONFIG,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write uncertainty.md.")
+    ] = Path("reports"),
+    device: Annotated[str, typer.Option("--device", help="auto, cpu or cuda.")] = "auto",
+) -> None:
+    """Ensemble, conformal coverage and input-uncertainty report → reports/uncertainty.md."""
+    import json
+
+    from vstent.config import load_config
+    from vstent.physics.solver import PhysicsParams
+    from vstent.planning.optimizer import PlannerConfig, StentCatalog
+    from vstent.uncertainty.conformal import CONFORMAL_FILE
+    from vstent.uncertainty.greyzone import UncertaintyConfig
+    from vstent.uncertainty.report import write_uncertainty_report
+
+    model = model or _latest_model_dir(Path("models/surrogate"), CONFORMAL_FILE)
+    if single_model is None:
+        run = json.loads((report_dir / "surrogate_eval.json").read_text(encoding="utf-8"))["run"]
+        single_model = Path("models/surrogate") / Path(run).name
+    report = write_uncertainty_report(
+        model,
+        single_model,
+        report_dir,
+        config=load_config(uncertainty, UncertaintyConfig),
+        params=load_config(physics, PhysicsParams),
+        planner=load_config(planner, PlannerConfig),
+        catalog=load_config(catalog, StentCatalog),
+        n_vessels=n_vessels,
+        n_plans=n_plans,
+        device=device,
+        log=typer.echo,
+    )
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'uncertainty.md'}")
     if not report["targets_met"]:
         raise typer.Exit(code=1)
 

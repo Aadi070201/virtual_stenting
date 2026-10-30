@@ -55,7 +55,11 @@ def tandem_vessel() -> VesselProfile:
 def throughput(
     runner: SurrogateRunner, params: PhysicsParams, catalog: StentCatalog, config: PlannerConfig
 ) -> dict[str, Any]:
-    """Median time to build radii and evaluate ``N_CANDIDATES`` candidates, per backend."""
+    """Median time to build radii and evaluate ``N_CANDIDATES`` candidates, per backend.
+
+    The surrogate is timed with ``runner.screen``, the model the planner screens with.
+    """
+    runner = runner.screen
     grid = planning_grid(tandem_vessel())
     pre = solve_ffr_batch(grid.r, grid.ds, grid.reference_radius(), params)
     pa, pv, rm = pre.pa[0], pre.pv[0], pre.r_micro[0]

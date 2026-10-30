@@ -19,6 +19,7 @@ from vstent.imaging.qca import DEFAULT_MM_PER_PX, QCAResult, run_qca
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile
 from vstent.physics.solver import FFRResult, PhysicsParams, solve_ffr
+from vstent.uncertainty.greyzone import Interval
 from vstent.units import m_to_mm, pa_to_mmhg
 
 MAX_FALLBACK_FRACTION = 0.10
@@ -38,9 +39,11 @@ class VesselAnalysis:
         qca: centreline, diameters and the SI ``VesselProfile``.
         solver: reduced-order FFR pullback on the QCA profile.
         surrogate_s: positions of the surrogate curve (m), or ``None`` without a surrogate.
-        surrogate_ffr: surrogate FFR pullback, or ``None``.
+        surrogate_ffr: surrogate FFR pullback (ensemble mean), or ``None``.
         params: physics constants used.
         warnings: plain-language caveats for this analysis.
+        surrogate_std: ensemble SD along ``surrogate_s`` (``None`` for a single model).
+        model_interval: calibrated interval of the surrogate's distal FFR, if available.
     """
 
     prob: np.ndarray
@@ -50,6 +53,8 @@ class VesselAnalysis:
     surrogate_ffr: np.ndarray | None
     params: PhysicsParams
     warnings: list[str] = field(default_factory=list)
+    surrogate_std: np.ndarray | None = None
+    model_interval: Interval | None = None
 
     @property
     def ffr_distal_solver(self) -> float:
@@ -114,9 +119,14 @@ def analyse_vessel(
         )
     if solver.r_micro_clamped:
         warnings.append("R_micro hit its lower bound during calibration")
-    s = ffr = None
+    s = ffr = std = interval = None
     if surrogate is not None:
-        s, ffr = surrogate.predict_profile(qca.profile, solver.pa, solver.pv, solver.r_micro)
+        s, ffr, std = surrogate.predict_profile_with_spread(
+            qca.profile, solver.pa, solver.pv, solver.r_micro
+        )
+        iv = None if std is None else surrogate.distal_interval(ffr[-1], std[-1])
+        if iv is not None:
+            interval = Interval(float(iv[0]), float(iv[1]), surrogate.conformal.level)
         warnings += range_warnings(qca.profile, solver.pa, solver.pv, sampling)
         floor = solver.pv / solver.pa  # FFR cannot fall below Pv / Pa (zero flow)
         if ffr.min() < floor:
@@ -124,7 +134,7 @@ def analyse_vessel(
                 f"Surrogate FFR reaches {ffr.min():.2f}, below the physical minimum "
                 f"Pv/Pa = {floor:.2f}: the input is far outside what it was trained on"
             )
-    return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings)
+    return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings, std, interval)
 
 
 def analyse_image(

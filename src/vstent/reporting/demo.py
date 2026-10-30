@@ -137,6 +137,12 @@ def run_demo(
     if runner is not None:
         runner.close()
 
+    t0 = time.perf_counter()
+    ucfg, qca_error = core.load_uncertainty()
+    mc = core.input_uncertainty(
+        case.profile, params, case.pa, case.pv, core.Measurement(), (ucfg, qca_error)
+    )
+    timings["uncertainty_s"] = time.perf_counter() - t0
     state = core.CaseState(
         "synthetic demo",
         params,
@@ -148,6 +154,12 @@ def run_demo(
         post,
         description=case.description,
         plans=plans,
+        uncertainty=mc,
+        pre_assessment=core.assess(pre, mc.pre_samples, ucfg.pre_pci_threshold, ucfg.level),
+        post_assessment=core.assess(
+            post, mc.post_samples(best.stents), planner.target_ffr, ucfg.level
+        ),
+        plan_assessments=core.plan_assessments(plans, mc, ucfg.level),
     )
     models = core.Models(runner, None, sur_dir, None)
     report = core.case_report(state, models)
@@ -221,6 +233,29 @@ def _markdown(report: dict[str, Any], plans) -> str:
         lines.append(
             f"| {k} | {stents} | {pl['total_length_mm']:.0f} mm | {pl['ffr']:.3f} | {check} |"
         )
+    u = report.get("uncertainty")
+    if u is not None:
+
+        def iv(x):
+            return "n/a" if x is None else f"{x[0]:.3f}–{x[1]:.3f}"
+
+        level = u["pre_pci"]["level"]
+        lines += [
+            "",
+            f"**Uncertainty ({level:.0%} intervals).** Inputs varied: "
+            f"{', '.join(u['input_assumptions_varied'])} ({u['input_samples']} Monte Carlo draws "
+            f"through the solver; {t['uncertainty_s'] * 1e3:.0f} ms).",
+            "",
+            "| Distal FFR | Input interval (solver) | Model interval (surrogate) | Threshold "
+            "| Grey zone |",
+            "|---|---|---|---|---|",
+        ]
+        for label, a in (("Pre-PCI", u["pre_pci"]), ("Post-PCI, best plan", u["post_pci"])):
+            lines.append(
+                f"| {label} | {iv(a['input_interval'])} | {iv(a['model_interval'])} "
+                f"| {a['threshold']:.2f} | {'yes' if a['grey_zone'] else 'no'} |"
+            )
+        lines += ["", u["note"]]
     lines += [
         "",
         "![Demo](demo.png)",

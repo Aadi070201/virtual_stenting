@@ -35,12 +35,27 @@ from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 from vstent.planning.optimizer import PlannerConfig, PlanResult, StentCatalog
 from vstent.planning.stent import DEFAULT_EDGE, Stent, apply_stents
 from vstent.plotting import BAND, INK_MUTED, INK_SECONDARY, SERIES_1, SERIES_2
+from vstent.uncertainty.greyzone import (
+    Assessment,
+    Interval,
+    UncertaintyConfig,
+    assessment,
+    plan_assessments,
+)
+from vstent.uncertainty.inputs import SOURCE_LABELS, InputUncertainty, Measurement, QCAErrorModel
+
+__all__ = ["Measurement", "SOURCE_LABELS", "plan_assessments"]  # re-exported for the app
 from vstent.units import m_to_mm, pa_to_mmhg
 
 CUTOFF = 0.80
 BANNER = (
     f"{DISCLAIMER} This research prototype is not a medical device, is not validated, and "
     "must never be used to make decisions about real patients."
+)
+UNCERTAINTY_NOTE = (
+    "Model intervals cover only the surrogate's error against the reduced-order solver "
+    "(split-conformal, calibrated on synthetic vessels). Input intervals cover only the listed "
+    "assumptions. Neither covers the error of the reduced-order model itself."
 )
 # Environment overrides (tests, demos): model directories and the ARCADE folder.
 ENV_SURROGATE = "VSTENT_SURROGATE_MODEL"
@@ -109,6 +124,13 @@ def load_settings(root: Path = Path(".")):
         )
     )
     return physics, planner, catalog
+
+
+def load_uncertainty(root: Path = Path(".")) -> tuple[UncertaintyConfig, QCAErrorModel | None]:
+    """``configs/uncertainty.yaml`` (defaults if missing) and the QCA error model it names."""
+    path = root / "configs" / "uncertainty.yaml"
+    cfg = load_config(path, UncertaintyConfig) if path.exists() else UncertaintyConfig()
+    return cfg, QCAErrorModel.from_report(root / cfg.inputs.qca_error_report)
 
 
 # --- inputs ----------------------------------------------------------------------------------
@@ -215,7 +237,11 @@ def synthetic_case(preset: str, seed: int, params: PhysicsParams) -> SyntheticCa
 
 @dataclass(frozen=True, eq=False)
 class Curves:
-    """FFR pullbacks of one geometry. Positions in m; surrogate on its own 256-point grid."""
+    """FFR pullbacks of one geometry. Positions in m; surrogate on its own 256-point grid.
+
+    With an ensemble surrogate, ``surrogate`` is the members' mean, ``surrogate_std`` their SD
+    and ``model_interval`` the calibrated interval of distal FFR.
+    """
 
     s: np.ndarray
     solver: np.ndarray
@@ -223,6 +249,8 @@ class Curves:
     surrogate: np.ndarray | None
     r_micro: float
     q: float
+    surrogate_std: np.ndarray | None = None
+    model_interval: Interval | None = None
 
     @property
     def distal_solver(self) -> float:
@@ -248,10 +276,38 @@ def evaluate(
         profile.r, profile.ds, profile.reference_radius(), params, pa=pa, pv=pv, r_micro=r_micro
     )
     rm = float(res.r_micro[0])
-    s_sur = ffr_sur = None
+    s_sur = ffr_sur = std = interval = None
     if runner is not None:
-        s_sur, ffr_sur = runner.predict_profile(profile, pa, pv, rm)
-    return Curves(profile.s, res.ffr[0], s_sur, ffr_sur, rm, float(res.q[0]))
+        s_sur, ffr_sur, std = runner.predict_profile_with_spread(profile, pa, pv, rm)
+        iv = None if std is None else runner.distal_interval(ffr_sur[-1], std[-1])
+        if iv is not None:
+            interval = Interval(float(iv[0]), float(iv[1]), runner.conformal.level)
+    return Curves(profile.s, res.ffr[0], s_sur, ffr_sur, rm, float(res.q[0]), std, interval)
+
+
+def input_uncertainty(
+    profile: VesselProfile,
+    params: PhysicsParams,
+    pa: float,
+    pv: float,
+    measurement: Measurement,
+    settings: tuple[UncertaintyConfig, QCAErrorModel | None],
+) -> InputUncertainty:
+    """Monte Carlo over the case's input assumptions (run once per case; pressures in Pa)."""
+    cfg, qca_error = settings
+    return InputUncertainty(
+        profile, params, pa, pv, measurement=measurement, config=cfg.inputs, qca_error=qca_error
+    )
+
+
+def assess(
+    curves: Curves, samples: np.ndarray | None, threshold: float, level: float
+) -> Assessment:
+    """Intervals and grey-zone flag of a distal FFR (``samples``: input Monte Carlo draws)."""
+    return assessment(
+        threshold, curves.distal_solver, curves.distal_surrogate, curves.model_interval,
+        samples, level,
+    )  # fmt: skip
 
 
 def stent_warnings(profile: VesselProfile, stents: list[Stent], max_ratio: float) -> list[str]:
@@ -358,15 +414,48 @@ def profile_figure(
     return fig
 
 
-def ffr_figure(pre: Curves, post: Curves | None = None) -> go.Figure:
-    """FFR pullbacks (solver solid, surrogate dashed; post-PCI orange) + surrogate − solver."""
+def _interval_bar(fig: go.Figure, x: float, iv: Interval, color: str, name: str) -> None:
+    """Vertical bar from iv.low to iv.high at the distal end ``x`` (mm)."""
+    fig.add_scatter(
+        x=[x, x],
+        y=[iv.low, iv.high],
+        mode="lines+markers",
+        name=name,
+        line={"color": color, "width": 3},
+        marker={"symbol": "line-ew", "size": 10, "line": {"color": color, "width": 2}},
+        row=1,
+        col=1,
+    )
+
+
+def ffr_figure(
+    pre: Curves,
+    post: Curves | None = None,
+    assessments: tuple[Assessment | None, Assessment | None] = (None, None),
+) -> go.Figure:
+    """FFR pullbacks (solver solid, surrogate dashed; post-PCI orange) + surrogate − solver.
+
+    ``assessments`` (pre, post) add their intervals as bars at the distal end: the input
+    interval next to the solver's end point, the model interval next to the surrogate's.
+    """
     fig = make_subplots(
         rows=2, cols=1, shared_xaxes=True, row_heights=[0.72, 0.28], vertical_spacing=0.06
     )
-    for curves, color, label in ((pre, INK_SECONDARY, "pre-PCI"), (post, SERIES_2, "post-PCI")):
+    for curves, color, label, a in (
+        (pre, INK_SECONDARY, "pre-PCI", assessments[0]),
+        (post, SERIES_2, "post-PCI", assessments[1]),
+    ):
         if curves is None:
             continue
         s = m_to_mm(curves.s)
+        if a is not None:
+            pct = f"{(a.inputs or a.model).level:.0%}" if (a.inputs or a.model) else ""
+            gap = 0.012 * (s[-1] - s[0])
+            if a.inputs is not None:
+                _interval_bar(fig, s[-1] + gap, a.inputs, color, f"{pct} inputs ({label})")
+            if a.model is not None:
+                sur_color = SERIES_1 if curves is pre else SERIES_2
+                _interval_bar(fig, s[-1] + 2 * gap, a.model, sur_color, f"{pct} model ({label})")
         fig.add_scatter(
             x=s,
             y=curves.solver,
@@ -453,6 +542,10 @@ class CaseState:
     description: str = ""
     warnings: list[str] = field(default_factory=list)
     plans: PlanResult | None = None
+    uncertainty: InputUncertainty | None = None
+    pre_assessment: Assessment | None = None
+    post_assessment: Assessment | None = None
+    plan_assessments: list[Assessment] = field(default_factory=list)
 
 
 def _stent_dict(st: Stent) -> dict[str, float]:
@@ -543,9 +636,23 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
                     "ffr": round(pl.ffr, 4),
                     "ffr_solver_check": None if pl.ffr_solver is None else round(pl.ffr_solver, 4),
                     "meets_target": pl.meets_target,
+                    "uncertainty": a.to_dict() if a is not None else None,
                 }
-                for pl in pr.plans
+                for pl, a in zip(
+                    pr.plans,
+                    state.plan_assessments or [None] * len(pr.plans),
+                    strict=True,
+                )
             ],
+        }
+    if state.pre_assessment is not None:
+        mc = state.uncertainty
+        report["uncertainty"] = {
+            "note": UNCERTAINTY_NOTE,
+            "input_assumptions_varied": [SOURCE_LABELS[s] for s in mc.sources] if mc else [],
+            "input_samples": mc.n_samples if mc else 0,
+            "pre_pci": state.pre_assessment.to_dict(),
+            "post_pci": None if state.post_assessment is None else state.post_assessment.to_dict(),
         }
     return report
 

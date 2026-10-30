@@ -219,3 +219,96 @@ def test_oversized_manual_stent_is_flagged():
     assert ok == []
     big = core.stent_warnings(case.profile, [Stent(0.02, 0.018, 4.0e-3)], 1.1)
     assert len(big) == 1 and "1.3×" in big[0] and "1.1×" in big[0]
+
+
+# --- uncertainty (P1) ------------------------------------------------------------------------
+
+
+def test_core_intervals_flags_and_report(tiny_ensemble_export):
+    from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
+
+    runner = core.SurrogateRunner.from_dir(tiny_ensemble_export["out_dir"])
+    case = core.synthetic_case(core.PRESETS[0], 0, PARAMS)
+    pre = core.evaluate(case.profile, PARAMS, case.pa, case.pv, runner=runner)
+    assert pre.model_interval is not None and pre.surrogate_std.shape == (256,)
+    assert pre.model_interval.low <= pre.distal_surrogate <= pre.model_interval.high
+    settings = core.load_uncertainty()
+    mc = core.input_uncertainty(
+        case.profile, PARAMS, case.pa, case.pv, core.Measurement(), settings
+    )
+    assert mc.sources == ["v_hyp", "pa_pv"]
+    a_pre = core.assess(pre, mc.pre_samples, 0.80, 0.90)
+    stents = [Stent(0.02, 0.018, 3e-3)]
+    _, post = core.stent_update(case.profile, stents, pre, PARAMS, case.pa, case.pv, runner)
+    a_post = core.assess(post, mc.post_samples(stents), 0.90, 0.90)
+    assert a_post.inputs.low > a_pre.inputs.high  # the stent clearly helps in every draw
+    plans = plan_stents(
+        case.profile,
+        catalog=StentCatalog(diameters_mm=[2.75, 3.0], lengths_mm=[12, 18, 22]),
+        config=PlannerConfig(n_plans=2),
+        params=PARAMS,
+        runner=runner,
+        pa=case.pa,
+        pv=case.pv,
+    )
+    assert all(p.model_interval is not None and p.ffr_std >= 0 for p in plans.plans)
+    state = core.CaseState(
+        "synthetic", PARAMS, case.pa, case.pv, case.profile, pre, stents, post, plans=plans,
+        uncertainty=mc, pre_assessment=a_pre, post_assessment=a_post,
+        plan_assessments=core.plan_assessments(plans, mc, 0.90),
+    )  # fmt: skip
+    models = core.Models(runner, None, Path(tiny_ensemble_export["out_dir"]), None)
+    rep = json.loads(core.report_json(state, models))
+    u = rep["uncertainty"]
+    assert u["input_assumptions_varied"] == ["hyperemic velocity", "Pa / Pv"]
+    assert u["pre_pci"]["threshold"] == 0.80 and len(u["pre_pci"]["model_interval"]) == 2
+    assert u["post_pci"]["threshold"] == 0.90 and "Neither covers" in u["note"]
+    assert all("grey_zone" in p["uncertainty"] for p in rep["plans"]["top"])
+    fig = core.ffr_figure(pre, post, (a_pre, a_post))
+    assert sum("inputs" in (t.name or "") for t in fig.data) == 2
+    runner.close()
+
+
+@pytest.fixture
+def app_env_ensemble(monkeypatch, tiny_ensemble_export, dark_seg_dir, tiny_arcade):
+    monkeypatch.setenv(core.ENV_SURROGATE, tiny_ensemble_export["out_dir"])
+    monkeypatch.setenv(core.ENV_SEG, str(dark_seg_dir))
+    monkeypatch.setenv(core.ENV_ARCADE, str(tiny_arcade))
+    st.cache_resource.clear()
+    yield
+    st.cache_resource.clear()
+
+
+def test_app_shows_intervals_and_grey_zone(app_env_ensemble):
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
+    assert not at.exception
+    text = " ".join(m.value for m in at.markdown)
+    assert "Pre-PCI distal FFR, 90% intervals: inputs" in text and "model" in text
+    assert any("Input assumptions varied" in c.value for c in at.caption)
+    at.toggle(key="place").set_value(True).run()
+    assert "Post-PCI distal FFR, 90% intervals" in " ".join(m.value for m in at.markdown)
+    for start in (10.0, 20.0):
+        at.slider(key="stent_start").set_value(start).run()
+        assert not at.exception and _server_ms(at) < SLIDER_BUDGET_MS
+    at.button(key="suggest").click().run()
+    assert not at.exception
+    columns = list(at.dataframe[0].value.columns)
+    assert {"Model 90%", "Inputs 90%", "Grey zone"} <= set(columns)
+    at.radio(key="mode").set_value("Angiogram image").run()
+    at.radio(key="source").set_value("ARCADE example").run()
+    at.button(key="auto").click().run()
+    assert not at.exception
+    caption = " ".join(c.value for c in at.caption)
+    assert "pixel size" in caption  # QCA error too once reports/qca_synthetic.json has it
+
+
+def test_random_preset_uses_its_own_velocity(app_env):
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
+    at.selectbox(key="preset").set_value(core.PRESETS[2]).run()
+    at.number_input(key="seed").set_value(7).run()
+    assert not at.exception
+    case = core.synthetic_case(core.PRESETS[2], 7, PARAMS)
+    params = PARAMS.model_copy(update={"v_hyp": case.v_hyp})
+    expected = core.evaluate(case.profile, params, case.pa, case.pv).distal_solver
+    shown = next(m.value for m in at.metric if m.label == "Distal FFR (solver)")
+    assert shown == f"{expected:.3f}"

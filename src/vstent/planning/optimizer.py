@@ -16,12 +16,16 @@ Plans are evaluated in batches by the ONNX surrogate or by the reduced-order sol
 epicardial geometry, not the microvasculature. With the surrogate backend the returned plans are
 re-checked with the solver (``Plan.ffr_solver``).
 
+With an ensemble model (P1) the candidates are screened by ``runner.screen`` (one member: the
+ensemble would be 5× slower); the ``n_plans`` returned are then re-scored with the full ensemble
+(mean, SD and conformal interval) and re-ranked by those values (DECISIONS D28).
+
 Lengths in metres internally; the config files use mm.
 """
 
 import time
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal, Protocol
 
 import numpy as np
@@ -70,12 +74,18 @@ class PlannerConfig(StrictModel):
 
 @dataclass(frozen=True)
 class Plan:
-    """One stent plan and its predicted post-PCI distal FFR."""
+    """One stent plan and its predicted post-PCI distal FFR.
+
+    ``ffr_std`` and ``model_interval`` (low, high) are set for the returned plans when the
+    surrogate is a calibrated ensemble.
+    """
 
     stents: tuple[Stent, ...]
     ffr: float
     meets_target: bool
     ffr_solver: float | None = None
+    ffr_std: float | None = None
+    model_interval: tuple[float, float] | None = None
 
     @property
     def total_length(self) -> float:
@@ -154,11 +164,9 @@ class SurrogateBackend:
         self.pa, self.pv, self.r_micro = pa, pv, r_micro
         self.r_ref = grid.reference_radius()
 
-    def curves(self, r: np.ndarray) -> np.ndarray:
-        """FFR curves (B, N) for radii ``r`` (B, N) in m."""
-        r = np.atleast_2d(r)
+    def _raw(self, r: np.ndarray) -> RawInputs:
         b = r.shape[0]
-        raw = RawInputs(
+        return RawInputs(
             r=r,
             r_ref=np.broadcast_to(self.r_ref, r.shape),
             length=np.full(b, self.grid.length),
@@ -166,7 +174,18 @@ class SurrogateBackend:
             pv=np.full(b, self.pv),
             r_micro=np.full(b, self.r_micro),
         )
-        return self.runner.predict(raw).astype(np.float64)
+
+    def curves(self, r: np.ndarray) -> np.ndarray:
+        """FFR curves (B, N) for radii ``r`` (B, N) in m."""
+        return self.runner.predict(self._raw(np.atleast_2d(r))).astype(np.float64)
+
+    def curves_with_spread(self, r: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
+        """FFR curves (B, N) and the ensemble SD (B, N), or ``None`` for a single model."""
+        raw = self._raw(np.atleast_2d(r))
+        if not self.runner.has_spread:
+            return self.runner.predict(raw).astype(np.float64), None
+        mean, std = self.runner.predict_with_spread(raw)
+        return mean.astype(np.float64), std.astype(np.float64)
 
 
 def planning_grid(profile: VesselProfile, n: int = N_POINTS) -> VesselProfile:
@@ -347,13 +366,18 @@ def plan_stents(
     pre = solve_ffr_batch(grid.r, grid.ds, grid.reference_radius(), params, pa=pa, pv=pv)
     pa_, pv_, rm = float(pre.pa[0]), float(pre.pv[0]), float(pre.r_micro[0])
     solver = SolverBackend(grid, params, pa_, pv_, rm)
+    full: SurrogateBackend | None = None
     if config.backend == "surrogate":
         if runner is None:
             raise ValueError("the surrogate backend needs a SurrogateRunner")
-        backend: Backend = SurrogateBackend(runner, grid, pa_, pv_, rm)
+        full = SurrogateBackend(runner, grid, pa_, pv_, rm)
+        screen = runner.screen
+        backend: Backend = (
+            full if screen is runner else SurrogateBackend(screen, grid, pa_, pv_, rm)
+        )
     else:
         backend = solver
-    pre_curve = backend.curves(grid.r[None])[0]
+    pre_curve = (full or backend).curves(grid.r[None])[0]
     lesions = grid.lesions(LESION_THRESHOLD_PCT)
 
     def result(plans, pareto, best_curve, n_cand, n_feas, n_pairs, message):
@@ -417,13 +441,12 @@ def plan_stents(
             n_pairs = len(pairs)
 
     ranked = _rank(all_plans)[: config.n_plans]
+    if full is not None and full.runner.has_spread:
+        ranked = _rescore(full, grid, ranked, config)
     if backend.name != "solver":  # re-check the proposed plans with the solver
         checked = solver.curves(_radii_for(grid, ranked, config))[:, -1]
-        ranked = [
-            Plan(p.stents, p.ffr, p.meets_target, float(f))
-            for p, f in zip(ranked, checked, strict=True)
-        ]
-    best_curve = backend.curves(_radii_for(grid, ranked[:1], config))[0]
+        ranked = [replace(p, ffr_solver=float(f)) for p, f in zip(ranked, checked, strict=True)]
+    best_curve = (full or backend).curves(_radii_for(grid, ranked[:1], config))[0]
     if ranked[0].meets_target:
         message = f"Shortest plan reaching FFR >= {config.target_ffr:.2f}."
     else:
@@ -434,6 +457,26 @@ def plan_stents(
     return result(
         ranked, pareto_front(all_plans), best_curve, len(cand), len(single), n_pairs, message
     )
+
+
+def _rescore(
+    full: SurrogateBackend, grid: VesselProfile, plans: list[Plan], config: PlannerConfig
+) -> list[Plan]:
+    """The plans scored by the full ensemble (mean, SD, conformal interval), re-ranked."""
+    mean, std = full.curves_with_spread(_radii_for(grid, plans, config))
+    out = []
+    for p, f, sd in zip(plans, mean[:, -1], std[:, -1], strict=True):
+        iv = full.runner.distal_interval(f, sd)
+        out.append(
+            Plan(
+                p.stents,
+                float(f),
+                bool(f >= config.target_ffr),
+                ffr_std=float(sd),
+                model_interval=None if iv is None else (float(iv[0]), float(iv[1])),
+            )
+        )
+    return _rank(out)
 
 
 def _radii_for(grid: VesselProfile, plans: Sequence[Plan], config: PlannerConfig) -> np.ndarray:

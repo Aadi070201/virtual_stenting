@@ -3,8 +3,10 @@
 Synthetic mode: a preset or random synthetic vessel. Image mode: upload a PNG / JPG / DICOM
 (or pick an ARCADE example), see the segmentation, click start and end points, set the
 calibration. Then: diameter and FFR plots (solver and surrogate), a virtual stent with instant
-post-PCI FFR, the plan optimiser, and a case report export. Slow steps (segmentation, QCA) are
-cached so slider updates only recompute the stent and the plots.
+post-PCI FFR, the plan optimiser, and a case report export. Distal FFR comes with 90% intervals
+(surrogate ensemble: conformal; inputs: Monte Carlo through the solver) and grey-zone flags.
+Slow steps (segmentation, QCA, the pre-PCI Monte Carlo) are cached so slider updates only
+recompute the stent, its post-PCI draws and the plots.
 """
 
 import time
@@ -59,13 +61,27 @@ def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob):
     )
 
 
+@st.cache_resource
+def get_uncertainty():
+    return core.load_uncertainty()
+
+
 @st.cache_resource(max_entries=32)
-def baseline(key: str, _profile, pa: float, pv: float):
-    return core.evaluate(_profile, get_settings()[0], pa, pv, runner=get_models().surrogate)
+def baseline(key: str, _profile, pa: float, pv: float, v_hyp: float):
+    params = get_settings()[0].model_copy(update={"v_hyp": v_hyp})
+    return core.evaluate(_profile, params, pa, pv, runner=get_models().surrogate)
+
+
+@st.cache_resource(max_entries=32)
+def input_mc(key: str, _profile, pa: float, pv: float, v_hyp: float, mm_per_px, assumed: bool):
+    params = get_settings()[0].model_copy(update={"v_hyp": v_hyp})
+    measurement = core.Measurement(mm_per_px, assumed)
+    return core.input_uncertainty(_profile, params, pa, pv, measurement, get_uncertainty())
 
 
 models = get_models()
 params, planner_cfg, catalog = get_settings()
+ucfg = get_uncertainty()[0]
 if models.surrogate is None:
     st.warning("No exported surrogate found (run `vstent export-surrogate`); solver only.")
 
@@ -97,10 +113,11 @@ if mode == "Synthetic vessel":
     case_pa, case_pv = (case.pa, case.pv) if preset == core.PRESETS[2] else (pa, pv)
     case_params = params.model_copy(update={"v_hyp": case.v_hyp})
     case_key = f"syn:{preset}:{seed}:{case_pa:.1f}:{case_pv:.1f}"
-    pre = baseline(case_key, case.profile, case_pa, case_pv)
+    pre = baseline(case_key, case.profile, case_pa, case_pv, case.v_hyp)
     state = core.CaseState(
         "synthetic", case_params, case_pa, case_pv, case.profile, pre, description=case.description
     )
+    state.uncertainty = input_mc(case_key, case.profile, case_pa, case_pv, case.v_hyp, None, False)
     if preset == core.PRESETS[2]:
         st.sidebar.caption(
             f"Pa {case_pa / 133.322:.0f} mmHg, Pv {case_pv / 133.322:.1f} mmHg and v_hyp "
@@ -176,12 +193,8 @@ if mode == "Angiogram image":
             result = None
         if result is not None:
             qca = result.qca
-            pre = baseline(
-                f"img:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}",
-                qca.profile,
-                pa,
-                pv,
-            )
+            img_key = f"img:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}"
+            pre = baseline(img_key, qca.profile, pa, pv, params.v_hyp)
             state = core.CaseState(
                 "image",
                 params,
@@ -194,6 +207,9 @@ if mode == "Angiogram image":
                 points=[start, end],
                 description=image_input.name,
                 warnings=list(result.warnings),
+            )
+            state.uncertainty = input_mc(
+                img_key, qca.profile, pa, pv, params.v_hyp, qca.mm_per_px, qca.calibration_assumed
             )
 
 # --- stents: manual controls or a selected plan ---------------------------------------------
@@ -249,15 +265,23 @@ if state is not None:
         stents = list(plans.plans[int(show.split()[1]) - 1].stents)
     elif place and s_len <= length_mm_total:
         stents = [Stent(mm_to_m(s_start), mm_to_m(s_len), mm_to_m(s_dia))]
+    state.pre_assessment = core.assess(
+        state.pre, state.uncertainty.pre_samples, ucfg.pre_pci_threshold, ucfg.level
+    )
     if stents:
         stented, post = core.stent_update(
             state.profile, stents, state.pre, state.params, state.pa, state.pv, models.surrogate
         )
         state.stents, state.post = stents, post
+        state.post_assessment = core.assess(
+            post, state.uncertainty.post_samples(stents), planner_cfg.target_ffr, ucfg.level
+        )
         state.warnings += core.stent_warnings(state.profile, stents, planner_cfg.max_diameter_ratio)
     else:
         stented = None
     state.plans = plans
+    if plans is not None:
+        state.plan_assessments = core.plan_assessments(plans, state.uncertainty, ucfg.level)
 
 # --- image panel --------------------------------------------------------------------------------
 if mode == "Angiogram image":
@@ -327,6 +351,27 @@ if post is not None:
             for s in stents
         )
     )
+lines = []
+for label, a in (("Pre-PCI", state.pre_assessment), ("Post-PCI", state.post_assessment)):
+    if a is None:
+        continue
+    parts = [f"inputs **{a.inputs.text()}** (solver)"] if a.inputs else []
+    parts += [f"model **{a.model.text()}** (surrogate)"] if a.model else []
+    verdict = "**grey zone**" if a.flagged else "outside the grey zone"
+    lines.append(
+        f"{label} distal FFR, {ucfg.level:.0%} intervals: {', '.join(parts)}; "
+        f"threshold {a.threshold:.2f}: {verdict}"
+    )
+st.markdown("  \n".join(lines))
+for label, a in (("Pre-PCI", state.pre_assessment), ("Post-PCI", state.post_assessment)):
+    for reason in a.reasons(f"{label} distal FFR") if a is not None else []:
+        st.warning(f"Grey zone: {reason}.")
+mc = state.uncertainty
+st.caption(
+    f"Input assumptions varied: {', '.join(core.SOURCE_LABELS[s] for s in mc.sources)} "
+    f"({mc.n_samples} Monte Carlo draws through the solver). {core.UNCERTAINTY_NOTE}"
+    + ("" if pre.model_interval else " No calibrated ensemble loaded: no model interval.")
+)
 for w in state.warnings:
     st.warning(w)
 if qca is not None and qca.calibration_assumed:
@@ -337,7 +382,9 @@ c1.plotly_chart(
     core.profile_figure(p, stented, stents, qca.measured_diameter_mm if qca is not None else None),
     key="profile_fig",
 )
-c2.plotly_chart(core.ffr_figure(pre, post), key="ffr_fig")
+c2.plotly_chart(
+    core.ffr_figure(pre, post, (state.pre_assessment, state.post_assessment)), key="ffr_fig"
+)
 
 # --- planner ------------------------------------------------------------------------------------
 st.subheader("Stent plan suggestion")
@@ -345,7 +392,8 @@ st.caption(
     f"Shortest plan reaching distal FFR ≥ {planner_cfg.target_ffr:.2f}; generic catalogue "
     f"({min(diameters):g}–{max(diameters):g} mm × {min(lengths):g}–{max(lengths):g} mm), "
     f"diameter ≤ {planner_cfg.max_diameter_ratio} × distal reference, landing zones DS < "
-    f"{planner_cfg.landing_max_ds_pct:g}%, up to {planner_cfg.max_stents} stents."
+    f"{planner_cfg.landing_max_ds_pct:g}%, up to {planner_cfg.max_stents} stents. "
+    f"Grey zone: an interval of the plan's post-PCI FFR contains {planner_cfg.target_ffr:.2f}."
 )
 if st.button("Suggest plan", key="suggest"):
     backend = "surrogate" if models.surrogate is not None else "solver"
@@ -380,8 +428,11 @@ if state.plans is not None:
                     f"Post FFR ({pr.backend})": round(pl.ffr, 3),
                     "Solver check": None if pl.ffr_solver is None else round(pl.ffr_solver, 3),
                     "Meets target": pl.meets_target,
+                    f"Model {ucfg.level:.0%}": a.model.text() if a.model else None,
+                    f"Inputs {ucfg.level:.0%}": a.inputs.text() if a.inputs else None,
+                    "Grey zone": a.flagged,
                 }
-                for k, pl in enumerate(pr.plans, 1)
+                for k, (pl, a) in enumerate(zip(pr.plans, state.plan_assessments, strict=True), 1)
             ],
             hide_index=True,
         )

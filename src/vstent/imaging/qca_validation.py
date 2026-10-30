@@ -58,14 +58,49 @@ def render_case(
     return render_tube(SHAPE, pts, s, d, blur_sigma=blur, noise_std=noise, seed=seed)
 
 
+def diameter_errors(tube: SyntheticTube, res: QCAResult) -> np.ndarray:
+    """Measured − true diameter (px) at every measured centreline point (nearest true point)."""
+    _, idx = cKDTree(tube.points).query(res.centerline.points)
+    return res.diameters.diameter_px - tube.diameter[idx]
+
+
+def half_correlation_lag(err: np.ndarray, spacing: float) -> float:
+    """Lag (px along the centreline) at which the errors' autocorrelation first falls to 0.5.
+
+    Linear interpolation between index lags; ``spacing`` is the mean point spacing (px).
+    """
+    x = err - err.mean()
+    acf = np.correlate(x, x, mode="full")[x.size - 1 :] / (x @ x)
+    below = np.flatnonzero(acf <= 0.5)
+    if below.size == 0:
+        return float(x.size * spacing)
+    k = int(below[0])
+    frac = (acf[k - 1] - 0.5) / (acf[k - 1] - acf[k])
+    return float((k - 1 + frac) * spacing)
+
+
+def error_model(errors: list[np.ndarray], spacings: list[float]) -> dict[str, float]:
+    """Pooled per-point diameter error of all cases: SD (px, bias included) and the median
+    half-correlation lag (px). Used as the QCA error model of the input-uncertainty Monte Carlo
+    (``vstent.uncertainty.inputs``)."""
+    pooled = np.concatenate(errors)
+    lags = [half_correlation_lag(e, sp) for e, sp in zip(errors, spacings, strict=True)]
+    return {
+        "n_points": int(pooled.size),
+        "sd_px": float(np.sqrt(np.mean(pooled**2))),
+        "bias_px": float(pooled.mean()),
+        "corr_half_px": float(np.median(lags)),
+        "corr_half_px_per_case": lags,
+    }
+
+
 def measure_case(tube: SyntheticTube) -> tuple[QCAResult, dict[str, float]]:
     """QCA of a rendered tube from imprecise clicks, and its errors against the truth."""
     p, d = tube.points, tube.diameter
     start = p[0] + np.array(CLICK_OFFSETS[0])
     end = p[-1] + np.array(CLICK_OFFSETS[1])
     res = run_qca(tube.image, start, end)
-    _, idx = cKDTree(p).query(res.centerline.points)
-    err = res.diameters.diameter_px - d[idx]
+    err = diameter_errors(tube, res)
     throat = p[np.argmin(np.abs(tube.s - tube.s[-1] / 2))]
     metrics = {
         "median_abs_diameter_error_px": float(np.median(np.abs(err))),
@@ -94,9 +129,12 @@ def write_qca_validation(report_dir: str | Path = "reports") -> dict[str, Any]:
         "vstent_version": __version__,
         "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
     }
-    rows = []
+    rows, errors, spacings = [], [], []
     for k, case in enumerate(CASES):
-        _, metrics = measure_case(render_case(*case, seed=k))
+        tube = render_case(*case, seed=k)
+        res, metrics = measure_case(tube)
+        errors.append(diameter_errors(tube, res))
+        spacings.append(res.centerline.length / (len(res.centerline.points) - 1))
         rows.append(
             {
                 "case": dict(
@@ -139,6 +177,7 @@ def write_qca_validation(report_dir: str | Path = "reports") -> dict[str, Any]:
             },
         ],
         "rows": rows,
+        "error_model": error_model(errors, spacings),
         "provenance": provenance,
     }
     report["targets_met"] = all(t["passed"] for t in report["targets"])
@@ -185,7 +224,16 @@ def write_qca_validation(report_dir: str | Path = "reports") -> dict[str, Any]:
             f"| {r['mld_location_error_px']:.1f} px | {r['max_ds_pct']:.1f}% "
             f"| {r['fallback_fraction']:.0%} |"
         )
+    em = report["error_model"]
     lines += [
+        "",
+        "## Error model for the input-uncertainty Monte Carlo",
+        "",
+        f"All {em['n_points']:,} measured points pooled: diameter error SD {em['sd_px']:.3f} px "
+        f"(bias included; bias {em['bias_px']:+.3f} px). The errors are correlated along the "
+        f"vessel: the autocorrelation falls to 0.5 after a median {em['corr_half_px']:.1f} px "
+        f"(per case: {', '.join(f'{v:.1f}' for v in em['corr_half_px_per_case'])} px). "
+        "`vstent uncertainty-report` and the app use these two numbers (P1).",
         "",
         "Synthetic tubes are an idealised check of the measurement chain (skeleton, path, "
         "normals, sub-pixel edges, reference fit); real angiograms add overlap, foreshortening, "

@@ -110,6 +110,37 @@ def tiny_export(tiny_run, tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
+def tiny_ensemble(tiny_data, tmp_path_factory):
+    """A 2-member ensemble of small surrogates trained for 2 epochs on the tiny dataset (CPU)."""
+    from vstent.config import dump_config
+    from vstent.surrogate.ensemble import EnsembleConfig, train_ensemble
+    from vstent.surrogate.model import ModelConfig
+    from vstent.surrogate.train import SurrogateConfig, TrainConfig
+
+    root = tmp_path_factory.mktemp("ensemble")
+    base = SurrogateConfig(
+        data_dir=str(tiny_data),
+        runs_dir=str(root / "runs"),
+        model=ModelConfig(base_channels=8, levels=3, groups=4, cond_dim=16),
+        train=TrainConfig(epochs=2, batch_size=32, device="cpu"),
+    )
+    dump_config(base, root / "base.yaml")
+    cfg = EnsembleConfig(
+        name="tens", runs_dir=str(root / "runs"), base_config=str(root / "base.yaml")
+    )
+    cfg = cfg.model_copy(update={"seeds": [0, 1]})
+    return train_ensemble(cfg, run_dir=root / "runs" / "tens", checkpoint_root=root / "ckpt")
+
+
+@pytest.fixture(scope="session")
+def tiny_ensemble_export(tiny_ensemble, tmp_path_factory):
+    """The tiny ensemble exported (mean + spread, screen model, conformal calibration on val)."""
+    from vstent.surrogate.export import export_ensemble
+
+    return export_ensemble(tiny_ensemble, tmp_path_factory.mktemp("models") / "tens")
+
+
+@pytest.fixture(scope="session")
 def dark_seg_dir(tmp_path_factory):
     """A stand-in ONNX 'segmenter' (dark pixels = vessel) exported like the real one."""
     import torch
