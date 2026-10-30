@@ -290,3 +290,24 @@ The model interval and the input interval are reported side by side, not combine
 **Alternatives:**
 - Resampling every case once to 256 points with block minima: consistent, but it loses resolution and biases throats.
 - An anti-aliased (resistance-preserving) surrogate resample: possible later, if image cases within the training length show aliasing.
+
+### D35 — Vessel trees from the image: shortest-path tree, one level of side branches (2026-10-30)
+**Decision:** `imaging/qca_tree.py` builds the tree from the pruned skeleton.
+- **Main path.** The shortest paths from the start point reach every endpoint. The main path ends at the chosen end, or at the farthest point.
+- **Side branches.** The other endpoints are taken longest first. Each joins at the last pixel it shares with an accepted branch, so a branch's trunk is accepted before its sub-branches.
+- **What is kept.** Only side branches of the main path are kept (depth 1), and only if they are at least 5 mm long and their median diameter is at least 0.3 × the parent's diameter at the take-off. Everything else is listed as "not modelled".
+- **Measuring a side branch.** QCA starts where the branch's centreline leaves the parent's lumen (the parent's half-width at the junction plus 1 px). Only the far end is trimmed.
+- **Take-off.** It is the parent's measured sample nearest to the skeleton junction.
+- **Physics.** FFR comes from the tree solver (no surrogate until P3).
+- **Virtual stents.** They are placed in path coordinates (distance from the inlet along a root-to-outlet path). Each branch piece of the path is widened only up to its take-off.
+
+**Reason:**
+- **Ostial lesions.** Starting a side branch at the parent's wall and not trimming its start keeps ostial lesions. The usual one-diameter trim would remove them, and inside the parent's lumen the measured width is the parent's.
+- **Depth and size limits.** One level and the size limits keep noisy fragments out of the flow split.
+- **Accepted error.** A skeleton junction sits up to about one vessel width downstream of where the centrelines cross (test: 8 px for a 12 px vessel). That shifts the take-off by about 2 mm, which matters little next to the 2D-projection errors.
+- **Finding on ARCADE.** The segmentation model was trained on SYNTAX-segment masks and rarely segments small side branches. Lowering the threshold did not add junctions on the first 10 val images. Most image trees therefore have few side branches. This is reported in `reports/qca_tree_gallery.md`; better segmentation or synthetic angiograms come in P8.
+
+**Alternatives:**
+- Junction detection on the skeleton graph alone: it cannot tell the main path from a side branch.
+- Using every endpoint: too many unmeasurable fragments.
+- A separate low-threshold mask for topology: no effect on these images.

@@ -216,3 +216,20 @@ def test_cli_and_app_give_the_segmenter_the_same_pixels(
     assert result.exit_code == 0, result.output
     expected = read_image(path.read_bytes(), path.name).image
     assert seen[0].dtype == np.uint8 and np.array_equal(seen[0], expected)
+
+
+def test_tree_gallery_on_fake_arcade(tiny_arcade, dark_seg_dir, tmp_path):
+    from vstent.inference.gallery import tree_gallery
+    from vstent.physics.solver import PhysicsParams
+
+    report = tree_gallery(
+        tiny_arcade, dark_seg_dir, params=PhysicsParams(), n_images=3,
+        out_dir=tmp_path / "figs", report_path=tmp_path / "tree.md",
+    )  # fmt: skip
+    s = report["summary"]
+    assert s["n_images"] == 3 and s["n_analysed"] == len(list((tmp_path / "figs").glob("*.png")))
+    for r in report["rows"]:  # with no side branch the tree is the single path exactly
+        if "error" not in r and r["n_side"] == 0:
+            assert r["ffr_tree"] == pytest.approx(r["ffr_single"], abs=1e-12)
+    md = (tmp_path / "tree.md").read_text(encoding="utf-8")
+    assert "Research use only" in md and "single path" in md

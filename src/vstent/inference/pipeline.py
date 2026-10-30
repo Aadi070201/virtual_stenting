@@ -16,9 +16,11 @@ import numpy as np
 
 from vstent.data.synth import SamplingConfig
 from vstent.imaging.qca import DEFAULT_MM_PER_PX, QCAResult, run_qca
+from vstent.imaging.qca_tree import MAX_DEPTH, TreeQCA, tree_qca
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile
 from vstent.physics.solver import FFRResult, PhysicsParams, solve_ffr
+from vstent.physics.tree import TreeFFRResult, solve_tree
 from vstent.uncertainty.greyzone import Interval, model_interval
 from vstent.units import m_to_mm, pa_to_mmhg
 
@@ -140,3 +142,69 @@ def analyse_image(
 ) -> VesselAnalysis:
     """Segment ``image`` (greyscale (H, W)) and analyse the vessel between two points."""
     return analyse_vessel(segmenter.predict(image), start, end, **kwargs)
+
+
+@dataclass(frozen=True, eq=False)
+class TreeAnalysis:
+    """Result of :func:`analyse_tree` (P2): the vessel tree and its FFR.
+
+    Attributes:
+        prob: vessel probability map (H, W).
+        qca: the tree's QCA (``qca.tree`` is what the tree solver received).
+        result: tree-solver FFR at every sample of every branch.
+        single: the main path alone with the single-vessel solver, for comparison.
+        params: physics constants used.
+        warnings: plain-language caveats for this analysis.
+    """
+
+    prob: np.ndarray
+    qca: TreeQCA
+    result: TreeFFRResult
+    single: FFRResult
+    params: PhysicsParams
+    warnings: list[str] = field(default_factory=list)
+
+
+def analyse_tree(
+    prob: np.ndarray,
+    start,
+    end=None,
+    *,
+    params: PhysicsParams | None = None,
+    mm_per_px: float | None = None,
+    max_depth: int = MAX_DEPTH,
+) -> TreeAnalysis:
+    """Tree QCA from ``start`` (to ``end`` or the farthest point) and tree-solver FFR.
+
+    No surrogate yet: the tree surrogate is P3. Pressures and v_hyp come from ``params``.
+    """
+    params = params or PhysicsParams()
+    tq = tree_qca(prob, start, end, mm_per_px=mm_per_px, max_depth=max_depth)
+    result = solve_tree(tq.tree, params)
+    single = solve_ffr(tq.tree.branches[0], params)
+    warnings = []
+    if tq.calibration_assumed:
+        warnings.append(
+            f"Pixel size not calibrated: {DEFAULT_MM_PER_PX} mm/px assumed; absolute diameters, "
+            "lengths and FFR depend on it"
+        )
+    for name, q in zip(tq.tree.names, tq.branches, strict=True):
+        if q.fallback_fraction > MAX_FALLBACK_FRACTION:
+            warnings.append(f"{name}: {q.fallback_fraction:.0%} of diameters used the fallback")
+        if q.capped_fraction > MAX_CAPPED_FRACTION:
+            warnings.append(
+                f"{name}: {q.capped_fraction:.0%} of diameters exceeded 1.15 × the reference "
+                "(overlap or further branches) and were capped"
+            )
+    if result.r_outlet_clamped.any():
+        names = ", ".join(
+            n for n, c in zip(tq.tree.names, result.r_outlet_clamped, strict=True) if c
+        )
+        warnings.append(f"outlet resistance at its lower bound for: {names}")
+    if tq.dropped:
+        warnings.append(
+            f"{len(tq.dropped)} further side path(s) on the skeleton were not modelled "
+            "(too short, too thin or deeper than one level); their flow is lumped into the "
+            "branches they leave"
+        )
+    return TreeAnalysis(prob, tq, result, single, params, warnings)

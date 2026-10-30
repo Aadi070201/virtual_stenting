@@ -445,6 +445,61 @@ def export_seg(
         raise typer.Exit(code=1)
 
 
+def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure):
+    """``vstent analyse --tree``: tree QCA, tree FFR, optional virtual stent on a path."""
+    from vstent.inference.pipeline import analyse_tree
+    from vstent.physics.tree import solve_tree
+    from vstent.planning.stent import Stent, apply_path_stents
+    from vstent.units import m_to_mm, mm_to_m
+
+    res = analyse_tree(prob, start, end, params=params, mm_per_px=mm_per_px)
+    tq, sol = res.qca, res.result
+    typer.echo(DISCLAIMER)
+    typer.echo(
+        f"Vessel tree: {tq.tree.n_branches} branches at {tq.mm_per_px:g} mm/px "
+        f"({'assumed' if tq.calibration_assumed else 'given'}); "
+        f"{len(tq.dropped)} further side path(s) not modelled"
+    )
+    for k, (q, nm) in enumerate(zip(tq.branches, tq.tree.names, strict=True)):
+        where = "" if k == 0 else f", from {m_to_mm(tq.tree.path_offsets(k)[-1][3]):.1f} mm"
+        typer.echo(
+            f"  {nm}: {q.s_mm[-1]:.1f} mm{where}; MLD {q.mld_mm:.2f} mm, max DS "
+            f"{q.max_percent_stenosis:.0f}%; outlet FFR {sol.ffr[k][-1]:.3f}, "
+            f"{sol.q_outlet[k] / sol.q_inlet[0]:.0%} of the inflow"
+        )
+    typer.echo(
+        f"Main-path distal FFR: tree {sol.ffr[0][-1]:.3f}; as a single path (M1) "
+        f"{res.single.ffr[-1]:.3f}"
+    )
+    for w in res.warnings:
+        typer.echo(f"Warning: {w}")
+    post = None
+    if stent is not None:
+        if outlet >= tq.tree.n_branches:
+            typer.echo(f"--outlet {outlet}: the tree has {tq.tree.n_branches} branches", err=True)
+            raise typer.Exit(code=2)
+        st = Stent(mm_to_m(stent[0]), mm_to_m(stent[1]), mm_to_m(stent[2]))
+        try:
+            stented = apply_path_stents(tq.tree, outlet, [st])
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=2) from exc
+        post = solve_tree(stented, params, r_outlet=sol.r_outlet)
+        typer.echo(
+            f"Virtual stent {stent[2]:.2f} × {stent[1]:.0f} mm at {stent[0]:.1f} mm on the path to "
+            f"{tq.tree.names[outlet]}: outlet FFR "
+            + ", ".join(
+                f"{nm} {a[-1]:.3f} → {b[-1]:.3f}"
+                for nm, a, b in zip(tq.tree.names, sol.ffr, post.ffr, strict=True)
+            )
+        )
+    if figure is not None:
+        from vstent.inference.figures import plot_tree_analysis
+
+        plot_tree_analysis(res, img, figure, title=f"Vessel tree analysis: {name}", post=post)
+        typer.echo(f"Wrote {figure}")
+
+
 def _interval_text(a) -> str:
     parts = [f"inputs {a.inputs.text()}"] if a.inputs else []
     parts += [f"model {a.model.text()}"] if a.model else []
@@ -512,12 +567,26 @@ def analyse(
     uncertainty: Annotated[
         Path, typer.Option("--uncertainty", dir_okay=False, help="Uncertainty YAML.")
     ] = UNCERTAINTY_CONFIG,
+    tree: Annotated[
+        bool, typer.Option("--tree", help="Vessel tree: the path and its side branches (P2).")
+    ] = False,
+    stent: Annotated[
+        tuple[float, float, float] | None,
+        typer.Option("--stent", help="With --tree: START LENGTH DIAMETER (mm) along a path."),
+    ] = None,
+    outlet: Annotated[
+        int, typer.Option("--outlet", min=0, help="With --stent: path to this branch (0 = main).")
+    ] = 0,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
     Without --start / --end the longest vessel path in the mask is used. With --plan the
     virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
     reported with 90% intervals (surrogate ensemble; input assumptions) and grey-zone flags.
+
+    With --tree the side branches leaving the path are measured too and FFR comes from the tree
+    model (solver only; no surrogate, intervals or planner yet). --stent places a virtual stent
+    along the path to branch --outlet; outlet resistances stay as before the stent.
     """
     from vstent.config import load_config
     from vstent.imaging.centerline import longest_path_endpoints
@@ -543,14 +612,26 @@ def analyse(
             f"DICOM ImagerPixelSpacing is {image_input.pixel_spacing_mm:g} mm/px (detector, "
             "magnification not corrected); pass --mm-per-px to use it."
         )
+    if tree and plan:
+        typer.echo("--plan works on single paths only; the tree planner is P3.", err=True)
+        raise typer.Exit(code=2)
+    if stent is not None and not tree:
+        typer.echo("--stent needs --tree (single paths: use --plan or the app).", err=True)
+        raise typer.Exit(code=2)
     seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
-    sur_dir = surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
+    sur_dir = (
+        None if tree else surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
+    )
     prob = SegmentationRunner.from_dir(seg_dir).predict(img)
     if not start or not end or start[0] is None or end[0] is None:
         start, end = longest_path_endpoints(prob >= THRESHOLD)
         typer.echo(f"Auto-selected path: start {start}, end {end} (row, col)")
-    surrogate = SurrogateRunner.from_dir(sur_dir)
     params = load_config(physics, PhysicsParams)
+    if tree:
+        _analyse_tree_cli(prob, img, start, end, image.name, params, mm_per_px, stent, outlet,
+                          figure)  # fmt: skip
+        return
+    surrogate = SurrogateRunner.from_dir(sur_dir)
     result = analyse_vessel(
         prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px
     )
@@ -631,13 +712,33 @@ def qca_gallery(
     physics: Annotated[
         Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
     ] = PHYSICS_CONFIG,
+    tree: Annotated[
+        bool, typer.Option("--tree", help="Tree physics → reports/qca_tree_gallery.md (P2).")
+    ] = False,
 ) -> None:
     """Qualitative QCA gallery on ARCADE stenosis/val images → reports/qca_gallery.md."""
     from vstent.config import load_config
     from vstent.inference.gallery import qca_gallery as run_gallery
+    from vstent.inference.gallery import tree_gallery
     from vstent.inference.onnx_runtime import ONNX_FILE, SEG_ONNX_FILE
     from vstent.physics.solver import PhysicsParams
 
+    if tree:
+        report = tree_gallery(
+            raw_dir,
+            seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE),
+            params=load_config(physics, PhysicsParams),
+            n_images=n_images,
+            log=typer.echo,
+        )
+        s = report["summary"]
+        typer.echo(
+            f"Analysed {s['n_analysed']}/{s['n_images']}; side branches in "
+            f"{s['n_with_side_branches']}; implausibly low main FFR: {s['n_extreme_single']} as "
+            f"single paths, {s['n_extreme_tree']} as trees"
+        )
+        typer.echo("Wrote reports/qca_tree_gallery.md and reports/figures/qca_tree_examples/")
+        return
     report = run_gallery(
         raw_dir,
         seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE),

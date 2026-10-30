@@ -5,6 +5,7 @@ where ``dist`` is the distance to the nearest point of a densely sampled centrel
 ``r(s*)`` the radius there, then blurring and adding noise. All units are pixels.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -71,10 +72,29 @@ def render_tube(
     seed: int = 0,
 ) -> SyntheticTube:
     """Render a tube into an image of ``shape`` (H, W) with blur and Gaussian noise."""
+    img = render_tubes(
+        shape, [(points, diameter)], blur_sigma=blur_sigma, noise_std=noise_std, seed=seed
+    )
+    return SyntheticTube(img, points, s, diameter)
+
+
+def render_tubes(
+    shape: tuple[int, int],
+    tubes: Sequence[tuple[np.ndarray, np.ndarray]],
+    *,
+    blur_sigma: float = 1.0,
+    noise_std: float = 0.03,
+    seed: int = 0,
+) -> np.ndarray:
+    """Union of several tubes, each ``(points, diameter)``, rendered as in :func:`render_tube`
+    (e.g. a vessel and its side branch). Returns the (H, W) float32 image in [0, 1]."""
     rr, cc = np.mgrid[0 : shape[0], 0 : shape[1]]
     pix = np.stack([rr.ravel(), cc.ravel()], axis=1).astype(float)
-    dist, idx = cKDTree(points).query(pix)
-    cover = np.clip(diameter[idx] / 2.0 - dist + 0.5, 0.0, 1.0).reshape(shape)
+    cover = np.zeros(pix.shape[0])
+    for points, diameter in tubes:
+        dist, idx = cKDTree(points).query(pix)
+        cover = np.maximum(cover, np.clip(diameter[idx] / 2.0 - dist + 0.5, 0.0, 1.0))
+    cover = cover.reshape(shape)
     img = gaussian_filter(cover, blur_sigma) if blur_sigma > 0 else cover
     img = img + np.random.default_rng(seed).normal(0.0, noise_std, size=shape)
-    return SyntheticTube(np.clip(img, 0.0, 1.0).astype(np.float32), points, s, diameter)
+    return np.clip(img, 0.0, 1.0).astype(np.float32)

@@ -10,11 +10,12 @@ All lengths in metres.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
 from vstent.physics.geometry import VesselProfile
+from vstent.physics.tree import VesselTree
 
 DEFAULT_EDGE = 1e-3
 
@@ -103,3 +104,29 @@ def apply_stent(
 ) -> VesselProfile:
     """One stent (positions, length and diameter in m). See :func:`apply_stents`."""
     return apply_stents(profile, [Stent(s_start, length, diameter, expansion)], edge=edge)
+
+
+def apply_path_stents(
+    tree: VesselTree, outlet: int, stents: Sequence[Stent], *, edge: float = DEFAULT_EDGE
+) -> VesselTree:
+    """Tree with ``stents`` implanted along the root-to-outlet path of branch ``outlet``.
+
+    Stent positions are distances from the inlet along that path (m). On each branch piece of
+    the path the stent widens only that piece: a stent crossing a take-off into a side branch
+    does not widen the parent beyond the take-off. Reference radii are kept.
+    """
+    tol = 1e-9
+    length = tree.path_length(outlet)
+    for st in stents:
+        if st.s_start < -tol or st.s_end > length + tol:
+            raise ValueError(
+                f"stent {st.s_start * 1e3:.1f}–{st.s_end * 1e3:.1f} mm is outside the path "
+                f"(0–{length * 1e3:.1f} mm)"
+            )
+    radii = [b.r.copy() for b in tree.branches]
+    for k, i0, i1, offset in tree.path_offsets(outlet):
+        b = tree.branches[k]
+        local = [replace(st, s_start=st.s_start - offset) for st in stents]
+        widened = stented_radius(b.s, b.r, local, edge)
+        radii[k][i0 : i1 + 1] = widened[i0 : i1 + 1]
+    return tree.with_radii(radii)

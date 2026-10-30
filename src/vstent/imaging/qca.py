@@ -231,14 +231,19 @@ def robust_reference(s: np.ndarray, d: np.ndarray) -> np.ndarray:
 
 
 def trim_ends(
-    centerline: Centerline, diameters: DiameterProfile, trim_px: float
+    centerline: Centerline,
+    diameters: DiameterProfile,
+    trim_px: float,
+    trim_end_px: float | None = None,
 ) -> tuple[Centerline, DiameterProfile]:
-    """Drop the first and last ``trim_px`` (px) of arc length; s restarts at 0.
+    """Drop the first ``trim_px`` and the last ``trim_end_px`` (default ``trim_px``) px of arc
+    length; s restarts at 0.
 
     Nothing is trimmed if fewer than ``MIN_POINTS_AFTER_TRIM`` points would remain.
     """
     s = centerline.s
-    keep = (s >= trim_px) & (s <= s[-1] - trim_px)
+    end_px = trim_px if trim_end_px is None else trim_end_px
+    keep = (s >= trim_px) & (s <= s[-1] - end_px)
     if keep.sum() < MIN_POINTS_AFTER_TRIM:
         return centerline, diameters
     cl = Centerline(points=centerline.points[keep], s=s[keep] - s[keep][0])
@@ -259,19 +264,24 @@ def qca_from_centerline(
     mm_per_px: float | None = None,
     level: float = LEVEL,
     trim_diameters: float = END_TRIM_DIAMETERS,
+    trim_start_diameters: float | None = None,
 ) -> QCAResult:
     """QCA along a given centreline. ``mm_per_px=None`` uses the assumed default 0.30 mm/px.
 
     ``trim_diameters`` × the median diameter is removed at both ends: where the centreline
     runs into the end of the mask (a vessel tip, an ostium, a cut-off branch) the measured
-    width falls off for geometric reasons that are not lumen narrowing.
+    width falls off for geometric reasons that are not lumen narrowing. ``trim_start_diameters``
+    overrides the start (0 for a side branch that already starts at its parent's wall).
     """
     assumed = mm_per_px is None
     scale = DEFAULT_MM_PER_PX if assumed else float(mm_per_px)
     diameters = measure_diameters(prob, centerline, level=level)
-    if trim_diameters > 0:
-        trim = trim_diameters * float(np.median(diameters.diameter_px))
-        centerline, diameters = trim_ends(centerline, diameters, trim)
+    start = trim_diameters if trim_start_diameters is None else trim_start_diameters
+    if trim_diameters > 0 or start > 0:
+        median = float(np.median(diameters.diameter_px))
+        centerline, diameters = trim_ends(
+            centerline, diameters, start * median, trim_diameters * median
+        )
     d = diameters.diameter_px
     d_ref = robust_reference(centerline.s, d)
     capped = d > REF_UPPER * d_ref

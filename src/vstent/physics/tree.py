@@ -114,6 +114,21 @@ class VesselTree:
             k, end = self.parent[k], self.attach[k]
         return pieces[::-1]
 
+    def path_offsets(self, j: int) -> list[tuple[int, int, int, float]]:
+        """Root-to-outlet path of branch ``j`` as (branch, first index, last index, offset):
+        ``offset`` (m) is where the branch starts in path coordinates (distance from the inlet
+        along the path), so a branch sample at ``s`` sits at ``offset + s`` on the path."""
+        out, offset = [], 0.0
+        for k, i0, i1 in self.path(j):
+            out.append((k, i0, i1, offset))
+            offset += float(self.branches[k].s[i1])
+        return out
+
+    def path_length(self, j: int) -> float:
+        """Length (m) of the root-to-outlet path of branch ``j``."""
+        k, _, i1, offset = self.path_offsets(j)[-1]
+        return offset + float(self.branches[k].s[i1])
+
     def with_radii(self, radii: Sequence[np.ndarray]) -> "VesselTree":
         """Same tree and reference radii with new lumen radii (m), one array per branch."""
         if len(radii) != self.n_branches:

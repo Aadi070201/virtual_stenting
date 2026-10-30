@@ -66,12 +66,14 @@ vstent/
   pyproject.toml        # deps, extras, ruff, pytest; torch from the CUDA 12.6 index via uv
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
-  configs/              # YAML configs: physics, synth_v1, surrogate, ensemble, seg, stent_catalog,
-                        # planner, uncertainty
+  configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
+                        # stent_catalog, planner, uncertainty
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
   src/vstent/
-    physics/            # geometry.py, solver.py, report.py
-    data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py
+    physics/            # geometry.py, solver.py, report.py, tree.py (vessel trees, P2),
+                        # tree_report.py (tree checks + throughput)
+    data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py,
+                        # synth_tree.py + tree_card.py (synthetic vessel trees, P2)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
                         # ensemble.py (5-seed ensemble trainer, resumable)
@@ -80,7 +82,8 @@ vstent/
                         # report.py (uncertainty report); all torch-free except report.py
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
-                        # synthetic.py (rendered test tubes), qca_validation.py
+                        # synthetic.py (rendered test tubes), qca_validation.py,
+                        # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark)
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
@@ -119,6 +122,8 @@ uv run ruff check . && uv run ruff format --check . && uv run pytest -m "not slo
 # pipeline (Typer CLI: `vstent`)
 uv run vstent physics-report    # M1 sanity checks + reports/figures/ffr_vs_ds.png
 uv run vstent synth --config configs/synth_v1.yaml
+uv run vstent synth-tree --config configs/synth_tree_v1.yaml  # P2: synthetic vessel trees
+uv run vstent tree-report                           # P2: tree physics checks → reports/tree_physics.md
 uv run vstent train-surrogate --config configs/surrogate.yaml
 uv run vstent train-surrogate --resume <run-name>   # continue a stopped / interrupted run
 uv run vstent stop <run-name>                       # pause a running training after this epoch
@@ -134,6 +139,8 @@ uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
 uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/seg_onnx.md
 uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
 uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
+uv run vstent qca-gallery --tree                   # P2: tree physics → reports/qca_tree_gallery.md
+uv run vstent analyse <image.png> --tree [--stent START LEN DIA --outlet K]   # P2: vessel tree
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)

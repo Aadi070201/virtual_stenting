@@ -101,6 +101,10 @@ Trainings can be paused and resumed exactly:
 | `vstent train-ensemble --config configs/ensemble.yaml` | train 5 surrogates with seeds 0–4 (`--resume <name>`; `vstent stop <name>` pauses) | P1 |
 | `vstent export-ensemble --run runs/<ensemble>` | export the ensemble (mean + spread) to ONNX, parity, conformal calibration on `cal` | P1 |
 | `vstent uncertainty-report` | ensemble accuracy, conformal coverage, input-uncertainty intervals → `reports/uncertainty.md` | P1 |
+| `vstent synth-tree --config configs/synth_tree_v1.yaml` | generate synthetic vessel trees (main vessel + 1–4 side branches) + `reports/tree_dataset_card.md` | P2 |
+| `vstent tree-report` | tree physics sanity checks and solver throughput → `reports/tree_physics.md` | P2 |
+| `vstent analyse <image> --tree [--stent START LEN DIA --outlet K]` | the path and its side branches with tree physics; optional virtual stent on a path | P2 |
+| `vstent qca-gallery --tree` | the ARCADE gallery with tree physics vs single paths → `reports/qca_tree_gallery.md` | P2 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
