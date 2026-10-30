@@ -3,6 +3,9 @@
 Steps: clean the mask → skeletonise → 8-connected pixel graph → prune spurs shorter than
 ``min_spur_px`` → snap the start / end points to the nearest skeleton pixels → shortest path
 (networkx, Euclidean edge weights) → Savitzky–Golay smoothing → uniform arc-length resampling.
+A point farther from its skeleton pixel than the vessel's half-width there plus
+``SNAP_TOLERANCE_PX`` is refused: it is not on the segmented vessel, and snapping it would
+silently measure a different (usually shorter) path.
 
 All coordinates are image pixels as (row, col) floats; arc length is in pixels.
 """
@@ -22,6 +25,7 @@ MAX_HOLE_PX = 64
 SMOOTH_WINDOW_PX = 15
 SMOOTH_POLYORDER = 3
 STEP_PX = 1.0
+SNAP_TOLERANCE_PX = 5.0  # beyond the vessel wall
 
 # Forward half of the 8-neighbourhood (each undirected edge is generated once).
 _OFFSETS = ((0, 1), (1, -1), (1, 0), (1, 1))
@@ -131,6 +135,21 @@ def snap_to_graph(graph: nx.Graph, point) -> Pixel:
     return nodes[int(i)]
 
 
+def snap_point(graph: nx.Graph, point, half_width: np.ndarray, label: str = "point") -> Pixel:
+    """:func:`snap_to_graph`, refusing a point that is not on the segmented vessel: farther from
+    its skeleton pixel than the half-width there (``half_width``: distance transform of the
+    cleaned mask, px) plus ``SNAP_TOLERANCE_PX``. ``label`` names the point in the error."""
+    node = snap_to_graph(graph, point)
+    dist = float(np.hypot(*(np.asarray(point, dtype=float) - node)))
+    if dist > half_width[node] + SNAP_TOLERANCE_PX:
+        raise ValueError(
+            f"{label} point {tuple(int(round(v)) for v in point)} is {dist:.0f} px from the "
+            "nearest segmented vessel: it is not on the vessel mask (the segmentation may have "
+            "missed that part of the vessel)"
+        )
+    return node
+
+
 def smooth_and_resample(
     path: np.ndarray,
     window_px: int = SMOOTH_WINDOW_PX,
@@ -163,10 +182,13 @@ def trace_centerline(
 ) -> Centerline:
     """Centreline from ``start`` to ``end`` (each (row, col) px) along the vessel mask.
 
-    Raises ``ValueError`` if the two points do not lie on a connected part of the skeleton.
+    Raises ``ValueError`` if a point is not on the vessel mask (:func:`snap_point`) or the two
+    points do not lie on a connected part of the skeleton.
     """
     graph = vessel_graph(mask, min_spur_px)
-    a, b = snap_to_graph(graph, start), snap_to_graph(graph, end)
+    half_width = distance_transform_edt(clean_mask(mask))
+    a = snap_point(graph, start, half_width, "start")
+    b = snap_point(graph, end, half_width, "end")
     try:
         path = nx.shortest_path(graph, a, b, weight="weight")
     except nx.NetworkXNoPath as exc:

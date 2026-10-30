@@ -48,6 +48,17 @@ def test_tree_qca_finds_the_side_branch_and_its_take_off():
     assert main.max_percent_stenosis > 45
 
 
+def test_tree_qca_refuses_points_off_the_vessel():
+    img = y_vessel()
+    with pytest.raises(ValueError, match="end point .* px from the nearest segmented vessel"):
+        tree_qca(img, (100, 12), (30, 380), mm_per_px=MM_PER_PX)  # 70 px above the main's end
+    # an end point on another, unconnected vessel is not moved onto the start's vessel
+    img2 = img.copy()
+    img2[200:206, 20:120] = 1.0
+    with pytest.raises(ValueError, match="no vessel path connects"):
+        tree_qca(img2, (100, 12), (203, 110), mm_per_px=MM_PER_PX)
+
+
 def test_analyse_tree_side_branch_raises_main_ffr():
     res = analyse_tree(y_vessel(), (100, 12), (100, 388), params=PARAMS, mm_per_px=MM_PER_PX)
     tree_ffr, single_ffr = res.result.ffr[0][-1], res.single.ffr[-1]

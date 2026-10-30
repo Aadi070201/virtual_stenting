@@ -25,7 +25,7 @@ from scipy.ndimage import distance_transform_edt
 from vstent.imaging.centerline import (
     clean_mask,
     smooth_and_resample,
-    snap_to_graph,
+    snap_point,
     vessel_graph,
 )
 from vstent.imaging.qca import DEFAULT_MM_PER_PX, LEVEL, QCAResult, qca_from_centerline
@@ -77,14 +77,19 @@ def tree_qca(
     branches, on the probability map ``prob`` (H, W). Points are (row, col) px."""
     mask = np.asarray(prob) >= level
     graph = vessel_graph(mask)
-    a = snap_to_graph(graph, start)
+    half_width = distance_transform_edt(clean_mask(mask))
+    a = snap_point(graph, start, half_width, "start")
     component = graph.subgraph(nx.node_connected_component(graph, a))
     dist, paths = nx.single_source_dijkstra(component, a, weight="weight")
-    b = snap_to_graph(component, end) if end is not None else max(dist, key=dist.get)
+    if end is None:
+        b = max(dist, key=dist.get)
+    else:
+        b = snap_point(graph, end, half_width, "end")
+        if b not in dist:
+            raise ValueError(f"no vessel path connects {tuple(start)} and {tuple(end)}")
     if b == a:
         raise ValueError("start and end points snap to the same skeleton pixel")
     scale = DEFAULT_MM_PER_PX if mm_per_px is None else float(mm_per_px)
-    half_width = distance_transform_edt(clean_mask(mask))
 
     main = qca_from_centerline(
         prob, smooth_and_resample(np.asarray(paths[b])), mm_per_px=mm_per_px, level=level

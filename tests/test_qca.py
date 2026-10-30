@@ -93,6 +93,19 @@ def test_snapping_and_disconnected_points():
         snap_to_graph(nx.Graph(), (0, 0))
 
 
+def test_points_off_the_vessel_are_refused():
+    # a 5 px wide bar from col 5 to 75: a point inside it, or a few px off its wall, is snapped;
+    # a point far beyond its end (where the segmentation might have missed the vessel) is not
+    mask = np.zeros((40, 120), bool)
+    mask[18:23, 5:75] = True
+    cl = trace_centerline(mask, (20, 8), (23, 72))  # 3 px off-centre, inside the wall + 5 px
+    assert cl.s[-1] > 55
+    with pytest.raises(ValueError, match="end point .* px from the nearest segmented vessel"):
+        trace_centerline(mask, (20, 8), (20, 110))
+    with pytest.raises(ValueError, match="start point"):
+        trace_centerline(mask, (2, 40), (20, 70))
+
+
 def test_smooth_and_resample_is_uniform():
     path = np.stack([np.arange(50), np.round(np.linspace(0, 10, 50))], axis=1)
     cl = smooth_and_resample(path)
