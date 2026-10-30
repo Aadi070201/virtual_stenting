@@ -16,7 +16,7 @@
     },
     {
       "metric": "App stent-control update, worst server time",
-      "value": "224 ms",
+      "value": "159 ms",
       "target": "< 300 ms",
       "passed": true
     }
@@ -7344,13 +7344,13 @@
     }
   },
   "latency": {
-    "worst_server_ms": 224.0,
+    "worst_server_ms": 159.0,
     "target_ms": 300.0,
     "provenance": {
-      "git_commit": "a9bc436cd8d8a6bd856c7f2cb353c70a2ac977a1",
+      "git_commit": "d69b1543d73946b138a208e46bdedc451b28a2b3",
       "git_dirty": false,
       "vstent_version": "0.1.0",
-      "created_utc": "2026-10-30T16:15:11+00:00",
+      "created_utc": "2026-10-30T19:11:52+00:00",
       "cpu": "AMD Ryzen 7 6800H with Radeon Graphics"
     }
   },
@@ -7362,10 +7362,10 @@
     "single_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1"
   },
   "provenance": {
-    "git_commit": "9b77ddab82efc526b02ca2342a8519657472af47",
+    "git_commit": "03f19dcac2844b639e3df0bd87d40d575f1d56b2",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-30T16:16:21+00:00"
+    "created_utc": "2026-10-30T19:12:40+00:00"
   },
   "targets_met": true
 }
