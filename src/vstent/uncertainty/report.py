@@ -28,6 +28,7 @@ from vstent.plotting import (
     INK_SECONDARY,
     SERIES_1,
     SERIES_2,
+    SURFACE,
     new_figure,
     save_figure,
     style_axes,
@@ -342,15 +343,22 @@ def plot_coverage(conf: dict[str, Any], level: float, path: Path) -> None:
         vals = [r.get("coverage", np.nan) for r in rows]
         ax.bar(x + offset, vals, width=w, color=color, label=label, zorder=2)
         for xi, v in zip(x + offset, vals, strict=True):
-            if np.isfinite(v):
-                ax.text(xi, v + 0.01, f"{v:.0%}", ha="center", fontsize=7, color=INK_SECONDARY)
+            if np.isfinite(v):  # the label's background hides the reference line behind it
+                ax.text(
+                    xi, v + 0.015, f"{v:.0%}", ha="center", va="bottom", fontsize=7,
+                    color=INK_SECONDARY,
+                    zorder=4, bbox={"facecolor": SURFACE, "edgecolor": "none", "pad": 2.0},
+                )  # fmt: skip
     ax.axhline(level, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)), zorder=3)
     ax.set_ylim(0, 1.08)
     labels = [f"{t['bin']}\nn = {t['n']:,} / {o['n']:,}" for t, o in zip(test, ood, strict=True)]
     ax.set_xticks(x, labels)
     ax.set_xlabel("Maximum diameter stenosis (n = test / ood)", fontsize=8, color=INK_SECONDARY)
     ax.set_ylabel("Coverage", fontsize=8, color=INK_SECONDARY)
-    ax.legend(frameon=False, fontsize=8, labelcolor=INK_SECONDARY, loc="lower left")
+    ax.legend(
+        frameon=False, fontsize=8, labelcolor=INK_SECONDARY, loc="lower left",
+        bbox_to_anchor=(0.0, 1.0), ncol=2, borderaxespad=0.2,
+    )  # fmt: skip
     save_figure(fig, path)
 
 
