@@ -1,0 +1,62 @@
+# Synthetic vessel trees v1 (docs/PLAN.md, P2): a main vessel with 1-4 side branches.
+# Ranges are [low, high], sampled uniformly unless noted. Units as named (mm, mmHg, %, m/s).
+# Sampling distributions may be tuned; physics constants may not (they come from PhysicsParams,
+# identical to configs/physics.yaml, and are saved resolved next to the data).
+name: tree_v1
+out_dir: data/synth/tree_v1
+n_points: 256                    # per branch
+shard_size: 5000
+workers: null                    # null = all CPU cores
+
+sampling:
+  # main vessel (M2 meanings): length, inlet diameter, lesion count; distal_taper is the linear
+  # taper within each segment between take-offs
+  length_mm: [50, 100]
+  d0_mm: [2.5, 4.5]
+  distal_taper: [0.90, 1.0]
+  lesion_count_probs: [0.15, 0.45, 0.30, 0.10]      # P(0..3) lesions on the main vessel
+  # side branches
+  side_count_probs: [0.0, 0.30, 0.35, 0.20, 0.15]   # P(0..4) side branches
+  side_margin_mm: 8              # take-offs >= 8 mm from both ends of the main vessel ...
+  side_spacing_mm: 8             # ... and >= 8 mm apart
+  side_diameter_ratio: [0.45, 0.85]   # side start diameter / main diameter at the take-off
+  side_length_mm: [15, 60]
+  side_taper: [0.70, 0.95]       # side end diameter / side start diameter
+  split_exponent: [2.33, 3.0]    # main after a take-off: d_after^e = d_before^e - d_side^e
+  side_lesion_count_probs: [0.60, 0.30, 0.10]       # per side branch: 0, 1, 2 lesions
+  bifurcation_lesion_prob: 0.30  # one main lesion centred within +-3 mm of a take-off
+  bifurcation_offset_mm: 3.0
+  ostial_lesion_prob: 0.15       # per side branch: a lesion whose throat is 0.5-3 mm from its start
+  ostial_center_mm: [0.5, 3.0]
+  # lesions, noise, pressures and velocity: as in configs/synth_v1.yaml
+  lesion_ds_pct: [20, 90]
+  lesion_ds_beta: [3.0, 3.5]
+  lesion_length_mm: [3, 25]
+  lesion_margin_mm: 5
+  lesion_gap_mm: 2
+  shape_probs: {cosine: 0.25, skewed_cosine: 0.25, plateau: 0.25, irregular: 0.25}
+  skew_peak: [0.2, 0.8]
+  plateau_fraction: [0.3, 0.7]
+  irregular_amplitude: 0.3
+  diffuse_prob: 0.2              # main vessel only
+  diffuse_ds_pct: [0, 20]
+  diffuse_length_frac: [0.3, 0.8]
+  noise_sigma_frac: [0.0, 0.03]
+  noise_corr_mm: 1.0
+  min_radius_frac: 0.5
+  pa_mmhg: [70, 110]
+  pv_mmhg: [2, 8]
+  v_hyp: [0.25, 0.45]
+
+splits:
+  train: {n: 40000, seed: 2001}
+  val:   {n: 4000,  seed: 2002}
+  test:  {n: 4000,  seed: 2003}
+  cal:   {n: 4000,  seed: 2005}   # conformal calibration only (as in synth_v1)
+  ood:
+    n: 2000
+    seed: 2004
+    overrides:
+      length_mm: [100, 140]
+      side_count_probs: [0.0, 0.0, 0.0, 0.0, 1.0]   # always 4 side branches
+      lesion_count_probs: [0.0, 0.0, 0.5, 0.5]      # 2 or 3 main lesions

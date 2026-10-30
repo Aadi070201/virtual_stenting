@@ -8,6 +8,7 @@ runner = CliRunner()
 COMMANDS = [
     "physics-report",
     "synth",
+    "synth-tree",
     "train-surrogate",
     "eval-surrogate",
     "export-surrogate",

@@ -156,6 +156,14 @@ class SynthConfig(StrictModel):
         overrides = self.splits[split].overrides
         return SamplingConfig.model_validate({**self.sampling.model_dump(), **overrides})
 
+    def shard_arrays(self, split: str, n: int, seed: tuple[int, int]) -> dict[str, np.ndarray]:
+        """Sample and label one shard of ``split`` (see :func:`generate_shard`)."""
+        return generate_shard(self.sampling_for(split), self.physics, n, self.n_points, seed)
+
+    def manifest_extra(self) -> dict[str, Any]:
+        """Dataset-specific manifest fields."""
+        return {"max_lesions": MAX_LESIONS, "shapes": list(SHAPES), "units": ARRAY_UNITS}
+
 
 @dataclass(frozen=True)
 class LesionSpec:
@@ -382,21 +390,14 @@ def content_hash(arrays: dict[str, np.ndarray]) -> str:
     return h.hexdigest()
 
 
-def _shard_task(
-    sampling: SamplingConfig,
-    physics: PhysicsParams,
-    n: int,
-    n_points: int,
-    seed: tuple[int, int],
-    path: Path,
-) -> dict[str, Any]:
-    arrays = generate_shard(sampling, physics, n, n_points, seed)
+def _shard_task(config, split: str, n: int, seed: tuple[int, int], path: Path) -> dict[str, Any]:
+    arrays = config.shard_arrays(split, n, seed)
     np.savez(path, **arrays)
     return {"file": path.name, "n": n, "seed": list(seed), "sha256": content_hash(arrays)}
 
 
 def generate_dataset(
-    config: SynthConfig,
+    config,
     *,
     out_dir: str | Path | None = None,
     workers: int | None = None,
@@ -406,6 +407,9 @@ def generate_dataset(
     """Generate every split into ``.npz`` shards plus ``manifest.json``, ``config.yaml`` and
     ``run_meta.yaml`` (git commit). Shard seeds are (split seed, shard index), so the output
     does not depend on the number of workers.
+
+    ``config`` is a :class:`SynthConfig` or any config with the same fields and the methods
+    ``shard_arrays(split, n, seed)`` and ``manifest_extra()`` (e.g. synthetic trees).
     """
     log = log or (lambda _msg: None)
     out = Path(out_dir if out_dir is not None else config.out_dir)
@@ -418,16 +422,10 @@ def generate_dataset(
 
     tasks = []
     for split_name, split in config.splits.items():
-        sampling = config.sampling_for(split_name)
         for i in range(math.ceil(split.n / config.shard_size)):
             n = min(config.shard_size, split.n - i * config.shard_size)
             path = out / f"{split_name}_{i:04d}.npz"
-            tasks.append(
-                (
-                    (split_name, i),
-                    (sampling, config.physics, n, config.n_points, (split.seed, i), path),
-                )
-            )
+            tasks.append(((split_name, i), (config, split_name, n, (split.seed, i), path)))
 
     n_workers = min(workers or config.workers or os.cpu_count() or 1, len(tasks))
     t0 = time.perf_counter()
@@ -447,9 +445,7 @@ def generate_dataset(
     manifest = {
         "name": config.name,
         "n_points": config.n_points,
-        "max_lesions": MAX_LESIONS,
-        "shapes": list(SHAPES),
-        "units": ARRAY_UNITS,
+        **config.manifest_extra(),
         "splits": {
             name: {
                 "n": split.n,
