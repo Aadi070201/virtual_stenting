@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -14,6 +15,7 @@ from vstent.surrogate.ensemble import (
     member_dirs,
     resume_ensemble,
     stop_ensemble,
+    surrogate_config,
     train_ensemble,
 )
 from vstent.surrogate.model import ModelConfig
@@ -126,3 +128,27 @@ def test_cli_lists_and_stops_ensemble(tmp_path, monkeypatch):
     assert (ck.CHECKPOINTS_DIR / "ens-a" / ck.STOP_FILE).exists()
     assert (ck.CHECKPOINTS_DIR / "ens-a-s2" / ck.STOP_FILE).exists()
     assert runner.invoke(app, ["train-ensemble"]).exit_code == 2
+
+
+def test_surrogate_config_of_model_dirs(tiny_data, tiny_export, tiny_ensemble_export):
+    # an ensemble model's config.yaml is the EnsembleConfig; the member config has data_dir
+    for export in (tiny_export, tiny_ensemble_export):
+        assert Path(surrogate_config(export["out_dir"]).data_dir) == Path(tiny_data)
+
+
+def test_planner_benchmark_runs_on_an_ensemble_model(tiny_ensemble_export, tmp_path):
+    from vstent.config import load_config
+    from vstent.physics.solver import PhysicsParams
+    from vstent.planning.optimizer import PlannerConfig, StentCatalog
+    from vstent.planning.report import run_planner_benchmark
+
+    root = Path(__file__).resolve().parents[1] / "configs"
+    report = run_planner_benchmark(
+        tiny_ensemble_export["out_dir"],
+        tmp_path,
+        catalog=load_config(root / "stent_catalog.yaml", StentCatalog),
+        config=load_config(root / "planner.yaml", PlannerConfig),
+        params=load_config(root / "physics.yaml", PhysicsParams),
+        n_vessels=2,
+    )
+    assert (tmp_path / "planner_benchmark.md").exists() and report["throughput"]

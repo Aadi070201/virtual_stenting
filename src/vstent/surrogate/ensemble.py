@@ -82,6 +82,14 @@ def is_ensemble_run(path: str | Path) -> bool:
     return (Path(path) / MEMBER_CONFIG).exists() and (Path(path) / CONFIG_FILENAME).exists()
 
 
+def surrogate_config(path: str | Path) -> SurrogateConfig:
+    """Surrogate training config of a run or exported model directory: the member config
+    (``surrogate_config.yaml``) for an ensemble, else ``config.yaml``."""
+    path = Path(path)
+    member = path / MEMBER_CONFIG
+    return load_config(member if member.exists() else path / CONFIG_FILENAME, SurrogateConfig)
+
+
 def train_ensemble(
     config: EnsembleConfig,
     *,

@@ -17,7 +17,6 @@ import numpy as np
 import torch
 
 from vstent import DISCLAIMER, __version__
-from vstent.config import load_config
 from vstent.data.synth import load_split
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile, cosine_lesion_profile
@@ -34,10 +33,10 @@ from vstent.plotting import (
     style_axes,
 )
 from vstent.surrogate.dataset import load_raw
-from vstent.surrogate.ensemble import MEMBER_CONFIG
+from vstent.surrogate.ensemble import surrogate_config
 from vstent.surrogate.evaluate import DS_BINS
 from vstent.surrogate.features import prepare_inputs
-from vstent.surrogate.train import SurrogateConfig, load_checkpoint, predict_batches, resolve_device
+from vstent.surrogate.train import load_checkpoint, predict_batches, resolve_device
 from vstent.uncertainty.conformal import ConformalCalibration, coverage, fit_conformal
 from vstent.uncertainty.greyzone import UncertaintyConfig
 from vstent.uncertainty.inputs import (
@@ -450,7 +449,7 @@ def write_uncertainty_report(
     model_dir, single_dir, report_dir = Path(model_dir), Path(single_dir), Path(report_dir)
     export_meta = json.loads((model_dir / "export_meta.json").read_text(encoding="utf-8"))
     single_meta = json.loads((single_dir / "export_meta.json").read_text(encoding="utf-8"))
-    base = load_config(model_dir / MEMBER_CONFIG, SurrogateConfig)
+    base = surrogate_config(model_dir)
     members = [Path(m["run"]) for m in export_meta["members"]]
     ensemble = SurrogateRunner.from_dir(model_dir)
     single = SurrogateRunner.from_dir(single_dir)

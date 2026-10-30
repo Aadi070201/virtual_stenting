@@ -18,7 +18,7 @@ from typing import Any
 import numpy as np
 
 from vstent import DISCLAIMER, __version__
-from vstent.config import CONFIG_FILENAME, git_info, load_config
+from vstent.config import git_info
 from vstent.data.synth import load_split
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile, cosine_narrowing
@@ -33,7 +33,7 @@ from vstent.planning.optimizer import (
     planning_grid,
     stented_radii,
 )
-from vstent.surrogate.train import SurrogateConfig
+from vstent.surrogate.ensemble import surrogate_config
 from vstent.sysinfo import cpu_name
 from vstent.units import m_to_mm
 
@@ -190,7 +190,7 @@ def run_planner_benchmark(
         "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     model_dir, report_dir = Path(model_dir), Path(report_dir)
-    data_dir = Path(load_config(model_dir / CONFIG_FILENAME, SurrogateConfig).data_dir)
+    data_dir = Path(surrogate_config(model_dir).data_dir)
     runner = SurrogateRunner.from_dir(model_dir)
     tp = throughput(runner, params, catalog, config)
     log(

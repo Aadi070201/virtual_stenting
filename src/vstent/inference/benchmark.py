@@ -28,8 +28,8 @@ from vstent.data.synth import SynthConfig, load_split
 from vstent.inference.onnx_runtime import ONNX_FILE, SurrogateRunner
 from vstent.physics.solver import solve_ffr_batch
 from vstent.surrogate.dataset import RAW_KEYS, load_raw
+from vstent.surrogate.ensemble import surrogate_config
 from vstent.surrogate.features import NORM_STATS, RawInputs, prepare_inputs
-from vstent.surrogate.train import SurrogateConfig
 from vstent.sysinfo import cpu_name
 
 TARGET_SINGLE_MS = 10.0
@@ -196,7 +196,7 @@ def run_benchmark(
         "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     model_dir, report_dir = Path(model_dir), Path(report_dir)
-    run_cfg = load_config(model_dir / CONFIG_FILENAME, SurrogateConfig)
+    run_cfg = surrogate_config(model_dir)
     data_dir = Path(run_cfg.data_dir)
     arrays = load_split(data_dir, BENCH_SPLIT, (*RAW_KEYS, "v_hyp"))
     n = min(batch_size, arrays["r"].shape[0])
