@@ -5,290 +5,290 @@
     "synthetic": {
       "case": "Focal lesion preset",
       "n": 26,
-      "server_median_ms": 69.0,
-      "server_max_ms": 105.0,
-      "wall_median_ms": 96.51759998814669,
-      "wall_max_ms": 194.15559998014942,
+      "server_median_ms": 89.0,
+      "server_max_ms": 224.0,
+      "wall_median_ms": 125.04184999852441,
+      "wall_max_ms": 253.8326999929268,
       "rows": [
         {
           "control": "start",
-          "server_ms": 66.0,
-          "wall_ms": 88.61870001419447
+          "server_ms": 88.0,
+          "wall_ms": 118.8650999974925
         },
         {
           "control": "start",
-          "server_ms": 105.0,
-          "wall_ms": 129.74899998516776
+          "server_ms": 88.0,
+          "wall_ms": 121.49230000795797
         },
         {
           "control": "start",
-          "server_ms": 71.0,
-          "wall_ms": 111.8721000093501
+          "server_ms": 224.0,
+          "wall_ms": 253.8326999929268
         },
         {
           "control": "start",
-          "server_ms": 70.0,
-          "wall_ms": 194.15559998014942
+          "server_ms": 85.0,
+          "wall_ms": 119.98109999694861
         },
         {
           "control": "start",
-          "server_ms": 73.0,
-          "wall_ms": 101.26659998786636
+          "server_ms": 83.0,
+          "wall_ms": 115.29350001364946
         },
         {
           "control": "start",
-          "server_ms": 73.0,
-          "wall_ms": 98.9932999946177
+          "server_ms": 91.0,
+          "wall_ms": 123.61169999348931
         },
         {
           "control": "start",
-          "server_ms": 71.0,
-          "wall_ms": 102.28059999644756
+          "server_ms": 90.0,
+          "wall_ms": 123.1543000030797
         },
         {
           "control": "start",
-          "server_ms": 71.0,
-          "wall_ms": 98.68370002368465
+          "server_ms": 89.0,
+          "wall_ms": 124.81680000200868
         },
         {
           "control": "start",
-          "server_ms": 68.0,
-          "wall_ms": 92.53550000721589
+          "server_ms": 95.0,
+          "wall_ms": 128.08189998031594
         },
         {
           "control": "start",
-          "server_ms": 69.0,
-          "wall_ms": 94.52700000838377
+          "server_ms": 89.0,
+          "wall_ms": 126.65560000459664
         },
         {
           "control": "start",
-          "server_ms": 66.0,
-          "wall_ms": 90.20949999103323
+          "server_ms": 86.0,
+          "wall_ms": 121.85499997576699
         },
         {
           "control": "start",
-          "server_ms": 66.0,
-          "wall_ms": 90.17359997960739
+          "server_ms": 88.0,
+          "wall_ms": 122.29970001499169
         },
         {
           "control": "start",
-          "server_ms": 67.0,
-          "wall_ms": 91.76019998267293
+          "server_ms": 90.0,
+          "wall_ms": 125.01859999611042
         },
         {
           "control": "start",
-          "server_ms": 67.0,
-          "wall_ms": 91.23150000232272
+          "server_ms": 93.0,
+          "wall_ms": 128.18759999936447
         },
         {
           "control": "start",
-          "server_ms": 67.0,
-          "wall_ms": 91.5750999993179
+          "server_ms": 95.0,
+          "wall_ms": 127.63339999946766
         },
         {
           "control": "start",
-          "server_ms": 75.0,
-          "wall_ms": 130.03459997707978
+          "server_ms": 90.0,
+          "wall_ms": 127.34810000983998
         },
         {
           "control": "start",
-          "server_ms": 72.0,
-          "wall_ms": 100.34729997278191
+          "server_ms": 88.0,
+          "wall_ms": 123.0890000006184
         },
         {
           "control": "start",
-          "server_ms": 75.0,
-          "wall_ms": 103.94920001272112
+          "server_ms": 89.0,
+          "wall_ms": 125.0651000009384
         },
         {
           "control": "start",
-          "server_ms": 70.0,
-          "wall_ms": 98.48079999210313
+          "server_ms": 89.0,
+          "wall_ms": 125.71210000896826
         },
         {
           "control": "start",
-          "server_ms": 72.0,
-          "wall_ms": 99.15630001341924
+          "server_ms": 92.0,
+          "wall_ms": 126.33270001970232
         },
         {
           "control": "length",
-          "server_ms": 69.0,
-          "wall_ms": 96.47609997773543
+          "server_ms": 98.0,
+          "wall_ms": 132.2249000077136
         },
         {
           "control": "length",
-          "server_ms": 67.0,
-          "wall_ms": 96.55909999855794
+          "server_ms": 89.0,
+          "wall_ms": 123.86029999470338
         },
         {
           "control": "length",
-          "server_ms": 67.0,
-          "wall_ms": 91.2304000230506
+          "server_ms": 95.0,
+          "wall_ms": 129.7914999886416
         },
         {
           "control": "diameter",
-          "server_ms": 69.0,
-          "wall_ms": 93.59219999169
+          "server_ms": 99.0,
+          "wall_ms": 134.67990001663566
         },
         {
           "control": "diameter",
-          "server_ms": 68.0,
-          "wall_ms": 95.96619999501854
+          "server_ms": 89.0,
+          "wall_ms": 124.06250002095476
         },
         {
           "control": "diameter",
-          "server_ms": 65.0,
-          "wall_ms": 90.34729999257252
+          "server_ms": 86.0,
+          "wall_ms": 125.70540001615882
         }
       ]
     },
     "image": {
       "case": "ARCADE stenosis/val 1.png, automatic path",
-      "path_setup_ms": 235.93919997802004,
+      "path_setup_ms": 341.95320002618246,
       "n": 26,
-      "server_median_ms": 116.5,
-      "server_max_ms": 211.0,
-      "wall_median_ms": 142.99490000121295,
-      "wall_max_ms": 244.66109997592866,
+      "server_median_ms": 169.5,
+      "server_max_ms": 195.0,
+      "wall_median_ms": 204.18830000562593,
+      "wall_max_ms": 239.5161000022199,
       "rows": [
         {
           "control": "start",
-          "server_ms": 116.0,
-          "wall_ms": 141.74330001696944
+          "server_ms": 155.0,
+          "wall_ms": 188.80350000108592
         },
         {
           "control": "start",
-          "server_ms": 112.0,
-          "wall_ms": 135.86199999554083
+          "server_ms": 178.0,
+          "wall_ms": 211.84400000493042
         },
         {
           "control": "start",
-          "server_ms": 117.0,
-          "wall_ms": 143.94629999878816
+          "server_ms": 162.0,
+          "wall_ms": 195.41690000914969
         },
         {
           "control": "start",
-          "server_ms": 112.0,
-          "wall_ms": 135.1104000059422
+          "server_ms": 172.0,
+          "wall_ms": 212.3163000214845
         },
         {
           "control": "start",
-          "server_ms": 116.0,
-          "wall_ms": 141.62159999250434
+          "server_ms": 174.0,
+          "wall_ms": 209.18730000266805
         },
         {
           "control": "start",
-          "server_ms": 211.0,
-          "wall_ms": 244.66109997592866
+          "server_ms": 163.0,
+          "wall_ms": 199.27780001307838
         },
         {
           "control": "start",
-          "server_ms": 116.0,
-          "wall_ms": 142.9057999921497
+          "server_ms": 159.0,
+          "wall_ms": 195.56290001492016
         },
         {
           "control": "start",
-          "server_ms": 112.0,
-          "wall_ms": 136.69039998785593
+          "server_ms": 170.0,
+          "wall_ms": 203.69840000057593
         },
         {
           "control": "start",
-          "server_ms": 117.0,
-          "wall_ms": 142.0755999861285
+          "server_ms": 195.0,
+          "wall_ms": 239.5161000022199
         },
         {
           "control": "start",
-          "server_ms": 112.0,
-          "wall_ms": 136.15479998406954
+          "server_ms": 173.0,
+          "wall_ms": 213.22949999012053
         },
         {
           "control": "start",
-          "server_ms": 115.0,
-          "wall_ms": 139.52480000443757
+          "server_ms": 178.0,
+          "wall_ms": 213.13350001582876
         },
         {
           "control": "start",
-          "server_ms": 114.0,
-          "wall_ms": 139.17299997410737
+          "server_ms": 169.0,
+          "wall_ms": 204.67820001067594
         },
         {
           "control": "start",
-          "server_ms": 118.0,
-          "wall_ms": 144.11230001132935
+          "server_ms": 163.0,
+          "wall_ms": 198.9791999803856
         },
         {
           "control": "start",
-          "server_ms": 114.0,
-          "wall_ms": 139.31860000593588
+          "server_ms": 189.0,
+          "wall_ms": 227.19549998873845
         },
         {
           "control": "start",
-          "server_ms": 120.0,
-          "wall_ms": 146.40609998605214
+          "server_ms": 186.0,
+          "wall_ms": 228.12240000348538
         },
         {
           "control": "start",
-          "server_ms": 113.0,
-          "wall_ms": 135.9463999979198
+          "server_ms": 189.0,
+          "wall_ms": 230.20829999586567
         },
         {
           "control": "start",
-          "server_ms": 116.0,
-          "wall_ms": 143.0840000102762
+          "server_ms": 184.0,
+          "wall_ms": 221.20299999369308
         },
         {
           "control": "start",
-          "server_ms": 115.0,
-          "wall_ms": 139.25040001049638
+          "server_ms": 152.0,
+          "wall_ms": 191.28700002329424
         },
         {
           "control": "start",
-          "server_ms": 135.0,
-          "wall_ms": 160.6898000172805
+          "server_ms": 180.0,
+          "wall_ms": 216.27830000943504
         },
         {
           "control": "start",
-          "server_ms": 119.0,
-          "wall_ms": 145.08820002083667
-        },
-        {
-          "control": "length",
-          "server_ms": 127.0,
-          "wall_ms": 154.07459999551065
+          "server_ms": 169.0,
+          "wall_ms": 203.1765000137966
         },
         {
           "control": "length",
           "server_ms": 157.0,
-          "wall_ms": 185.71809999411926
+          "wall_ms": 189.85530000645667
         },
         {
           "control": "length",
-          "server_ms": 126.0,
-          "wall_ms": 156.1420000216458
+          "server_ms": 157.0,
+          "wall_ms": 191.43269999767654
+        },
+        {
+          "control": "length",
+          "server_ms": 167.0,
+          "wall_ms": 198.810699977912
         },
         {
           "control": "diameter",
-          "server_ms": 127.0,
-          "wall_ms": 154.47420001146384
+          "server_ms": 158.0,
+          "wall_ms": 193.97570000728592
         },
         {
           "control": "diameter",
-          "server_ms": 127.0,
-          "wall_ms": 158.84610000648536
+          "server_ms": 164.0,
+          "wall_ms": 199.85070000984706
         },
         {
           "control": "diameter",
-          "server_ms": 119.0,
-          "wall_ms": 147.03009999357164
+          "server_ms": 175.0,
+          "wall_ms": 209.09980000578798
         }
       ]
     }
   },
   "provenance": {
-    "git_commit": "d2a9d123080793ff4c824332512a74d79e1ef3be",
+    "git_commit": "a9bc436cd8d8a6bd856c7f2cb353c70a2ac977a1",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-30T15:22:38+00:00",
+    "created_utc": "2026-10-30T16:15:11+00:00",
     "cpu": "AMD Ryzen 7 6800H with Radeon Graphics"
   }
 }
