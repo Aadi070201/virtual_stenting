@@ -68,7 +68,8 @@ vstent/
   uv.lock               # committed lock file
   configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
                         # stent_catalog, planner, uncertainty
-  docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
+  docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
+                        # HUMAN_ACTIONS.md (what only the human can do)
   src/vstent/
     physics/            # geometry.py, solver.py, report.py, tree.py (vessel trees, P2),
                         # tree_report.py (tree checks + throughput)
