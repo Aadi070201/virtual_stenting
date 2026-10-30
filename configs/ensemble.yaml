@@ -1,0 +1,6 @@
+# Surrogate ensemble (docs/PLAN.md, P1): the M3 configuration trained with 5 seeds.
+# Run outputs go to runs/<name>-<UTC timestamp>/ (members in members/<run>-s<seed>/).
+name: unet1d_ens5
+runs_dir: runs
+base_config: configs/surrogate.yaml   # member settings; only the seed differs
+seeds: [0, 1, 2, 3, 4]

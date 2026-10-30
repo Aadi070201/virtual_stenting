@@ -138,6 +138,30 @@ def train_surrogate(
 
 
 @app.command()
+def train_ensemble(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config (new run)."),
+    ] = None,
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Continue a stopped ensemble (name or path).")
+    ] = None,
+) -> None:
+    """Train a surrogate ensemble, one member per seed (new with --config, or --resume)."""
+    from vstent.config import load_config
+    from vstent.surrogate.ensemble import EnsembleConfig, resume_ensemble, train_ensemble
+
+    if (config is None) == (resume is None):
+        typer.echo("Give exactly one of --config (new run) or --resume (continue).", err=True)
+        raise typer.Exit(code=2)
+    if resume is not None:
+        run_dir = resume_ensemble(resume, log=typer.echo)
+    else:
+        run_dir = train_ensemble(load_config(config, EnsembleConfig), log=typer.echo)
+    typer.echo(f"Run directory: {run_dir}")
+
+
+@app.command()
 def checkpoints() -> None:
     """List resumable training runs in checkpoints/ with their status."""
     from vstent.checkpoints import list_checkpoints
@@ -152,8 +176,9 @@ def checkpoints() -> None:
         best_txt = ""
         if best is not None:
             best_txt = f", best {metric} {best:.4f} (epoch {r['best_epoch']})"
+        unit = "members" if r["kind"] == "surrogate_ensemble" else "epoch"
         typer.echo(
-            f"{r['name']}  [{r['kind']}]  {r['status']}  epoch {r['epoch']}/{r['epochs']}"
+            f"{r['name']}  [{r['kind']}]  {r['status']}  {unit} {r['epoch']}/{r['epochs']}"
             f"{best_txt}  updated {r['updated_utc']}"
         )
         if r["status"] != "finished":
@@ -165,13 +190,22 @@ def stop(
     run: Annotated[str, typer.Argument(help="Run name (as shown by `vstent checkpoints`).")],
 ) -> None:
     """Ask a running training to save its state and exit after the current epoch."""
-    from vstent.checkpoints import request_stop, resolve_checkpoint
+    from vstent.checkpoints import read_status, request_stop, resolve_checkpoint
+    from vstent.surrogate.ensemble import KIND as ENSEMBLE_KIND
+    from vstent.surrogate.ensemble import stop_ensemble
 
     try:
         ckpt_dir = resolve_checkpoint(run)
     except FileNotFoundError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
+    if read_status(ckpt_dir).get("kind") == ENSEMBLE_KIND:
+        member = stop_ensemble(ckpt_dir)
+        typer.echo(
+            f"Stop requested for ensemble {ckpt_dir.name}"
+            + (f"; member {member} stops after its current epoch." if member else ".")
+        )
+        return
     request_stop(ckpt_dir)
     typer.echo(f"Stop requested for {ckpt_dir.name}; it will stop after the current epoch.")
 
