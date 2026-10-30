@@ -103,7 +103,10 @@ Trainings can be paused and resumed exactly:
 | `vstent uncertainty-report` | ensemble accuracy, conformal coverage, input-uncertainty intervals → `reports/uncertainty.md` | P1 |
 | `vstent synth-tree --config configs/synth_tree_v1.yaml` | generate synthetic vessel trees (main vessel + 1–4 side branches) + `reports/tree_dataset_card.md` | P2 |
 | `vstent tree-report` | tree physics sanity checks and solver throughput → `reports/tree_physics.md` | P2 |
-| `vstent analyse <image> --tree [--stent START LEN DIA --outlet K]` | the path and its side branches with tree physics; optional virtual stent on a path | P2 |
+| `vstent analyse <image> --tree [--plan \| --stent START LEN DIA] [--outlet K]` | the path and its side branches with tree physics; stent plans or a virtual stent on the path to branch K | P2–P3 |
+| `vstent train-tree-surrogate --config configs/tree_surrogate.yaml` | train the tree surrogate (graph network; `--resume <name>`) | P3 |
+| `vstent eval-tree-surrogate --run runs/<name>` / `vstent export-tree-surrogate --run runs/<name>` | tree surrogate vs tree solver → `reports/tree_surrogate_eval.md`; ONNX + parity → `reports/tree_onnx.md` | P3 |
+| `vstent plan-benchmark --tree` | tree planner speed and behaviour → `reports/tree_planner_benchmark.md` | P3 |
 | `vstent qca-gallery --tree` | the ARCADE gallery with tree physics vs single paths → `reports/qca_tree_gallery.md` | P2 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
@@ -137,7 +140,8 @@ red banner is permanent: **research use only**.
    stent is oversized for the vessel.
 4. **Suggest plan:** shows the shortest plans reaching FFR ≥ 0.90 (top 3, with the solver
    check). Pick one under *Show on plots* to draw it.
-5. **Prepare case report:** download the JSON (all assumptions and model versions, no image
+5. **Side branches (image mode):** switch on *Side branches (tree model)*. The side branches leaving the path are measured and FFR is shown along every path. Pick a path (*Path to*), place a stent on it or ask for plans; the stent may run from the main vessel into a side branch. A JSON tree report can be downloaded.
+6. **Prepare case report:** download the JSON (all assumptions and model versions, no image
    pixels) and a PNG of the plots.
 
 ## Limitations

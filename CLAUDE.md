@@ -67,7 +67,7 @@ vstent/
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
   configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
-                        # stent_catalog, planner, uncertainty
+                        # stent_catalog, planner, uncertainty, tree_surrogate
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
                         # HUMAN_ACTIONS.md (what only the human can do)
   src/vstent/
@@ -77,7 +77,9 @@ vstent/
                         # synth_tree.py + tree_card.py (synthetic vessel trees, P2)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
-                        # ensemble.py (5-seed ensemble trainer, resumable)
+                        # ensemble.py (5-seed ensemble trainer, resumable),
+                        # tree_features.py, tree_model.py, tree_train.py, tree_evaluate.py,
+                        # tree_export.py (tree surrogate, P3)
     uncertainty/        # conformal.py (split-conformal distal-FFR interval), inputs.py (input
                         # Monte Carlo through the solver), greyzone.py (intervals, flags, config),
                         # report.py (uncertainty report); all torch-free except report.py
@@ -86,13 +88,14 @@ vstent/
                         # synthetic.py (rendered test tubes), qca_validation.py,
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
-                        # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark)
+                        # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
+                        # tree_planner.py + tree_report.py (stents on a tree path, P3)
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
                         # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
                         # solver + surrogate, torch-free), figures.py (analysis figure),
                         # gallery.py (QCA gallery on ARCADE stenosis images), models.py
-                        # (locate exported models)
-    app/                # core.py (app logic, no Streamlit), streamlit_app.py (UI),
+                        # (locate exported models), tree_runtime.py (TreeSurrogateRunner, P3)
+    app/                # core.py (app logic, no Streamlit), tree_view.py (tree mode), streamlit_app.py (UI),
                         # latency.py (AppTest-driven update timing)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
@@ -133,6 +136,10 @@ uv run vstent eval-surrogate --run runs/<name>
 uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
 uv run vstent train-ensemble --config configs/ensemble.yaml   # P1: 5 seeds; also --resume <name>
 uv run vstent export-ensemble --run runs/<ensemble> # ONNX mean + SD, screen model, conformal (cal split)
+uv run vstent train-tree-surrogate --config configs/tree_surrogate.yaml   # P3; also --resume <name>
+uv run vstent eval-tree-surrogate --run runs/<name> # → reports/tree_surrogate_eval.md
+uv run vstent export-tree-surrogate --run runs/<name>   # ONNX (padded graphs) → reports/tree_onnx.md
+uv run vstent plan-benchmark --tree                # P3: tree planner → reports/tree_planner_benchmark.md
 uv run vstent uncertainty-report                    # → reports/uncertainty.md (coverage, input MC)
 uv run vstent data arcade                           # download + MD5-verify + extract ARCADE
 uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>
@@ -141,7 +148,7 @@ uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/s
 uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
 uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
 uv run vstent qca-gallery --tree                   # P2: tree physics → reports/qca_tree_gallery.md
-uv run vstent analyse <image.png> --tree [--stent START LEN DIA --outlet K]   # P2: vessel tree
+uv run vstent analyse <image.png> --tree [--plan | --stent START LEN DIA] [--outlet K]  # P2-P3: trees
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
