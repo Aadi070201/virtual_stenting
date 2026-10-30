@@ -1,9 +1,9 @@
 {
   "disclaimer": "Research use only \u2014 not for clinical decisions. This research prototype is not a medical device, is not validated, and must never be used to make decisions about real patients.",
-  "created_utc": "2026-10-30T15:23:55+00:00",
+  "created_utc": "2026-10-30T16:16:15+00:00",
   "software": {
     "vstent": "0.1.0",
-    "git_commit": "c7bbd4685d5a75d0bab7ffb003a97d68f1a47d8d",
+    "git_commit": "413b3d93047ba86a340a8b25d336202447f811be",
     "git_dirty": false
   },
   "models": {
@@ -33,7 +33,8 @@
       "pv_mmhg": 5.0,
       "kt": 1.52,
       "v_hyp": 0.35,
-      "expansion_threshold": 1.05
+      "expansion_threshold": 1.05,
+      "murray_exponent": 2.33
     },
     "pa_mmhg": 90.0,
     "pv_mmhg": 5.0,
@@ -246,11 +247,11 @@
     "n_feasible": 1720,
     "n_pairs": 176,
     "timings_s": {
-      "load_s": 0.5887049000011757,
-      "pre_pci_s": 0.00941119997878559,
-      "planning_s": 0.7105622999952175,
-      "post_pci_s": 0.008983700012322515,
-      "uncertainty_s": 0.012934099999256432
+      "load_s": 0.7837219999928493,
+      "pre_pci_s": 0.011869900015881285,
+      "planning_s": 0.6699272000114433,
+      "post_pci_s": 0.011045600025681779,
+      "uncertainty_s": 0.01252099999692291
     }
   }
 }
