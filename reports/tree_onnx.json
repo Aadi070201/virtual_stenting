@@ -1,0 +1,36 @@
+{
+  "run": "runs/tree_unet-20261030-191415",
+  "run_git_commit": "3903b2d74cf43259fa3dcf3e3c1c14afa9bbc0a1",
+  "run_git_dirty": false,
+  "export": {
+    "git_commit": "1f959e741f24fbf021dbf36bfe84eb96ada32169",
+    "git_dirty": false,
+    "created_utc": "2026-10-30T19:38:27+00:00"
+  },
+  "onnx_file": "tree_surrogate.onnx",
+  "onnx_sha256": "bdd4bcd2dd9f04157c92846f6492fe9c5a5f1f0bef0241286c8a0da92eb4b79f",
+  "onnx_bytes": 5325003,
+  "opset": 17,
+  "n_points": 256,
+  "max_branches": 5,
+  "parity": {
+    "split": "test",
+    "n_trees": 1000,
+    "max_abs_diff": 7.152557373046875e-07,
+    "max_abs_diff_outlet": 7.152557373046875e-07,
+    "tolerance": 0.0001,
+    "passed": true
+  },
+  "latency": {
+    "one_tree_ms": 3.3260999916819856,
+    "batch_256_ms": 277.7969999879133,
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
+    "onnxruntime": "1.31.0"
+  },
+  "versions": {
+    "vstent": "0.1.0",
+    "torch": "2.14.1+cu126",
+    "onnx": "1.23.2",
+    "onnxruntime": "1.31.0"
+  }
+}
