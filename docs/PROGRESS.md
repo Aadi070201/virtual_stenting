@@ -386,3 +386,25 @@ A review of the P1 code found ten issues; all were checked against the code befo
 - **Thin planner margin:** 0.87–0.98 s against the 1 s target, depending on background load.
 - **`reports/mvp_report.md` is still the v0.1.0 snapshot.** Its planner (0.959 s) and app-latency numbers predate the ensemble; the current values are in the source reports.
 - **Old run folders:** the discarded first ensemble is still on disk (git-ignored).
+
+---
+
+## 2026-10-30 — Code review of the MVP (M0–M8) and fixes
+
+An independent read-only review covered physics, data, surrogate, imaging, planning, inference, app and reporting. Each finding was checked against the code before any change, and each fix has a regression test that fails on the old code.
+
+**Fixed**
+- **Planner vs app on image paths (medium).** On image paths the planner's solver used a 256-point resample while the app solved the profile itself. A plan's "Solver check" could therefore differ from the app's post-PCI value for the same stents (0.765 vs 0.752 on one ARCADE image). The planner's solver now runs on the profile's own points (D34). Synthetic results are unchanged.
+- **Stale plans (medium).** The app reused plans and stent controls after the pixel size, Pv or v_hyp changed. With a shorter path this could crash (a stent outside the vessel). Plans and stents are now keyed on the geometry and all pressures.
+- **Extrapolation warnings (low–medium).** In image mode the warnings used the config pressures instead of the user's, and synthetic mode never checked ranges. Both now use the user's Pa / Pv.
+- **Plan tie-break (low).** Floating-point stent lengths broke ties: 12 + 26 mm ≠ 38 mm. Lengths are now rounded to 1 nm.
+- **Image loading (low).** The CLI and the app loaded 16-bit images differently. There is now one loader (`imaging/image_io.py`).
+- **Interrupted saves (low).** An interruption between `best.pt` and the resumable state could leave them inconsistent. `best.pt` is now written after the state, and resume repairs it (both trainers).
+- **Segmentation report (low).** It showed only the val Dice, and val also chose the model. A held-out test row was added: 0.7925 meets the 0.75 target but not the 0.80 stretch.
+- **MVP report (low).** Its "Phase 2 not started" heading now shows each milestone's status from the plan.
+
+**Checked and found correct:** solver vs PHYSICS.md; split independence and normalisation (train only); resumable training; ARCADE has no image overlap between splits; one pre-processing path for segmentation; QCA geometry; planner constraints.
+
+**Not changed (documented):** the surrogate still resamples image paths to 256 points (D34). This only downsamples paths longer than about 77 mm at 0.30 mm/px, already outside the surrogate's training range.
+
+**Reports regenerated:** `seg_eval.md` (same numbers, honest labels). App latency, planner benchmark and demo are unaffected for synthetic cases; they will be regenerated together at the end of P2.
