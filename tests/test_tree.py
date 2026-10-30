@@ -9,6 +9,7 @@ from vstent.physics.tree import (
     murray_flows,
     solve_tree,
     solve_tree_batch,
+    solve_tree_variants,
     tree_segments,
 )
 
@@ -161,3 +162,18 @@ def test_murray_flows_sum_to_the_inlet():
     tree = example_tree()
     q = murray_flows(tree, 2e-6, 2.33)
     assert q.sum() == pytest.approx(2e-6, rel=1e-14) and np.all(q > 0)
+
+
+def test_variants_solver_matches_explicit_trees():
+    tree = example_tree()
+    pre = solve_tree(tree, PARAMS)
+    rng = np.random.default_rng(0)
+    main = tree.branches[0]
+    widen = [np.maximum(main.r, main.r_ref * f) for f in rng.uniform(0.5, 1.0, 6)]
+    variants = solve_tree_variants(
+        tree, {0: np.array(widen)}, PARAMS, pa=pre.pa, pv=pre.pv, r_outlet=pre.r_outlet
+    )
+    for i, r in enumerate(widen):
+        radii = [r] + [b.r for b in tree.branches[1:]]
+        ref = solve_tree(tree.with_radii(radii), PARAMS, r_outlet=pre.r_outlet)
+        np.testing.assert_allclose(variants[i], ref.ffr_outlets, atol=1e-12)

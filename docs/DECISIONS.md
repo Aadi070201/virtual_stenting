@@ -311,3 +311,37 @@ The model interval and the input interval are reported side by side, not combine
 - Junction detection on the skeleton graph alone: it cannot tell the main path from a side branch.
 - Using every endpoint: too many unmeasurable fragments.
 - A separate low-threshold mask for topology: no effect on these images.
+
+### D36 — Tree surrogate: branch-wise U-Net, message passing, monotone tree head (2026-10-30)
+**Decision:**
+- **Input.** Trees are padded to 5 branches of 256 samples. Every branch goes through the M3 FiLM 1D U-Net (shared weights), with point channels relative to the branch's own inlet reference. Branch features are length, inlet diameter, ln R_out, take-off position, a root flag, Pa and Pv.
+- **Message passing.** At the bottleneck, 3 rounds of message passing update each branch's summary from its children (sum), its parent and the whole tree (masked mean). This is plain PyTorch with parent and take-off one-hot matrices, so it exports to ONNX with fixed shapes.
+- **Head.** The decoder gives non-negative pressure-drop increments per branch (softplus, as M3). FFR is assembled down the tree: a branch starts at its parent's FFR at the take-off.
+- **Training.** Loss is MSE over every sample of real branches + 2 × MSE at every outlet. Early stopping uses the validation outlet MAE (from epoch 40, D31).
+- **Outlet resistances.** They are an input, from the solver's cheap calibration, as M3 takes R_micro.
+
+**Reason:**
+- **Physics by construction.** The head generalises M3's guarantee: FFR = 1 at the inlet, continuity at every junction and monotone decrease along every path all hold by construction (tested on an untrained model).
+- **Why message passing.** A branch's flow depends on every other branch (its lesions and outlets), which a branch-wise network alone cannot see. Plain PyTorch keeps the ONNX export simple and avoids a graph library.
+- **Padding.** It fits the synthetic trees (≤ 4 side branches). Image trees with more branches fall back to the solver.
+
+**Alternatives:**
+- A graph network over segment nodes (one node per segment between take-offs): finer, but variable segment lengths complicate the 1D convolutions.
+- A graph library (PyG / DGL): extra dependency, harder ONNX export.
+- Predicting outlet flows and integrating physics: closer to the solver, but loses the learned-pressure pipeline that the CFD labels need later.
+
+### D37 — Tree planner: one path at a time, tree solver by default, 1 s budget (2026-10-30)
+**Decision:**
+- **Planning on a path.** The tree planner works on one root-to-outlet path. Lesions, candidates and the M6 sizing and landing-zone rules apply on a 256-point grid of path coordinates. A candidate widens only the path's branch pieces.
+- **Scoring.** Every outlet's FFR is computed with the pre-PCI outlet resistances. Plans are ranked by the chosen outlet's FFR, as in M6, and all outlets are reported.
+- **Default backend.** The tree solver evaluates candidates by default, through `solve_tree_variants` (one shared topology, batched Newton). The tree surrogate is optional, with a solver re-check of the shown plans.
+- **Speed target** (the plan left it "to be set from P2 measurements"): **5,000 candidates in < 1 s** with the default backend, the M6 budget.
+
+**Reason:**
+- **Measurements.** P2 measured 3,474 generic trees/s. Variants of one tree are faster: 49 ms for 5,000 (measured while training ran).
+- **Honest speed claims.** The tree surrogate (a U-Net per branch) is slower than the tree solver on a CPU. Claiming a surrogate speed-up would be false (CLAUDE.md), so the solver screens and the surrogate's time is reported without a target.
+- **Why one path.** Planning one path at a time matches how stents are placed: along the vessel being treated, possibly across a take-off into a side branch.
+
+**Alternatives:**
+- Joint search over several paths: combinatorial and rarely needed.
+- Surrogate screening as in M6: slower here, and the M6 reason (validating the pipeline) is covered by the surrogate backend and its benchmark.

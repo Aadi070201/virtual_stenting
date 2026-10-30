@@ -424,3 +424,50 @@ def solve_tree(
         [tree], params, pa=pa, pv=pv, v_hyp=v_hyp,
         r_outlet=None if r_outlet is None else [r_outlet],
     )[0]  # fmt: skip
+
+
+def solve_tree_variants(
+    tree: VesselTree,
+    radii: dict[int, np.ndarray],
+    params: PhysicsParams | None = None,
+    *,
+    pa: float,
+    pv: float,
+    r_outlet: np.ndarray,
+) -> np.ndarray:
+    """Outlet FFR (C, n_branches) of C variants of one tree that differ only in the lumen radii
+    of some branches, with fixed outlet resistances (e.g. virtual-stent candidates).
+
+    ``radii[k]`` (C, n_k) replaces branch k's radius (m); other branches are as in ``tree``.
+    Pressures in Pa, ``r_outlet`` in Pa·s/m³ (one per branch). The same equations as
+    :func:`solve_tree_batch`, without building C trees: the topology and segments are shared.
+    """
+    params = params or PhysicsParams()
+    sizes = {v.shape[0] for v in radii.values()}
+    if len(sizes) != 1:
+        raise ValueError("every radius array needs the same number of variants")
+    c = sizes.pop()
+    segments = tree_segments(tree)
+    a_seg, b_seg = np.zeros((c, len(segments))), np.zeros((c, len(segments)))
+    for k, branch in enumerate(tree.branches):
+        r = np.atleast_2d(radii.get(k, branch.r))
+        a = viscous_coefficient(r, branch.ds, params.mu)
+        b = expansion_coefficient(r, params.rho, params.kt, params.expansion_threshold)
+        for e, seg in enumerate(segments):
+            if seg.branch == k:
+                a_seg[:, e] = a[:, seg.end] - a[:, seg.start]
+                b_seg[:, e] = b[:, seg.end] - b[:, seg.start]
+    m = tree.n_branches
+    w = np.zeros((len(segments), m))
+    for e, seg in enumerate(segments):
+        w[e, list(seg.outlets)] = 1.0
+    r_out = np.asarray(r_outlet, float)
+    if r_out.shape != (m,) or np.any(r_out <= 0):
+        raise ValueError("r_outlet: one positive resistance per branch")
+    q, _ = _newton(
+        np.broadcast_to(w, (c, *w.shape)), a_seg, b_seg,
+        np.broadcast_to(r_out, (c, m)).copy(), np.full((c, m), pa - pv),
+    )  # fmt: skip
+    q_seg = q @ w.T  # (C, S)
+    drop = (a_seg * q_seg + b_seg * q_seg**2) @ w  # (C, m): loss along each outlet's path
+    return 1.0 - drop / pa
