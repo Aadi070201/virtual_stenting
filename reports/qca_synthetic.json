@@ -121,11 +121,24 @@
       "passed": true
     }
   ],
+  "error_model": {
+    "n_points": 1468,
+    "sd_px": 0.10706411884379509,
+    "bias_px": 0.004754599085604172,
+    "corr_half_px": 0.623415563209654,
+    "corr_half_px_per_case": [
+      0.5284488304351569,
+      0.6002878488237032,
+      0.6368263380362984,
+      0.6869582308934523,
+      0.623415563209654
+    ]
+  },
   "provenance": {
-    "git_commit": "24acff05b518217d6bf9d3c0947e6bb29a7f08b4",
+    "git_commit": "186b932015a9e90103e72403732f87d90045c8ec",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-28T16:37:38+00:00"
+    "created_utc": "2026-10-30T10:26:02+00:00"
   },
   "targets_met": true
 }
