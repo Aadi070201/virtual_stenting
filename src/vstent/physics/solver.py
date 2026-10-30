@@ -40,6 +40,9 @@ class PhysicsParams(StrictModel):
     expansion_threshold: float = Field(
         1.05, ge=1.0, description="ignore diverging runs with A_max/A_min below this (-)"
     )
+    murray_exponent: float = Field(
+        2.33, gt=0, description="vessel trees: healthy flow split ∝ diameter^k at junctions (-)"
+    )
 
     @model_validator(mode="after")
     def _pa_above_pv(self) -> "PhysicsParams":

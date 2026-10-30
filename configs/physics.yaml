@@ -7,3 +7,4 @@ pv_mmhg: 5.0              # venous pressure
 kt: 1.52                  # expansion loss coefficient (Young & Tsai)
 v_hyp: 0.35               # m/s, hyperemic reference velocity (fixed-flow QFR)
 expansion_threshold: 1.05 # ignore diverging runs with A_max/A_min below this
+murray_exponent: 2.33     # vessel trees (P2): healthy flow split ∝ diameter^k at each junction

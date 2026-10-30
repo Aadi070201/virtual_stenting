@@ -243,3 +243,36 @@ The model interval and the input interval are reported side by side, not combine
 - Keeping the weak member: an avoidable training artefact.
 - Retraining only seed 3: mixed member configs make provenance harder.
 - No early stopping at all: equivalent in practice for this schedule, but this keeps the guard for longer schedules.
+
+### D32 — Vessel trees: continuous branches, outlet-flow Newton (2026-10-30)
+**Decision:** A tree is a set of branches.
+- **Branches.** Each branch keeps one continuous radius profile and its own M1 coefficients a(s) and b(s). Side branches start at a sample inside their parent.
+- **Flow.** The flow is piecewise constant along a branch, dropping at each take-off. A segment with flow Q loses Δa·Q + Δb·Q².
+- **Unknowns.** The unknowns are the outlet flows (one per branch). The outlet equations are solved for a padded batch of trees by Newton's method, starting from the linear solution.
+- **Output.** Pressures are then integrated down every branch.
+
+**Reason:**
+- **M1 stays exact.** Keeping a branch continuous means the M1 expansion-loss runs are found on the whole branch, so a lesion that spans a take-off keeps its full expansion loss. Cutting the branch there would have split the run and underestimated the loss, because a sum of squares is less than the square of the sum. A test checks this: a side branch carrying almost no flow inside a lesion's expansion run changes main-vessel FFR by < 2e-4.
+- **The solve is well-posed.** The outlet equations are the gradient of a strictly convex function, so the solution is unique and Newton is well-behaved (about 5 iterations). The systems are tiny (at most 5 outlets), so batching gives ~4,500 trees/s on one CPU thread against the 1,000 trees/s target.
+- **One branch is M1.** A one-branch tree is exactly the M1 solver (test, to 1e-12).
+
+**Alternatives:**
+- Cutting branches at take-offs into independent tubes: simpler, but it loses expansion losses at bifurcation lesions.
+- Solving for junction pressures: equivalent, but harder to batch across trees with different topologies.
+- A general sparse network solver: unnecessary for trees.
+
+### D33 — Tree calibration: Murray split at junction diameters, viscous-only reference (2026-10-30)
+**Decision:**
+- **Healthy flow split.** In the stenosis-free tree, the root carries Q_ref = v_hyp·π·r_ref,root(0)². The flow arriving at each junction splits between the side branch(es) and the continuing parent in proportion to d^k, with k = 2.33 (`murray_exponent` in `configs/physics.yaml`). d is the side branch's reference diameter at its start and the parent's one sample after the take-off.
+- **Outlet resistances.** Each outlet resistance is R_j = (P_j − Pv)/Q_j, from the healthy pressures with viscous loss only, floored like M1.
+- **After a virtual stent.** The pre-PCI outlet resistances are kept, as M1 keeps R_micro.
+
+**Reason:**
+- **Murray split.** The plan asks for a Murray split ("flow ∝ diameter^k"). Applying it at each junction makes the healthy split directly testable and independent of how much each branch tapers downstream. k = 7/3 is the coronary scaling fit of Huo & Kassab (2012).
+- **Viscous-only calibration.** It matches M1 exactly (M1 calibrates on a_ref only), so a one-branch tree reproduces M1.
+- **No new constants.** Pa, Pv and v_hyp keep their M1 meaning.
+
+**Alternatives:**
+- Splitting by outlet diameters (common in CT-FFR outlet boundary conditions): it depends on each branch's taper and on where the path was cut, which is arbitrary in 2D QCA.
+- Splitting by territory or myocardial mass: there is no such information in a single angiogram.
+- k = 3 (original Murray's law): available through the config.

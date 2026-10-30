@@ -9,9 +9,9 @@ Tests: [`tests/test_physics.py`](../tests/test_physics.py). Generated checks: `r
 
 ## Scope
 
-A single coronary vessel without side branches, described by its lumen radius r(s) along the
-centreline, under steady hyperemic flow. The model returns the flow Q, the pressure loss ΔP(s)
-and the FFR pullback curve FFR(s).
+A single coronary vessel, described by its lumen radius r(s) along the centreline, under steady
+hyperemic flow. The model returns the flow Q, the pressure loss ΔP(s) and the FFR pullback curve
+FFR(s). *Vessel trees* (P2, below) extend the same equations to a vessel with side branches.
 
 ## Units
 
@@ -30,6 +30,7 @@ R_micro in Pa·s/m³.
 | Kt | `kt` | 1.52 | expansion loss coefficient (Young & Tsai) |
 | v_hyp | `v_hyp` | 0.35 m/s | hyperemic reference velocity (as in fixed-flow QFR) |
 | — | `expansion_threshold` | 1.05 | ignore diverging runs with A_max/A_min below this |
+| k | `murray_exponent` | 2.33 | trees: healthy flow split ∝ diameter^k at each junction |
 
 ## Equations
 
@@ -101,10 +102,62 @@ Input: N points s_i with uniform spacing Δs, radii r_i, reference radii r_ref,i
   and the result is flagged `r_micro_clamped`. This is a numerical guard, not a tuned constant.
 - Inputs are validated: radii finite and positive, uniform spacing, Pv < Pa.
 
+## Vessel trees (P2)
+
+Code: [`src/vstent/physics/tree.py`](../src/vstent/physics/tree.py). Tests:
+[`tests/test_tree.py`](../tests/test_tree.py).
+
+1. **Tree.** Branch 0 is the root; its inlet is at Pa. Every other branch k starts at sample
+   t_k of its parent branch (inside the parent, never at its ends) and ends in an outlet that
+   drains to Pv through an outlet resistance R_k. Each branch keeps one continuous radius
+   profile with its own reference, and its own a(s) and b(s) from steps 2–3.
+
+2. **Segments.** The take-offs cut each branch into segments. The flow in a segment is the sum
+   of the outlet flows downstream of it, so it is constant along the segment and drops at each
+   take-off. A segment from sample i to j with flow Q loses
+   (a(s_j) − a(s_i))·Q + (b(s_j) − b(s_i))·Q². A diverging run that spans a take-off keeps its
+   full b_run; each part is weighted by its own flow. With one flow, this is exactly step 7.
+
+3. **Calibration (healthy tree).** Q_ref = v_hyp · π r_ref,root(0)². In the stenosis-free tree
+   (r = r_ref on every branch), the flow arriving at a junction splits between the side
+   branch(es) starting there and the continuing parent in proportion to d^k (Murray's law,
+   k = `murray_exponent`). d is the side branch's reference diameter at its start, and the
+   parent's one sample after the take-off. The healthy pressures, with viscous loss only as in
+   step 5, give R_j = (P_j − Pv)/Q_j at every outlet j, floored at 1% of (Pa − Pv)/Q_j. With
+   one branch this is exactly step 5.
+
+4. **Solve.** The unknowns are the outlet flows q. Every outlet satisfies
+   Σ_{e on its path} (A_e Q_e + B_e Q_e²) + R_j q_j = Pa − Pv. Here A_e and B_e are the
+   segment's increases of a and b, and Q = W q with W_ej = 1 if segment e feeds outlet j.
+   These equations are the gradient of a strictly convex function of q, so the solution is
+   unique. The Jacobian Wᵀ diag(A + 2BQ) W + diag(R) is symmetric positive definite. Newton
+   starts from the linear solution (B = 0) and stops when the relative change of q is below
+   1e-13 (about 5 iterations). Steps are halved only if an outlet flow would become
+   non-positive.
+
+5. **Pressure and FFR.** The pressure is integrated down each branch from its take-off
+   pressure; FFR = P/Pa at every sample of every branch.
+
+**Checked by tests:**
+- a one-branch tree reproduces the single-vessel solver to 1e-12;
+- flow is conserved and pressure is continuous at every junction;
+- every outlet satisfies P − Pv = R·q;
+- the healthy tree splits flow by Murray's law;
+- a side branch upstream of a lesion raises distal main-vessel FFR;
+- a side branch carrying almost no flow, taking off inside a lesion's expansion run, leaves the
+  main vessel's FFR unchanged (within 2e-4).
+
+**Additional limitations of trees:**
+- Junction losses (flow division at bifurcations) are neglected.
+- Murray's law sets the healthy flow split; real territories and microvascular resistances
+  differ.
+- A side branch's ostium starts at its parent's pressure, with no entrance loss.
+
 ## Assumptions and limitations
 
-- **No side branches.** Flow is conserved along the vessel; in reality flow drops at each branch,
-  so distal losses are overestimated in branching vessels.
+- **No side branches (single-vessel model).** Flow is conserved along the vessel; in reality flow
+  drops at each branch, so distal losses are overestimated in branching vessels. The tree model
+  (P2) removes this where the side branches are known.
 - **Steady flow.** No pulsatility, no unsteady inertia, a single mean Pa.
 - **Newtonian blood**, constant viscosity; rigid walls; no collateral flow.
 - **2D-derived geometry.** Circular cross-sections are assumed; diameters come from a single
@@ -121,6 +174,11 @@ Input: N points s_i with uniform spacing Δs, radii r_i, reference radii r_ref,i
   microvascular disease is represented only through the sampled range of v_hyp (M2).
 
 ## References
+
+- Murray CD. The physiological principle of minimum work. I. The vascular system and the cost of
+  blood volume. *Proc Natl Acad Sci USA* 1926;12:207–214 (flow ∝ diameter³).
+- Huo Y, Kassab GS. Intraspecific scaling laws of vascular trees. *J R Soc Interface*
+  2012;9:190–200 (flow ∝ diameter^(7/3) ≈ 2.33, the default exponent here).
 
 - Young DF, Tsai FY. Flow characteristics in models of arterial stenoses. I. Steady flow.
   *J Biomech* 1973;6:395–410 (origin of the Kt expansion-loss term).
