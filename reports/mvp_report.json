@@ -65,6 +65,14 @@
       "passed": true
     },
     {
+      "milestone": "M2",
+      "area": "Synthetic data",
+      "metric": "cal: FFR < 0.80 / grey zone",
+      "value": "53.3% / 18.5%",
+      "target": "\u2265 30% / \u2265 15%",
+      "passed": true
+    },
+    {
       "milestone": "M3",
       "area": "Surrogate (test split)",
       "metric": "Distal FFR MAE",
@@ -115,8 +123,16 @@
     {
       "milestone": "M5",
       "area": "Segmentation",
-      "metric": "Mean val Dice",
+      "metric": "Mean val Dice (plan target; val also chose the model)",
       "value": "0.8325",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "Segmentation",
+      "metric": "Mean test Dice (held out)",
+      "value": "0.7925",
       "target": "\u2265 0.75 (stretch 0.8)",
       "passed": true
     },
@@ -156,7 +172,7 @@
       "milestone": "M6",
       "area": "Planner",
       "metric": "5,000 candidates, surrogate backend (median)",
-      "value": "0.959 s",
+      "value": "0.838 s",
       "target": "< 1 s",
       "passed": true
     },
@@ -164,21 +180,20 @@
       "milestone": "M7",
       "area": "App",
       "metric": "Stent-control update, server time (max over modes)",
-      "value": "179 ms",
+      "value": "159 ms",
       "target": "< 300 ms",
       "passed": true
     }
   ],
   "facts": [
-    "Synthetic dataset: 125,000 vessels generated in 8.4 s.",
+    "Synthetic dataset: 135,000 vessels generated in 7.7 s.",
     "Surrogate distal-FFR MAE: test 0.0013 vs gradient-boosting baseline 0.0342; out-of-distribution 0.0039 (no target).",
     "For context, the reduced-order solver computes 1,024 vessels in 18.1 ms, the ONNX surrogate in 188 ms: no speed-up is claimed.",
     "INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99\u00d7 \u2192 not kept.",
-    "Segmentation Dice on the held-out test split: 0.7925 (no target).",
     "ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 8/20; 19 outside the surrogate's training range.",
-    "Planner on 100 synthetic vessels: target reached 84 (solver) / 84 (surrogate); solver confirms 82/84 surrogate plans; same total length 81/84.",
-    "App update medians: synthetic 50 ms, image 77 ms.",
-    "Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 \u2192 0.976 (solver) with 3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm; planning 0.37 s."
+    "Planner on 100 synthetic vessels: target reached 84 (solver) / 83 (surrogate); solver confirms 81/83 surrogate plans; same total length 80/83.",
+    "App update medians: synthetic 66 ms, image 113 ms.",
+    "Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 \u2192 0.976 (solver) with 3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm; planning 0.67 s."
   ],
   "provenance": [
     {
@@ -191,9 +206,9 @@
     {
       "report": "dataset_card.json",
       "title": "Dataset card",
-      "commit": "86ec53c506e22eadea9282bb03279a970ef42240",
+      "commit": "d2f2cc3a2ba45c097d1b7beb8c91e67b6392840a",
       "dirty": false,
-      "created": "2026-10-28T09:00:40+00:00"
+      "created": "2026-10-30T15:21:51+00:00"
     },
     {
       "report": "surrogate_eval.json",
@@ -212,9 +227,9 @@
     {
       "report": "seg_eval.json",
       "title": "Segmentation evaluation",
-      "commit": "226fc57e72235d9e021cc5f8f8f2ef7e06d1eb92",
+      "commit": "e2459366990f9e3476f0204284d35af7eb6c6304",
       "dirty": false,
-      "created": "2026-10-28T14:46:21+00:00"
+      "created": "2026-10-30T15:57:00+00:00"
     },
     {
       "report": "seg_onnx.json",
@@ -226,9 +241,9 @@
     {
       "report": "qca_synthetic.json",
       "title": "QCA synthetic validation",
-      "commit": "24acff05b518217d6bf9d3c0947e6bb29a7f08b4",
+      "commit": "186b932015a9e90103e72403732f87d90045c8ec",
       "dirty": false,
-      "created": "2026-10-28T16:37:38+00:00"
+      "created": "2026-10-30T10:26:02+00:00"
     },
     {
       "report": "qca_gallery.json",
@@ -240,41 +255,41 @@
     {
       "report": "planner_benchmark.json",
       "title": "Planner benchmark",
-      "commit": "8c89eb0b9dd968005a7f1b91ee0d4cf3eb1dbd3b",
+      "commit": "c95b317ba6b090411b36a29fb136cfa181e89276",
       "dirty": false,
-      "created": "2026-10-28T16:02:19+00:00"
+      "created": "2026-10-30T19:12:07+00:00"
     },
     {
       "report": "app_latency.json",
       "title": "App latency",
-      "commit": "7c79f1136aae4580e61d991cf27b3f7441fbd471",
+      "commit": "d69b1543d73946b138a208e46bdedc451b28a2b3",
       "dirty": false,
-      "created": "2026-10-28T16:48:15+00:00"
+      "created": "2026-10-30T19:11:52+00:00"
     },
     {
       "report": "demo/demo.json",
       "title": "Demo",
-      "commit": "686bdf9e72cbabbf84f32394a564762867b32fc7",
+      "commit": "413b3d93047ba86a340a8b25d336202447f811be",
       "dirty": false,
-      "created": "2026-10-28T16:37:43+00:00"
+      "created": "2026-10-30T16:16:15+00:00"
     }
   ],
   "missing": [],
   "phase2": [
-    "3D CFD labels: coronary trees from ImageCAS / ASOCA, steady hyperemic simulations (SimVascular or OpenFOAM); multi-fidelity surrogate training",
-    "Graph neural network / graph transformer surrogate for vessel trees with side branches; flow split by Murray's law",
-    "Two-view 3D reconstruction from DICOM angles; foreshortening correction",
-    "Cine DICOM: end-diastolic frame selection; TIMI frame-count flow estimate",
-    "Sim-to-real: render synthetic angiograms from 3D trees to train angiogram \u2192 FFR end-to-end",
-    "Calibrated uncertainty and conformal intervals; grey-zone flagging",
-    "Retrospective clinical validation against wire FFR with a partner hospital (needs ethics approval; human-led)",
-    "Regulatory groundwork: IEC 62304 software lifecycle docs, ISO 14971 risk file"
+    "P1: Uncertainty and grey-zone flagging (done)",
+    "P2: Vessel trees with side branches (done)",
+    "P3: Tree surrogate (graph network) + ONNX (done)",
+    "P4: Clinical-validation readiness [needs human: partner, ethics approval] (done)",
+    "P5: Projection geometry and two-view 3D reconstruction (not started)",
+    "P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)",
+    "P7: Cine angiography (not started)",
+    "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (not started)"
   ],
   "provenance_report": {
-    "git_commit": "21ebb47ad22092cac9ef4b863ec9d7de8d7c01aa",
+    "git_commit": "bcffc45c6e1d749eff60b28493f3de2a32ff879c",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-28T16:49:34+00:00"
+    "created_utc": "2026-10-30T23:06:27+00:00"
   },
   "all_targets_met": true
 }
