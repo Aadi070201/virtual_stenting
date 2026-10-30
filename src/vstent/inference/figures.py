@@ -100,8 +100,8 @@ def plot_analysis(
     save_figure(fig, path)
 
 
-def _label(ax, x, y, text: str) -> None:
-    ax.annotate(text, (x, y), xytext=(4, 0), textcoords="offset points", fontsize=7,
+def _label(ax, x, y, text: str, dy: float = 0.0) -> None:
+    ax.annotate(text, (x, y), xytext=(4, dy), textcoords="offset points", fontsize=7,
                 color=INK_SECONDARY, va="center")  # fmt: skip
 
 
@@ -140,17 +140,19 @@ def plot_tree_analysis(
 
     style_axes(ax_f)
     ax_f.axhline(CUTOFF, color=INK_MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
+    close = abs(res.ffr[0][-1] - analysis.single.ffr[-1]) < 0.05  # keep the two labels apart
     for k in range(tree.n_branches):
         _, _, _, offset = tree.path_offsets(k)[-1]
         x = m_to_mm(offset + tree.branches[k].s)
         color = SERIES_1 if k == 0 else SERIES_3
         ax_f.plot(x, res.ffr[k], color=color, lw=2.0 if k == 0 else 1.3, zorder=3)
-        _label(ax_f, x[-1], res.ffr[k][-1], tree.names[k] + (", tree" if k == 0 else ""))
+        dy = 5.0 if close and k == 0 else 0.0
+        _label(ax_f, x[-1], res.ffr[k][-1], tree.names[k] + (", tree" if k == 0 else ""), dy)
         if post is not None:
             ax_f.plot(x, post.ffr[k], color=color, lw=1.2, ls=(0, (1, 1.5)), zorder=3)
     x0 = m_to_mm(tree.branches[0].s)
     ax_f.plot(x0, analysis.single.ffr, color=SERIES_2, lw=1.4, ls=(0, (4, 2)), zorder=2)
-    _label(ax_f, x0[-1], analysis.single.ffr[-1], "main, single path")
+    _label(ax_f, x0[-1], analysis.single.ffr[-1], "main, single path", -5.0 if close else 0.0)
     if post is not None:
         _label(ax_f, x0[-1], post.ffr[0][-1], "main, after stent (dotted)")
     ax_f.set_xlabel("Distance from the inlet along each path (mm)", fontsize=8,

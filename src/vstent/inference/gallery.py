@@ -294,7 +294,10 @@ def _tree_markdown(report: dict[str, Any], split: str) -> str:
         "masks, which leave smaller side branches unannotated. It therefore rarely segments "
         "them, so most trees have few side branches and their flow stays in the main path. "
         "Lowering the probability threshold does not help: on the first 10 images the skeleton "
-        "had the same junctions at 0.5, 0.3 and 0.1.",
+        "had the same junctions at 0.5, 0.3 and 0.1. The automatic start point (the wider "
+        "end of the longest path) is not always the ostium. When it is not, the vessel leading "
+        'to the true inlet becomes a "side branch" and the flow direction is wrong (e.g. '
+        "val_107). In the app and `vstent analyse` the user sets the start point.",
         "",
         f"- Analysed: {s['n_analysed']} of {s['n_images']}; with at least one side branch: "
         f"{s['n_with_side_branches']} ({s['n_side_branches']} side branches; {s['n_dropped']} "
