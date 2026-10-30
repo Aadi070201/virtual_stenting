@@ -512,3 +512,110 @@ An independent read-only review covered physics, data, surrogate, imaging, plann
 - **Trees with more than 5 branches** (possible from images) fall back to the solver for the surrogate.
 - **No uncertainty intervals for trees yet.**
 - **App latency** was not re-measured after adding tree mode. Its single-path code path is unchanged, and tree mode is a separate branch of the script.
+
+## 2026-10-31 — P4: Clinical-validation readiness (done; real data waits for the human)
+
+**What was done**
+- **Protocol template** (`docs/validation/PROTOCOL.md`):
+  - retrospective diagnostic-accuracy design (STARD 2015) against wire FFR (iFR secondary);
+  - primary endpoint: per-vessel AUC for FFR ≤ 0.80, with sensitivity, specificity,
+    Bland–Altman, feasibility and intention to diagnose as secondary endpoints;
+  - blinding and locking, sample size, analysis plan, data protection, ethics and limitations;
+  - every clinical choice in [brackets] for the investigators to confirm.
+- **Data specification** (`docs/validation/DATA_SPEC.md`):
+  - the data needed per vessel;
+  - the DICOM attributes to keep, with tag numbers checked against pydicom's data dictionary;
+  - a de-identification checklist (PS3.15 Annex E as the reference);
+  - the two CSV files, with header-only templates (`docs/validation/templates/`);
+  - the local-only rule.
+- **`vstent validate`** (`src/vstent/validation/`, D38):
+  - **Blinded step:** `--manifest cases.csv` runs the `vstent analyse` pipeline on every
+    vessel, in single-path (solver, surrogate, P1 intervals) and tree modes.
+  - **Locking:** it writes `predictions.csv` and locks it with its SHA-256 (plus the commit,
+    model, config and manifest hashes).
+  - **Scoring:** `--predictions --reference reference.csv` refuses changed predictions and
+    reports:
+    - the flow of vessels;
+    - the primary analysis with analytic and patient-bootstrap intervals;
+    - all index tests;
+    - the grey zone and a hybrid strategy;
+    - per-territory tables;
+    - every vessel that could not be analysed, with the reason.
+  - **Local-only guard:** case lists, images, masks, references and outputs inside the
+    repository's tracked files are refused (`git check-ignore`).
+  - **Other inputs:** an optional analyst-corrected mask per vessel; multi-frame DICOM
+    `frame` selection (`image_io`).
+- **Statistics** (`validation/stats.py`):
+  - Wilson intervals;
+  - DeLong AUC standard error (logit-scale interval);
+  - Bland–Altman limits with their sqrt(3 s² / n) intervals and the proportional-bias slope;
+  - Pearson r with a Fisher-z interval;
+  - a patient-level cluster bootstrap.
+
+  Tests check them against hand-calculated values, scipy's Mann–Whitney statistic and a
+  simulation of the AUC's spread.
+- **Sample size** (`vstent sample-size`, `reports/validation_sample_size.md`):
+  - methods: Buderer for sensitivity / specificity, Hanley–McNeil for the AUC, Bland–Altman
+    for the limits of agreement;
+  - adjustments: a clustering design effect and non-analysable vessels;
+  - a table of how the total changes with the assumptions.
+- **Synthetic stand-in study** (`vstent validate-synthetic`, `reports/validation_synthetic.md`,
+  D39):
+  - 60 patients, 102 vessels (P2 trees, 0–3 side branches) rendered as X-ray-like
+    projections;
+  - contrast, edge enhancement and noise fitted to ARCADE centreline statistics;
+  - stand-in "wire FFR" = the tree solver on the true geometry with sampled Pa, Pv and
+    velocity;
+  - a main run on the true lumen masks and a second with the segmenter.
+
+**"Done when" (PLAN.md):** the protocol and data specification exist, and the validation tool
+runs end to end on synthetic stand-in data. **Met.** Real data waits for the human (ethics
+approval and a data agreement).
+
+**Results on the stand-in study (synthetic; not a clinical validation)**
+| Index test (masks run, 102 vessels, 60 patients) | AUC (patient bootstrap) | Sens. / spec. | Bias; limits of agreement | MAE |
+|---|---|---|---|---|
+| Tree, solver (primary) | 0.973 (0.946–0.993) | 0.894 / 0.909 | +0.008; −0.135 to +0.152 | 0.045 |
+| Single path, solver | 0.960 | 0.936 / 0.873 | −0.022; −0.185 to +0.141 | 0.056 |
+| Single path, surrogate | 0.966 | 0.936 / 0.855 | −0.023; −0.183 to +0.138 | 0.054 |
+
+- **Grey zone (P1):**
+  - 31% of vessels are flagged;
+  - accuracy 0.957 when not flagged vs 0.781 when flagged;
+  - a hybrid strategy (wire only when flagged) gives 0.971.
+- **Error budget of the tree index test** (MAE):
+  - full pipeline 0.045;
+  - measurement error only (true pixel size, Pv and velocity) 0.034;
+  - assumption error only (true geometry, fixed Pv and velocity) 0.027.
+- **Where the measurement error comes from.** The QCA's inlet reference diameter sets the flow
+  (Q = v_hyp · π r_ref(0)²); its error correlates with the FFR error (Spearman −0.66). The
+  largest outliers (+0.36, +0.25) had the inlet reference underestimated by 44–47%. Tiny lumens
+  (MLD 0.5 → 0.14 mm) and a missed side branch cause the others. MLD itself is measured to
+  +0.01 mm (median).
+- **The automatic segmenter on the renders:** only 38% of vessels can be analysed, so
+  intention-to-diagnose accuracy is 0.275–0.284. This is a domain gap, not a clinical result: it
+  persists with ARCADE-matched contrast because the renders lack the anatomy of clinical
+  angiograms (catheter, other vessels, ribs). Closing it is P8's task.
+- **Sample size with placeholder assumptions:** 286 vessels in about 220 patients, governed by
+  the precision of sensitivity.
+
+**Fixes found while building P4**
+- **Points off the segmented vessel were silently snapped** (D40). A click 60–90 px beyond a
+  partly segmented vessel measured a path half the length, with no warning. Points farther
+  than the vessel's half-width + 5 px are now refused in single-path and tree QCA, and tree
+  QCA no longer moves an end point onto the start's vessel. Regression tests fail on the old
+  code.
+- **The new local-only guard on Windows:** `git check-ignore` quotes backslash paths, so
+  git-ignored data was reported as tracked. A test caught it; paths now go in as POSIX on
+  stdin with NUL separators, and a git failure raises instead of passing silently.
+
+**Open issues**
+- **Real validation needs the human:** a clinical partner, ethics approval, a data agreement
+  and a statistician for the assumptions (`docs/HUMAN_ACTIONS.md`).
+- **The QCA reference-diameter estimate** is the largest measurement-error source in the
+  stand-in study. A more robust proximal reference, or a user-adjustable one, is a candidate
+  improvement; it is not done here.
+- **No uncertainty intervals for trees.** The grey-zone analysis therefore uses the
+  single-path intervals.
+- **The segmenter's domain gap on rendered images** is left to P8.
+- **App latency** is still not re-measured with tree mode (carried over from P3).

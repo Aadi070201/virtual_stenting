@@ -270,7 +270,7 @@ The report must state that model intervals cover only surrogate-vs-solver error,
 
 ## P4: Clinical-validation readiness [needs human: partner, ethics approval]
 
-- [ ] `docs/validation/PROTOCOL.md` template:
+- [x] `docs/validation/PROTOCOL.md` template:
   - retrospective design;
   - wire FFR (or iFR) as the reference;
   - primary endpoint (agreement at 0.80, AUC);
@@ -278,12 +278,12 @@ The report must state that model intervals cover only surrogate-vs-solver error,
   - inclusion / exclusion criteria;
   - blinding;
   - analysis plan.
-- [ ] Data specification:
+- [x] Data specification:
   - required DICOM fields (cine runs, angles, distances, pixel spacing);
   - pressure-wire position and values;
   - a de-identification checklist;
   - local-only processing: no patient data ever enters this repository.
-- [ ] `vstent validate --manifest <csv>`: runs the pipeline on a local, de-identified case list and reports Bland–Altman, AUC, sensitivity / specificity and per-vessel tables. Tested only on synthetic stand-in cases.
+- [x] `vstent validate --manifest <csv>`: runs the pipeline on a local, de-identified case list and reports Bland–Altman, AUC, sensitivity / specificity and per-vessel tables. Tested only on synthetic stand-in cases.
 
 **Done when:** the protocol and data specification exist, and the validation tool runs end to end on synthetic stand-in data. Real data only after the human confirms ethics approval and a data agreement.
 
