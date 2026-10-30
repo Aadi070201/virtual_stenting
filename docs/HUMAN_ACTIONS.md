@@ -12,10 +12,10 @@ milestones.
 - **Push and merge.** `git push -u origin phase2`, then open a pull request `phase2 → master`
   on GitHub and merge it when you are happy (P1, P2 and the code-review fixes).
 - **Keep the repository private.** It contains the invention notes (`docs/INVENTION_NOTES.md`).
-- **Re-measure on an idle machine.** Benchmarks are timing-sensitive. When the PC is free (no
-  games, browser or chat busy), tell me and I re-run `vstent plan-benchmark` and
-  `vstent app-latency` (about 5 minutes). The last planner run (1.345 s, fail) was taken under
-  load.
+- **Keep benchmarks on an idle machine.** Timing reports (`vstent plan-benchmark`,
+  `vstent app-latency`) are only valid when the PC is free (no games, browser or chat busy).
+  They were last re-measured idle on 2026-10-30 (planner 0.838 s, slowest app update 159 ms).
+  Tell me when the PC is free if they need re-running.
 
 ## 2. Start early (months of lead time)
 
@@ -36,11 +36,30 @@ comparison with invasive FFR yet**, so nobody can say how accurate the tool is.
   - the FFR value and where the wire sensor was (marked on a frame);
   - Pa and Pd if available;
   - nothing that identifies the patient.
-- **Size:** published validations of angiography-derived FFR used on the order of 100–300
-  vessels. P4 will produce the protocol and the sample-size calculation for your partner to
-  review.
-- **Rule:** no patient data ever enters this repository. The validation tool will run locally,
-  on the partner's side if needed.
+- **Size:** `reports/validation_sample_size.md` computes it from planning assumptions. With
+  the current **placeholder** assumptions it is 286 vessels in about 220 patients. A
+  statistician must set the real assumptions.
+- **Ready for your partner (P4):**
+  - `docs/validation/PROTOCOL.md`, a protocol template to complete with the investigators;
+  - `docs/validation/DATA_SPEC.md`, which covers the data needed, the DICOM attributes to keep,
+    a de-identification checklist and the two CSV files.
+- **The tool:** `vstent validate` runs locally, on the partner's side if needed. It locks the
+  predictions before the wire values are opened.
+- **Rule:** no patient data ever enters this repository; the tool refuses tracked locations.
+
+### Your P4 checklist
+1. Share `docs/validation/` with the clinical partner and a statistician.
+2. With them, complete the protocol's bracketed items:
+   - exclusions;
+   - primary index test;
+   - success criterion;
+   - sample-size assumptions in `configs/validation.yaml`.
+
+   Then re-run `vstent sample-size`.
+3. Ethics approval and the data agreement at the partner site.
+4. Register the protocol before the reference values are opened.
+5. Tell me when de-identified data exists, and where. I never need to see it: the partner can
+   run `vstent validate` on their machine and share only the report.
 
 ### A regulatory adviser (P8; also shapes the intended use now)
 
@@ -86,5 +105,5 @@ comparison with invasive FFR yet**, so nobody can say how accurate the tool is.
 
 ## What does *not* need you
 
-P3 (tree surrogate), P5 (projection geometry on synthetic data) and the technical parts of P4
-and P8 run on this laptop. I check in after each milestone.
+P5 (projection geometry on synthetic data), P7's synthetic part and the technical parts of P8
+run on this laptop. P3 and P4's technical parts are done. I check in after each milestone.

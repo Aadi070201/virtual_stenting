@@ -31,6 +31,12 @@ the case report ([reports/uncertainty.md](reports/uncertainty.md)):
 - the *input interval* covers only the listed assumptions (pixel size, QCA error, hyperemic
   velocity, Pa / Pv).
 
+P4 prepares the comparison with invasive FFR, which needs a hospital partner and ethics
+approval: a protocol template and a data specification ([docs/validation/](docs/validation/)),
+and `vstent validate`, tested only on synthetic stand-in cases
+([reports/validation_synthetic.md](reports/validation_synthetic.md)). Patient data never enters
+this repository; the tool refuses tracked locations.
+
 **What the numbers mean:**
 - The surrogate's accuracy is its agreement with the reduced-order physics model on synthetic
   vessels, not agreement with invasive FFR.
@@ -108,6 +114,9 @@ Trainings can be paused and resumed exactly:
 | `vstent eval-tree-surrogate --run runs/<name>` / `vstent export-tree-surrogate --run runs/<name>` | tree surrogate vs tree solver → `reports/tree_surrogate_eval.md`; ONNX + parity → `reports/tree_onnx.md` | P3 |
 | `vstent plan-benchmark --tree` | tree planner speed and behaviour → `reports/tree_planner_benchmark.md` | P3 |
 | `vstent qca-gallery --tree` | the ARCADE gallery with tree physics vs single paths → `reports/qca_tree_gallery.md` | P2 |
+| `vstent validate --manifest cases.csv [--reference reference.csv]` | validation against wire FFR on a local, de-identified case list: locked predictions, then AUC, Bland–Altman, sensitivity / specificity, grey zone, per-territory tables ([docs/validation/](docs/validation/)) | P4 |
+| `vstent validate-synthetic` | the validation tool end to end on synthetic stand-in cases → `reports/validation_synthetic.md` | P4 |
+| `vstent sample-size` | sample size for the validation study (placeholder assumptions) → `reports/validation_sample_size.md` | P4 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
@@ -146,9 +155,10 @@ red banner is permanent: **research use only**.
 
 ## Limitations
 
-- **Physics:** steady, Newtonian, single-vessel reduced-order model without side branches.
-  FFR depends strongly on the assumed microvascular resistance and hyperemic velocity
-  ([docs/PHYSICS.md](docs/PHYSICS.md)).
+- **Physics:** steady, Newtonian reduced-order model. Side branches are modelled one level
+  deep with a Murray flow split; junction losses are neglected (P2). FFR depends strongly on
+  the assumed microvascular resistance and hyperemic velocity, and the flow is set by the
+  measured inlet reference diameter ([docs/PHYSICS.md](docs/PHYSICS.md)).
 - **Surrogate:** trained and evaluated on synthetic vessels labelled by the same model.
 - **Segmentation:** trained on one public dataset (ARCADE), whose masks cover only the annotated
   SYNTAX segments.
@@ -159,7 +169,8 @@ red banner is permanent: **research use only**.
   - automatic paths run through branches.
 - **Stent model:** it only widens the lumen. Two-stent search is heuristic, and overlapping
   stents are not modelled.
-- **No clinical data:** no patient outcomes or invasive FFR were used anywhere.
+- **No clinical data:** no patient outcomes or invasive FFR were used anywhere. The validation
+  tool (P4) has run only on synthetic stand-in cases.
 
 Datasets and licences: [docs/DATA.md](docs/DATA.md). Notes on potentially novel elements (not
 legal advice): [docs/INVENTION_NOTES.md](docs/INVENTION_NOTES.md).
@@ -168,7 +179,8 @@ legal advice): [docs/INVENTION_NOTES.md](docs/INVENTION_NOTES.md).
 
 ```
 configs/      YAML configs (physics, synthetic data, training, planner, stent catalogue)
-docs/         plan, progress log, decisions, physics, data, invention notes, images
+docs/         plan, progress log, decisions, physics, data, invention notes, images,
+              validation/ (protocol template, data specification, CSV templates)
 src/vstent/   physics, data, surrogate, imaging, planning, inference, app, reporting, CLI
 tests/        pytest suite (slow tests marked @pytest.mark.slow)
 reports/      generated metrics, figures, demo and the MVP report

@@ -43,6 +43,7 @@ PHYSICS_CONFIG = Path("configs/physics.yaml")
 PLANNER_CONFIG = Path("configs/planner.yaml")
 CATALOG_CONFIG = Path("configs/stent_catalog.yaml")
 UNCERTAINTY_CONFIG = Path("configs/uncertainty.yaml")
+VALIDATION_CONFIG = Path("configs/validation.yaml")
 
 
 @app.command()
@@ -692,8 +693,9 @@ def analyse(
     reported with 90% intervals (surrogate ensemble; input assumptions) and grey-zone flags.
 
     With --tree the side branches leaving the path are measured too and FFR comes from the tree
-    model (solver only; no surrogate, intervals or planner yet). --stent places a virtual stent
-    along the path to branch --outlet; outlet resistances stay as before the stent.
+    solver (and the tree surrogate, if exported; no intervals for trees yet). --plan proposes
+    plans and --stent places a virtual stent along the path to branch --outlet; outlet
+    resistances stay as before the stent.
     """
     from vstent.config import load_config
     from vstent.imaging.centerline import longest_path_endpoints
@@ -1045,6 +1047,228 @@ def mvp_report(
     typer.echo(f"Wrote {report_dir / 'mvp_report.md'}")
     if not data["all_targets_met"]:
         raise typer.Exit(code=1)
+
+
+def _optional_model_dir(given: Path | None, root: Path, filename: str) -> Path | None:
+    from vstent.inference.models import latest_model_dir
+
+    return given if given is not None else latest_model_dir(root, filename)
+
+
+@app.command()
+def validate(
+    manifest: Annotated[
+        Path | None,
+        typer.Option("--manifest", exists=True, dir_okay=False, help="Case list (cases.csv)."),
+    ] = None,
+    reference: Annotated[
+        Path | None,
+        typer.Option(
+            "--reference",
+            exists=True,
+            dir_okay=False,
+            help="Wire FFR / iFR (reference.csv); omit to stay blinded.",
+        ),
+    ] = None,
+    predictions: Annotated[
+        Path | None,
+        typer.Option(
+            "--predictions",
+            exists=True,
+            dir_okay=False,
+            help="Score locked predictions (predictions.csv) instead of --manifest.",
+        ),
+    ] = None,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Output folder (default runs/validation/<manifest>-<time>)."),
+    ] = None,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    surrogate_model: Annotated[
+        Path | None,
+        typer.Option("--surrogate-model", help="Default: newest in models/surrogate/."),
+    ] = None,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    uncertainty: Annotated[
+        Path, typer.Option("--uncertainty", dir_okay=False, help="Uncertainty YAML.")
+    ] = UNCERTAINTY_CONFIG,
+    config: Annotated[
+        Path, typer.Option("--config", exists=True, dir_okay=False, help="Validation YAML.")
+    ] = VALIDATION_CONFIG,
+    ignore_masks: Annotated[
+        bool, typer.Option("--ignore-masks", help="Segment every image, even with a mask.")
+    ] = False,
+) -> None:
+    """Validation against wire FFR on a local, de-identified case list (research use only).
+
+    Step 1, blinded: --manifest cases.csv runs the pipeline on every vessel and locks
+    predictions.csv (SHA-256 in predictions_meta.json). Step 2: --predictions
+    <folder>/predictions.csv --reference reference.csv writes report.md, report.json and
+    figures/. Give --manifest and --reference together to do both. Case data and outputs must
+    be outside this repository or in a git-ignored folder (docs/validation/DATA_SPEC.md).
+    """
+    from datetime import datetime
+
+    from vstent.config import load_config
+    from vstent.inference.onnx_runtime import (
+        ONNX_FILE,
+        SEG_ONNX_FILE,
+        SegmentationRunner,
+        SurrogateRunner,
+    )
+    from vstent.physics.solver import PhysicsParams
+    from vstent.uncertainty.greyzone import load_uncertainty
+    from vstent.validation.manifest import ManifestError, check_local_only, read_reference
+    from vstent.validation.report import write_validation_report
+    from vstent.validation.run import (
+        INDEX_TESTS,
+        ValidationConfig,
+        model_info,
+        read_predictions,
+        run_predictions,
+    )
+
+    if (manifest is None) == (predictions is None):
+        typer.echo("Give either --manifest (run the pipeline) or --predictions (score).", err=True)
+        raise typer.Exit(code=2)
+    if predictions is not None and reference is None:
+        typer.echo("--predictions needs --reference.", err=True)
+        raise typer.Exit(code=2)
+    cfg = load_config(config, ValidationConfig)
+    typer.echo(DISCLAIMER)
+    try:
+        if manifest is not None:
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            out = out or Path("runs/validation") / f"{manifest.stem}-{stamp}"
+            seg_dir = _optional_model_dir(seg_model, Path("models/seg"), SEG_ONNX_FILE)
+            sur_dir = _optional_model_dir(surrogate_model, Path("models/surrogate"), ONNX_FILE)
+            if seg_dir is None:
+                typer.echo("No segmentation model: only cases with a mask can be analysed.")
+            ucfg, qca_error = load_uncertainty(uncertainty)
+
+            def progress(k, n, row):
+                if k % 10 == 0 or k == n:
+                    typer.echo(f"  {k} / {n} vessels")
+
+            predictions = run_predictions(
+                manifest, out,
+                segmenter=None if seg_dir is None else SegmentationRunner.from_dir(seg_dir),
+                surrogate=None if sur_dir is None else SurrogateRunner.from_dir(sur_dir),
+                params=load_config(physics, PhysicsParams), uncertainty=ucfg,
+                qca_error=qca_error, use_masks=not ignore_masks,
+                models={"segmentation": model_info(seg_dir, SEG_ONNX_FILE),
+                        "surrogate": model_info(sur_dir, ONNX_FILE)},
+                progress=progress,
+            )  # fmt: skip
+            typer.echo(f"Predictions locked: {predictions}")
+        out = out or predictions.parent
+        if reference is None:
+            typer.echo("No --reference: scoring left for the unblinded step.")
+            return
+        check_local_only([reference], "Reference file")
+        check_local_only([out], "Validation output")
+        rows, meta = read_predictions(predictions)
+        summary = write_validation_report(
+            rows, meta, read_reference(reference), cfg, out / "report.md",
+            out / "figures" / "validation.png", title="Validation against wire FFR",
+            intro=[f"Case list `{meta['manifest']['path']}`; reference `{reference}`."
+                   if meta else f"Predictions `{predictions}`; reference `{reference}`."],
+        )  # fmt: skip
+    except (ManifestError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+    r = summary["index_tests"].get("FFR", {}).get(cfg.primary_index_test)
+    if r and r["n"]:
+        ba = r.get("bland_altman")
+        typer.echo(
+            f"Primary ({INDEX_TESTS[cfg.primary_index_test]}): {r['n']} vessels, AUC "
+            f"{r['auc']:.3f}, sensitivity {r['sensitivity']:.3f}, specificity "
+            f"{r['specificity']:.3f}" + (f", bias {ba['bias']:+.3f}" if ba else "")
+        )
+    typer.echo(f"Wrote {out / 'report.md'}")
+
+
+@app.command()
+def validate_synthetic(
+    config: Annotated[
+        Path, typer.Option("--config", exists=True, dir_okay=False, help="Stand-in study YAML.")
+    ] = Path("configs/validation_synthetic.yaml"),
+    validation: Annotated[
+        Path, typer.Option("--validation", exists=True, dir_okay=False, help="Validation YAML.")
+    ] = VALIDATION_CONFIG,
+    n_patients: Annotated[
+        int | None, typer.Option("--n-patients", min=1, help="Override the study size.")
+    ] = None,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    surrogate_model: Annotated[
+        Path | None,
+        typer.Option("--surrogate-model", help="Default: newest in models/surrogate/."),
+    ] = None,
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    uncertainty: Annotated[
+        Path, typer.Option("--uncertainty", dir_okay=False, help="Uncertainty YAML.")
+    ] = UNCERTAINTY_CONFIG,
+) -> None:
+    """The validation tool end to end on synthetic stand-in cases → reports/validation_synthetic.md
+    (not clinical data; P4)."""
+    from vstent.config import load_config
+    from vstent.inference.onnx_runtime import ONNX_FILE, SEG_ONNX_FILE
+    from vstent.physics.solver import PhysicsParams
+    from vstent.validation.run import INDEX_TESTS, ValidationConfig
+    from vstent.validation.synthetic import SyntheticStudyConfig
+    from vstent.validation.synthetic_report import REPORT, run_synthetic_validation
+
+    study = load_config(config, SyntheticStudyConfig)
+    if n_patients is not None:
+        study = study.model_copy(update={"n_patients": n_patients})
+    cfg = load_config(validation, ValidationConfig)
+
+    def progress(arm, k, n):
+        if k % 20 == 0 or k == n:
+            typer.echo(f"  {arm}: {k} / {n} vessels")
+
+    out = run_synthetic_validation(
+        study, cfg, load_config(physics, PhysicsParams),
+        seg_dir=_optional_model_dir(seg_model, Path("models/seg"), SEG_ONNX_FILE),
+        surrogate_dir=_optional_model_dir(surrogate_model, Path("models/surrogate"), ONNX_FILE),
+        uncertainty_path=uncertainty, progress=progress,
+    )  # fmt: skip
+    r = out["summary"]["index_tests"]["FFR"][cfg.primary_index_test]
+    typer.echo(
+        f"{out['study']['n_cases']} synthetic vessels; primary "
+        f"({INDEX_TESTS[cfg.primary_index_test]}): AUC {r['auc']:.3f}, MAE {r['mae']:.3f}"
+    )
+    typer.echo(f"Wrote {REPORT}")
+
+
+@app.command()
+def sample_size(
+    config: Annotated[
+        Path, typer.Option("--config", exists=True, dir_okay=False, help="Validation YAML.")
+    ] = VALIDATION_CONFIG,
+    out: Annotated[Path, typer.Option("--out", help="Report path.")] = Path(
+        "reports/validation_sample_size.md"
+    ),
+) -> None:
+    """Sample size for the validation study from the planning assumptions (placeholders)."""
+    from vstent.config import load_config
+    from vstent.validation.run import ValidationConfig
+    from vstent.validation.sample_size import write_sample_size_report
+
+    res = write_sample_size_report(load_config(config, ValidationConfig).sample_size, out)
+    typer.echo(
+        f"{res['vessels']} vessels in about {res['patients']} patients (governing endpoint: "
+        f"{res['governing']}); the assumptions are placeholders to set with a statistician."
+    )
+    typer.echo(f"Wrote {out}")
 
 
 APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"

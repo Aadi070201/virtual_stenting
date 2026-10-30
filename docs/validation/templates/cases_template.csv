@@ -1,0 +1,1 @@
+case_id,patient_id,vessel,image,frame,start_row,start_col,end_row,end_col,mm_per_px,calibration,pa_mmhg,pv_mmhg,mask

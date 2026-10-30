@@ -98,3 +98,60 @@ def render_tubes(
     img = gaussian_filter(cover, blur_sigma) if blur_sigma > 0 else cover
     img = img + np.random.default_rng(seed).normal(0.0, noise_std, size=shape)
     return np.clip(img, 0.0, 1.0).astype(np.float32)
+
+
+def render_projection(
+    shape: tuple[int, int],
+    tubes: Sequence[tuple[np.ndarray, np.ndarray]],
+    *,
+    mm_per_px: float,
+    mu_per_mm: float,
+    background: np.ndarray | float = 0.65,
+    blur_sigma: float = 1.0,
+    edge_amount: float = 0.0,
+    edge_sigma: float = 2.0,
+    noise_std: float = 0.03,
+    supersample: int = 2,
+    seed: int = 0,
+) -> np.ndarray:
+    """X-ray-like projection of contrast-filled tubes, each ``(points (n, 2), radius (n,))`` in
+    px, as an angiogram: dark vessels on ``background``.
+
+    A ray's transmission is exp(−μ · chord), with the chord (mm) through a cylinder of the local
+    radius r at distance d from the centreline: 2·sqrt(r² − d²). Where tubes overlap the longest
+    chord counts, so a side branch starting inside its parent adds nothing. Transmission is
+    averaged over ``supersample``² sub-pixels (thin lumens fade as on a real detector), blurred
+    by ``blur_sigma`` px and multiplied by the background. Edge enhancement as on clinical
+    systems (unsharp mask: I + ``edge_amount`` · (I − Gauss(I, ``edge_sigma`` px))) follows, then
+    Gaussian noise. Returns the (H, W) float32 image in [0, 1]. ``mu_per_mm``: contrast
+    attenuation per mm of lumen.
+    """
+    h, w = shape
+    offs = (np.arange(supersample) + 0.5) / supersample - 0.5
+    rows = (np.arange(h)[:, None] + offs).ravel()
+    cols = (np.arange(w)[:, None] + offs).ravel()
+    chord = np.zeros((rows.size, cols.size))
+    for points, radius in tubes:
+        reach = float(np.max(radius)) + 1.0
+        lo, hi = points.min(axis=0) - reach, points.max(axis=0) + reach
+        r0, r1 = np.searchsorted(rows, [lo[0], hi[0]])
+        c0, c1 = np.searchsorted(cols, [lo[1], hi[1]])
+        if r0 >= r1 or c0 >= c1:
+            continue
+        rr, cc = np.meshgrid(rows[r0:r1], cols[c0:c1], indexing="ij")
+        query = np.stack([rr.ravel(), cc.ravel()], axis=1)
+        d, idx = cKDTree(points).query(query, distance_upper_bound=reach)
+        hit = np.isfinite(d)
+        c = np.zeros(d.size)
+        c[hit] = 2.0 * np.sqrt(np.maximum(radius[idx[hit]] ** 2 - d[hit] ** 2, 0.0))
+        block = chord[r0:r1, c0:c1]
+        np.maximum(block, c.reshape(block.shape), out=block)
+    trans = np.exp(-mu_per_mm * mm_per_px * chord)
+    trans = trans.reshape(h, supersample, w, supersample).mean(axis=(1, 3))
+    if blur_sigma > 0:
+        trans = gaussian_filter(trans, blur_sigma)
+    img = trans * background
+    if edge_amount > 0:
+        img = img + edge_amount * (img - gaussian_filter(img, edge_sigma))
+    img = img + np.random.default_rng(seed).normal(0.0, noise_std, size=shape)
+    return np.clip(img, 0.0, 1.0).astype(np.float32)

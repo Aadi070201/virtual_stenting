@@ -59,7 +59,13 @@ def test_read_image_png_jpg_dicom():
     dcm = read_image(_dicom_bytes(), "angio.dcm")
     assert dcm.image.shape == (32, 40) and dcm.image[:, 30].mean() > dcm.image[:, 5].mean()
     assert dcm.pixel_spacing_mm == pytest.approx(0.25)
-    assert "magnification" in dcm.note and "First of 2 frames" in dcm.note
+    assert "magnification" in dcm.note and "Frame 0 of 2" in dcm.note
+    second = read_image(_dicom_bytes(), "angio.dcm", frame=1)  # frame 1 is uniform
+    assert second.image.max() == second.image.min() and "Frame 1 of 2" in second.note
+    with pytest.raises(ValueError, match="frame 2 requested, the image has 2"):
+        read_image(_dicom_bytes(), "angio.dcm", frame=2)
+    with pytest.raises(ValueError, match="frame 1 requested, the image has 1"):
+        read_image(enc.tobytes(), "x.jpg", frame=1)
     assert read_image(_dicom_bytes(1, None), "a.dcm").pixel_spacing_mm is None
     with pytest.raises(ValueError, match="not a readable"):
         read_image(b"not an image", "x.png")

@@ -67,9 +67,11 @@ vstent/
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
   configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
-                        # stent_catalog, planner, uncertainty, tree_surrogate
+                        # stent_catalog, planner, uncertainty, tree_surrogate, validation,
+                        # validation_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
-                        # HUMAN_ACTIONS.md (what only the human can do)
+                        # HUMAN_ACTIONS.md (what only the human can do), validation/ (P4: PROTOCOL.md,
+                        # DATA_SPEC.md, templates/)
   src/vstent/
     physics/            # geometry.py, solver.py, report.py, tree.py (vessel trees, P2),
                         # tree_report.py (tree checks + throughput)
@@ -85,7 +87,7 @@ vstent/
                         # report.py (uncertainty report); all torch-free except report.py
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
-                        # synthetic.py (rendered test tubes), qca_validation.py,
+                        # synthetic.py (rendered tubes; X-ray-like projections), qca_validation.py,
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
@@ -97,6 +99,10 @@ vstent/
                         # (locate exported models), tree_runtime.py (TreeSurrogateRunner, P3)
     app/                # core.py (app logic, no Streamlit), tree_view.py (tree mode), streamlit_app.py (UI),
                         # latency.py (AppTest-driven update timing)
+    validation/         # P4, torch-free: manifest.py (cases.csv / reference.csv, local-only guard),
+                        # run.py (predictions, locking, scoring), stats.py (AUC, Bland–Altman,
+                        # Wilson, cluster bootstrap), report.py, sample_size.py, synthetic.py +
+                        # synthetic_report.py (stand-in study)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -156,6 +162,10 @@ uv run vstent demo              # end-to-end synthetic case → reports/demo/
 uv run vstent mvp-report        # → reports/mvp_report.md, assembled from the other reports
 uv run vstent app               # launches the Streamlit app on localhost:8501 (--port, --address)
 uv run vstent app-latency       # → reports/app_latency.md (stent-control update times)
+uv run vstent validate --manifest cases.csv [--reference reference.csv]  # P4: local, de-identified
+uv run vstent validate --predictions <dir>/predictions.csv --reference reference.csv  # score locked
+uv run vstent validate-synthetic  # P4: stand-in study → reports/validation_synthetic.md
+uv run vstent sample-size         # P4: → reports/validation_sample_size.md (placeholder assumptions)
 ```
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)

@@ -36,8 +36,9 @@ def to_uint8(arr: np.ndarray) -> np.ndarray:
     return np.clip((arr - lo) / max(hi - lo, 1e-9) * 255.0, 0, 255).astype(np.uint8)
 
 
-def read_image(data: bytes, name: str) -> ImageInput:
-    """PNG / JPG / DICOM bytes → greyscale uint8 image (DICOM: first frame)."""
+def read_image(data: bytes, name: str, frame: int | None = None) -> ImageInput:
+    """PNG / JPG / DICOM bytes → greyscale uint8 image. ``frame``: the frame of a multi-frame
+    DICOM (0-based; default the first). A single-frame image only has frame 0."""
     digest = hashlib.sha256(data).hexdigest()
     is_dicom = name.lower().endswith((".dcm", ".dicom")) or data[128:132] == b"DICM"
     if is_dicom:
@@ -46,8 +47,9 @@ def read_image(data: bytes, name: str) -> ImageInput:
         ds = pydicom.dcmread(io.BytesIO(data), force=True)
         arr = ds.pixel_array
         frames = int(getattr(ds, "NumberOfFrames", 1) or 1)
+        _check_frame(name, frame, frames)
         if frames > 1:
-            arr = arr[0]
+            arr = arr[frame or 0]
         if arr.ndim == 3:  # colour
             arr = cv2.cvtColor(to_uint8(arr), cv2.COLOR_RGB2GRAY)
         spacing = ds.get("ImagerPixelSpacing")
@@ -59,8 +61,9 @@ def read_image(data: bytes, name: str) -> ImageInput:
             else "DICOM without ImagerPixelSpacing."
         )
         if frames > 1:
-            note += f" First of {frames} frames used."
+            note += f" Frame {frame or 0} of {frames} used (0-based)."
         return ImageInput(to_uint8(arr), name, digest, mm, note)
+    _check_frame(name, frame, 1)
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
     if img is None:
         raise ValueError(f"{name}: not a readable PNG / JPG / DICOM image")
@@ -69,7 +72,12 @@ def read_image(data: bytes, name: str) -> ImageInput:
     return ImageInput(to_uint8(img), name, digest)
 
 
-def read_image_file(path: str | Path) -> ImageInput:
+def read_image_file(path: str | Path, frame: int | None = None) -> ImageInput:
     """:func:`read_image` for a file on disk."""
     path = Path(path)
-    return read_image(path.read_bytes(), path.name)
+    return read_image(path.read_bytes(), path.name, frame)
+
+
+def _check_frame(name: str, frame: int | None, frames: int) -> None:
+    if frame is not None and not 0 <= frame < frames:
+        raise ValueError(f"{name}: frame {frame} requested, the image has {frames} frame(s)")

@@ -345,3 +345,92 @@ The model interval and the input interval are reported side by side, not combine
 **Alternatives:**
 - Joint search over several paths: combinatorial and rarely needed.
 - Surrogate screening as in M6: slower here, and the M6 reason (validating the pipeline) is covered by the surrogate backend and its benchmark.
+
+### D38 — Validation tool: two files, locked predictions, local only, intention to diagnose (2026-10-30)
+**Decision:**
+- **Two files.** The analysts get `cases.csv` (images, points, calibration, Pa; no wire values).
+  The data manager keeps `reference.csv` (FFR or iFR, exclusions). `vstent validate --manifest`
+  writes `predictions.csv` and locks it with its SHA-256 (`predictions_meta.json`, together with
+  the commit, model and manifest hashes). Scoring (`--predictions --reference`) refuses changed
+  predictions.
+- **Local only.** Case lists, images, masks, reference files and outputs must be outside the
+  repository or git-ignored; the tool checks with `git check-ignore` and refuses otherwise.
+- **Index tests.** Every vessel gets three index tests:
+  - single path with the solver;
+  - single path with the surrogate (with the P1 intervals and grey-zone flag);
+  - the tree model with the solver.
+
+  The primary one is `tree_solver`, set in `configs/validation.yaml` and fixed before
+  unblinding.
+- **Failures are kept.** A vessel the pipeline cannot analyse keeps its reason. Feasibility and
+  intention-to-diagnose accuracy (failures counted as misclassified) are reported next to the
+  accuracy on analysable vessels.
+- **Statistics:**
+  - Wilson intervals for proportions;
+  - DeLong AUC standard error on the logit scale;
+  - Bland–Altman limits with the sqrt(3 s² / n) standard error and the proportional-bias slope;
+  - every interval also from a patient-level cluster bootstrap (2,000 resamples).
+- **iFR references** are analysed as classification only (FFR and iFR are different
+  quantities).
+- **Optional vessel mask per case.** It stands for an analyst-corrected contour, as offered by
+  commercial angiography-FFR workflows.
+
+**Reason:** blinding, locking and complete accounting of failures are what make a diagnostic-
+accuracy result credible (STARD 2015); a tool that enforces them avoids mistakes that
+cannot be undone after unblinding. The local-only check enforces the project's no-patient-data
+rule mechanically.
+
+**Alternatives:**
+- One file with predictions and wire values: simpler, but it breaks blinding.
+- GEE or Obuchowski's clustered AUC instead of the bootstrap: valid, but more assumptions. A
+  statistician can add them, and the protocol leaves room.
+- Dropping failed vessels: the common shortcut, and it inflates accuracy.
+
+### D39 — Synthetic stand-in study: rendered trees, true masks for the main run (2026-10-30)
+**Decision:**
+- **Cases.** The P4 dry run uses synthetic patients with one to three vessels. Each vessel is a P2
+  tree laid out in 2D, with the main vessel continuing before the start and beyond the sensor.
+- **Rendering.** Each vessel is rendered as an X-ray projection: transmission exp(−μ · chord),
+  then blur, unsharp-mask edge enhancement and noise.
+- **Reference.** The stand-in "wire FFR" is the tree solver on the true geometry, with sampled
+  Pa, Pv and hyperemic velocity. The case list gives only Pa, the clicked points (1.5 px error)
+  and, for 80% of patients, a pixel size with a 3% error.
+- **Rendering fit to ARCADE.** The contrast and processing were fitted to ARCADE: on `syntax/val`,
+  centreline transmission is 0.73–0.84 of the local background and nearly flat with width,
+  and high-frequency noise is about 0.017. Attenuation × pixel size ≈ 0.010–0.020 per px with
+  edge enhancement (amount 2–3, σ 1.5–3 px) fits with RMSE 0.023; without edge enhancement
+  the best RMSE is 0.053. The pixel size (0.22–0.30 mm/px) and inlet diameters (2.5–4.0 mm)
+  give the widest vessel 9–18 px, as in ARCADE (13–20 px).
+- **The main run uses the true lumen masks; a second run uses the segmenter.**
+
+**Reason:**
+- **Contrast is not what defeats the segmenter.** With contrast and noise matched, the
+  ARCADE-trained segmenter still misses most stand-in vessels. One rendered at high contrast,
+  wide and isolated, was not segmented at all. The model relies on the anatomical context of
+  clinical angiograms (dense trees, catheter, ribs), which the renders lack.
+- **Separating two questions.** Running the main analysis on true masks measures the rest of the
+  pipeline, while the second run shows the domain gap. Closing that gap is P8's task, not
+  something to tune away here.
+
+**Alternatives:**
+- Tuning the renders until the segmenter works: it hides the gap and makes the stand-in look
+  better than it is.
+- Pasting tubes into ARCADE backgrounds: closer to clinical images, but it is P8's rendering
+  work, and ARCADE's own vessels would confuse the paths.
+
+### D40 — Points off the segmented vessel are refused (2026-10-30)
+**Decision:** a start or end point farther from its nearest skeleton pixel than the vessel's
+half-width there + 5 px raises an error in the single-path and tree QCA. Previously it was
+silently snapped. In tree QCA the end point is snapped on the whole skeleton; if it lands on
+another vessel, "no vessel path connects" is raised. Previously it was moved onto the start's
+vessel.
+
+**Reason:** the stand-in study found clicks 60–90 px beyond the end of a partly segmented vessel
+being snapped to its visible end. That measured a path of half the length with no warning,
+and a wrong FFR. The error is visible to the user (the app shows it; `vstent validate` records
+the vessel as not analysable).
+
+**Alternatives:**
+- A warning only: the result would still be shown, and in a validation it would count as a
+  success for the wrong vessel.
+- A fixed pixel limit: it does not scale with vessel width.
