@@ -67,3 +67,14 @@ def test_surrogate_backend_with_solver_check(tiny_tree_run, tmp_path):
     runner.close()
     assert res.backend == "surrogate" and res.plans
     assert all(p.ffr_solver is not None for p in res.plans)
+
+
+def test_tree_planner_benchmark_on_tiny_data(tiny_tree_data, tmp_path):
+    from vstent.planning.tree_report import run_tree_planner_benchmark
+
+    report = run_tree_planner_benchmark(
+        tiny_tree_data, tmp_path, catalog=CATALOG, config=CFG, params=PARAMS, n_trees=3
+    )
+    assert report["throughput"]["n_candidates"] == 5000 and report["study"]["rows"]
+    md = (tmp_path / "tree_planner_benchmark.md").read_text(encoding="utf-8")
+    assert "Research use only" in md and "single vessel" in md

@@ -882,14 +882,41 @@ def plan_benchmark(
     report_dir: Annotated[
         Path, typer.Option("--report-dir", help="Where to write planner_benchmark.md.")
     ] = Path("reports"),
+    tree: Annotated[
+        bool, typer.Option("--tree", help="Tree planner → reports/tree_planner_benchmark.md.")
+    ] = False,
+    tree_data: Annotated[Path, typer.Option("--tree-data")] = Path("data/synth/tree_v1"),
 ) -> None:
-    """Planner speed (5,000 candidates) and behaviour on synthetic test vessels."""
+    """Planner speed (5,000 candidates) and behaviour on synthetic test vessels (or trees)."""
     from vstent.config import load_config
     from vstent.inference.onnx_runtime import ONNX_FILE
     from vstent.physics.solver import PhysicsParams
     from vstent.planning.optimizer import PlannerConfig, StentCatalog
     from vstent.planning.report import run_planner_benchmark
 
+    if tree:
+        from vstent.inference.models import latest_model_dir
+        from vstent.inference.tree_runtime import TREE_MODELS, TREE_ONNX_FILE
+        from vstent.planning.tree_report import run_tree_planner_benchmark
+
+        report = run_tree_planner_benchmark(
+            tree_data,
+            report_dir,
+            catalog=load_config(catalog, StentCatalog),
+            config=load_config(planner, PlannerConfig),
+            params=load_config(physics, PhysicsParams),
+            tree_model_dir=latest_model_dir(TREE_MODELS, TREE_ONNX_FILE),
+            n_trees=n_vessels,
+        )
+        t = report["throughput"]["solver"]
+        typer.echo(
+            f"[{'PASS' if report['target_met'] else 'FAIL'}] 5,000 candidates, tree solver: "
+            f"{t['median_s']:.3f} s"
+        )
+        typer.echo(f"Wrote {report_dir / 'tree_planner_benchmark.md'}")
+        if not report["target_met"]:
+            raise typer.Exit(code=1)
+        return
     report = run_planner_benchmark(
         surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE),
         report_dir,
