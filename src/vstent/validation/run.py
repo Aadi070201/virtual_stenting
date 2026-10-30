@@ -254,7 +254,11 @@ def model_info(path: str | Path | None, filename: str) -> dict[str, str] | None:
     """Directory, file name and SHA-256 of an exported model (``None`` if not used)."""
     if path is None:
         return None
-    return {"dir": Path(path).as_posix(), "file": filename, "sha256": sha256_file(Path(path) / filename)}
+    return {
+        "dir": Path(path).as_posix(),
+        "file": filename,
+        "sha256": sha256_file(Path(path) / filename),
+    }
 
 
 def read_predictions(path: str | Path) -> tuple[list[dict[str, str]], dict[str, Any] | None]:
