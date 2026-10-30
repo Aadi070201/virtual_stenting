@@ -1,0 +1,141 @@
+{
+  "checks": {
+    "single_branch": {
+      "n": 200,
+      "max_abs_ffr_diff": 4.440892098500626e-16,
+      "tolerance": 1e-10,
+      "passed": true
+    },
+    "conservation": {
+      "n": 1000,
+      "max_rel_mass_residual": 2.883500647829048e-16,
+      "max_rel_pressure_gap": 0.0,
+      "max_rel_outlet_residual": 2.095553938207933e-14,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    "murray": {
+      "n_trees": 999,
+      "n_excluded_clamped": 1,
+      "n_junctions": 2206,
+      "exponent": 2.33,
+      "max_rel_error": 8.881784197001252e-16,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    "side_branch_effect": {
+      "rows": [
+        {
+          "severity": 0.4,
+          "side_ratio": 0.4,
+          "ffr_alone": 0.9429998456542447,
+          "ffr_with_side": 0.9501456935749587,
+          "increase": 0.0071458479207140435
+        },
+        {
+          "severity": 0.4,
+          "side_ratio": 0.6,
+          "ffr_alone": 0.9429998456542447,
+          "ffr_with_side": 0.9582600532170805,
+          "increase": 0.015260207562835859
+        },
+        {
+          "severity": 0.4,
+          "side_ratio": 0.8,
+          "ffr_alone": 0.9429998456542447,
+          "ffr_with_side": 0.9664605073737785,
+          "increase": 0.02346066171953387
+        },
+        {
+          "severity": 0.6,
+          "side_ratio": 0.4,
+          "ffr_alone": 0.8012520863757371,
+          "ffr_with_side": 0.8265158053979667,
+          "increase": 0.02526371902222957
+        },
+        {
+          "severity": 0.6,
+          "side_ratio": 0.6,
+          "ffr_alone": 0.8012520863757371,
+          "ffr_with_side": 0.8572029232038358,
+          "increase": 0.05595083682809876
+        },
+        {
+          "severity": 0.6,
+          "side_ratio": 0.8,
+          "ffr_alone": 0.8012520863757371,
+          "ffr_with_side": 0.8903097540277657,
+          "increase": 0.0890576676520286
+        },
+        {
+          "severity": 0.8,
+          "side_ratio": 0.4,
+          "ffr_alone": 0.35832787702864366,
+          "ffr_with_side": 0.38630381062942193,
+          "increase": 0.02797593360077827
+        },
+        {
+          "severity": 0.8,
+          "side_ratio": 0.6,
+          "ffr_alone": 0.35832787702864366,
+          "ffr_with_side": 0.4272877361396841,
+          "increase": 0.06895985911104047
+        },
+        {
+          "severity": 0.8,
+          "side_ratio": 0.8,
+          "ffr_alone": 0.35832787702864366,
+          "ffr_with_side": 0.48461808270333284,
+          "increase": 0.12629020567468918
+        }
+      ],
+      "min_increase": 0.0071458479207140435,
+      "passed": true
+    },
+    "vanishing_side_branch": {
+      "max_abs_ffr_diff": 1.9906472383923735e-05,
+      "tolerance": 0.0002,
+      "passed": true,
+      "side_flow_share": 1.164214170197195e-05
+    }
+  },
+  "checks_passed": true,
+  "benchmark": {
+    "n_trees": 1000,
+    "branches_mean": 3.21,
+    "seconds_median": 0.2878770000243094,
+    "trees_per_s": 3473.7057837741686,
+    "target": 1000.0,
+    "passed": true,
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics"
+  },
+  "example": {
+    "test_index": 2,
+    "branches": 4,
+    "main_ffr_tree": 0.40867899199116237,
+    "main_ffr_single": 0.29135632514953613,
+    "outlet_ffr": [
+      0.40867899199116237,
+      0.5643278769110606,
+      0.8547503078686856,
+      0.3241501145852476
+    ]
+  },
+  "params": {
+    "mu": 0.0035,
+    "rho": 1060.0,
+    "pa_mmhg": 90.0,
+    "pv_mmhg": 5.0,
+    "kt": 1.52,
+    "v_hyp": 0.35,
+    "expansion_threshold": 1.05,
+    "murray_exponent": 2.33
+  },
+  "data_dir": "data/synth/tree_v1",
+  "provenance": {
+    "git_commit": "76140d30470908c482855ef179ab2f0191a68683",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-10-30T16:02:11+00:00"
+  }
+}

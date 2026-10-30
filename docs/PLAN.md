@@ -238,17 +238,17 @@ The report must state that model intervals cover only surrogate-vs-solver error,
 
 ## P2: Vessel trees with side branches
 
-- [ ] **Tree physics** (`physics/tree.py`):
+- [x] **Tree physics** (`physics/tree.py`):
   - segments use the M1 viscous and expansion coefficients;
   - each terminal branch gets one outlet resistance, split from the total microvascular resistance by Murray's law (flow ∝ diameter^k, k configurable, default 2.33);
   - calibrated so the stenosis-free tree carries the reference flow;
   - the steady nonlinear network is solved by Newton iteration, giving FFR at every node.
-- [ ] **Sanity checks:**
+- [x] **Sanity checks:**
   - a tree with one segment reproduces the M1 solver exactly;
   - mass is conserved at every junction;
   - a healthy tree splits flow as Murray's law;
   - adding a side branch raises distal main-vessel FFR for the same upstream geometry.
-- [ ] **Synthetic tree generator:** a main vessel plus 1–4 side branches, with lesions anywhere, including at bifurcations; dataset card.
+- [x] **Synthetic tree generator:** a main vessel plus 1–4 side branches, with lesions anywhere, including at bifurcations; dataset card.
 - [ ] **Image path:** QCA on the skeleton *tree* between a start point and every reachable end point (or user-chosen branches) → tree profile → tree physics. Adds `vstent analyse --tree` and virtual stents on a branch path.
 - [ ] Re-run the ARCADE gallery with tree physics and compare with the single-path version.
 
