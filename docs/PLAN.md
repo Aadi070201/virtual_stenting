@@ -259,9 +259,9 @@ The report must state that model intervals cover only surrogate-vs-solver error,
 
 ## P3: Tree surrogate (graph network) + ONNX
 
-- [ ] A graph network over segment graphs: message passing in plain PyTorch (no extra graph library), with node-wise FFR from a head that is monotone along the flow (generalising M3).
-- [ ] Training on synthetic trees (resumable); evaluation against the tree solver; OOD trees.
-- [ ] ONNX export with padded graphs (fixed maximum nodes / edges) plus a parity test. Integration in the runner, the planner (stents on branch paths) and the app.
+- [x] A graph network over segment graphs: message passing in plain PyTorch (no extra graph library), with node-wise FFR from a head that is monotone along the flow (generalising M3).
+- [x] Training on synthetic trees (resumable); evaluation against the tree solver; OOD trees.
+- [x] ONNX export with padded graphs (fixed maximum nodes / edges) plus a parity test. Integration in the runner, the planner (stents on branch paths) and the app.
 
 **Done when:**
 - node-wise FFR MAE ≤ 0.015 and distal MAE ≤ 0.015 on test trees;

@@ -461,3 +461,54 @@ An independent read-only review covered physics, data, surrogate, imaging, plann
 - **Model simplifications:** junction losses are neglected, the healthy split follows Murray's law, and skeleton junctions sit up to about one vessel width downstream of where the centrelines cross.
 - **Not yet available for trees:** surrogate, intervals, planner, and the app (P3).
 - **Tests:** 223 fast and 3 slow pass.
+
+---
+
+## 2026-10-30 — P3: Tree surrogate (graph network) + ONNX (done)
+
+**What was done**
+- **Tree surrogate** (`surrogate/tree_model.py`, D36):
+  - the M3 FiLM 1D U-Net applied to every branch (shared weights), with 3 rounds of message passing between branch summaries (children, parent, whole tree) in plain PyTorch;
+  - a monotone tree head: FFR = 1 at the inlet, continuous at every junction and non-increasing along every path, by construction;
+  - 1.31 M parameters;
+  - one pre-processing path (`surrogate/tree_features.py`) for training, ONNX and the app.
+- **Training** (`vstent train-tree-surrogate`): resumable, STOP / `--resume` (tested bit-exact). 40,000 synthetic trees, 50 epochs, 23 min on the RTX 3060 Laptop GPU. Best validation outlet MAE 0.0043 at epoch 50.
+- **Evaluation** (`vstent eval-tree-surrogate`, `reports/tree_surrogate_eval.md`): against the tree solver on test and ood trees.
+- **ONNX** (`vstent export-tree-surrogate`, `reports/tree_onnx.md`):
+  - padded graph (5 branches × 256 samples, dynamic batch), 5.3 MB;
+  - `TreeSurrogateRunner` (torch-free).
+- **Tree planner** (`planning/tree_planner.py`, D37):
+  - stents along one root-to-outlet path, possibly into a side branch;
+  - every outlet's FFR with the pre-PCI outlet resistances;
+  - the tree solver evaluates candidates through `solve_tree_variants` (shared topology); the tree surrogate is optional, with a solver re-check.
+- **Benchmark:** `vstent plan-benchmark --tree` (`reports/tree_planner_benchmark.md`).
+- **Integration:**
+  - `vstent analyse --tree --plan` / `--stent`, showing the tree surrogate's outlet FFR next to the solver's;
+  - a tree mode in the app: side branches on the image, FFR along every path, a stent or plans on a chosen path, tree surrogate column, JSON tree report.
+
+**"Done when" (PLAN.md)**
+| Target | Result |
+|---|---|
+| Node-wise FFR MAE ≤ 0.015 (test trees) | **0.0038** |
+| Distal (every outlet) MAE ≤ 0.015 | **0.0043** |
+| ONNX parity < 1e-4 | **7.2e-07** |
+| Tree planner, 5,000 candidates < 1 s (target set from P2, D37) | **0.136 s** |
+
+**Further results**
+- **OOD trees** (100–140 mm main vessel, 4 side branches), errors about 2× test: node MAE 0.0090, outlet MAE 0.0094.
+- **Agreement with the tree solver at 0.80 (test outlets):** sensitivity 0.992, specificity 0.994.
+- **For context:** ignoring side branches (main vessel alone, single-vessel solver) would err by 0.152 at the main outlet (0.326 on ood).
+- **Tree surrogate speed:** 3.3 ms for one tree on the CPU, and 5.4 s for 5,000 planning candidates vs 0.136 s for the tree solver. It is not faster than the reduced-order model and is not claimed to be.
+- **Planning study** (first 100 test trees with main FFR < 0.80):
+  - **56 reach FFR ≥ 0.90.**
+  - **30 get no feasible plan**: in 24 of them every lesion lies in a vessel thinner than 2.05 mm, where no catalogue stent fits. The synthetic main vessels narrow after each take-off.
+  - 14 have a best plan below the target.
+  - Planning the main vessel as a single vessel (M6) gave a longer plan in 17 of 56 compared trees and never a shorter one.
+  - The tree surrogate backend chose the same total length in 67 of 100 trees; the solver confirmed 56 of its plans.
+
+**Open issues**
+- **Rare large surrogate errors.** 56 of 12,817 test outlets (0.4%) are off by more than 0.05; the largest is 0.23. All are in severely diseased trees, often a healthy side branch behind a severe main-vessel lesion. One prediction was negative (−0.05): like M3's, the tree head is not bounded below by Pv/Pa. The CLI and the app now warn when the surrogate falls below Pv/Pa. A bounded head or a tree ensemble with intervals (P1 for trees) would address it.
+- **Stenting small vessels.** Many synthetic trees have lesions in main-vessel segments thinner than the smallest catalogue stent allows. That is realistic, but it limits the planning-study success rate. The catalogue and sizing rules are unchanged.
+- **Trees with more than 5 branches** (possible from images) fall back to the solver for the surrogate.
+- **No uncertainty intervals for trees yet.**
+- **App latency** was not re-measured after adding tree mode. Its single-path code path is unchanged, and tree mode is a separate branch of the script.
