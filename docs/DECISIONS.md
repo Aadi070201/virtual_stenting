@@ -187,3 +187,48 @@ The M1 estimator is left unchanged for synthetic profiles, which have no branche
 Items that depend on the human (data registration, compute budget, a hospital partner, a regulatory reviewer) are marked **[needs human]**.
 **Reason:** the MVP showed three main gaps: no confidence information, single-tube physics without side branches, and no comparison with measured FFR. P1–P3 can be done locally and remove the first two. The third needs a partner, so P4 prepares everything that can be prepared without patient data.
 **Alternatives:** starting with 3D CFD (the original Phase 2 headline). It needs dataset registrations, meshing and simulation tooling, and probably more compute than this laptop for a training-sized dataset, so it would block on decisions only the human can make.
+
+### D28 — Surrogate ensemble: training, export and planner screening (2026-10-30)
+**Decision:**
+- **Training.** The ensemble is the M3 configuration trained with seeds 0–4 (`vstent train-ensemble`, `configs/ensemble.yaml`). Each member is an ordinary resumable run under `runs/<ensemble>/members/`. The ensemble keeps its own checkpoint status, so `vstent stop <ensemble>` stops the member that is training and `--resume` continues where it stopped.
+- **Export.** It writes one ONNX graph with two outputs: `ffr` (the members' mean) and `ffr_std` (their sample SD). It also writes `screen.onnx`, which holds member 0 alone.
+- **Planner.** The planner screens its thousands of candidates with `screen.onnx`, then re-scores and re-ranks the returned `n_plans` with the full ensemble. Re-scoring gives each plan its mean, SD and conformal interval. The Pareto front stays on the screening values.
+**Reason:** The ensemble costs 5× the single model per vessel. That is a few milliseconds per vessel for the app and `analyse`, but it would push the 5,000-candidate planner far past its 1 s target (M6). Member 0 and the ensemble mean differ by about the surrogate's own error (≈ 0.001 FFR), so screening with one member changes the candidate ranking very little. The plans shown carry the ensemble's values.
+**Alternatives:**
+- Five separate ONNX files, averaged in Python. This means five sessions and five thread pools, and the plan asks for mean and spread in the ONNX export.
+- Screening with the full ensemble. Too slow.
+- A distilled single model that predicts its own variance. This needs new training and is not yet validated.
+
+### D29 — Split-conformal interval with an ensemble-normalised score (2026-10-30)
+**Decision:**
+- **Score.** The model interval for distal FFR is split-conformal on the whole `val` split, using the score |y − ŷ| / (σ + 0.001). Here ŷ is the ensemble mean, σ the ensemble SD of distal FFR, and y the solver.
+- **Interval.** The interval is ŷ ± q̂·(σ + 0.001), capped at 1, where q̂ is the ⌈(n + 1)·0.9⌉-th smallest score.
+- **When it is calibrated.** Calibration happens at export with the ONNX model (`conformal.json`), so it matches what the app runs.
+- **Comparison.** The report also shows an absolute score (one width for every vessel).
+**Reason:** A normalised score widens the interval where the members disagree, which happens out of distribution and at severe stenoses. The guarantee is still the standard marginal one. The 0.001 floor keeps scores finite where the members agree almost exactly; it is small next to the typical SD and is set before looking at `test`. One caveat: the members were early-stopped on `val`, so the calibration split is not fully independent. Coverage on `test` is the check.
+**Alternatives:**
+- Conformalised quantile regression, which needs quantile heads and retraining.
+- Calibrating on a fresh synthetic split, which is cleaner but means generating new data. Kept as a fallback if `test` coverage fails.
+- Raw ±1.645σ ensemble intervals, which are not calibrated.
+
+### D30 — Input-uncertainty Monte Carlo: what is varied and how (2026-10-30)
+**Decision:** Each case gets 500 fixed-seed Monte Carlo draws through the solver. Each assumption varies over half the width of its synthetic sampling range, centred on the value used:
+- hyperemic velocity ±0.10 m/s;
+- Pa ±20 mmHg;
+- Pv ±3 mmHg, kept ≥ 0.
+
+Two assumptions apply to image cases only:
+- **Pixel size:** ±10%, and only when it was assumed. All lengths and diameters scale together.
+- **QCA diameter error:** a Gaussian field with the SD and correlation length measured on rendered tubes (`reports/qca_synthetic.json`, now part of `vstent qca-synthetic`). The reference moves by the path mean of the error.
+
+For post-PCI, the same draws are reused with each draw's own pre-PCI R_micro. A stent keeps its physical length and nominal diameter, and its start scales with the pixel size, because it is placed where it was drawn on the image.
+
+The model interval and the input interval are reported side by side, not combined. The grey-zone flag is raised when either interval contains the threshold: 0.80 pre-PCI, the planner target post-PCI.
+**Reason:**
+- **Ranges.** The sampling ranges are the only ranges in the repo with a documented basis, and using them needs no invented clinical numbers. The plan asks for ±10% pixel size explicitly.
+- **Fixed seed.** Fixed draws make the interval reproducible and stable while a slider moves. They also let pre/post differences cancel noise.
+- **Separate intervals.** They answer different questions: surrogate vs solver, and inputs vs the solver. Adding them would suggest a total uncertainty that excludes the largest unknown, the reduced-order model's own error.
+**Alternatives:**
+- Gaussian ranges with clinical SDs: no source in the repo.
+- Combining the two intervals by summing variances.
+- Scaling the stent length with the pixel size, which would hide the "stent too short" risk when the pixel size is underestimated.

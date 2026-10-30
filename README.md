@@ -24,6 +24,13 @@ The MVP (milestones M0–M8 in [docs/PLAN.md](docs/PLAN.md)) is complete. All re
 reports. Progress and open issues: [docs/PROGRESS.md](docs/PROGRESS.md). Design decisions:
 [docs/DECISIONS.md](docs/DECISIONS.md).
 
+Phase 2 is in progress on the `phase2` branch (plan: P1–P8 in [docs/PLAN.md](docs/PLAN.md)).
+P1 adds 90% intervals and grey-zone flags to every distal FFR in the app, `vstent analyse` and
+the case report ([reports/uncertainty.md](reports/uncertainty.md)):
+- the *model interval* covers only the surrogate's error against the physics model;
+- the *input interval* covers only the listed assumptions (pixel size, QCA error, hyperemic
+  velocity, Pa / Pv).
+
 **What the numbers mean:**
 - The surrogate's accuracy is its agreement with the reduced-order physics model on synthetic
   vessels, not agreement with invasive FFR.
@@ -89,6 +96,9 @@ Trainings can be paused and resumed exactly:
 | `vstent stop <run-name>` / `vstent checkpoints` | pause a training after the current epoch / list resumable runs | — |
 | `vstent eval-surrogate --run runs/<name>` | evaluate the surrogate vs the solver and a baseline → `reports/surrogate_eval.md` | M3 |
 | `vstent export-surrogate --run runs/<name>` | export to ONNX (`models/surrogate/<name>/`), parity, CPU benchmark → `reports/onnx_benchmark.md` | M4 |
+| `vstent train-ensemble --config configs/ensemble.yaml` | train 5 surrogates with seeds 0–4 (`--resume <name>`; `vstent stop <name>` pauses) | P1 |
+| `vstent export-ensemble --run runs/<ensemble>` | export the ensemble (mean + spread) to ONNX, parity, conformal calibration on `val` | P1 |
+| `vstent uncertainty-report` | ensemble accuracy, conformal coverage, input-uncertainty intervals → `reports/uncertainty.md` | P1 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |

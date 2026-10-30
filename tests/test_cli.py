@@ -21,6 +21,9 @@ COMMANDS = [
     "plan-benchmark",
     "qca-gallery",
     "analyse",
+    "train-ensemble",
+    "export-ensemble",
+    "uncertainty-report",
 ]
 
 

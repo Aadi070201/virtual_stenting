@@ -66,13 +66,18 @@ vstent/
   pyproject.toml        # deps, extras, ruff, pytest; torch from the CUDA 12.6 index via uv
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
-  configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog, planner
+  configs/              # YAML configs: physics, synth_v1, surrogate, ensemble, seg, stent_catalog,
+                        # planner, uncertainty
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
   src/vstent/
     physics/            # geometry.py, solver.py, report.py
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
-                        # baseline.py, evaluate.py, export.py
+                        # baseline.py, evaluate.py, export.py (single model + ensemble),
+                        # ensemble.py (5-seed ensemble trainer, resumable)
+    uncertainty/        # conformal.py (split-conformal distal-FFR interval), inputs.py (input
+                        # Monte Carlo through the solver), greyzone.py (intervals, flags, config),
+                        # report.py (uncertainty report); all torch-free except report.py
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
                         # synthetic.py (rendered test tubes), qca_validation.py
@@ -96,7 +101,9 @@ vstent/
   reports/              # generated metrics (*.md, *.json) and figures/
   data/  models/  runs/ # git-ignored; data/raw/arcade/ (ARCADE, see docs/DATA.md);
                         # models/surrogate/<run-name>/{surrogate.onnx, norm_stats.json, config.yaml,
-                        # export_meta.json}; models/seg/<run-name>/{seg.onnx, config.yaml, export_meta.json}
+                        # export_meta.json}, ensembles also {screen.onnx, conformal.json,
+                        # surrogate_config.yaml}; models/seg/<run-name>/{seg.onnx, config.yaml,
+                        # export_meta.json}
   checkpoints/          # git-ignored; checkpoints/<run-name>/{last.pt, state.json, STOP}
 ```
 
@@ -118,6 +125,9 @@ uv run vstent stop <run-name>                       # pause a running training a
 uv run vstent checkpoints                           # list resumable runs + resume commands
 uv run vstent eval-surrogate --run runs/<name>
 uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
+uv run vstent train-ensemble --config configs/ensemble.yaml   # P1: 5 seeds; also --resume <name>
+uv run vstent export-ensemble --run runs/<ensemble> # ONNX mean + SD, screen model, conformal (val)
+uv run vstent uncertainty-report                    # → reports/uncertainty.md (coverage, input MC)
 uv run vstent data arcade                           # download + MD5-verify + extract ARCADE
 uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>
 uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
