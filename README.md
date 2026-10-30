@@ -73,12 +73,14 @@ uv run vstent synth --config configs/synth_v1.yaml           # ~10 s, ~0.5 GB
 uv run vstent train-surrogate --config configs/surrogate.yaml # ~13 min on the GPU
 uv run vstent eval-surrogate --run runs/<surrogate-run>
 uv run vstent export-surrogate --run runs/<surrogate-run>     # → models/surrogate/
+uv run vstent train-ensemble --config configs/ensemble.yaml   # ~80 min on the GPU (5 models)
+uv run vstent export-ensemble --run runs/<ensemble-run>       # → models/surrogate/
 uv run vstent data arcade                                     # ~450 MB download (CC0)
 uv run vstent train-seg --config configs/seg.yaml             # ~27 min on the GPU
 uv run vstent eval-seg --run runs/<seg-run>
 uv run vstent export-seg --run runs/<seg-run>                 # → models/seg/
 uv run vstent qca-gallery && uv run vstent plan-benchmark && uv run vstent app-latency
-uv run vstent demo && uv run vstent mvp-report
+uv run vstent demo && uv run vstent uncertainty-report && uv run vstent mvp-report
 ```
 
 Trainings can be paused and resumed exactly:

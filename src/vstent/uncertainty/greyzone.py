@@ -27,7 +27,7 @@ class UncertaintyConfig(StrictModel):
     level: float = Field(0.90, gt=0, lt=1)
     pre_pci_threshold: float = Field(PRE_PCI_THRESHOLD, gt=0, lt=1)
     conformal_score: Score = "normalised"
-    sigma_floor: float = Field(0.001, ge=0)  # FFR units, added to the ensemble SD
+    sigma_floor: float = Field(0.0002, ge=0)  # FFR units, added to the ensemble SD
     calibration_split: str = "val"
     inputs: InputUncertaintyConfig = InputUncertaintyConfig()
 

@@ -3,7 +3,8 @@ level: 0.90                    # central interval probability (model and input i
 pre_pci_threshold: 0.80        # grey zone: a pre-PCI interval containing this value is flagged
                                # (post-PCI plans use the planner target, configs/planner.yaml)
 conformal_score: normalised    # |y − ŷ| / (σ + sigma_floor), σ = ensemble SD; or "absolute"
-sigma_floor: 0.001             # FFR units; keeps scores finite where the members agree exactly
+sigma_floor: 0.0002            # FFR units; ≈ 10th percentile of the ensemble SD on val, so it only
+                               # acts where the members agree almost exactly (DECISIONS D29)
 calibration_split: val         # calibrated at export (vstent export-ensemble), reported on test / ood
 
 inputs:                        # Monte Carlo through the solver, per case
