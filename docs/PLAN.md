@@ -218,15 +218,15 @@ Order: what removes the biggest known weakness, and can run on this laptop (RTX 
 
 ## P1: Uncertainty and grey-zone flagging
 
-- [ ] **Model uncertainty:** an ensemble of 5 surrogates (M3 config, seeds 0–4; resumable training). The mean and spread are exported to ONNX and used by `SurrogateRunner`.
-- [ ] **Split-conformal 90% intervals** for distal FFR, calibrated on `val`, reported on `test` and `ood`.
-- [ ] **Input-uncertainty propagation:** Monte Carlo through the solver over the assumptions that matter most, giving a 90% FFR interval per case:
+- [x] **Model uncertainty:** an ensemble of 5 surrogates (M3 config, seeds 0–4; resumable training). The mean and spread are exported to ONNX and used by `SurrogateRunner`.
+- [x] **Split-conformal 90% intervals** for distal FFR, calibrated on `val`, reported on `test` and `ood`.
+- [x] **Input-uncertainty propagation:** Monte Carlo through the solver over the assumptions that matter most, giving a 90% FFR interval per case:
   - pixel size (±10% when assumed);
   - hyperemic velocity (its sampling range);
   - Pa / Pv;
   - QCA diameter error (from `reports/qca_synthetic.md`).
-- [ ] **Grey-zone flag:** a case or plan is flagged when its interval crosses 0.80 (pre-PCI) or the planner target (post-PCI). Shown in the app, the case report and `vstent analyse`.
-- [ ] Report `reports/uncertainty.md`.
+- [x] **Grey-zone flag:** a case or plan is flagged when its interval crosses 0.80 (pre-PCI) or the planner target (post-PCI). Shown in the app, the case report and `vstent analyse`.
+- [x] Report `reports/uncertainty.md`.
 
 **Done when:**
 - conformal coverage on `test` is 88–92% for a 90% target;

@@ -315,3 +315,59 @@ The human approved Phase 2 ("go ahead with phase 2"). The backlog was turned int
 - **P4:** a hospital partner and ethics approval for comparison with wire FFR.
 - **P7:** de-identified, licensed cine DICOM examples, if available.
 - **P8:** a regulatory adviser to review the drafts.
+
+---
+
+## 2026-10-30 — P1: Uncertainty and grey-zone flagging (done)
+
+**What was done**
+- **Ensemble:** 5 surrogates with the M3 configuration and seeds 0–4, trained with the new resumable `vstent train-ensemble` (D28).
+  - Training was paused at the human's request during seed 2 (after epoch 31) and resumed exactly from there.
+  - Total training time: 4,857 s (≈ 81 min) on the RTX 3060 Laptop GPU.
+  - Best val distal MAE per member: 0.0013–0.0014.
+- **Discarded first ensemble:** the first ensemble (`runs/unet1d_ens5-20261030-100555`) was discarded. Its seed 3 early-stopped at epoch 21 on high-learning-rate validation noise (val distal MAE 0.0030). Early stopping now starts at epoch 40 (D31). The decision used `val` only.
+- **ONNX export** (`vstent export-ensemble`):
+  - one model with mean and SD outputs;
+  - `screen.onnx` (member 0) for the planner's candidate screening, after which the final plans are re-scored by the ensemble (D28);
+  - parity: mean 2.7e-07, SD 3.6e-07, screen 5.4e-07.
+- **Split-conformal 90% interval** for distal FFR, calibrated on `val` with an ensemble-normalised score (D29).
+  - The σ floor was lowered from 0.001 to 0.0002 (the 10th percentile of val σ). The median val σ is 0.00073, so 0.001 had made the score half absolute. Coverage by σ quintile on val went from 77–98% to 85–94%.
+  - The floor was chosen on `val` only, before any `test` evaluation.
+- **Input-uncertainty Monte Carlo** through the solver: 500 fixed-seed draws per case (D30).
+  - Sources: pixel size ±10% (only when assumed), QCA diameter error, hyperemic velocity ±0.10 m/s, Pa ±20 / Pv ±3 mmHg.
+  - The QCA error model (SD 0.107 px, half-correlation lag 0.62 px) is now measured by `vstent qca-synthetic`.
+- **Grey-zone flags:** a flag is raised when either interval contains 0.80 (pre-PCI) or the planner target 0.90 (post-PCI). Flags and intervals appear in the app (FFR plot bars, results, plan table), the case report JSON, `vstent analyse` and the demo.
+- New commands: `train-ensemble`, `export-ensemble`, `uncertainty-report`. `vstent stop` and `vstent checkpoints` handle ensembles.
+
+**Bugs found and fixed**
+- **App random synthetic preset (from M7):** pre-PCI FFR used the default velocity of 0.35 m/s, although the caption said the velocity came from the sampler. Fixed and tested.
+- **Benchmarks on an ensemble model folder:** `vstent plan-benchmark` (and the ONNX benchmark) crashed. They read the ensemble's `config.yaml` as a single-model config. A shared `surrogate_config()` now reads the member config. Regression tests added.
+
+**Metrics** (all reports generated at clean commits)
+- **Acceptance targets, from `reports/uncertainty.md`:**
+  - conformal coverage on test: **90.15%** (target 88–92%);
+  - ensemble-mean distal MAE on test: **0.00099** vs 0.00129 for the single M3 model (target ≤);
+  - app worst stent-control update: **210 ms** server time (< 300 ms).
+- **OOD (no target):**
+  - coverage 78.64%; an absolute score would give 44.74%;
+  - distal MAE 0.00376 (ensemble) vs 0.00391 (single).
+- **Grey zone (model interval):** 0.67% of test vessels are flagged. 15 of the 16 test vessels that the surrogate and solver put on opposite sides of 0.80 are flagged.
+- **Input intervals, 500 test vessels:**
+  - median width 0.128 (synthetic geometry) and 0.129 (image-derived, assumed pixel size);
+  - flagged at 0.80: 26.8% and 28.6%.
+- **Planner benchmark** (ensemble, 5,000 candidates): 0.874 s (< 1 s). 83 of 100 plans reach FFR ≥ 0.90; the solver confirms 81.
+- **App latency:** median 72 ms (synthetic) and 121 ms (image), up from 50 / 77 ms (ensemble plus Monte Carlo).
+- **Demo:**
+  - pre-PCI 0.705: input interval 0.622–0.791, model interval 0.704–0.708;
+  - post-PCI 0.976: input interval 0.967–0.984, model interval 0.975–0.976;
+  - no grey-zone flag.
+- **Tests:** 187 fast tests pass.
+- **Seed 0 check:** member seed 0 reproduces the M3 single model (same seed and configuration: test distal MAE 0.00129 for both).
+
+**Open issues**
+- **Coverage falls with stenosis severity.** On test it goes from 99% (0–30% DS) to 85.8% (70–100% DS). OOD coverage is 78–80% in every bin. The guarantee is marginal; per-bin coverage is not guaranteed.
+- **Input intervals are wide** (median ≈ 0.13), mostly because of the ±0.10 m/s velocity range. With these ranges, 85–91% of vessels with FFR 0.70–0.80 are flagged. The ranges are the synthetic sampling ranges, not measured patient-level uncertainties.
+- **QCA error model:** it comes from idealised rendered tubes, so real QCA error is likely larger.
+- **Calibration split reuse:** the calibration split (`val`) was also used for early stopping and for choosing the σ floor. Test coverage (90.15%) suggests this does not matter here.
+- **`reports/mvp_report.md` is still the v0.1.0 snapshot.** Its planner (0.959 s) and app-latency numbers predate the ensemble; the current values are in the source reports.
+- **Old run folders:** the discarded first ensemble is still on disk (git-ignored).
