@@ -485,10 +485,9 @@ def analyse(
     virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
     reported with 90% intervals (surrogate ensemble; input assumptions) and grey-zone flags.
     """
-    import cv2
-
     from vstent.config import load_config
     from vstent.imaging.centerline import longest_path_endpoints
+    from vstent.imaging.image_io import read_image_file
     from vstent.imaging.segment import THRESHOLD
     from vstent.inference.onnx_runtime import (
         ONNX_FILE,
@@ -499,10 +498,17 @@ def analyse(
     from vstent.inference.pipeline import analyse_vessel
     from vstent.physics.solver import PhysicsParams
 
-    img = cv2.imread(str(image), cv2.IMREAD_UNCHANGED)
-    if img is None:
-        typer.echo(f"Cannot read {image}", err=True)
-        raise typer.Exit(code=1)
+    try:  # the app's loader: the same pixels reach the segmentation model
+        image_input = read_image_file(image)
+    except ValueError as exc:
+        typer.echo(f"Cannot read {image}: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    img = image_input.image
+    if mm_per_px is None and image_input.pixel_spacing_mm:
+        typer.echo(
+            f"DICOM ImagerPixelSpacing is {image_input.pixel_spacing_mm:g} mm/px (detector, "
+            "magnification not corrected); pass --mm-per-px to use it."
+        )
     seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
     sur_dir = surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
     prob = SegmentationRunner.from_dir(seg_dir).predict(img)
@@ -571,8 +577,7 @@ def analyse(
     if figure is not None:
         from vstent.inference.figures import plot_analysis
 
-        gray = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        plot_analysis(result, gray, figure, title=f"Vessel analysis: {image.name}")
+        plot_analysis(result, img, figure, title=f"Vessel analysis: {image.name}")
         typer.echo(f"Wrote {figure}")
 
 

@@ -55,7 +55,11 @@ def test_eval_seg_report(tiny_seg_run, tmp_path):
     report = evaluate_seg_run(tiny_seg_run, tmp_path, device="cpu")
     assert set(report["splits"]) == {"val", "test"} and report["splits"]["val"]["n"] == 4
     md = (tmp_path / "seg_eval.md").read_text(encoding="utf-8")
-    assert "Research use only" in md and "Mean val Dice" in md
+    assert "Research use only" in md and "Mean val Dice" in md and "Mean test Dice" in md
+    assert [t["metric"].split(" (")[0] for t in report["targets"]] == [
+        "Mean val Dice",
+        "Mean test Dice",
+    ]
     for name in ("seg_examples.png", "seg_dice_hist.png", "seg_training.png"):
         assert (tmp_path / "figures" / name).exists()
     assert json.loads((tiny_seg_run / "eval.json").read_text(encoding="utf-8"))["splits"]
@@ -185,3 +189,30 @@ def test_cli_analyse_with_plan(dark_seg_dir, tiny_export, tmp_path):
     result = CliRunner().invoke(app, args)
     assert result.exit_code == 0, result.output
     assert "Stent plans (surrogate" in result.output
+
+
+def test_cli_and_app_give_the_segmenter_the_same_pixels(
+    dark_seg_dir, tiny_export, tmp_path, monkeypatch
+):
+    """One loader: a 12-bit image stored as a 16-bit PNG reaches the model as the app sees it
+    (percentile-stretched uint8), not divided by 65535."""
+    from vstent.imaging.image_io import read_image
+    from vstent.inference import onnx_runtime
+
+    tube = _tube_prob()
+    path = tmp_path / "angio16.png"
+    cv2.imwrite(str(path), ((1.0 - 0.6 * tube.image) * 4095).astype(np.uint16))
+    seen = []
+    predict = onnx_runtime.SegmentationRunner.predict
+
+    def spy(self, image):
+        seen.append(image)
+        return predict(self, image)
+
+    monkeypatch.setattr(onnx_runtime.SegmentationRunner, "predict", spy)
+    args = ["analyse", str(path), "--seg-model", str(dark_seg_dir),
+            "--surrogate-model", tiny_export["out_dir"]]  # fmt: skip
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 0, result.output
+    expected = read_image(path.read_bytes(), path.name).image
+    assert seen[0].dtype == np.uint8 and np.array_equal(seen[0], expected)

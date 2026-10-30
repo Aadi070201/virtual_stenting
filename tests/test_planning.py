@@ -262,3 +262,27 @@ def test_equal_total_lengths_tie_on_ffr():
     single = Plan((Stent(0, mm_to_m(38), 3e-3),), 0.92, True)
     assert pair.total_length == single.total_length
     assert _rank([single, pair]) == [pair, single]
+
+
+def test_solver_values_are_on_the_profiles_own_points(tiny_export):
+    """Image paths have more than 256 points. The plan's solver check and pre-PCI FFR must be
+    the solver on the profile itself (what the app shows), not on the 256-point resample."""
+    from vstent.inference.onnx_runtime import SurrogateRunner
+    from vstent.physics.solver import solve_ffr
+
+    profile = cosine_lesion_profile(0.07, 3e-3, 0.004, 0.75, n=701)  # short, narrow throat
+    runner = SurrogateRunner.from_dir(tiny_export["out_dir"])
+    cfg = SOLVER_CFG.model_copy(update={"backend": "surrogate"})
+    res = plan_stents(profile, catalog=CATALOG, config=cfg, params=PARAMS, runner=runner)
+    runner.close()
+    m1 = solve_ffr(profile, PARAMS)
+    assert res.r_micro == pytest.approx(m1.r_micro, rel=1e-12)
+    for plan in res.plans:
+        stented = apply_stents(profile, plan.stents, edge=mm_to_m(cfg.edge_mm))
+        post = solve_ffr_batch(
+            stented.r, stented.ds, stented.reference_radius(), PARAMS, r_micro=res.r_micro
+        )
+        assert plan.ffr_solver == pytest.approx(post.ffr_distal[0], abs=1e-12)
+    sol = plan_stents(profile, catalog=CATALOG, config=SOLVER_CFG, params=PARAMS)
+    assert sol.pre_ffr == pytest.approx(m1.ffr_distal, abs=1e-12)
+    assert sol.curve_s.size == 701 and res.curve_s.size == 256

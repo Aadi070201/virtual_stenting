@@ -97,7 +97,14 @@ class Plan:
 
 @dataclass(frozen=True, eq=False)
 class PlanResult:
-    """Output of :func:`plan_stents`. Curves are on ``grid.s``."""
+    """Output of :func:`plan_stents`.
+
+    ``grid`` is the 256-point planning grid (lesions, candidates, the surrogate). The solver
+    works on the profile's own points, as everywhere else in vstent, so solver values here equal
+    the app's and the pipeline's for the same stents. ``pre_ffr_curve`` and ``best_ffr_curve``
+    are on ``curve_s`` (m): the planning grid for the surrogate backend, the profile's points for
+    the solver backend.
+    """
 
     grid: VesselProfile
     lesions: list[Lesion]
@@ -116,6 +123,7 @@ class PlanResult:
     pv: float
     r_micro: float
     edge: float = DEFAULT_EDGE  # stent edge blending (m) the plans were evaluated with
+    curve_s: np.ndarray | None = None  # positions (m) of the pre / best FFR curves
     extra: dict = field(default_factory=dict)
 
     @property
@@ -131,7 +139,7 @@ class Backend(Protocol):
 
 
 class SolverBackend:
-    """Reduced-order solver with fixed Pa, Pv, R_micro on the planning grid."""
+    """Reduced-order solver with fixed Pa, Pv, R_micro on its own grid (the profile's points)."""
 
     name = "solver"
 
@@ -359,13 +367,19 @@ def plan_stents(
     pa: float | None = None,
     pv: float | None = None,
 ) -> PlanResult:
-    """Best stent plans for ``profile`` (SI). Pressures in Pa (default: ``params``)."""
+    """Best stent plans for ``profile`` (SI). Pressures in Pa (default: ``params``).
+
+    Candidates are generated and screened on the 256-point planning grid. The solver (backend
+    or re-check) runs on the profile's own points, with R_micro calibrated on them, exactly as
+    the app and the image pipeline do.
+    """
     t0 = time.perf_counter()
     params = params or PhysicsParams()
     grid = planning_grid(profile)
-    pre = solve_ffr_batch(grid.r, grid.ds, grid.reference_radius(), params, pa=pa, pv=pv)
+    native = VesselProfile(profile.s, profile.r, profile.reference_radius())
+    pre = solve_ffr_batch(native.r, native.ds, native.r_ref, params, pa=pa, pv=pv)
     pa_, pv_, rm = float(pre.pa[0]), float(pre.pv[0]), float(pre.r_micro[0])
-    solver = SolverBackend(grid, params, pa_, pv_, rm)
+    solver = SolverBackend(native, params, pa_, pv_, rm)
     full: SurrogateBackend | None = None
     if config.backend == "surrogate":
         if runner is None:
@@ -377,7 +391,8 @@ def plan_stents(
         )
     else:
         backend = solver
-    pre_curve = (full or backend).curves(grid.r[None])[0]
+    shown = full or backend  # the pre / best curves come from the full model
+    pre_curve = shown.curves(shown.grid.r[None])[0]
     lesions = grid.lesions(LESION_THRESHOLD_PCT)
 
     def result(plans, pareto, best_curve, n_cand, n_feas, n_pairs, message):
@@ -399,6 +414,7 @@ def plan_stents(
             pv_,
             rm,
             edge=mm_to_m(config.edge_mm),
+            curve_s=shown.grid.s,
         )
 
     if not lesions:
@@ -416,7 +432,7 @@ def plan_stents(
             0,
             "No candidate satisfies the landing-zone and sizing constraints.",
         )
-    ffr_single = backend.curves(stented_radii(grid, [single], config))[:, -1]
+    ffr_single = backend.curves(stented_radii(backend.grid, [single], config))[:, -1]
     all_plans = _to_plans([single], ffr_single, np.arange(len(single)), config)
 
     n_pairs = 0
@@ -437,7 +453,7 @@ def plan_stents(
         if pairs:
             ii, jj = np.array(pairs).T
             first, second = single.subset(ii), single.subset(jj)
-            ffr_pair = backend.curves(stented_radii(grid, [first, second], config))[:, -1]
+            ffr_pair = backend.curves(stented_radii(backend.grid, [first, second], config))[:, -1]
             all_plans += _to_plans([first, second], ffr_pair, np.arange(len(pairs)), config)
             n_pairs = len(pairs)
 
@@ -448,9 +464,9 @@ def plan_stents(
         # the front shown next to the plans carries the same (ensemble) FFRs
         pareto = pareto_front(_rescore(full, grid, pareto, config))
     if backend.name != "solver":  # re-check the proposed plans with the solver
-        checked = solver.curves(_radii_for(grid, ranked, config))[:, -1]
+        checked = solver.curves(_radii_for(solver.grid, ranked, config))[:, -1]
         ranked = [replace(p, ffr_solver=float(f)) for p, f in zip(ranked, checked, strict=True)]
-    best_curve = (full or backend).curves(_radii_for(grid, ranked[:1], config))[0]
+    best_curve = shown.curves(_radii_for(shown.grid, ranked[:1], config))[0]
     if ranked[0].meets_target:
         message = f"Shortest plan reaching FFR >= {config.target_ffr:.2f}."
     else:

@@ -4,7 +4,6 @@ Everything here is plain Python so it can be unit-tested and timed; ``streamlit_
 wires widgets to these functions. Units: SI internally, mm / mmHg for display.
 """
 
-import hashlib
 import io
 import json
 import os
@@ -21,6 +20,7 @@ from plotly.subplots import make_subplots
 from vstent import DISCLAIMER, __version__
 from vstent.config import git_info, load_config
 from vstent.data.synth import SamplingConfig, sample_vessel
+from vstent.imaging.image_io import ImageInput
 from vstent.imaging.qca import QCAResult
 from vstent.imaging.segment import THRESHOLD
 from vstent.inference.models import SEG_MODELS, SURROGATE_MODELS, latest_model_dir
@@ -125,59 +125,6 @@ def load_settings(root: Path = Path(".")):
 
 
 # --- inputs ----------------------------------------------------------------------------------
-
-
-@dataclass
-class ImageInput:
-    """A greyscale angiogram and what is known about its pixel size."""
-
-    image: np.ndarray  # (H, W) uint8
-    name: str
-    sha256: str
-    pixel_spacing_mm: float | None = None  # from DICOM ImagerPixelSpacing, if present
-    note: str = ""
-
-
-def _to_uint8(arr: np.ndarray) -> np.ndarray:
-    arr = np.asarray(arr)
-    if arr.dtype == np.uint8:
-        return arr
-    arr = arr.astype(np.float64)
-    lo, hi = np.percentile(arr, (0.5, 99.5))
-    return np.clip((arr - lo) / max(hi - lo, 1e-9) * 255.0, 0, 255).astype(np.uint8)
-
-
-def read_image(data: bytes, name: str) -> ImageInput:
-    """PNG / JPG / DICOM bytes → greyscale uint8 image (DICOM: first frame)."""
-    digest = hashlib.sha256(data).hexdigest()
-    is_dicom = name.lower().endswith((".dcm", ".dicom")) or data[128:132] == b"DICM"
-    if is_dicom:
-        import pydicom
-
-        ds = pydicom.dcmread(io.BytesIO(data), force=True)
-        arr = ds.pixel_array
-        frames = int(getattr(ds, "NumberOfFrames", 1) or 1)
-        if frames > 1:
-            arr = arr[0]
-        if arr.ndim == 3:  # colour
-            arr = cv2.cvtColor(_to_uint8(arr), cv2.COLOR_RGB2GRAY)
-        spacing = ds.get("ImagerPixelSpacing")
-        mm = float(spacing[0]) if spacing else None
-        note = (
-            "DICOM ImagerPixelSpacing is measured at the detector; geometric magnification is "
-            "not corrected."
-            if mm
-            else "DICOM without ImagerPixelSpacing."
-        )
-        if frames > 1:
-            note += f" First of {frames} frames used."
-        return ImageInput(_to_uint8(arr), name, digest, mm, note)
-    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
-    if img is None:
-        raise ValueError(f"{name}: not a readable PNG / JPG / DICOM image")
-    if img.ndim == 3:
-        img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY if img.shape[2] == 4 else cv2.COLOR_BGR2GRAY)
-    return ImageInput(_to_uint8(img), name, digest)
 
 
 def arcade_examples(root: str | Path | None = None, n: int = 30) -> list[Path]:

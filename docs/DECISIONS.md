@@ -276,3 +276,17 @@ The model interval and the input interval are reported side by side, not combine
 - Splitting by outlet diameters (common in CT-FFR outlet boundary conditions): it depends on each branch's taper and on where the path was cut, which is arbitrary in 2D QCA.
 - Splitting by territory or myocardial mass: there is no such information in a single angiogram.
 - k = 3 (original Murray's law): available through the config.
+
+### D34 — One solver geometry per case; the surrogate keeps its 256-point input (2026-10-30)
+**Decision:**
+- **Planner.** The planner's solver (solver backend, solver check of every plan, pre-PCI value and R_micro) runs on the profile's own points. That is the geometry the app, `vstent analyse` and the image pipeline solve on. Candidates, lesion detection and the surrogate stay on the 256-point planning grid. Stent positions are in metres, so both grids share them.
+- **Surrogate input.** The surrogate keeps resampling its input to 256 points with linear interpolation.
+
+**Reason:**
+- **The bug.** The MVP code review found that image paths (360–890 points) were solved on the native grid in the app but on the 256-point resample in the planner. A plan's "Solver check" could then differ from the app's own post-PCI solver value for the same stents (0.765 vs 0.752 on one ARCADE image), and `meets_target` could flip near 0.90. Synthetic vessels already have 256 points, so the planner benchmark, demo and uncertainty report are unchanged.
+- **Why not resample everything.** Resampling the whole case to 256 points would coarsen the physics for long paths.
+- **Why the surrogate input stays.** Downsampling (which can step over a narrow throat) happens only for paths longer than 256 px, about 77 mm at 0.30 mm/px. That is at or beyond the surrogate's 30–80 mm training range, where the app and `vstent analyse` already warn of extrapolation. The surrogate's reported error on image cases therefore includes this resampling, which is what it really does.
+
+**Alternatives:**
+- Resampling every case once to 256 points with block minima: consistent, but it loses resolution and biases throats.
+- An anti-aliased (resistance-preserving) surrogate resample: possible later, if image cases within the training length show aliasing.

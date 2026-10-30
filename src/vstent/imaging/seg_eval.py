@@ -175,18 +175,24 @@ def evaluate_seg_run(
     _plot_hist(dice_by_split, fig_dir / "seg_dice_hist.png")
     _plot_training(run_dir, fig_dir / "seg_training.png")
 
-    val_dice = splits["val"]["dice_mean"]
+    # The plan's target is on val; val also chose the best epoch, so the held-out test split is
+    # reported against the same thresholds as the unbiased estimate.
+    targets = [
+        {
+            "metric": metric,
+            "value": f"{dice:.4f}",
+            "target": f"≥ {TARGET_DICE} (stretch {STRETCH_DICE})",
+            "passed": dice >= TARGET_DICE,
+            "stretch_passed": dice >= STRETCH_DICE,
+        }
+        for metric, dice in (
+            ("Mean val Dice (plan target; val also chose the model)", splits["val"]["dice_mean"]),
+            ("Mean test Dice (held out)", splits["test"]["dice_mean"]),
+        )
+    ]
     report = {
-        "targets": [
-            {
-                "metric": "Mean val Dice",
-                "value": f"{val_dice:.4f}",
-                "target": f"≥ {TARGET_DICE} (stretch {STRETCH_DICE})",
-                "passed": val_dice >= TARGET_DICE,
-                "stretch_passed": val_dice >= STRETCH_DICE,
-            }
-        ],
-        "targets_met": val_dice >= TARGET_DICE,
+        "targets": targets,
+        "targets_met": all(t["passed"] for t in targets),
         "splits": splits,
         "training": json.loads((run_dir / SUMMARY).read_text(encoding="utf-8")),
         "config": cfg.model_dump(mode="json"),
@@ -208,12 +214,7 @@ def evaluate_seg_run(
 
 
 def _markdown(report: dict[str, Any]) -> str:
-    t, tr, cfg, prov = (
-        report["targets"][0],
-        report["training"],
-        report["config"],
-        report["provenance"],
-    )
+    tr, cfg, prov = report["training"], report["config"], report["provenance"]
     lines = [
         "# Vessel segmentation evaluation (ARCADE)",
         "",
@@ -230,8 +231,12 @@ def _markdown(report: dict[str, Any]) -> str:
         "",
         "| Metric | Value | Target | Pass |",
         "|---|---|---|---|",
-        f"| {t['metric']} | {t['value']} | {t['target']} | "
-        f"{'yes' if t['passed'] else 'NO'}{' (stretch met)' if t['stretch_passed'] else ''} |",
+        *(
+            f"| {t['metric']} | {t['value']} | {t['target']} | "
+            f"{'yes' if t['passed'] else 'NO'}"
+            f"{' (stretch met)' if t['stretch_passed'] else ' (stretch not met)'} |"
+            for t in report["targets"]
+        ),
         "",
         "## Results",
         "",
@@ -248,7 +253,9 @@ def _markdown(report: dict[str, Any]) -> str:
     aug = cfg["augment"]
     lines += [
         "",
-        "The test split was evaluated once, after training; model selection used val only.",
+        "The test split was evaluated once, after training. Model selection (best epoch, "
+        "early stopping) used val, so the val Dice is optimistic; the test Dice is the unbiased "
+        "estimate.",
         "",
         "## Figures",
         "",

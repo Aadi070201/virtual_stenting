@@ -13,6 +13,7 @@ from typer.testing import CliRunner
 
 from vstent.app import core
 from vstent.cli import APP_SCRIPT, app
+from vstent.imaging.image_io import read_image
 from vstent.physics.solver import PhysicsParams
 from vstent.planning.stent import Stent
 
@@ -52,16 +53,16 @@ def test_read_image_png_jpg_dicom():
     img[:, 15:] = 200
     for ext in (".png", ".jpg"):
         ok, enc = cv2.imencode(ext, cv2.cvtColor(img, cv2.COLOR_GRAY2BGR))
-        out = core.read_image(enc.tobytes(), f"x{ext}")
+        out = read_image(enc.tobytes(), f"x{ext}")
         assert out.image.shape == (20, 30) and out.image.dtype == np.uint8
         assert out.pixel_spacing_mm is None and len(out.sha256) == 64
-    dcm = core.read_image(_dicom_bytes(), "angio.dcm")
+    dcm = read_image(_dicom_bytes(), "angio.dcm")
     assert dcm.image.shape == (32, 40) and dcm.image[:, 30].mean() > dcm.image[:, 5].mean()
     assert dcm.pixel_spacing_mm == pytest.approx(0.25)
     assert "magnification" in dcm.note and "First of 2 frames" in dcm.note
-    assert core.read_image(_dicom_bytes(1, None), "a.dcm").pixel_spacing_mm is None
+    assert read_image(_dicom_bytes(1, None), "a.dcm").pixel_spacing_mm is None
     with pytest.raises(ValueError, match="not a readable"):
-        core.read_image(b"not an image", "x.png")
+        read_image(b"not an image", "x.png")
 
 
 def test_presets_and_fixed_r_micro_after_stent(tiny_export):
@@ -205,6 +206,19 @@ def test_plans_and_stents_belong_to_one_geometry_and_pressure(app_env):
     at.radio(key="calib").set_value("Enter pixel size").run()
     at.number_input(key="mm_px").set_value(0.10).run()
     assert not at.exception and at.toggle(key="place").value is False
+
+
+def test_pressures_outside_training_range_are_flagged_in_both_modes(app_env):
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
+    pa = next(n for n in at.number_input if n.label.startswith("Aortic pressure"))
+    pa.set_value(130.0).run()
+    assert not at.exception
+    assert any("aortic pressure 130.0 mmHg" in w.value for w in at.warning)
+    at.radio(key="mode").set_value("Angiogram image").run()
+    at.radio(key="source").set_value("ARCADE example").run()
+    at.button(key="auto").click().run()
+    assert not at.exception
+    assert any("aortic pressure 130.0 mmHg" in w.value for w in at.warning)
 
 
 def test_cli_app_launches_streamlit_on_localhost(monkeypatch):

@@ -27,13 +27,14 @@ import streamlit as st  # noqa: E402
 
 from vstent.app import core  # noqa: E402
 from vstent.imaging.centerline import longest_path_endpoints  # noqa: E402
+from vstent.imaging.image_io import ImageInput, read_image  # noqa: E402
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
-from vstent.inference.pipeline import analyse_vessel  # noqa: E402
+from vstent.inference.pipeline import analyse_vessel, range_warnings  # noqa: E402
 from vstent.planning.optimizer import plan_stents  # noqa: E402
 from vstent.planning.stent import Stent  # noqa: E402
 from vstent.uncertainty.greyzone import load_uncertainty, plan_assessments  # noqa: E402
 from vstent.uncertainty.inputs import SOURCE_LABELS, Measurement  # noqa: E402
-from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa  # noqa: E402
+from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa, pa_to_mmhg  # noqa: E402
 
 DISPLAY_WIDTH = 512
 
@@ -58,7 +59,9 @@ def segment(sha: str, _image: np.ndarray) -> np.ndarray:
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
 def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob):
-    params = get_settings()[0]
+    # the user's pressures, so the solver, R_micro and the range warnings all use them
+    pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
+    params = get_settings()[0].model_copy(update=pressures)
     return analyse_vessel(
         _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px
     )
@@ -105,7 +108,7 @@ with st.sidebar:
     pa, pv = mmhg_to_pa(pa_mmhg), mmhg_to_pa(pv_mmhg)
 
 state: core.CaseState | None = None
-image_input: core.ImageInput | None = None
+image_input: ImageInput | None = None
 prob = qca = None
 
 if mode == "Synthetic vessel":
@@ -121,6 +124,8 @@ if mode == "Synthetic vessel":
         "synthetic", case_params, case_pa, case_pv, case.profile, pre, description=case.description
     )
     state.uncertainty = input_mc(case_key, case.profile, case_pa, case_pv, case.v_hyp, None, False)
+    if models.surrogate is not None:  # e.g. Pa set outside the surrogate's training range
+        state.warnings += range_warnings(case.profile, case_pa, case_pv)
     if preset == core.PRESETS[2]:
         st.sidebar.caption(
             f"Pa {case_pa / 133.322:.0f} mmHg, Pv {case_pv / 133.322:.1f} mmHg and v_hyp "
@@ -133,13 +138,13 @@ else:
         if source == "Upload":
             up = st.file_uploader("PNG, JPG or DICOM", type=["png", "jpg", "jpeg", "dcm"])
             if up is not None:
-                image_input = core.read_image(up.getvalue(), up.name)
+                image_input = read_image(up.getvalue(), up.name)
         else:
             choice = st.selectbox(
                 "ARCADE stenosis/val image (CC0)", [p.name for p in examples], key="example"
             )
             path = next(p for p in examples if p.name == choice)
-            image_input = core.read_image(path.read_bytes(), f"ARCADE stenosis/val {path.name}")
+            image_input = read_image(path.read_bytes(), f"ARCADE stenosis/val {path.name}")
         st.subheader("Calibration")
         options = ["Assume 0.30 mm/px", "Enter pixel size"]
         if image_input is not None and image_input.pixel_spacing_mm:

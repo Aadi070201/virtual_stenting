@@ -158,10 +158,6 @@ def collect(reports: Path) -> dict[str, Any]:
             rows.append(
                 _row("M5", "Segmentation", t["metric"], t["value"], t["target"], t["passed"])
             )
-        facts.append(
-            f"Segmentation Dice on the held-out test split: "
-            f"{d['splits']['test']['dice_mean']:.4f} (no target)."
-        )
     d = source("seg_onnx.json", "Segmentation ONNX", "export")
     if d:
         p = d["parity"]
@@ -235,12 +231,18 @@ def collect(reports: Path) -> dict[str, Any]:
 
 
 def phase2_items(plan_path: Path = Path("docs/PLAN.md")) -> list[str]:
-    """Bullet lines of the "Phase 2 backlog" section of the plan."""
+    """Phase 2 milestones of the plan (``## P<n>: title``) with their status from the task
+    checkboxes: done (all ticked), in progress (some ticked) or not started."""
     if not plan_path.exists():
         return []
     text = plan_path.read_text(encoding="utf-8")
-    m = re.search(r"^## Phase 2 backlog.*?$(.*?)(?=^## |\Z)", text, flags=re.M | re.S)
-    return [ln[2:].strip() for ln in (m.group(1).splitlines() if m else []) if ln.startswith("- ")]
+    items = []
+    for m in re.finditer(r"^## (P\d+: .*?)$(.*?)(?=^## |\Z)", text, flags=re.M | re.S):
+        done = len(re.findall(r"^- \[x\]", m.group(2), flags=re.M))
+        todo = len(re.findall(r"^- \[ \]", m.group(2), flags=re.M))
+        status = "done" if done and not todo else "in progress" if done else "not started"
+        items.append(f"{m.group(1).strip()} ({status})")
+    return items
 
 
 def write_mvp_report(
@@ -303,7 +305,7 @@ def _markdown(data: dict[str, Any]) -> str:
     lines += [f"- {f}" for f in data["facts"]]
     lines += ["", "## Limitations", ""]
     lines += [f"- {item}" for item in LIMITATIONS]
-    lines += ["", "## Phase 2 next steps (from docs/PLAN.md; not started)", ""]
+    lines += ["", "## Phase 2 (status from docs/PLAN.md)", ""]
     lines += [f"- {item}" for item in data["phase2"]] or ["- (plan not found)"]
     lines += [
         "",

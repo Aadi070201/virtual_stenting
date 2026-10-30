@@ -50,10 +50,18 @@ def test_mvp_collect_on_committed_reports():
 
 def test_phase2_items(tmp_path):
     plan = tmp_path / "PLAN.md"
-    plan.write_text("## M8: x\n- [ ] a\n\n## Phase 2 backlog (later)\n\n- one\n- two\n", "utf-8")
-    assert phase2_items(plan) == ["one", "two"]
+    plan.write_text(
+        "## M8: x\n- [ ] a\n\n## P1: Done one\n- [x] a\n- [x] b\n\n## P2: Half\n- [x] a\n"
+        "- [ ] b\n\n## P3: Later [needs human]\n- [ ] a\n",
+        "utf-8",
+    )
+    assert phase2_items(plan) == [
+        "P1: Done one (done)",
+        "P2: Half (in progress)",
+        "P3: Later [needs human] (not started)",
+    ]
     assert phase2_items(tmp_path / "missing.md") == []
-    assert len(phase2_items()) >= 5  # the real plan
+    assert phase2_items()[0] == "P1: Uncertainty and grey-zone flagging (done)"  # the real plan
 
 
 def test_cli_demo_and_qca_synthetic(tmp_path, monkeypatch):
