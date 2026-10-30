@@ -1,11 +1,18 @@
 {
   "targets": [
     {
-      "metric": "Mean val Dice",
+      "metric": "Mean val Dice (plan target; val also chose the model)",
       "value": "0.8325",
       "target": "\u2265 0.75 (stretch 0.8)",
       "passed": true,
       "stretch_passed": true
+    },
+    {
+      "metric": "Mean test Dice (held out)",
+      "value": "0.7925",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true,
+      "stretch_passed": false
     }
   ],
   "targets_met": true,
@@ -108,10 +115,10 @@
       "config_class": "SegConfig"
     },
     "eval": {
-      "git_commit": "226fc57e72235d9e021cc5f8f8f2ef7e06d1eb92",
+      "git_commit": "e2459366990f9e3476f0204284d35af7eb6c6304",
       "git_dirty": false,
       "vstent_version": "0.1.0",
-      "created_utc": "2026-10-28T14:46:21+00:00"
+      "created_utc": "2026-10-30T15:57:00+00:00"
     },
     "device": "cuda",
     "torch": "2.14.1+cu126"

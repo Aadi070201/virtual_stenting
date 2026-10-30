@@ -10,7 +10,8 @@ Reference masks are the union of the annotated SYNTAX segment polygons of each A
 
 | Metric | Value | Target | Pass |
 |---|---|---|---|
-| Mean val Dice | 0.8325 | ≥ 0.75 (stretch 0.8) | yes (stretch met) |
+| Mean val Dice (plan target; val also chose the model) | 0.8325 | ≥ 0.75 (stretch 0.8) | yes (stretch met) |
+| Mean test Dice (held out) | 0.7925 | ≥ 0.75 (stretch 0.8) | yes (stretch not met) |
 
 ## Results
 
@@ -19,7 +20,7 @@ Reference masks are the union of the annotated SYNTAX segment polygons of each A
 | val | 200 | 0.8325 | 0.8473 | 0.7327 | 0.6216 | 0.8409 | 0.8245 | 0.8326 |
 | test | 300 | 0.7925 | 0.8183 | 0.6706 | 0.2132 | 0.8360 | 0.7676 | 0.8003 |
 
-The test split was evaluated once, after training; model selection used val only.
+The test split was evaluated once, after training. Model selection (best epoch, early stopping) used val, so the val Dice is optimistic; the test Dice is the unbiased estimate.
 
 ## Figures
 
@@ -39,7 +40,7 @@ The test split was evaluated once, after training; model selection used val only
 ## Provenance
 
 - Training run `runs/seg_unet_r34-20261028-141743`, commit `0d4afee9344af03ff8a89e0dd47485b102f7dc5f` (dirty: False)
-- Evaluation commit `226fc57e72235d9e021cc5f8f8f2ef7e06d1eb92` (dirty: False), vstent 0.1.0, 2026-10-28T14:46:21+00:00, device cuda
+- Evaluation commit `e2459366990f9e3476f0204284d35af7eb6c6304` (dirty: False), vstent 0.1.0, 2026-10-30T15:57:00+00:00, device cuda
 
 ## Limitations
 
