@@ -32,6 +32,7 @@ from vstent.imaging.segment import THRESHOLD  # noqa: E402
 from vstent.inference.pipeline import analyse_tree, analyse_vessel, range_warnings  # noqa: E402
 from vstent.inference.tree_runtime import (  # noqa: E402
     TreeSurrogateRunner,
+    floor_warnings,
 )
 from vstent.physics.tree import solve_tree  # noqa: E402
 from vstent.planning.optimizer import plan_stents  # noqa: E402
@@ -432,6 +433,8 @@ if tree_res is not None:
     if runner is not None:
         try:
             sur = runner.predict_tree(tree, pre_t.pa, pre_t.pv, pre_t.r_outlet)[1]
+            for w in floor_warnings(sur, tree.names, pre_t.pa, pre_t.pv):
+                st.warning(w)
         except ValueError as exc:
             st.caption(f"Tree surrogate not used: {exc}")
     st.dataframe(tree_view.branch_table(tree_res, tree_post, sur), hide_index=True)

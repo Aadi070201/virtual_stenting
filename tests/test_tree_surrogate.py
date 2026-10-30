@@ -120,3 +120,11 @@ def test_export_parity_runner_and_eval(tiny_tree_run, tiny_tree_data, tmp_path):
     assert set(report["splits"]) == {"test", "ood"} and len(report["targets"]) == 2
     md = (tmp_path / "reports" / "tree_surrogate_eval.md").read_text(encoding="utf-8")
     assert "Research use only" in md and "single-path" in md
+
+
+def test_floor_warnings():
+    from vstent.inference.tree_runtime import floor_warnings
+
+    ffr = [np.array([1.0, 0.5]), np.array([0.9, -0.05])]
+    w = floor_warnings(ffr, ["main", "side 1"], 12000.0, 600.0)
+    assert len(w) == 1 and "side 1" in w[0] and "Pv/Pa = 0.05" in w[0]

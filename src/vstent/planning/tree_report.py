@@ -92,6 +92,12 @@ def tree_planning_study(arrays, params, catalog, config, n, runner=None) -> dict
               "pa": float(arrays["pa"][i]), "pv": float(arrays["pv"][i])}  # fmt: skip
         res = plan_tree_stents(tree, 0, **kw)
         best = res.plans[0] if res.plans else None
+        # why a target is missed: no catalogue stent fits any lesion's vessel, or even a fully
+        # healthy main vessel (radius = reference, outlets fixed) stays below the target
+        min_ref_d = min(catalog.diameters_mm) / config.max_diameter_ratio
+        ref = res.path.reference_radius()
+        healthy = [tree.branches[0].reference_radius()] + [b.r for b in tree.branches[1:]]
+        ceiling = solve_tree(tree.with_radii(healthy), vp, r_outlet=res.r_outlet).ffr[0][-1]
         row = {
             "index": int(i),
             "branches": tree.n_branches,
@@ -100,6 +106,10 @@ def tree_planning_study(arrays, params, catalog, config, n, runner=None) -> dict
             "length_mm": m_to_mm(best.total_length) if best else None,
             "n_stents": len(best.stents) if best else 0,
             "seconds": res.seconds,
+            "n_lesions": len(res.lesions),
+            "lesions_too_small": bool(res.lesions)
+            and all(2e3 * np.interp(les.s_mld, res.path.s, ref) < min_ref_d for les in res.lesions),
+            "healthy_main_ffr": float(ceiling),
         }
         # the same main vessel planned as a single vessel (M6), then evaluated in the tree
         single = plan_stents(tree.branches[0], **{**kw, "config": solver_cfg})
@@ -120,9 +130,19 @@ def tree_planning_study(arrays, params, catalog, config, n, runner=None) -> dict
         rows.append(row)
     with_plan = [r for r in rows if r["length_mm"] is not None]
     both = [r for r in with_plan if r.get("single_length_mm") is not None and r["meets"]]
+    missed = [r for r in rows if not r["meets"]]
     summary = {
         "n_trees": len(rows),
         "reaches_target": sum(r["meets"] for r in rows),
+        "missed_no_plan": sum(r["length_mm"] is None for r in missed),
+        "missed_no_plan_vessel_too_small": sum(
+            r["length_mm"] is None and r["lesions_too_small"] for r in missed
+        ),
+        "missed_with_plan": sum(r["length_mm"] is not None for r in missed),
+        "missed_healthy_main_reaches_target": sum(
+            r["healthy_main_ffr"] >= config.target_ffr for r in missed
+        ),
+        "min_stent_reference_mm": min(catalog.diameters_mm) / config.max_diameter_ratio,
         "two_stent_plans": sum(r["n_stents"] == 2 for r in rows),
         "median_length_mm": float(np.median([r["length_mm"] for r in with_plan]))
         if with_plan
@@ -199,6 +219,12 @@ def _markdown(report: dict[str, Any]) -> str:
         "| Quantity | Value |",
         "|---|---|",
         f"| Plans reaching the target | {s['reaches_target']} / {s['n_trees']} |",
+        f"| Missed: no feasible plan (of which every lesion in a vessel below "
+        f"{s['min_stent_reference_mm']:.2f} mm reference, where no catalogue stent fits) | "
+        f"{s['missed_no_plan']} ({s['missed_no_plan_vessel_too_small']}) |",
+        f"| Missed: best plan below the target | {s['missed_with_plan']} |",
+        f"| Missed although a fully healthy main vessel would reach the target | "
+        f"{s['missed_healthy_main_reaches_target']} |",
         f"| Two-stent plans | {s['two_stent_plans']} / {s['n_trees']} |",
         f"| Median total stent length | {s['median_length_mm']:.0f} mm |",
         f"| Planning time per tree: median / p95 | {s['median_seconds']:.2f} s / "

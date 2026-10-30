@@ -535,7 +535,12 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
         f"{res.single.ffr[-1]:.3f}"
     )
     from vstent.inference.models import latest_model_dir
-    from vstent.inference.tree_runtime import TREE_MODELS, TREE_ONNX_FILE, TreeSurrogateRunner
+    from vstent.inference.tree_runtime import (
+        TREE_MODELS,
+        TREE_ONNX_FILE,
+        TreeSurrogateRunner,
+        floor_warnings,
+    )
 
     tree_dir = latest_model_dir(TREE_MODELS, TREE_ONNX_FILE)
     if tree_dir is not None:
@@ -546,6 +551,8 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
                 "Tree surrogate outlet FFR: "
                 + ", ".join(f"{nm} {f[-1]:.3f}" for nm, f in zip(tq.tree.names, sur, strict=True))
             )
+            for w in floor_warnings(sur, tq.tree.names, sol.pa, sol.pv):
+                typer.echo(f"Warning: {w}")
         except ValueError as exc:  # more branches than the model takes
             typer.echo(f"Tree surrogate not used: {exc}")
         runner.close()

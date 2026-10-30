@@ -129,3 +129,15 @@ class TreeSurrogateRunner:
         ffr = self.predict(raw)[0]
         s = [np.linspace(0.0, raw.length[0, k], self.n_points) for k in range(tree.n_branches)]
         return s, [ffr[k] for k in range(tree.n_branches)]
+
+
+def floor_warnings(ffr: list[np.ndarray], names: Sequence[str], pa: float, pv: float) -> list[str]:
+    """Branches whose surrogate FFR falls below the physical minimum Pv/Pa (zero flow): the
+    tree is far from what the model learned (the solver's value is the one to trust)."""
+    floor = pv / pa
+    return [
+        f"Tree surrogate FFR in {name} reaches {f.min():.2f}, below the physical minimum "
+        f"Pv/Pa = {floor:.2f}: this tree is far from what the model learned"
+        for name, f in zip(names, ffr, strict=True)
+        if f.min() < floor
+    ]
