@@ -8,9 +8,9 @@ The app script is driven with `streamlit.testing.v1.AppTest` and the exported mo
 
 | Mode | Case | Updates | Server median | Server max | Wall median | Wall max | Target (< 300 ms) |
 |---|---|---|---|---|---|---|---|
-| synthetic | Focal lesion preset | 26 | 72 ms | 210 ms | 98 ms | 257 ms | yes |
-| image | ARCADE stenosis/val 1.png, automatic path | 26 | 121 ms | 177 ms | 146 ms | 204 ms | yes |
+| synthetic | Focal lesion preset | 26 | 69 ms | 105 ms | 97 ms | 194 ms | yes |
+| image | ARCADE stenosis/val 1.png, automatic path | 26 | 116 ms | 211 ms | 143 ms | 245 ms | yes |
 
-Image mode, one-off: tracing the automatic path and running QCA + both FFR models took 245 ms (cached afterwards; segmentation itself is cached per image).
+Image mode, one-off: tracing the automatic path and running QCA + both FFR models took 236 ms (cached afterwards; segmentation itself is cached per image).
 
-CPU: AMD Ryzen 7 6800H with Radeon Graphics. Commit `d619cb9be6f076d281bc2de109d62d200ecbda81` (dirty: False), vstent 0.1.0, 2026-10-30T14:12:56+00:00.
+CPU: AMD Ryzen 7 6800H with Radeon Graphics. Commit `d2a9d123080793ff4c824332512a74d79e1ef3be` (dirty: False), vstent 0.1.0, 2026-10-30T15:22:38+00:00.
