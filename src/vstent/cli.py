@@ -506,8 +506,10 @@ def export_seg(
         raise typer.Exit(code=1)
 
 
-def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure):
-    """``vstent analyse --tree``: tree QCA, tree FFR, optional virtual stent on a path."""
+def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure,
+                      plan=None):  # fmt: skip
+    """``vstent analyse --tree``: tree QCA, tree FFR (solver; surrogate if exported),
+    optional virtual stent or plans on the path to ``outlet``. ``plan`` = (catalog, config)."""
     from vstent.inference.pipeline import analyse_tree
     from vstent.physics.tree import solve_tree
     from vstent.planning.stent import Stent, apply_path_stents
@@ -532,6 +534,21 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
         f"Main-path distal FFR: tree {sol.ffr[0][-1]:.3f}; as a single path (M1) "
         f"{res.single.ffr[-1]:.3f}"
     )
+    from vstent.inference.models import latest_model_dir
+    from vstent.inference.tree_runtime import TREE_MODELS, TREE_ONNX_FILE, TreeSurrogateRunner
+
+    tree_dir = latest_model_dir(TREE_MODELS, TREE_ONNX_FILE)
+    if tree_dir is not None:
+        runner = TreeSurrogateRunner.from_dir(tree_dir)
+        try:
+            _, sur = runner.predict_tree(tq.tree, sol.pa, sol.pv, sol.r_outlet)
+            typer.echo(
+                "Tree surrogate outlet FFR: "
+                + ", ".join(f"{nm} {f[-1]:.3f}" for nm, f in zip(tq.tree.names, sur, strict=True))
+            )
+        except ValueError as exc:  # more branches than the model takes
+            typer.echo(f"Tree surrogate not used: {exc}")
+        runner.close()
     for w in res.warnings:
         typer.echo(f"Warning: {w}")
     post = None
@@ -554,6 +571,28 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
                 for nm, a, b in zip(tq.tree.names, sol.ffr, post.ffr, strict=True)
             )
         )
+    if plan is not None:
+        from vstent.planning.tree_planner import plan_tree_stents
+
+        if outlet >= tq.tree.n_branches:
+            typer.echo(f"--outlet {outlet}: the tree has {tq.tree.n_branches} branches", err=True)
+            raise typer.Exit(code=2)
+        pr = plan_tree_stents(tq.tree, outlet, catalog=plan[0], config=plan[1], params=params)
+        typer.echo(
+            f"Stent plans along the path to {tq.tree.names[outlet]} ({pr.backend}; pre-PCI FFR "
+            f"{pr.pre_ffr:.3f}; {pr.n_feasible} feasible of {pr.n_candidates} candidates, "
+            f"{pr.n_pairs} pairs, {pr.seconds:.2f} s): {pr.message}"
+        )
+        for k, p in enumerate(pr.plans, 1):
+            stents = " + ".join(
+                f"{m_to_mm(s.diameter):.2f} × {m_to_mm(s.length):.0f} mm at "
+                f"{m_to_mm(s.s_start):.1f} mm"
+                for s in p.stents
+            )
+            outs = ", ".join(
+                f"{nm} {f:.3f}" for nm, f in zip(tq.tree.names, p.ffr_outlets, strict=True)
+            )
+            typer.echo(f"  {k}. {stents}: outlet FFR {outs}")
     if figure is not None:
         from vstent.inference.figures import plot_tree_analysis
 
@@ -636,7 +675,7 @@ def analyse(
         typer.Option("--stent", help="With --tree: START LENGTH DIAMETER (mm) along a path."),
     ] = None,
     outlet: Annotated[
-        int, typer.Option("--outlet", min=0, help="With --stent: path to this branch (0 = main).")
+        int, typer.Option("--outlet", min=0, help="With --tree: path to this branch (0 = main).")
     ] = 0,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
@@ -673,8 +712,8 @@ def analyse(
             f"DICOM ImagerPixelSpacing is {image_input.pixel_spacing_mm:g} mm/px (detector, "
             "magnification not corrected); pass --mm-per-px to use it."
         )
-    if tree and plan:
-        typer.echo("--plan works on single paths only; the tree planner is P3.", err=True)
+    if tree and plan and stent is not None:
+        typer.echo("With --tree give either --plan or --stent, not both.", err=True)
         raise typer.Exit(code=2)
     if stent is not None and not tree:
         typer.echo("--stent needs --tree (single paths: use --plan or the app).", err=True)
@@ -689,8 +728,15 @@ def analyse(
         typer.echo(f"Auto-selected path: start {start}, end {end} (row, col)")
     params = load_config(physics, PhysicsParams)
     if tree:
+        from vstent.planning.optimizer import PlannerConfig, StentCatalog
+
+        plan_cfg = (
+            (load_config(catalog, StentCatalog), load_config(planner, PlannerConfig))
+            if plan
+            else None
+        )
         _analyse_tree_cli(prob, img, start, end, image.name, params, mm_per_px, stent, outlet,
-                          figure)  # fmt: skip
+                          figure, plan_cfg)  # fmt: skip
         return
     surrogate = SurrogateRunner.from_dir(sur_dir)
     result = analyse_vessel(

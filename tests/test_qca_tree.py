@@ -100,6 +100,10 @@ def test_cli_analyse_tree_with_a_stent(dark_seg_dir, tmp_path):
     out = result.output
     assert "Vessel tree: 2 branches" in out and "Main-path distal FFR: tree" in out
     assert "Virtual stent 3.00 × 12 mm" in out and (tmp_path / "tree.png").stat().st_size > 0
-    assert CliRunner().invoke(app, base + ["--plan"]).exit_code == 2
+    planned = CliRunner().invoke(app, base + ["--plan"])
+    assert planned.exit_code == 0, planned.output
+    assert "Stent plans along the path to main (solver" in planned.output
+    both = base + ["--plan", "--stent", "61", "12", "3.0"]
+    assert CliRunner().invoke(app, both).exit_code == 2
     no_tree = [a for a in base if a != "--tree"] + ["--stent", "61", "12", "3.0"]
     assert CliRunner().invoke(app, no_tree).exit_code == 2
