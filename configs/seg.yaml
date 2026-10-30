@@ -1,0 +1,37 @@
+# Vessel segmentation on ARCADE syntax masks (docs/PLAN.md, M5).
+# Run outputs go to runs/<name>-<UTC timestamp>/; resumable state to checkpoints/<run-name>/.
+name: seg_unet_r34
+raw_dir: data/raw/arcade
+runs_dir: runs
+seed: 0
+
+model:
+  encoder: resnet34          # segmentation-models-pytorch U-Net, in_channels=1, 1 class
+  encoder_weights: imagenet  # Hugging Face smp-hub/resnet34.imagenet (downloaded once, cached)
+  image_size: 512            # ARCADE images are 512 x 512
+
+train:
+  epochs: 60
+  batch_size: 8
+  lr: 3.0e-4                 # AdamW, cosine decay to 0 over all steps
+  weight_decay: 1.0e-4
+  dice_weight: 1.0           # loss = BCE + 1.0 x soft Dice
+  patience: 15               # early stopping on mean validation Dice
+  grad_clip: 1.0
+  amp: true                  # float16 autocast on CUDA
+  device: auto
+  workers: 2                 # DataLoader workers for augmentation (each holds a copy of the images)
+  eval_batch_size: 16
+  max_train_images: null
+  max_val_images: null
+
+augment:                     # no flips: angiogram orientation is meaningful
+  rotation_deg: 15.0
+  scale: [0.9, 1.1]
+  brightness: 0.1            # additive, intensity in [0, 1]
+  contrast: [0.8, 1.2]
+  gamma: [0.8, 1.25]
+  noise_std: [0.0, 0.03]
+  p_noise: 0.5
+  p_clahe: 0.3
+  clahe_clip: 2.0

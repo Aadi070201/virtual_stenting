@@ -25,13 +25,14 @@ The detailed, step-by-step plan with acceptance criteria is in **`docs/PLAN.md`*
 4. Continue to the next task **without waiting for confirmation**, until milestone M8 is complete or you are blocked.
 5. Record every non-trivial design decision in `docs/DECISIONS.md` (one short paragraph: decision, reason, alternatives).
 6. Keep this file up to date if commands or structure change.
+7. **Every training loop must be stoppable and resumable** through `vstent.checkpoints`: save the full state (model, optimiser, scheduler, AMP scaler, RNG, history) to `checkpoints/<run-name>/` after every epoch, honour the `STOP` file, and offer `--resume <run-name>` on its CLI command. To pause a run: `vstent stop <run-name>` (it exits after the current epoch); `vstent checkpoints` lists runs and their resume commands.
 
 **Stop and ask the human only when:**
 - a dataset download fails or needs a manual licence acceptance
 - credentials, paid services or cloud accounts are needed
 - an acceptance criterion is still not met after 2 serious attempts (write the analysis and options in `PROGRESS.md` first)
 - anything would involve real patient data
-- you think Phase 2 work should begin
+- a Phase 2 item is marked [needs human] and its prerequisite is not confirmed
 
 ## Ground rules
 
@@ -45,7 +46,7 @@ The detailed, step-by-step plan with acceptance criteria is in **`docs/PLAN.md`*
 - **Generic stent catalogue only** (diameters and lengths). No commercial brand names.
 - **Keep it simple first.** Get a working, tested version, then improve. No notebooks as source of truth (`notebooks/` is for exploration only).
 - **No GPU? Don't block.** Train with smaller configs on CPU, note it in `PROGRESS.md`, and continue.
-- **Do not start Phase 2** (listed at the end of `PLAN.md`) without explicit approval.
+- **Phase 2** was approved by the human on 2026-10-28 and is planned as P1–P8 at the end of `PLAN.md`. Items marked **[needs human]** wait for the human (data registration, compute, partners). Check in with the human after each Phase 2 milestone.
 
 ## Tech stack
 
@@ -65,21 +66,38 @@ vstent/
   pyproject.toml        # deps, extras, ruff, pytest; torch from the CUDA 12.6 index via uv
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
-  configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog
+  configs/              # YAML configs: physics, synth_v1, surrogate, seg, stent_catalog, planner
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md
   src/vstent/
-    physics/            # geometry.py, solver.py
-    data/               # synth.py, arcade.py
-    surrogate/          # features.py, model.py, train.py, evaluate.py, export.py
-    imaging/            # segment.py, centerline.py, qca.py
-    planning/           # stent.py, optimizer.py
-    inference/          # onnx_runtime.py, pipeline.py
-    app/                # streamlit_app.py
+    physics/            # geometry.py, solver.py, report.py
+    data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py
+    surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
+                        # baseline.py, evaluate.py, export.py
+    imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
+                        # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
+                        # synthetic.py (rendered test tubes), qca_validation.py
+    planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
+                        # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark)
+    inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
+                        # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
+                        # solver + surrogate, torch-free), figures.py (analysis figure),
+                        # gallery.py (QCA gallery on ARCADE stenosis images), models.py
+                        # (locate exported models)
+    app/                # core.py (app logic, no Streamlit), streamlit_app.py (UI),
+                        # latency.py (AppTest-driven update timing)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
+    plotting.py         # shared chart style for report figures
+    reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
+    checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
+    units.py            # mmHg <-> Pa, mm <-> m
+    sysinfo.py          # CPU model for benchmarks
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
-  data/  models/  runs/ # git-ignored
+  data/  models/  runs/ # git-ignored; data/raw/arcade/ (ARCADE, see docs/DATA.md);
+                        # models/surrogate/<run-name>/{surrogate.onnx, norm_stats.json, config.yaml,
+                        # export_meta.json}; models/seg/<run-name>/{seg.onnx, config.yaml, export_meta.json}
+  checkpoints/          # git-ignored; checkpoints/<run-name>/{last.pt, state.json, STOP}
 ```
 
 ## Commands (create these in M0, keep them working)
@@ -92,14 +110,27 @@ uv sync --all-extras            # or: python -m venv .venv && pip install -e ".[
 uv run ruff check . && uv run ruff format --check . && uv run pytest -m "not slow" -q
 
 # pipeline (Typer CLI: `vstent`)
+uv run vstent physics-report    # M1 sanity checks + reports/figures/ffr_vs_ds.png
 uv run vstent synth --config configs/synth_v1.yaml
 uv run vstent train-surrogate --config configs/surrogate.yaml
+uv run vstent train-surrogate --resume <run-name>   # continue a stopped / interrupted run
+uv run vstent stop <run-name>                       # pause a running training after this epoch
+uv run vstent checkpoints                           # list resumable runs + resume commands
 uv run vstent eval-surrogate --run runs/<name>
-uv run vstent export-surrogate --run runs/<name>
-uv run vstent data arcade
-uv run vstent train-seg --config configs/seg.yaml
-uv run vstent demo              # end-to-end synthetic case → report
-uv run vstent app               # launches the Streamlit app
+uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
+uv run vstent data arcade                           # download + MD5-verify + extract ARCADE
+uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>
+uv run vstent eval-seg --run runs/<name>           # → reports/seg_eval.md
+uv run vstent export-seg --run runs/<name>         # ONNX + parity → reports/seg_onnx.md
+uv run vstent analyse <image.png> [--start R C --end R C] [--mm-per-px X] [--figure f.png]
+uv run vstent qca-gallery                          # → reports/qca_gallery.md + figures/qca_examples/
+uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
+uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
+uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
+uv run vstent demo              # end-to-end synthetic case → reports/demo/
+uv run vstent mvp-report        # → reports/mvp_report.md, assembled from the other reports
+uv run vstent app               # launches the Streamlit app on localhost:8501 (--port, --address)
+uv run vstent app-latency       # → reports/app_latency.md (stent-control update times)
 ```
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)

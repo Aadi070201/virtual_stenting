@@ -1,0 +1,280 @@
+{
+  "rows": [
+    {
+      "milestone": "M1",
+      "area": "Physics",
+      "metric": "Healthy 3.0 mm \u00d7 50 mm vessel, distal FFR",
+      "value": "0.9819",
+      "target": "\u2265 0.95",
+      "passed": true
+    },
+    {
+      "milestone": "M1",
+      "area": "Physics",
+      "metric": "3.0 mm \u00d7 60 mm, 10 mm cosine lesion, 50% DS",
+      "value": "0.9028",
+      "target": "[0.84, 0.94]",
+      "passed": true
+    },
+    {
+      "milestone": "M1",
+      "area": "Physics",
+      "metric": "3.0 mm \u00d7 60 mm, 10 mm cosine lesion, 70% DS",
+      "value": "0.6197",
+      "target": "[0.45, 0.70]",
+      "passed": true
+    },
+    {
+      "milestone": "M1",
+      "area": "Physics",
+      "metric": "Distal FFR strictly decreasing, DS 30% \u2192 90% (5% steps)",
+      "value": "-0.0074",
+      "target": "max step < 0",
+      "passed": true
+    },
+    {
+      "milestone": "M1",
+      "area": "Physics",
+      "metric": "Batch solver throughput (AMD Ryzen 7 6800H with Radeon Graphics)",
+      "value": "49,759 profiles/s",
+      "target": "\u2265 5,000",
+      "passed": true
+    },
+    {
+      "milestone": "M2",
+      "area": "Synthetic data",
+      "metric": "train: FFR < 0.80 / grey zone",
+      "value": "53.3% / 18.4%",
+      "target": "\u2265 30% / \u2265 15%",
+      "passed": true
+    },
+    {
+      "milestone": "M2",
+      "area": "Synthetic data",
+      "metric": "val: FFR < 0.80 / grey zone",
+      "value": "54.2% / 18.1%",
+      "target": "\u2265 30% / \u2265 15%",
+      "passed": true
+    },
+    {
+      "milestone": "M2",
+      "area": "Synthetic data",
+      "metric": "test: FFR < 0.80 / grey zone",
+      "value": "53.8% / 17.8%",
+      "target": "\u2265 30% / \u2265 15%",
+      "passed": true
+    },
+    {
+      "milestone": "M3",
+      "area": "Surrogate (test split)",
+      "metric": "Distal FFR MAE",
+      "value": "0.0013",
+      "target": "\u2264 0.015",
+      "passed": true
+    },
+    {
+      "milestone": "M3",
+      "area": "Surrogate (test split)",
+      "metric": "95% limits of agreement",
+      "value": "[-0.0057, +0.0056]",
+      "target": "within \u00b10.04",
+      "passed": true
+    },
+    {
+      "milestone": "M3",
+      "area": "Surrogate (test split)",
+      "metric": "Agreement at 0.8",
+      "value": "99.76%",
+      "target": "\u2265 97%",
+      "passed": true
+    },
+    {
+      "milestone": "M4",
+      "area": "Surrogate ONNX",
+      "metric": "Parity: max abs(FFR_torch - FFR_onnx) over 1,000 test vessels, all points",
+      "value": "5.4e-07",
+      "target": "< 0.0001",
+      "passed": true
+    },
+    {
+      "milestone": "M4",
+      "area": "Surrogate ONNX",
+      "metric": "Single-vessel latency, median (end-to-end)",
+      "value": "1.53 ms",
+      "target": "< 10 ms",
+      "passed": true
+    },
+    {
+      "milestone": "M4",
+      "area": "Surrogate ONNX",
+      "metric": "Batch of 1,024 vessels, median (end-to-end)",
+      "value": "187.7 ms",
+      "target": "< 300 ms",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "Segmentation",
+      "metric": "Mean val Dice",
+      "value": "0.8325",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "Segmentation ONNX",
+      "metric": "Parity max abs(prob torch \u2212 onnx)",
+      "value": "1.8e-05",
+      "target": "< 0.0001",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "QCA (synthetic tubes)",
+      "metric": "Median abs. diameter error (worst case)",
+      "value": "0.10 px",
+      "target": "\u2264 0.7 px",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "QCA (synthetic tubes)",
+      "metric": "MLD location error (worst case)",
+      "value": "1.9 px",
+      "target": "\u2264 3 px",
+      "passed": true
+    },
+    {
+      "milestone": "M5",
+      "area": "QCA (synthetic tubes)",
+      "metric": "DS error (worst case)",
+      "value": "0.7 points",
+      "target": "within \u00b17 points",
+      "passed": true
+    },
+    {
+      "milestone": "M6",
+      "area": "Planner",
+      "metric": "5,000 candidates, surrogate backend (median)",
+      "value": "0.959 s",
+      "target": "< 1 s",
+      "passed": true
+    },
+    {
+      "milestone": "M7",
+      "area": "App",
+      "metric": "Stent-control update, server time (max over modes)",
+      "value": "179 ms",
+      "target": "< 300 ms",
+      "passed": true
+    }
+  ],
+  "facts": [
+    "Synthetic dataset: 125,000 vessels generated in 8.4 s.",
+    "Surrogate distal-FFR MAE: test 0.0013 vs gradient-boosting baseline 0.0342; out-of-distribution 0.0039 (no target).",
+    "For context, the reduced-order solver computes 1,024 vessels in 18.1 ms, the ONNX surrogate in 188 ms: no speed-up is claimed.",
+    "INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99\u00d7 \u2192 not kept.",
+    "Segmentation Dice on the held-out test split: 0.7925 (no target).",
+    "ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 8/20; 19 outside the surrogate's training range.",
+    "Planner on 100 synthetic vessels: target reached 84 (solver) / 84 (surrogate); solver confirms 82/84 surrogate plans; same total length 81/84.",
+    "App update medians: synthetic 50 ms, image 77 ms.",
+    "Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 \u2192 0.976 (solver) with 3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm; planning 0.37 s."
+  ],
+  "provenance": [
+    {
+      "report": "physics_checks.json",
+      "title": "Physics checks",
+      "commit": "1c4c48900f2d65a4e91d322f96b166a4ef41f880",
+      "dirty": false,
+      "created": "2026-10-26T11:25:10+00:00"
+    },
+    {
+      "report": "dataset_card.json",
+      "title": "Dataset card",
+      "commit": "86ec53c506e22eadea9282bb03279a970ef42240",
+      "dirty": false,
+      "created": "2026-10-28T09:00:40+00:00"
+    },
+    {
+      "report": "surrogate_eval.json",
+      "title": "Surrogate evaluation",
+      "commit": "4e93e889358c2a8810ae5cc0abc97413e747aee1",
+      "dirty": false,
+      "created": "2026-10-28T13:13:18+00:00"
+    },
+    {
+      "report": "onnx_benchmark.json",
+      "title": "ONNX benchmark",
+      "commit": "49c9b40fa69dee2ac15629d80f990843c54d8eb7",
+      "dirty": false,
+      "created": "2026-10-28T16:01:16+00:00"
+    },
+    {
+      "report": "seg_eval.json",
+      "title": "Segmentation evaluation",
+      "commit": "226fc57e72235d9e021cc5f8f8f2ef7e06d1eb92",
+      "dirty": false,
+      "created": "2026-10-28T14:46:21+00:00"
+    },
+    {
+      "report": "seg_onnx.json",
+      "title": "Segmentation ONNX",
+      "commit": "20d7f6b33c47e57fee342c97fe2ca3e54548eced",
+      "dirty": false,
+      "created": "2026-10-28T14:47:02+00:00"
+    },
+    {
+      "report": "qca_synthetic.json",
+      "title": "QCA synthetic validation",
+      "commit": "24acff05b518217d6bf9d3c0947e6bb29a7f08b4",
+      "dirty": false,
+      "created": "2026-10-28T16:37:38+00:00"
+    },
+    {
+      "report": "qca_gallery.json",
+      "title": "QCA gallery",
+      "commit": "6b388bc15b3e0367f7e3b90d252065a3738e1942",
+      "dirty": false,
+      "created": "2026-10-28T14:58:01+00:00"
+    },
+    {
+      "report": "planner_benchmark.json",
+      "title": "Planner benchmark",
+      "commit": "8c89eb0b9dd968005a7f1b91ee0d4cf3eb1dbd3b",
+      "dirty": false,
+      "created": "2026-10-28T16:02:19+00:00"
+    },
+    {
+      "report": "app_latency.json",
+      "title": "App latency",
+      "commit": "7c79f1136aae4580e61d991cf27b3f7441fbd471",
+      "dirty": false,
+      "created": "2026-10-28T16:48:15+00:00"
+    },
+    {
+      "report": "demo/demo.json",
+      "title": "Demo",
+      "commit": "686bdf9e72cbabbf84f32394a564762867b32fc7",
+      "dirty": false,
+      "created": "2026-10-28T16:37:43+00:00"
+    }
+  ],
+  "missing": [],
+  "phase2": [
+    "3D CFD labels: coronary trees from ImageCAS / ASOCA, steady hyperemic simulations (SimVascular or OpenFOAM); multi-fidelity surrogate training",
+    "Graph neural network / graph transformer surrogate for vessel trees with side branches; flow split by Murray's law",
+    "Two-view 3D reconstruction from DICOM angles; foreshortening correction",
+    "Cine DICOM: end-diastolic frame selection; TIMI frame-count flow estimate",
+    "Sim-to-real: render synthetic angiograms from 3D trees to train angiogram \u2192 FFR end-to-end",
+    "Calibrated uncertainty and conformal intervals; grey-zone flagging",
+    "Retrospective clinical validation against wire FFR with a partner hospital (needs ethics approval; human-led)",
+    "Regulatory groundwork: IEC 62304 software lifecycle docs, ISO 14971 risk file"
+  ],
+  "provenance_report": {
+    "git_commit": "21ebb47ad22092cac9ef4b863ec9d7de8d7c01aa",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-10-28T16:49:34+00:00"
+  },
+  "all_targets_met": true
+}

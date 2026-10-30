@@ -1,0 +1,167 @@
+{
+  "disclaimer": "Research use only \u2014 not for clinical decisions. This research prototype is not a medical device, is not validated, and must never be used to make decisions about real patients.",
+  "created_utc": "2026-10-28T16:37:43+00:00",
+  "software": {
+    "vstent": "0.1.0",
+    "git_commit": "686bdf9e72cbabbf84f32394a564762867b32fc7",
+    "git_dirty": false
+  },
+  "models": {
+    "surrogate": {
+      "dir": "models/surrogate/unet1d-20261028-125810",
+      "run": "runs/unet1d-20261028-125810",
+      "run_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1",
+      "onnx_sha256": "5dea854feeb2d5b5437ba66b8aabf23a46b473ef4c37b5a5dfa48943922a5b55"
+    },
+    "segmentation": {
+      "dir": null,
+      "run": null,
+      "run_git_commit": null,
+      "onnx_sha256": null
+    }
+  },
+  "input": {
+    "mode": "synthetic demo",
+    "description": "70 mm, 3.0 mm reference, two 10 mm lesions of 60% DS at 20 and 50 mm"
+  },
+  "assumptions": {
+    "flow_model": "reduced-order: dP = a\u00b7Q + b\u00b7Q\u00b2, Q from Pa \u2212 Pv = dP + R_micro\u00b7Q; R_micro calibrated so the reference vessel carries v_hyp at Pa \u2212 Pv; post-PCI keeps the pre-PCI R_micro, Pa and Pv",
+    "physics": {
+      "mu": 0.0035,
+      "rho": 1060.0,
+      "pa_mmhg": 90.0,
+      "pv_mmhg": 5.0,
+      "kt": 1.52,
+      "v_hyp": 0.35,
+      "expansion_threshold": 1.05
+    },
+    "pa_mmhg": 90.0,
+    "pv_mmhg": 5.0,
+    "r_micro_pa_s_per_m3": 4457341279.202132,
+    "single_vessel_no_side_branches": true,
+    "stent_model": "lumen widened to the stent radius, half-cosine edges of 1 mm inside the stent; no recoil or malapposition"
+  },
+  "vessel": {
+    "length_mm": 70.0,
+    "mld_mm": 1.2,
+    "max_ds_pct": 60.0,
+    "lesions": [
+      {
+        "start_mm": 17.57,
+        "end_mm": 22.24,
+        "mld_mm": 1.2,
+        "max_ds_pct": 60.0
+      },
+      {
+        "start_mm": 47.76,
+        "end_mm": 52.43,
+        "mld_mm": 1.2,
+        "max_ds_pct": 60.0
+      }
+    ]
+  },
+  "pre_pci": {
+    "ffr_distal_solver": 0.7053,
+    "ffr_distal_surrogate": 0.7073
+  },
+  "stents": [
+    {
+      "start_mm": 14.5,
+      "length_mm": 12.0,
+      "diameter_mm": 3.25,
+      "expansion": 1.0
+    },
+    {
+      "start_mm": 43.0,
+      "length_mm": 12.0,
+      "diameter_mm": 3.25,
+      "expansion": 1.0
+    }
+  ],
+  "post_pci": {
+    "ffr_distal_solver": 0.9764,
+    "ffr_distal_surrogate": 0.9756
+  },
+  "warnings": [],
+  "plans": {
+    "backend": "surrogate",
+    "target_ffr": 0.9,
+    "message": "Shortest plan reaching FFR >= 0.90.",
+    "top": [
+      {
+        "stents": [
+          {
+            "start_mm": 14.5,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          },
+          {
+            "start_mm": 43.0,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          }
+        ],
+        "total_length_mm": 24.0,
+        "ffr": 0.9756,
+        "ffr_solver_check": 0.9764,
+        "meets_target": true
+      },
+      {
+        "stents": [
+          {
+            "start_mm": 13.5,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          },
+          {
+            "start_mm": 43.0,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          }
+        ],
+        "total_length_mm": 24.0,
+        "ffr": 0.9755,
+        "ffr_solver_check": 0.9764,
+        "meets_target": true
+      },
+      {
+        "stents": [
+          {
+            "start_mm": 14.5,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          },
+          {
+            "start_mm": 45.0,
+            "length_mm": 12.0,
+            "diameter_mm": 3.25,
+            "expansion": 1.0
+          }
+        ],
+        "total_length_mm": 24.0,
+        "ffr": 0.9755,
+        "ffr_solver_check": 0.9764,
+        "meets_target": true
+      }
+    ]
+  },
+  "demo": {
+    "preset": "Tandem lesions (2 \u00d7 60% DS)",
+    "planning_backend": "surrogate",
+    "best_plan": "3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm",
+    "n_candidates": 6280,
+    "n_feasible": 1720,
+    "n_pairs": 176,
+    "timings_s": {
+      "load_s": 0.056187600013799965,
+      "pre_pci_s": 0.00253649998921901,
+      "planning_s": 0.3745853000000352,
+      "post_pci_s": 0.0021280999935697764
+    }
+  }
+}

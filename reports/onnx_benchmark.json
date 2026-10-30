@@ -1,0 +1,158 @@
+{
+  "targets": [
+    {
+      "metric": "Parity: max abs(FFR_torch - FFR_onnx) over 1,000 test vessels, all points",
+      "value": "5.4e-07",
+      "target": "< 0.0001",
+      "passed": true
+    },
+    {
+      "metric": "Single-vessel latency, median (end-to-end)",
+      "value": "1.53 ms",
+      "target": "< 10 ms",
+      "passed": true
+    },
+    {
+      "metric": "Batch of 1,024 vessels, median (end-to-end)",
+      "value": "187.7 ms",
+      "target": "< 300 ms",
+      "passed": true
+    }
+  ],
+  "targets_met": true,
+  "timings": {
+    "default": {
+      "single_end_to_end": {
+        "median_ms": 1.5275,
+        "p95_ms": 1.9966499999999998,
+        "min_ms": 1.3822,
+        "runs": 200
+      },
+      "single_inference": {
+        "median_ms": 1.3179500000000002,
+        "p95_ms": 1.6522799999999995,
+        "min_ms": 1.2361,
+        "runs": 200
+      },
+      "batch_end_to_end": {
+        "median_ms": 187.7277,
+        "p95_ms": 206.47425500000003,
+        "min_ms": 177.9082,
+        "runs": 20
+      },
+      "batch_inference": {
+        "median_ms": 191.09525000000002,
+        "p95_ms": 198.821055,
+        "min_ms": 183.7534,
+        "runs": 20
+      },
+      "batch_size": 1024,
+      "settings": {
+        "workers": 16,
+        "chunk_size": 8,
+        "intra_op_threads": 1
+      }
+    },
+    "one_call": {
+      "single_end_to_end": {
+        "median_ms": 1.3793,
+        "p95_ms": 1.7847549999999999,
+        "min_ms": 1.0025,
+        "runs": 200
+      },
+      "single_inference": {
+        "median_ms": 1.15205,
+        "p95_ms": 1.5202049999999998,
+        "min_ms": 0.8792,
+        "runs": 200
+      },
+      "batch_end_to_end": {
+        "median_ms": 640.1131499999999,
+        "p95_ms": 657.9689050000001,
+        "min_ms": 589.0845,
+        "runs": 20
+      },
+      "batch_inference": {
+        "median_ms": 553.4961000000001,
+        "p95_ms": 580.096055,
+        "min_ms": 540.8844,
+        "runs": 20
+      },
+      "batch_size": 1024,
+      "settings": {
+        "workers": 1,
+        "chunk_size": null,
+        "intra_op_threads": "ORT default"
+      }
+    }
+  },
+  "solver": {
+    "median_ms": 18.122700000000002,
+    "p95_ms": 19.306235,
+    "min_ms": 17.2388,
+    "runs": 20,
+    "batch_size": 1024
+  },
+  "int8": {
+    "weight_type": "QUInt8",
+    "n": 10000,
+    "distal_mae_fp32": 0.001285392208956182,
+    "distal_mae_int8": 0.002617087448015809,
+    "mae_rise": 0.001331695239059627,
+    "max_abs_diff": 0.06412369012832642,
+    "batch_size": 1024,
+    "batch_median_ms_fp32": 192.68725,
+    "batch_median_ms_int8": 194.1467,
+    "speedup": 0.9924827462944258,
+    "fp32_bytes": 4298023,
+    "int8_bytes": 1465651,
+    "accuracy_ok": true,
+    "kept": false
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
+    "logical_cpus": 16,
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "onnxruntime": "1.31.0",
+    "python": "3.14.5",
+    "platform": "Windows-11-10.0.26300-SP0"
+  },
+  "model": {
+    "onnx_file": "surrogate.onnx",
+    "onnx_sha256": "5dea854feeb2d5b5437ba66b8aabf23a46b473ef4c37b5a5dfa48943922a5b55",
+    "onnx_bytes": 4298023,
+    "opset": 17,
+    "dir": "models/surrogate/unet1d-20261028-125810",
+    "n_points": 256,
+    "base_channels": 32,
+    "versions": {
+      "vstent": "0.1.0",
+      "torch": "2.14.1+cu126",
+      "onnx": "1.23.2",
+      "onnxruntime": "1.31.0"
+    }
+  },
+  "data": {
+    "dir": "data/synth/v1",
+    "split": "test",
+    "n_vessels": 1024
+  },
+  "provenance": {
+    "run": "runs/unet1d-20261028-125810",
+    "run_git_commit": "deb7b35a42b322302b89ddfbc0e03a45bb21e4f1",
+    "run_git_dirty": false,
+    "export": {
+      "git_commit": "49c9b40fa69dee2ac15629d80f990843c54d8eb7",
+      "git_dirty": false,
+      "created_utc": "2026-10-28T16:01:14+00:00"
+    },
+    "report": {
+      "git_commit": "49c9b40fa69dee2ac15629d80f990843c54d8eb7",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-10-28T16:01:16+00:00"
+    }
+  }
+}

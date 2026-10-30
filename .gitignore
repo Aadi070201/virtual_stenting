@@ -3,6 +3,7 @@
 /data/
 /models/
 /runs/
+/checkpoints/
 *.onnx
 !tests/fixtures/**/*.onnx
 

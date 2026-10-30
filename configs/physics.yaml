@@ -1,0 +1,9 @@
+# Reduced-order physics constants (docs/PLAN.md, M1; docs/PHYSICS.md).
+# Pressures in mmHg; everything else SI. Do not tune these to make tests pass.
+mu: 3.5e-3                # Pa·s, blood viscosity (Newtonian)
+rho: 1060.0               # kg/m³, blood density
+pa_mmhg: 90.0             # mean aortic pressure
+pv_mmhg: 5.0              # venous pressure
+kt: 1.52                  # expansion loss coefficient (Young & Tsai)
+v_hyp: 0.35               # m/s, hyperemic reference velocity (fixed-flow QFR)
+expansion_threshold: 1.05 # ignore diverging runs with A_max/A_min below this
