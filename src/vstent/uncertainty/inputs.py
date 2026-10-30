@@ -138,7 +138,7 @@ class InputUncertainty:
         cfg = config or InputUncertaintyConfig()
         allowed = applicable_sources(measurement, qca_error)
         self.sources = [s for s in allowed if sources is None or s in sources]
-        self.profile, self.params, self.edge = profile, params, DEFAULT_EDGE
+        self.profile, self.params = profile, params
         rng = np.random.default_rng(cfg.seed)
         n, m = cfg.n_samples, profile.n
 
@@ -185,16 +185,17 @@ class InputUncertainty:
     def n_samples(self) -> int:
         return self.pre_samples.size
 
-    def post_samples(self, stents: Sequence[Stent]) -> np.ndarray:
+    def post_samples(self, stents: Sequence[Stent], edge: float = DEFAULT_EDGE) -> np.ndarray:
         """Post-PCI distal FFR of every draw with ``stents`` implanted (pre-PCI R_micro).
 
-        Stent positions are in the profile's coordinates (m), as in ``apply_stents``.
+        Stent positions are distances from the inlet (m), as in ``apply_stents``; ``edge`` is
+        the half-cosine blending length (m) inside each stent end, as in the planner.
         """
         r = self.r
         out = r.copy()
         for st in stents:
             s0 = self.k * st.s_start
-            w = stent_weight(self.s, s0, s0 + st.length, self.edge)
+            w = stent_weight(self.s, s0, s0 + st.length, edge)
             out = np.maximum(out, r + w * np.maximum(0.0, st.radius - r))
         res = solve_ffr_batch(
             out, self.ds, self.r_ref, self.params, pa=self.pa, pv=self.pv, r_micro=self.r_micro

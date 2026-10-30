@@ -37,6 +37,7 @@ splits:
   train: {n: 100000, seed: 1001}
   val:   {n: 10000,  seed: 1002}
   test:  {n: 10000,  seed: 1003}
+  cal:   {n: 10000,  seed: 1005}   # conformal calibration only (P1, DECISIONS D29)
   ood:
     n: 5000
     seed: 1004

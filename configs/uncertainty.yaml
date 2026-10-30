@@ -5,7 +5,8 @@ pre_pci_threshold: 0.80        # grey zone: a pre-PCI interval containing this v
 conformal_score: normalised    # |y − ŷ| / (σ + sigma_floor), σ = ensemble SD; or "absolute"
 sigma_floor: 0.0002            # FFR units; ≈ 10th percentile of the ensemble SD on val, so it only
                                # acts where the members agree almost exactly (DECISIONS D29)
-calibration_split: val         # calibrated at export (vstent export-ensemble), reported on test / ood
+calibration_split: cal         # used for nothing else; calibrated at export (vstent
+                               # export-ensemble), reported on test / ood
 
 inputs:                        # Monte Carlo through the solver, per case
   n_samples: 500

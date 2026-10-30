@@ -113,17 +113,22 @@ def train_surrogate(
     run_dir: str | Path | None = None,
     checkpoint_root: str | Path = CHECKPOINTS_DIR,
     log: Callable[[str], None] | None = None,
+    parent_stop: Path | None = None,
 ) -> Path:
     """Start a new training run; returns the run directory.
 
     The full training state is saved to ``checkpoints/<run-name>/`` after every epoch, so the
-    run can be stopped (``vstent stop``) and continued with :func:`resume_surrogate`.
+    run can be stopped (``vstent stop``) and continued with :func:`resume_surrogate`. A STOP
+    file in ``parent_stop`` (an ensemble's checkpoint directory) also stops it.
     """
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     run_dir = Path(run_dir or Path(config.runs_dir) / f"{config.name}-{stamp}")
     save_run_metadata(run_dir, config)
     ckpt_dir = checkpoint_dir(run_dir.name, checkpoint_root)
-    return _fit(config, run_dir, ckpt_dir, log or (lambda _msg: None), resume=False)
+    return _fit(
+        config, run_dir, ckpt_dir, log or (lambda _msg: None), resume=False,
+        parent_stop=parent_stop,
+    )  # fmt: skip
 
 
 def resume_surrogate(
@@ -131,11 +136,13 @@ def resume_surrogate(
     *,
     checkpoint_root: str | Path = CHECKPOINTS_DIR,
     log: Callable[[str], None] | None = None,
+    parent_stop: Path | None = None,
 ) -> Path:
     """Continue a stopped or interrupted run from its last completed epoch.
 
     ``name_or_path`` is the run name, ``runs/<name>`` or ``checkpoints/<name>``. The config is
     read from the run directory, so the continued run uses exactly the original settings.
+    ``parent_stop`` as in :func:`train_surrogate`.
     """
     ckpt_dir = resolve_checkpoint(name_or_path, checkpoint_root)
     status = read_status(ckpt_dir)
@@ -143,7 +150,10 @@ def resume_surrogate(
         raise ValueError(f"{ckpt_dir} is a {status.get('kind')!r} checkpoint, not {KIND!r}")
     run_dir = Path(status["run_dir"])
     config = load_config(run_dir / CONFIG_FILENAME, SurrogateConfig)
-    return _fit(config, run_dir, ckpt_dir, log or (lambda _msg: None), resume=True)
+    return _fit(
+        config, run_dir, ckpt_dir, log or (lambda _msg: None), resume=True,
+        parent_stop=parent_stop,
+    )  # fmt: skip
 
 
 def _fit(
@@ -153,6 +163,7 @@ def _fit(
     log: Callable[[str], None],
     *,
     resume: bool,
+    parent_stop: Path | None = None,
 ) -> Path:
     tc = config.train
     torch.manual_seed(config.seed)
@@ -302,7 +313,8 @@ def _fit(
         if stale >= tc.patience and epoch >= tc.min_epochs:
             log(f"Early stop: no improvement for {stale} epochs")
             break
-        if stop_requested(ckpt_dir):
+        # the parent's STOP is not cleared here: the ensemble loop reads it and clears it
+        if stop_requested(ckpt_dir) or (parent_stop is not None and stop_requested(parent_stop)):
             save_checkpoint("stopped")
             clear_stop(ckpt_dir)
             log(f"Stopped after epoch {epoch}. Resume with: {resume_command}")

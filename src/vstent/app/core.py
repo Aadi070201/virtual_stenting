@@ -40,11 +40,9 @@ from vstent.uncertainty.greyzone import (
     Interval,
     UncertaintyConfig,
     assessment,
-    plan_assessments,
+    model_interval,
 )
 from vstent.uncertainty.inputs import SOURCE_LABELS, InputUncertainty, Measurement, QCAErrorModel
-
-__all__ = ["Measurement", "SOURCE_LABELS", "plan_assessments"]  # re-exported for the app
 from vstent.units import m_to_mm, pa_to_mmhg
 
 CUTOFF = 0.80
@@ -124,13 +122,6 @@ def load_settings(root: Path = Path(".")):
         )
     )
     return physics, planner, catalog
-
-
-def load_uncertainty(root: Path = Path(".")) -> tuple[UncertaintyConfig, QCAErrorModel | None]:
-    """``configs/uncertainty.yaml`` (defaults if missing) and the QCA error model it names."""
-    path = root / "configs" / "uncertainty.yaml"
-    cfg = load_config(path, UncertaintyConfig) if path.exists() else UncertaintyConfig()
-    return cfg, QCAErrorModel.from_report(root / cfg.inputs.qca_error_report)
 
 
 # --- inputs ----------------------------------------------------------------------------------
@@ -279,9 +270,7 @@ def evaluate(
     s_sur = ffr_sur = std = interval = None
     if runner is not None:
         s_sur, ffr_sur, std = runner.predict_profile_with_spread(profile, pa, pv, rm)
-        iv = None if std is None else runner.distal_interval(ffr_sur[-1], std[-1])
-        if iv is not None:
-            interval = Interval(float(iv[0]), float(iv[1]), runner.conformal.level)
+        interval = model_interval(runner, ffr_sur[-1], None if std is None else std[-1])
     return Curves(profile.s, res.ffr[0], s_sur, ffr_sur, rm, float(res.q[0]), std, interval)
 
 
@@ -449,13 +438,14 @@ def ffr_figure(
             continue
         s = m_to_mm(curves.s)
         if a is not None:
-            pct = f"{(a.inputs or a.model).level:.0%}" if (a.inputs or a.model) else ""
             gap = 0.012 * (s[-1] - s[0])
             if a.inputs is not None:
-                _interval_bar(fig, s[-1] + gap, a.inputs, color, f"{pct} inputs ({label})")
+                name = f"{a.inputs.level:.0%} inputs ({label})"
+                _interval_bar(fig, s[-1] + gap, a.inputs, color, name)
             if a.model is not None:
                 sur_color = SERIES_1 if curves is pre else SERIES_2
-                _interval_bar(fig, s[-1] + 2 * gap, a.model, sur_color, f"{pct} model ({label})")
+                name = f"{a.model.level:.0%} model ({label})"
+                _interval_bar(fig, s[-1] + 2 * gap, a.model, sur_color, name)
         fig.add_scatter(
             x=s,
             y=curves.solver,
@@ -546,6 +536,7 @@ class CaseState:
     pre_assessment: Assessment | None = None
     post_assessment: Assessment | None = None
     plan_assessments: list[Assessment] = field(default_factory=list)
+    edge: float = DEFAULT_EDGE  # stent edge blending (m), the planner's edge_mm
 
 
 def _stent_dict(st: Stent) -> dict[str, float]:
@@ -579,7 +570,7 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
             "r_micro_pa_s_per_m3": state.pre.r_micro,
             "single_vessel_no_side_branches": True,
             "stent_model": "lumen widened to the stent radius, half-cosine edges of "
-            f"{m_to_mm(DEFAULT_EDGE):g} mm inside the stent; no recoil or malapposition",
+            f"{m_to_mm(state.edge):g} mm inside the stent; no recoil or malapposition",
         },
         "vessel": {
             "length_mm": round(m_to_mm(p.length), 2),

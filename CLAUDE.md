@@ -126,7 +126,7 @@ uv run vstent checkpoints                           # list resumable runs + resu
 uv run vstent eval-surrogate --run runs/<name>
 uv run vstent export-surrogate --run runs/<name>    # ONNX + parity + CPU benchmark report
 uv run vstent train-ensemble --config configs/ensemble.yaml   # P1: 5 seeds; also --resume <name>
-uv run vstent export-ensemble --run runs/<ensemble> # ONNX mean + SD, screen model, conformal (val)
+uv run vstent export-ensemble --run runs/<ensemble> # ONNX mean + SD, screen model, conformal (cal split)
 uv run vstent uncertainty-report                    # → reports/uncertainty.md (coverage, input MC)
 uv run vstent data arcade                           # download + MD5-verify + extract ARCADE
 uv run vstent train-seg --config configs/seg.yaml   # also --resume <run-name>

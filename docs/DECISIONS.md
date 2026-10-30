@@ -201,16 +201,17 @@ Items that depend on the human (data registration, compute budget, a hospital pa
 
 ### D29 — Split-conformal interval with an ensemble-normalised score (2026-10-30)
 **Decision:**
-- **Score.** The model interval for distal FFR is split-conformal on the whole `val` split, using the score |y − ŷ| / (σ + f) with the floor f = 0.0002. Here ŷ is the ensemble mean, σ the ensemble SD of distal FFR, and y the solver.
+- **Score.** The model interval for distal FFR is split-conformal on the whole `cal` split, using the score |y − ŷ| / (σ + f) with the floor f = 0.0002. Here ŷ is the ensemble mean, σ the ensemble SD of distal FFR, and y the solver.
 - **Interval.** The interval is ŷ ± q̂·(σ + f), capped at 1, where q̂ is the ⌈(n + 1)·0.9⌉-th smallest score.
 - **When it is calibrated.** Calibration happens at export with the ONNX model (`conformal.json`), so it matches what the app runs.
 - **Comparison.** The report also shows an absolute score (one width for every vessel).
+- **Calibration split.** `cal` (10,000 vessels, seed 1005) is drawn exactly like `test` and is used for nothing else. Splits are seeded independently, so adding it left the other splits byte-identical (same shard hashes). Calibration first used `val`, but `val` had chosen each member's best epoch and the σ floor, so its scores were not exchangeable with new vessels and the guarantee did not formally hold. That version gave 90.01% on `val` and 90.15% on `test`; the change was made after the code review of P1.
 - **The floor.** The floor was first set to 0.001 by assumption. With the trained ensemble, the median σ on `val` is 0.00073 and 65% of `val` vessels have σ < 0.001. A 0.001 floor would therefore make the score half absolute: on `val`, coverage by σ quintile ranged from 98% (lowest σ) to 77% (highest σ). The floor is now the 10th percentile of σ on `val` (0.0002), so it only acts where the members agree almost exactly. Coverage by σ quintile is then 85–94% on `val`. Of three floors compared (0.001, 0.0005, 0.0002), this one gives the most even coverage. An absolute score ranges from 100% to 63%. The choice used `val` only, before any `test` evaluation.
 
-**Reason:** A normalised score widens the interval where the members disagree, which happens out of distribution and at severe stenoses. The guarantee is still the standard marginal one. One caveat: the members were early-stopped on `val`, and the floor was chosen on it, so the calibration split is not fully independent. Coverage on `test` is the check.
+**Reason:** A normalised score widens the interval where the members disagree, which happens out of distribution and at severe stenoses. The guarantee is the standard marginal one: at least 90% for new vessels drawn like `cal`, because nothing else was fitted or chosen on `cal`. Coverage on `test` is the empirical check.
 **Alternatives:**
 - Conformalised quantile regression, which needs quantile heads and retraining.
-- Calibrating on a fresh synthetic split, which is cleaner but means generating new data. Kept as a fallback if `test` coverage fails.
+- Calibrating on `val` (first version): no extra data, but `val` was used for model selection.
 - Raw ±1.645σ ensemble intervals, which are not calibrated.
 
 ### D30 — Input-uncertainty Monte Carlo: what is varied and how (2026-10-30)

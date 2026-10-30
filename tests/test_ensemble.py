@@ -11,7 +11,6 @@ from vstent.config import dump_config
 from vstent.surrogate.ensemble import (
     ENSEMBLE_FILE,
     EnsembleConfig,
-    is_ensemble_run,
     member_dirs,
     resume_ensemble,
     stop_ensemble,
@@ -51,7 +50,7 @@ def test_train_ensemble_layout(tiny_data, tmp_path):
         _ensemble_config(tiny_data, tmp_path), run_dir=tmp_path / "runs" / "e1",
         checkpoint_root=roots,
     )  # fmt: skip
-    assert is_ensemble_run(run) and not is_ensemble_run(member_dirs(run)[0])
+    assert surrogate_config(run).data_dir == str(tiny_data)  # member config, not EnsembleConfig
     members = member_dirs(run)
     assert [m.name for m in members] == ["e1-s0", "e1-s1"]
     for seed, m in zip((0, 1), members, strict=True):
@@ -92,6 +91,24 @@ def test_stop_mid_member_and_resume(tiny_data, tmp_path):
     assert all((m / "summary.json").exists() for m in member_dirs(run))
 
 
+def test_stop_while_member_starts_is_not_lost(tiny_data, tmp_path):
+    roots = tmp_path / "ckpt"
+    seen = []
+
+    def log(msg):  # stop before the second member has loaded data or written any status
+        seen.append(msg)
+        if msg.startswith("Member seed 1"):
+            assert not (roots / "e3-s1").exists()
+            stop_ensemble(roots / "e3")
+
+    cfg = _ensemble_config(tiny_data, tmp_path, seeds=(0, 1), epochs=3)
+    train_ensemble(cfg, run_dir=tmp_path / "runs" / "e3", checkpoint_root=roots, log=log)
+    member = ck.read_status(roots / "e3-s1")
+    assert member["status"] == "stopped" and member["epoch"] == 1
+    assert ck.read_status(roots / "e3")["status"] == "stopped"
+    assert not (roots / "e3" / ck.STOP_FILE).exists()
+
+
 def test_resume_rejects_other_kind(tmp_path):
     ck.write_status(tmp_path / "ckpt" / "x", {"kind": "surrogate", "run_dir": "runs/x"})
     with pytest.raises(ValueError, match="surrogate"):
@@ -125,8 +142,7 @@ def test_cli_lists_and_stops_ensemble(tmp_path, monkeypatch):
     assert "members 2/5" in runner.invoke(app, ["checkpoints"]).output
     result = runner.invoke(app, ["stop", "ens-a"])
     assert result.exit_code == 0 and "ens-a-s2" in result.output
-    assert (ck.CHECKPOINTS_DIR / "ens-a" / ck.STOP_FILE).exists()
-    assert (ck.CHECKPOINTS_DIR / "ens-a-s2" / ck.STOP_FILE).exists()
+    assert (ck.CHECKPOINTS_DIR / "ens-a" / ck.STOP_FILE).exists()  # members watch this file
     assert runner.invoke(app, ["train-ensemble"]).exit_code == 2
 
 

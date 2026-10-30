@@ -35,8 +35,9 @@ from vstent.config import StrictModel
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import Lesion, VesselProfile, percent_diameter_stenosis
 from vstent.physics.solver import PhysicsParams, solve_ffr_batch
-from vstent.planning.stent import Stent, stent_weight, stented_radius
+from vstent.planning.stent import DEFAULT_EDGE, Stent, stent_weight, stented_radius
 from vstent.surrogate.features import N_POINTS, RawInputs
+from vstent.uncertainty.greyzone import Interval, model_interval
 from vstent.units import mm_to_m
 
 LESION_THRESHOLD_PCT = 30.0
@@ -76,8 +77,8 @@ class PlannerConfig(StrictModel):
 class Plan:
     """One stent plan and its predicted post-PCI distal FFR.
 
-    ``ffr_std`` and ``model_interval`` (low, high) are set for the returned plans when the
-    surrogate is a calibrated ensemble.
+    ``ffr_std`` and ``model_interval`` (with its calibration level) are set for the returned
+    plans when the surrogate is a calibrated ensemble.
     """
 
     stents: tuple[Stent, ...]
@@ -85,7 +86,7 @@ class Plan:
     meets_target: bool
     ffr_solver: float | None = None
     ffr_std: float | None = None
-    model_interval: tuple[float, float] | None = None
+    model_interval: Interval | None = None
 
     @property
     def total_length(self) -> float:
@@ -113,6 +114,7 @@ class PlanResult:
     pa: float
     pv: float
     r_micro: float
+    edge: float = DEFAULT_EDGE  # stent edge blending (m) the plans were evaluated with
     extra: dict = field(default_factory=dict)
 
     @property
@@ -179,20 +181,17 @@ class SurrogateBackend:
         """FFR curves (B, N) for radii ``r`` (B, N) in m."""
         return self.runner.predict(self._raw(np.atleast_2d(r))).astype(np.float64)
 
-    def curves_with_spread(self, r: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
-        """FFR curves (B, N) and the ensemble SD (B, N), or ``None`` for a single model."""
-        raw = self._raw(np.atleast_2d(r))
-        if not self.runner.has_spread:
-            return self.runner.predict(raw).astype(np.float64), None
-        mean, std = self.runner.predict_with_spread(raw)
+    def curves_with_spread(self, r: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Ensemble mean FFR curves (B, N) and SD (B, N); the runner must be an ensemble."""
+        mean, std = self.runner.predict_with_spread(self._raw(np.atleast_2d(r)))
         return mean.astype(np.float64), std.astype(np.float64)
 
 
 def planning_grid(profile: VesselProfile, n: int = N_POINTS) -> VesselProfile:
     """``profile`` on ``n`` uniform points with its reference radius made explicit."""
-    s = np.linspace(profile.s[0], profile.s[-1], n)
+    s = np.linspace(0.0, profile.s[-1], n)  # profiles start at 0 (VesselProfile)
     return VesselProfile(
-        s - s[0],
+        s,
         np.interp(s, profile.s, profile.r),
         np.interp(s, profile.s, profile.reference_radius()),
     )
@@ -398,6 +397,7 @@ def plan_stents(
             pa_,
             pv_,
             rm,
+            edge=mm_to_m(config.edge_mm),
         )
 
     if not lesions:
@@ -441,8 +441,11 @@ def plan_stents(
             n_pairs = len(pairs)
 
     ranked = _rank(all_plans)[: config.n_plans]
+    pareto = pareto_front(all_plans)
     if full is not None and full.runner.has_spread:
         ranked = _rescore(full, grid, ranked, config)
+        # the front shown next to the plans carries the same (ensemble) FFRs
+        pareto = pareto_front(_rescore(full, grid, pareto, config))
     if backend.name != "solver":  # re-check the proposed plans with the solver
         checked = solver.curves(_radii_for(grid, ranked, config))[:, -1]
         ranked = [replace(p, ffr_solver=float(f)) for p, f in zip(ranked, checked, strict=True)]
@@ -454,9 +457,7 @@ def plan_stents(
             f"No plan reaches FFR >= {config.target_ffr:.2f}; the plan with the highest predicted "
             "FFR is shown."
         )
-    return result(
-        ranked, pareto_front(all_plans), best_curve, len(cand), len(single), n_pairs, message
-    )
+    return result(ranked, pareto, best_curve, len(cand), len(single), n_pairs, message)
 
 
 def _rescore(
@@ -466,14 +467,13 @@ def _rescore(
     mean, std = full.curves_with_spread(_radii_for(grid, plans, config))
     out = []
     for p, f, sd in zip(plans, mean[:, -1], std[:, -1], strict=True):
-        iv = full.runner.distal_interval(f, sd)
         out.append(
             Plan(
                 p.stents,
                 float(f),
                 bool(f >= config.target_ffr),
                 ffr_std=float(sd),
-                model_interval=None if iv is None else (float(iv[0]), float(iv[1])),
+                model_interval=model_interval(full.runner, f, sd),
             )
         )
     return _rank(out)

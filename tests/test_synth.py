@@ -28,7 +28,7 @@ MM = 1e-3
 
 def _small_config(**split_sizes) -> SynthConfig:
     cfg = load_config(CONFIG, SynthConfig)
-    sizes = {"train": 30, "val": 10, "test": 10, "ood": 10} | split_sizes
+    sizes = {"train": 30, "val": 10, "test": 10, "cal": 10, "ood": 10} | split_sizes
     splits = {
         name: split.model_copy(update={"n": sizes[name]}) for name, split in cfg.splits.items()
     }
@@ -41,9 +41,10 @@ def test_config_loads_with_plan_ranges():
         "train": 100_000,
         "val": 10_000,
         "test": 10_000,
+        "cal": 10_000,
         "ood": 5_000,
     }
-    assert len({v.seed for v in cfg.splits.values()}) == 4
+    assert len({v.seed for v in cfg.splits.values()}) == 5
     ood = cfg.sampling_for("ood")
     assert ood.length_mm == (80.0, 120.0)
     assert ood.lesion_count_probs == [0.0, 0.0, 0.0, 0.5, 0.5]
@@ -160,10 +161,10 @@ def test_generate_dataset_refuses_to_overwrite(tmp_path):
 
 
 def test_dataset_card(tmp_path):
-    cfg = _small_config(train=200, val=50, test=50, ood=20)
+    cfg = _small_config(train=200, val=50, test=50, cal=50, ood=20)
     generate_dataset(cfg, out_dir=tmp_path / "data", workers=1)
     card = write_dataset_card(tmp_path / "data", tmp_path / "reports")
-    assert [t["split"] for t in card["targets"]] == ["train", "val", "test"]
+    assert [t["split"] for t in card["targets"]] == ["train", "val", "test", "cal"]
     assert card["splits"]["train"]["n"] == 200
     assert (tmp_path / "reports" / "figures" / "dataset_hist.png").stat().st_size > 0
     text = (tmp_path / "reports" / "dataset_card.md").read_text(encoding="utf-8")
@@ -171,7 +172,7 @@ def test_dataset_card(tmp_path):
 
 
 def test_synth_cli(tmp_path):
-    cfg = _small_config(train=200, val=50, test=50, ood=20)
+    cfg = _small_config(train=200, val=50, test=50, cal=50, ood=20)
     cfg_path = tmp_path / "synth.yaml"
     cfg_path.write_text(yaml.safe_dump(cfg.model_dump(mode="json")), encoding="utf-8")
     args = ["synth", "--config", str(cfg_path), "--out", str(tmp_path / "data")]

@@ -21,7 +21,9 @@ def test_profile_validation():
     with pytest.raises(ValueError, match="uniformly"):
         VesselProfile(s**2, r)
     with pytest.raises(ValueError, match="increasing"):
-        VesselProfile(s[::-1], r)
+        VesselProfile(-s, r)
+    with pytest.raises(ValueError, match="start at 0"):  # stent / lesion positions need it
+        VesselProfile(s + 1 * MM, r)
     with pytest.raises(ValueError, match="positive"):
         VesselProfile(s, -r)
     with pytest.raises(ValueError, match="shape"):

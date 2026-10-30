@@ -77,11 +77,6 @@ def member_dirs(ensemble_dir: str | Path) -> list[Path]:
     return [ensemble_dir / MEMBERS_DIR / member_name(ensemble_dir, s) for s in cfg.seeds]
 
 
-def is_ensemble_run(path: str | Path) -> bool:
-    """Whether ``path`` is an ensemble run directory."""
-    return (Path(path) / MEMBER_CONFIG).exists() and (Path(path) / CONFIG_FILENAME).exists()
-
-
 def surrogate_config(path: str | Path) -> SurrogateConfig:
     """Surrogate training config of a run or exported model directory: the member config
     (``surrogate_config.yaml``) for an ensemble, else ``config.yaml``."""
@@ -123,16 +118,11 @@ def resume_ensemble(
 def stop_ensemble(ckpt_dir: Path) -> str | None:
     """Ask a running ensemble to stop: its current member after this epoch, then the loop.
 
-    Returns the name of the member that was asked to stop (``None`` if none was training).
+    Members watch the ensemble's STOP file themselves, so a stop sent while a member is still
+    loading data is not lost. Returns the name of the current member (``None`` if none).
     """
     request_stop(ckpt_dir)
-    current = read_status(ckpt_dir).get("current_member")
-    if current is None:
-        return None
-    member_ckpt = ckpt_dir.parent / current
-    if (member_ckpt / STATUS_FILE).exists():
-        request_stop(member_ckpt)
-    return current
+    return read_status(ckpt_dir).get("current_member")
 
 
 def _member_status(name: str, checkpoint_root: Path) -> str | None:
@@ -190,9 +180,12 @@ def _train_members(run_dir: Path, checkpoint_root: str | Path, log: Callable[[st
         log(f"Member seed {seed} ({len(cfg.seeds)} members): {member_dir}")
         if state is None:
             member = base.model_copy(update={"seed": seed, "name": name})
-            train_surrogate(member, run_dir=member_dir, checkpoint_root=checkpoint_root, log=log)
+            train_surrogate(
+                member, run_dir=member_dir, checkpoint_root=checkpoint_root, log=log,
+                parent_stop=ckpt_dir,
+            )  # fmt: skip
         else:
-            resume_surrogate(name, checkpoint_root=checkpoint_root, log=log)
+            resume_surrogate(name, checkpoint_root=checkpoint_root, log=log, parent_stop=ckpt_dir)
         if _member_status(name, checkpoint_root) != "finished":
             break  # the member was stopped
     done = all(_member_status(n, checkpoint_root) == "finished" for n in names)

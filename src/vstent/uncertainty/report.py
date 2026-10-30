@@ -20,7 +20,7 @@ from vstent import DISCLAIMER, __version__
 from vstent.data.synth import load_split
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile, cosine_lesion_profile
-from vstent.physics.solver import PhysicsParams
+from vstent.physics.solver import PhysicsParams, solve_ffr
 from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
 from vstent.planning.report import tandem_vessel
 from vstent.plotting import (
@@ -81,12 +81,14 @@ def ensemble_accuracy(
     data_dir: str,
     device: str,
     log: Callable[[str], None],
+    calibration_split: str = "cal",
 ) -> tuple[dict[str, Any], dict[str, dict[str, np.ndarray]]]:
-    """Distal / curve error of the ensemble mean, the single M3 model and every member."""
+    """Distal / curve error of the ensemble mean, the single M3 model and every member on
+    ``test`` and ``ood``; ensemble predictions on every split for the coverage tables."""
     dev = resolve_device(device)
     nets = [load_checkpoint(m, dev) for m in members]
     out, arrays = {}, {}
-    for split in ("val", "test", "ood"):
+    for split in dict.fromkeys((calibration_split, "val", "test", "ood")):
         raw, ffr = load_raw(data_dir, split)
         mean, std = ensemble.predict_with_spread(raw)
         arrays[split] = {
@@ -95,7 +97,7 @@ def ensemble_accuracy(
             "true": ffr[:, -1].astype(np.float64),
             "max_ds": max_ds(raw.r, raw.r_ref),
         }
-        if split == "val":
+        if split not in ("test", "ood"):
             continue
         xp, xg = (torch.from_numpy(a).to(dev) for a in prepare_inputs(raw, ensemble.stats))
         member_rows = []
@@ -132,9 +134,9 @@ def conformal_section(
     cal: ConformalCalibration, arrays: dict[str, dict[str, np.ndarray]], threshold: float
 ) -> dict[str, Any]:
     """Coverage per split and DS bin, an absolute-score comparison and grey-zone statistics."""
-    val = arrays["val"]
+    c = arrays[cal.split]
     absolute = fit_conformal(
-        val["pred"], val["std"], val["true"], level=cal.level, score="absolute", split=cal.split
+        c["pred"], c["std"], c["true"], level=cal.level, score="absolute", split=cal.split
     )
     out: dict[str, Any] = {"calibration": asdict(cal), "absolute_q": absolute.q, "splits": {}}
     for split, a in arrays.items():
@@ -173,15 +175,15 @@ def preset_sensitivity(
     }
     rows = []
     for name, profile in cases.items():
+        nominal = float(solve_ffr(profile, params).ffr[-1])  # Pa, Pv and v_hyp of params
         for key, (label, meas) in SETTINGS.items():
             kw = {"measurement": meas, "config": ucfg.inputs, "qca_error": qca_error}
             full = InputUncertainty(profile, params, params.pa, params.pv, **kw)
-            nominal = InputUncertainty(profile, params, params.pa, params.pv, sources=[], **kw)
             row = {
                 "case": name,
                 "setting": key,
                 "setting_label": label,
-                "ffr_nominal": float(nominal.pre_samples[0]),
+                "ffr_nominal": nominal,
                 "sources": {},
                 "combined": _interval(full.pre_samples, ucfg.level),
             }
@@ -286,35 +288,34 @@ def plan_section(
             "ffr": best.ffr,
             "ffr_solver": best.ffr_solver,
             "meets_target": best.meets_target,
-            "model_interval": None if best.model_interval is None else list(best.model_interval),
+            "model_interval": None
+            if best.model_interval is None
+            else [best.model_interval.low, best.model_interval.high],
         }
         for key, (_, meas) in SETTINGS.items():
             mc = InputUncertainty(
                 profile, vp, pa, pv, measurement=meas, config=ucfg.inputs, qca_error=qca_error
             )
-            row[key] = _interval(mc.post_samples(best.stents), ucfg.level)
+            row[key] = _interval(mc.post_samples(best.stents, res.edge), ucfg.level)
         rows.append(row)
     log(f"Planned {len(rows)} test vessels with pre-PCI FFR < {ucfg.pre_pci_threshold}")
 
-    def frac(key):
-        iv = [r[key] for r in rows if r[key] is not None]
-        return float(np.mean([lo <= target <= hi for lo, hi in iv])) if iv else float("nan")
+    def stat(fn, values):  # NaN (no warning) when no vessel was planned
+        return float(fn(values)) if values else float("nan")
 
+    keys = {**{k: k for k in SETTINGS}, "model": "model_interval"}
+    ivs = {name: [r[key] for r in rows if r[key] is not None] for name, key in keys.items()}
     return {
         "n": len(rows),
         "target": target,
         "rows": rows,
-        "meets_target_fraction": float(np.mean([r["meets_target"] for r in rows])),
-        "flagged_model_fraction": frac("model_interval"),
-        "flagged_synthetic_fraction": frac("synthetic"),
-        "flagged_image_fraction": frac("image"),
+        "meets_target_fraction": stat(np.mean, [r["meets_target"] for r in rows]),
+        **{
+            f"flagged_{name}_fraction": stat(np.mean, [lo <= target <= hi for lo, hi in iv])
+            for name, iv in ivs.items()
+        },
         "median_width": {
-            key: float(np.median([r[key][1] - r[key][0] for r in rows])) for key in SETTINGS
-        }
-        | {
-            "model": float(
-                np.median([r["model_interval"][1] - r["model_interval"][0] for r in rows])
-            )
+            name: stat(np.median, [hi - lo for lo, hi in iv]) for name, iv in ivs.items()
         },
     }
 
@@ -465,11 +466,13 @@ def write_uncertainty_report(
         raise ValueError(f"{model_dir} has no conformal calibration (run vstent export-ensemble)")
     qca_error = QCAErrorModel.from_report(config.inputs.qca_error_report)
 
-    acc, arrays = ensemble_accuracy(ensemble, single, members, base.data_dir, device, log)
+    acc, arrays = ensemble_accuracy(
+        ensemble, single, members, base.data_dir, device, log, ensemble.conformal.split
+    )
     conf = conformal_section(ensemble.conformal, arrays, config.pre_pci_threshold)
     log(
-        f"Conformal coverage: val {conf['splits']['val']['coverage']:.2%}, test "
-        f"{conf['splits']['test']['coverage']:.2%}, ood {conf['splits']['ood']['coverage']:.2%}"
+        "Conformal coverage: "
+        + ", ".join(f"{k} {v['coverage']:.2%}" for k, v in conf["splits"].items())
     )
     presets = preset_sensitivity(params, config, qca_error)
     pop = population(base.data_dir, params, config, qca_error, n_vessels)
@@ -585,9 +588,15 @@ def _markdown(r: dict[str, Any], cfg: UncertaintyConfig) -> str:
         f"Calibrated on all {cal['n_calibration']:,} `{cal['split']}` vessels with the exported "
         f"ONNX ensemble. Score |y − ŷ| / (σ + {cal['sigma_floor']:g}), σ = ensemble SD of distal "
         f"FFR; q̂ = {cal['q']:.3f}. For comparison, an absolute score (one width for all vessels) "
-        f"gives q̂ = {conf['absolute_q']:.5f}. The members were early-stopped on `val`, so the "
-        "calibration split is not fully independent of training; the test coverage shows whether "
-        "this matters.",
+        f"gives q̂ = {conf['absolute_q']:.5f}. "
+        + (
+            "The members were early-stopped on `val`, so the calibration split is not fully "
+            "independent of training; the test coverage shows whether this matters."
+            if cal["split"] == "val"
+            else f"The `{cal['split']}` split is used for calibration only: not for training, "
+            "early stopping or choosing σ's floor, so the 90% guarantee holds for new vessels "
+            "drawn like it. `val` chose each member's best epoch."
+        ),
         "",
         "| Split | n | Coverage | Mean width | Median width | p95 width | Coverage (absolute) "
         "| Median width (absolute) |",

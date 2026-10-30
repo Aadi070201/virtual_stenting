@@ -232,10 +232,11 @@ def test_core_intervals_flags_and_report(tiny_ensemble_export):
     pre = core.evaluate(case.profile, PARAMS, case.pa, case.pv, runner=runner)
     assert pre.model_interval is not None and pre.surrogate_std.shape == (256,)
     assert pre.model_interval.low <= pre.distal_surrogate <= pre.model_interval.high
-    settings = core.load_uncertainty()
-    mc = core.input_uncertainty(
-        case.profile, PARAMS, case.pa, case.pv, core.Measurement(), settings
-    )
+    from vstent.uncertainty.greyzone import load_uncertainty, plan_assessments
+    from vstent.uncertainty.inputs import Measurement
+
+    settings = load_uncertainty()
+    mc = core.input_uncertainty(case.profile, PARAMS, case.pa, case.pv, Measurement(), settings)
     assert mc.sources == ["v_hyp", "pa_pv"]
     a_pre = core.assess(pre, mc.pre_samples, 0.80, 0.90)
     stents = [Stent(0.02, 0.018, 3e-3)]
@@ -252,10 +253,13 @@ def test_core_intervals_flags_and_report(tiny_ensemble_export):
         pv=case.pv,
     )
     assert all(p.model_interval is not None and p.ffr_std >= 0 for p in plans.plans)
+    assert all(p.model_interval.level == runner.conformal.level for p in plans.plans)
+    # the Pareto front carries the ensemble's FFRs too, so plan table and front agree
+    assert plans.pareto and all(p.ffr_std is not None for p in plans.pareto)
     state = core.CaseState(
         "synthetic", PARAMS, case.pa, case.pv, case.profile, pre, stents, post, plans=plans,
         uncertainty=mc, pre_assessment=a_pre, post_assessment=a_post,
-        plan_assessments=core.plan_assessments(plans, mc, 0.90),
+        plan_assessments=plan_assessments(plans, mc, 0.90),
     )  # fmt: skip
     models = core.Models(runner, None, Path(tiny_ensemble_export["out_dir"]), None)
     rep = json.loads(core.report_json(state, models))

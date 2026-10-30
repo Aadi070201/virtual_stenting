@@ -23,7 +23,7 @@ from vstent.uncertainty.conformal import (
     coverage,
     fit_conformal,
 )
-from vstent.uncertainty.greyzone import Assessment, Interval, UncertaintyConfig
+from vstent.uncertainty.greyzone import Assessment, Interval, UncertaintyConfig, model_interval
 from vstent.uncertainty.inputs import (
     InputUncertainty,
     Measurement,
@@ -61,7 +61,7 @@ def test_conformal_coverage_on_exchangeable_data(score):
     cal = fit_conformal(*draw(5000), level=0.9, score=score, sigma_floor=0.001)
     cov = coverage(cal, *draw(20000))
     assert 0.88 <= cov["coverage"] <= 0.92
-    assert cal.n_calibration == 5000 and cal.split == "val"
+    assert cal.n_calibration == 5000 and cal.split == "cal"
 
 
 def test_conformal_interval_capped_and_roundtrip(tmp_path):
@@ -89,7 +89,7 @@ def test_ensemble_export_files_and_metadata(tiny_ensemble_export):
     meta = json.loads((out / "export_meta.json").read_text(encoding="utf-8"))
     assert meta["parity"]["passed"] and meta["parity_screen"]["passed"]
     assert meta["parity"]["max_abs_diff_std"] < 1e-4
-    assert len(meta["members"]) == 2 and meta["conformal"]["split"] == "val"
+    assert len(meta["members"]) == 2 and meta["conformal"]["split"] == "cal"
 
 
 def test_ensemble_runner_mean_spread_and_screen(tiny_ensemble, tiny_ensemble_export, tiny_data):
@@ -98,7 +98,7 @@ def test_ensemble_runner_mean_spread_and_screen(tiny_ensemble, tiny_ensemble_exp
     runner = SurrogateRunner.from_dir(tiny_ensemble_export["out_dir"], workers=2, chunk_size=5)
     raw, _ = load_raw(tiny_data, "test", 12)
     mean, std = runner.predict_with_spread(raw)
-    assert runner.has_spread and runner.ensemble_size == 2 and runner.conformal is not None
+    assert runner.has_spread and runner.conformal is not None
     assert mean.shape == std.shape == (12, 256) and np.all(std >= 0)
     assert np.all(mean[:, 0] == 1.0) and np.all(np.diff(mean, axis=1) <= 1e-7)
     np.testing.assert_array_equal(runner.predict(raw), mean)
@@ -115,7 +115,7 @@ def test_ensemble_runner_mean_spread_and_screen(tiny_ensemble, tiny_ensemble_exp
     screen = runner.screen
     assert screen is not runner and not screen.has_spread and screen.screen is screen
     np.testing.assert_allclose(screen.predict(raw), members[0], atol=1e-5)
-    lo, hi = runner.distal_interval(mean[:, -1], std[:, -1])
+    lo, hi = runner.conformal.interval(mean[:, -1], std[:, -1])
     assert np.all(lo <= mean[:, -1]) and np.all(hi >= np.minimum(mean[:, -1], 1.0))
     runner.close()
 
@@ -128,7 +128,7 @@ def test_single_model_runner_has_no_spread(tiny_export, tiny_data):
         runner.predict_with_spread(raw)
     profile = cosine_lesion_profile(0.05, 3e-3, 0.01, 0.5)
     assert runner.predict_profile_with_spread(profile, 12000.0, 700.0, 3e10)[2] is None
-    assert runner.distal_interval(0.8, 0.0) is None
+    assert model_interval(runner, 0.8, 0.0) is None
 
 
 def test_export_ensemble_rejects_unfinished(tiny_ensemble, tmp_path):
@@ -222,8 +222,23 @@ def test_assessment_flags():
     assert not a.model_flag and a.inputs_flag and a.flagged
     assert len(a.reasons()) == 1 and "0.760–0.880" in a.reasons()[0]
     d = a.to_dict()
-    assert d["grey_zone"] and d["model_interval"] == [0.81, 0.85] and d["level"] == 0.9
+    assert d["grey_zone"] and d["model_interval"] == [0.81, 0.85] and d["model_level"] == 0.9
     assert not Assessment(0.80, 0.70).flagged
+    assert a.level_text == "90%"
+    mixed = Assessment(0.80, 0.82, 0.83, Interval(0.81, 0.85, 0.9), Interval(0.76, 0.88, 0.95))
+    assert mixed.level_text == "model 90%, inputs 95%"
+
+
+def test_plan_model_interval_keeps_its_calibration_level():
+    from types import SimpleNamespace
+
+    from vstent.planning.optimizer import Plan
+    from vstent.uncertainty.greyzone import plan_assessments
+
+    plan = Plan((), 0.91, True, model_interval=Interval(0.89, 0.93, 0.9))
+    plans = SimpleNamespace(plans=[plan], target=0.90, backend="surrogate")
+    (a,) = plan_assessments(plans, None, level=0.95)  # input level from a changed config
+    assert a.model.level == 0.9 and a.model_flag
 
 
 def test_uncertainty_config_matches_sampling_ranges():
@@ -263,7 +278,7 @@ def test_uncertainty_report_smoke(tiny_ensemble_export, tiny_export, tmp_path):
         n_plans=2,
         device="cpu",
     )
-    assert set(report["conformal"]["splits"]) == {"val", "test", "ood"}
+    assert set(report["conformal"]["splits"]) == {"cal", "val", "test", "ood"}
     assert len(report["targets"]) == 2  # no app_latency.json in tmp_path
     assert report["inputs"]["population"]["n"] == 8
     assert {p["setting"] for p in report["inputs"]["presets"]} == {"synthetic", "image"}
@@ -271,3 +286,27 @@ def test_uncertainty_report_smoke(tiny_ensemble_export, tiny_export, tmp_path):
     assert "Research use only" in md and "Neither covers the error of the reduced-order" in md
     for fig in ("uncertainty_coverage", "uncertainty_inputs"):
         assert (tmp_path / "figures" / f"{fig}.png").exists()
+
+
+def test_post_pci_draws_use_the_plan_geometry():
+    """With nothing varied, every draw is the nominal case: its post-PCI FFR is the planner's
+    solver value, also with a non-default stent edge (same edge, same stent positions)."""
+    from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
+    from vstent.uncertainty.greyzone import plan_assessments
+
+    params = PhysicsParams()
+    profile = cosine_lesion_profile(0.06, 3e-3, 0.012, 0.7)
+    catalog = StentCatalog(diameters_mm=[3.0, 3.25], lengths_mm=[12, 18])
+    mc = InputUncertainty(
+        profile, params, params.pa, params.pv, measurement=Measurement(), sources=[]
+    )
+    for edge_mm in (1.0, 3.0):
+        plans = plan_stents(
+            profile, catalog=catalog, params=params,
+            config=PlannerConfig(backend="solver", edge_mm=edge_mm, n_plans=2),
+        )  # fmt: skip
+        assert plans.edge == pytest.approx(edge_mm * 1e-3)
+        best = plans.plans[0]
+        np.testing.assert_allclose(mc.post_samples(best.stents, plans.edge), best.ffr, atol=1e-9)
+        a = plan_assessments(plans, mc, 0.90)[0]
+        assert a.inputs.low == pytest.approx(best.ffr, abs=1e-9)

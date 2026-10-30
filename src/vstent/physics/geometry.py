@@ -29,7 +29,8 @@ class VesselProfile:
     """Lumen radius sampled along a vessel centreline.
 
     Attributes:
-        s: arc-length positions (m), 1-D, strictly increasing, uniformly spaced.
+        s: arc-length positions (m), 1-D, starting at 0, strictly increasing, uniformly
+            spaced. Starting at 0 makes positions (lesions, stents) distances from the inlet.
         r: lumen radius at each position (m), positive.
         r_ref: known healthy reference radius (m), e.g. for synthetic vessels. ``None`` means
             it is estimated from ``r`` with :func:`estimate_reference_radius`.
@@ -47,6 +48,8 @@ class VesselProfile:
             raise ValueError("s must be 1-D with at least 2 points")
         if not np.all(np.isfinite(s)):
             raise ValueError("s must be finite")
+        if s[0] != 0.0:
+            raise ValueError("s must start at 0 (positions are distances from the inlet)")
         steps = np.diff(s)
         if np.any(steps <= 0):
             raise ValueError("s must be strictly increasing")

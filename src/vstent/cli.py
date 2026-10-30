@@ -481,16 +481,10 @@ def analyse(
         f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
         f"{result.ffr_distal_surrogate:.3f}"
     )
-    from vstent.uncertainty.greyzone import UncertaintyConfig, assessment, plan_assessments
-    from vstent.uncertainty.inputs import (
-        SOURCE_LABELS,
-        InputUncertainty,
-        Measurement,
-        QCAErrorModel,
-    )
+    from vstent.uncertainty.greyzone import assessment, load_uncertainty, plan_assessments
+    from vstent.uncertainty.inputs import SOURCE_LABELS, InputUncertainty, Measurement
 
-    ucfg = load_config(uncertainty, UncertaintyConfig) if uncertainty.exists() else None
-    ucfg = ucfg or UncertaintyConfig()
+    ucfg, qca_error = load_uncertainty(uncertainty)
     mc = InputUncertainty(
         q.profile,
         params,
@@ -498,7 +492,7 @@ def analyse(
         result.solver.pv,
         measurement=Measurement(q.mm_per_px, q.calibration_assumed),
         config=ucfg.inputs,
-        qca_error=QCAErrorModel.from_report(ucfg.inputs.qca_error_report),
+        qca_error=qca_error,
     )
     pre = assessment(
         ucfg.pre_pci_threshold,
@@ -508,7 +502,7 @@ def analyse(
         mc.pre_samples,
         ucfg.level,
     )
-    typer.echo(f"{ucfg.level:.0%} intervals: {_interval_text(pre)}")
+    typer.echo(f"{pre.level_text} intervals: {_interval_text(pre)}")
     typer.echo(
         f"  inputs varied: {', '.join(SOURCE_LABELS[s] for s in mc.sources)} "
         f"({mc.n_samples} draws); model = surrogate-vs-solver error only"

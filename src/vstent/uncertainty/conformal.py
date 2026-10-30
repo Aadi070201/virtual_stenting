@@ -1,6 +1,7 @@
 """Split-conformal intervals for the surrogate's distal FFR (P1). Torch-free.
 
-Calibrated once on a held-out split (``val``) with the deployed (ONNX) ensemble. Nonconformity
+Calibrated once on a split used for nothing else (``cal``) with the deployed (ONNX) ensemble.
+Nonconformity
 score per vessel, with ŷ the ensemble-mean distal FFR, σ the ensemble standard deviation of
 distal FFR and y the solver's distal FFR:
 
@@ -88,7 +89,7 @@ def fit_conformal(
     level: float = 0.90,
     score: Score = "normalised",
     sigma_floor: float = 0.0,
-    split: str = "val",
+    split: str = "cal",
 ) -> ConformalCalibration:
     """Calibrate on held-out vessels: ensemble mean / std and solver distal FFR, shape (n,)."""
     if score == "normalised" and sigma_floor <= 0 and np.any(np.asarray(std) <= 0):

@@ -219,7 +219,7 @@ Order: what removes the biggest known weakness, and can run on this laptop (RTX 
 ## P1: Uncertainty and grey-zone flagging
 
 - [x] **Model uncertainty:** an ensemble of 5 surrogates (M3 config, seeds 0–4; resumable training). The mean and spread are exported to ONNX and used by `SurrogateRunner`.
-- [x] **Split-conformal 90% intervals** for distal FFR, calibrated on `val`, reported on `test` and `ood`.
+- [x] **Split-conformal 90% intervals** for distal FFR, calibrated on a dedicated `cal` split (D29), reported on `test` and `ood`.
 - [x] **Input-uncertainty propagation:** Monte Carlo through the solver over the assumptions that matter most, giving a 90% FFR interval per case:
   - pixel size (±10% when assumed);
   - hyperemic velocity (its sampling range);

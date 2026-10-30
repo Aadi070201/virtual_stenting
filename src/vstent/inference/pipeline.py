@@ -19,7 +19,7 @@ from vstent.imaging.qca import DEFAULT_MM_PER_PX, QCAResult, run_qca
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile
 from vstent.physics.solver import FFRResult, PhysicsParams, solve_ffr
-from vstent.uncertainty.greyzone import Interval
+from vstent.uncertainty.greyzone import Interval, model_interval
 from vstent.units import m_to_mm, pa_to_mmhg
 
 MAX_FALLBACK_FRACTION = 0.10
@@ -124,9 +124,7 @@ def analyse_vessel(
         s, ffr, std = surrogate.predict_profile_with_spread(
             qca.profile, solver.pa, solver.pv, solver.r_micro
         )
-        iv = None if std is None else surrogate.distal_interval(ffr[-1], std[-1])
-        if iv is not None:
-            interval = Interval(float(iv[0]), float(iv[1]), surrogate.conformal.level)
+        interval = model_interval(surrogate, ffr[-1], None if std is None else std[-1])
         warnings += range_warnings(qca.profile, solver.pa, solver.pv, sampling)
         floor = solver.pv / solver.pa  # FFR cannot fall below Pv / Pa (zero flow)
         if ffr.min() < floor:

@@ -30,6 +30,8 @@ from vstent.imaging.segment import THRESHOLD  # noqa: E402
 from vstent.inference.pipeline import analyse_vessel  # noqa: E402
 from vstent.planning.optimizer import plan_stents  # noqa: E402
 from vstent.planning.stent import Stent  # noqa: E402
+from vstent.uncertainty.greyzone import load_uncertainty, plan_assessments  # noqa: E402
+from vstent.uncertainty.inputs import SOURCE_LABELS, Measurement  # noqa: E402
 from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa  # noqa: E402
 
 DISPLAY_WIDTH = 512
@@ -63,7 +65,7 @@ def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob):
 
 @st.cache_resource
 def get_uncertainty():
-    return core.load_uncertainty()
+    return load_uncertainty()
 
 
 @st.cache_resource(max_entries=32)
@@ -75,7 +77,7 @@ def baseline(key: str, _profile, pa: float, pv: float, v_hyp: float):
 @st.cache_resource(max_entries=32)
 def input_mc(key: str, _profile, pa: float, pv: float, v_hyp: float, mm_per_px, assumed: bool):
     params = get_settings()[0].model_copy(update={"v_hyp": v_hyp})
-    measurement = core.Measurement(mm_per_px, assumed)
+    measurement = Measurement(mm_per_px, assumed)
     return core.input_uncertainty(_profile, params, pa, pv, measurement, get_uncertainty())
 
 
@@ -268,20 +270,21 @@ if state is not None:
     state.pre_assessment = core.assess(
         state.pre, state.uncertainty.pre_samples, ucfg.pre_pci_threshold, ucfg.level
     )
+    state.edge = mm_to_m(planner_cfg.edge_mm)  # same stent edges as the planner
     if stents:
         stented, post = core.stent_update(
-            state.profile, stents, state.pre, state.params, state.pa, state.pv, models.surrogate
-        )
+            state.profile, stents, state.pre, state.params, state.pa, state.pv, models.surrogate,
+            edge=state.edge,
+        )  # fmt: skip
         state.stents, state.post = stents, post
-        state.post_assessment = core.assess(
-            post, state.uncertainty.post_samples(stents), planner_cfg.target_ffr, ucfg.level
-        )
+        samples = state.uncertainty.post_samples(stents, state.edge)
+        state.post_assessment = core.assess(post, samples, planner_cfg.target_ffr, ucfg.level)
         state.warnings += core.stent_warnings(state.profile, stents, planner_cfg.max_diameter_ratio)
     else:
         stented = None
     state.plans = plans
     if plans is not None:
-        state.plan_assessments = core.plan_assessments(plans, state.uncertainty, ucfg.level)
+        state.plan_assessments = plan_assessments(plans, state.uncertainty, ucfg.level)
 
 # --- image panel --------------------------------------------------------------------------------
 if mode == "Angiogram image":
@@ -359,7 +362,7 @@ for label, a in (("Pre-PCI", state.pre_assessment), ("Post-PCI", state.post_asse
     parts += [f"model **{a.model.text()}** (surrogate)"] if a.model else []
     verdict = "**grey zone**" if a.flagged else "outside the grey zone"
     lines.append(
-        f"{label} distal FFR, {ucfg.level:.0%} intervals: {', '.join(parts)}; "
+        f"{label} distal FFR, {a.level_text} intervals: {', '.join(parts)}; "
         f"threshold {a.threshold:.2f}: {verdict}"
     )
 st.markdown("  \n".join(lines))
@@ -368,7 +371,7 @@ for label, a in (("Pre-PCI", state.pre_assessment), ("Post-PCI", state.post_asse
         st.warning(f"Grey zone: {reason}.")
 mc = state.uncertainty
 st.caption(
-    f"Input assumptions varied: {', '.join(core.SOURCE_LABELS[s] for s in mc.sources)} "
+    f"Input assumptions varied: {', '.join(SOURCE_LABELS[s] for s in mc.sources)} "
     f"({mc.n_samples} Monte Carlo draws through the solver). {core.UNCERTAINTY_NOTE}"
     + ("" if pre.model_interval else " No calibrated ensemble loaded: no model interval.")
 )
@@ -415,6 +418,7 @@ if state.plans is not None:
         f"{pr.n_candidates} candidates, {pr.n_pairs} pairs; {pr.seconds:.2f} s)"
     )
     if pr.plans:
+        model_level = next((a.model.level for a in state.plan_assessments if a.model), ucfg.level)
         st.dataframe(
             [
                 {
@@ -428,7 +432,7 @@ if state.plans is not None:
                     f"Post FFR ({pr.backend})": round(pl.ffr, 3),
                     "Solver check": None if pl.ffr_solver is None else round(pl.ffr_solver, 3),
                     "Meets target": pl.meets_target,
-                    f"Model {ucfg.level:.0%}": a.model.text() if a.model else None,
+                    f"Model {model_level:.0%}": a.model.text() if a.model else None,
                     f"Inputs {ucfg.level:.0%}": a.inputs.text() if a.inputs else None,
                     "Grey zone": a.flagged,
                 }

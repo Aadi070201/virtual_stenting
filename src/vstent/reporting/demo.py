@@ -29,6 +29,8 @@ from vstent.plotting import (
     save_figure,
     style_axes,
 )
+from vstent.uncertainty.greyzone import load_uncertainty, plan_assessments
+from vstent.uncertainty.inputs import Measurement
 from vstent.units import m_to_mm
 
 DEMO_PRESET = core.PRESETS[1]  # tandem lesions
@@ -131,16 +133,16 @@ def run_demo(
     best = plans.plans[0]
     t0 = time.perf_counter()
     stented, post = core.stent_update(
-        case.profile, list(best.stents), pre, params, case.pa, case.pv, runner
+        case.profile, list(best.stents), pre, params, case.pa, case.pv, runner, edge=plans.edge
     )
     timings["post_pci_s"] = time.perf_counter() - t0
     if runner is not None:
         runner.close()
 
     t0 = time.perf_counter()
-    ucfg, qca_error = core.load_uncertainty()
+    ucfg, qca_error = load_uncertainty()
     mc = core.input_uncertainty(
-        case.profile, params, case.pa, case.pv, core.Measurement(), (ucfg, qca_error)
+        case.profile, params, case.pa, case.pv, Measurement(), (ucfg, qca_error)
     )
     timings["uncertainty_s"] = time.perf_counter() - t0
     state = core.CaseState(
@@ -157,9 +159,10 @@ def run_demo(
         uncertainty=mc,
         pre_assessment=core.assess(pre, mc.pre_samples, ucfg.pre_pci_threshold, ucfg.level),
         post_assessment=core.assess(
-            post, mc.post_samples(best.stents), planner.target_ffr, ucfg.level
+            post, mc.post_samples(best.stents, plans.edge), planner.target_ffr, ucfg.level
         ),
-        plan_assessments=core.plan_assessments(plans, mc, ucfg.level),
+        plan_assessments=plan_assessments(plans, mc, ucfg.level),
+        edge=plans.edge,
     )
     models = core.Models(runner, None, sur_dir, None)
     report = core.case_report(state, models)
@@ -239,10 +242,17 @@ def _markdown(report: dict[str, Any], plans) -> str:
         def iv(x):
             return "n/a" if x is None else f"{x[0]:.3f}–{x[1]:.3f}"
 
-        level = u["pre_pci"]["level"]
+        levels = sorted(
+            {
+                f"{x:.0%}"
+                for a in (u["pre_pci"], u["post_pci"])
+                for x in (a["model_level"], a["input_level"])
+                if x is not None
+            }
+        )
         lines += [
             "",
-            f"**Uncertainty ({level:.0%} intervals).** Inputs varied: "
+            f"**Uncertainty ({' / '.join(levels)} intervals).** Inputs varied: "
             f"{', '.join(u['input_assumptions_varied'])} ({u['input_samples']} Monte Carlo draws "
             f"through the solver; {t['uncertainty_s'] * 1e3:.0f} ms).",
             "",

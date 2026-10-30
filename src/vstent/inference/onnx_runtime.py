@@ -86,7 +86,6 @@ class SurrogateRunner:
         self.metadata = dict(self.session.get_modelmeta().custom_metadata_map)
         self._check_metadata()
         self.output_names = [o.name for o in self.session.get_outputs()]
-        self.ensemble_size = int(self.metadata.get("ensemble_size", "1"))
         conformal = self.model_path.with_name(CONFORMAL_FILE)
         self.conformal = (
             ConformalCalibration.load(conformal) if self.has_spread and conformal.exists() else None
@@ -200,12 +199,6 @@ class SurrogateRunner:
             raise ValueError(f"{self.model_path} is not an ensemble (no {SPREAD_NAME!r} output)")
         mean, std = self._predict(*self._prepare(raw), [OUTPUT_NAME, SPREAD_NAME])
         return mean, std
-
-    def distal_interval(self, ffr_distal, std_distal) -> tuple[np.ndarray, np.ndarray] | None:
-        """Calibrated conformal interval of distal FFR, or ``None`` without a calibration."""
-        if self.conformal is None:
-            return None
-        return self.conformal.interval(ffr_distal, std_distal)
 
     def predict_profile(
         self, profile: VesselProfile, pa: float, pv: float, r_micro: float
