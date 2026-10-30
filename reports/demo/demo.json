@@ -1,9 +1,9 @@
 {
   "disclaimer": "Research use only \u2014 not for clinical decisions. This research prototype is not a medical device, is not validated, and must never be used to make decisions about real patients.",
-  "created_utc": "2026-10-30T14:17:01+00:00",
+  "created_utc": "2026-10-30T15:23:55+00:00",
   "software": {
     "vstent": "0.1.0",
-    "git_commit": "c9db628e0e0a6c1921f4eb7f00801496790b67ad",
+    "git_commit": "c7bbd4685d5a75d0bab7ffb003a97d68f1a47d8d",
     "git_dirty": false
   },
   "models": {
@@ -109,7 +109,8 @@
         "meets_target": true,
         "uncertainty": {
           "threshold": 0.9,
-          "level": 0.9,
+          "model_level": 0.9,
+          "input_level": 0.9,
           "model_interval": [
             0.9749,
             0.9763
@@ -144,7 +145,8 @@
         "meets_target": true,
         "uncertainty": {
           "threshold": 0.9,
-          "level": 0.9,
+          "model_level": 0.9,
+          "input_level": 0.9,
           "model_interval": [
             0.9749,
             0.9763
@@ -179,7 +181,8 @@
         "meets_target": true,
         "uncertainty": {
           "threshold": 0.9,
-          "level": 0.9,
+          "model_level": 0.9,
+          "input_level": 0.9,
           "model_interval": [
             0.9748,
             0.9763
@@ -204,10 +207,11 @@
     "input_samples": 500,
     "pre_pci": {
       "threshold": 0.8,
-      "level": 0.9,
+      "model_level": 0.9,
+      "input_level": 0.9,
       "model_interval": [
         0.7036,
-        0.7076
+        0.7075
       ],
       "input_interval": [
         0.6224,
@@ -219,7 +223,8 @@
     },
     "post_pci": {
       "threshold": 0.9,
-      "level": 0.9,
+      "model_level": 0.9,
+      "input_level": 0.9,
       "model_interval": [
         0.9749,
         0.9763
@@ -241,11 +246,11 @@
     "n_feasible": 1720,
     "n_pairs": 176,
     "timings_s": {
-      "load_s": 0.5752313999983016,
-      "pre_pci_s": 0.009379299997817725,
-      "planning_s": 0.4325922999996692,
-      "post_pci_s": 0.008205999998608604,
-      "uncertainty_s": 0.010562999988906085
+      "load_s": 0.5887049000011757,
+      "pre_pci_s": 0.00941119997878559,
+      "planning_s": 0.7105622999952175,
+      "post_pci_s": 0.008983700012322515,
+      "uncertainty_s": 0.012934099999256432
     }
   }
 }
