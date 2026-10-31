@@ -359,7 +359,8 @@ def occlusion_summary(grades: list[dict[str, Any]]) -> dict[str, Any]:
 EDGE_METHODS = {
     "probability": "probability-map edges (the QCA before D43)",
     "intensity": "intensity edges guided by the segmentation (the product's QCA, D43)",
-    "model": "imaging-chain model fitted to the image (candidate, P4c)",
+    "model": "imaging-chain model fitted to the image (P4c; an option, not the default: lower "
+    "development kappa and AUC, D44)",
 }
 
 
@@ -496,7 +497,8 @@ def write_grading_report(
         "(extended by the box size on every side for a healthy reference), and QCA gives the "
         "largest %DS inside the box. A lesion's value is the median over its keyframes. %DS "
         f"needs no pixel size. Patients were split once (seed 0) into {split_n['dev']} "
-        f"development and {split_n['test']} test patients; the test half is the result.",
+        f"development and {split_n['test']} test patients; the test half is the result. "
+        "The product's method was chosen on the development patients only (D43, D44).",
         "",
         "Lumen-edge methods compared on the same paths:",
         "",

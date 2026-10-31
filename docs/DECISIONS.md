@@ -544,3 +544,16 @@ lesions were inspected visually; no test lesion was looked at.
   segments): tried first; on rendered vessels it overestimated severity by 10–25 points
   because edge enhancement also acts along the vessel, so it was dropped.
 - Choosing on all patients, or after looking at the test half: no unbiased estimate left.
+
+**Outcome (2026-10-31, development patients, recorded before the test half was run):** the
+model lost on both criteria, so **intensity edges stay the product's lumen measurement** and
+the model stays an option (`--lumen model`, the app's selector). On the 256 development lesions
+(251 measured by each method), weighted kappa was 0.25 for the model vs 0.36 for intensity
+edges, and the AUC for ≥ 70% lesions 0.73 vs 0.81. The model did not undo the severity
+compression on real angiograms: median %DS of lesions graded 70–90% was 45 (edges 51), and of
+lesions graded 90–98% 58 (edges 55). On rendered vessels it read the same lesions within
+~2 points, so the imaging-chain model is missing something real angiograms have (scatter,
+background structure, overlapping vessels, the vendor's processing), and visual grades are
+known to read higher than QCA. Every number here is reproduced by `vstent stenosis-grading`
+(development table of `reports/stenosis_grading.md`). The test half is run once for the
+report, with all three methods, and nothing is chosen on it.
