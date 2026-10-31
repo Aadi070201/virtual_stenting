@@ -90,6 +90,7 @@ vstent/
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
                         # synthetic.py (rendered tubes; X-ray-like projections), qca_validation.py,
                         # lumen_model.py (imaging-chain lumen fit, P4c), lumen_report.py,
+                        # calibration.py (frame-level imaging-chain calibration, D46),
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),

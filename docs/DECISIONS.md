@@ -606,3 +606,31 @@ have. The corrected geometry is the right input for the FFR model (left + right 
 projected lumen width), but it reads severity lower than visual estimates, so the severity
 compression on real angiograms is larger than P4b's kappa suggested. Reproduced by the
 development table of `reports/stenosis_grading.md` (run next).
+
+### D46 — Frame-level imaging-chain calibration: kept as an option; lesion insertion dropped (2026-11-01)
+**Decision:** the imaging chain's blur and edge enhancement can be fitted once per frame,
+jointly over its longest branch-free vessel segments (`imaging/calibration.py`,
+`lumen_model.calibrate_chain`, `fit_lumen(chain=...)`), but this is not used by default, and
+physics-consistent lesion insertion into real angiograms (planned in P4d) is dropped for now.
+
+**Reason:**
+- **Rendered frames:** the joint fit recovers the chain (5 vessels: blur 1.01 for 1.0, edge
+  amount 2.20 for 2.5, width 2.17 for 2.0), and lesions fitted with the chain fixed read
+  within 3 points. With only three vessel sizes, amount and width still trade off (3.1 for
+  2.5); the test uses four.
+- **Real ARCADE val frames (13 frames, 2–6 segments each):** the frame-level settings are not
+  physically consistent: blur 0.6–3.0 px, edge amount 0.2–5.0, width 0.5–5.0 px, often at a
+  bound. Fixing them raises each vessel's residual only slightly (e.g. 1.39 → 1.44 noise
+  units), so the data hardly constrains them. The model is mis-specified for real images
+  (background structure, scatter, non-circular lumens), not just ambiguous per vessel; this
+  also explains the model's CADICA result (D44).
+- **Lesion insertion** would add the model's predicted change in intensity for a narrower
+  lumen. With the chain this poorly determined, tight inserted lesions would extrapolate an
+  unidentified model, so a benchmark built on them could not be trusted.
+
+**Alternatives:**
+- Calibrating on the catheter (a cylinder of known size, as classical QCA does for the pixel
+  size): a cleaner target for the chain, and a pixel-size calibration at the same time. Not
+  done yet; it needs catheter detection.
+- Generative lesion editing (diffusion, optimal transport; published 2025–2026): looks
+  realistic, but its lumen is not known exactly, so it cannot serve as measurement truth.

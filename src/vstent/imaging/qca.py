@@ -30,7 +30,7 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinat
 from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
-from vstent.imaging.lumen_model import LumenFit, fit_lumen
+from vstent.imaging.lumen_model import ChainCalibration, LumenFit, fit_lumen
 from vstent.physics.geometry import Lesion, VesselProfile
 from vstent.units import m_to_mm, mm_to_m
 
@@ -463,13 +463,15 @@ def qca_from_centerline(
     trim_start_diameters: float | None = None,
     image: np.ndarray | None = None,
     lumen: str = "edges",
+    chain: ChainCalibration | None = None,
 ) -> QCAResult:
     """QCA along a given centreline. ``mm_per_px=None`` uses the assumed default 0.30 mm/px.
     With ``image`` (the greyscale angiogram) the lumen edges come from its intensity
     (:func:`measure_diameters_intensity`, guided by the probability-map edges).
     ``lumen="model"`` (needs ``image``) replaces the edge diameters by the imaging-chain fit
     (:func:`~vstent.imaging.lumen_model.fit_lumen`), started from the intensity edges; where
-    the fit cannot run (too few points), the edges are kept.
+    the fit cannot run (too few points), the edges are kept. ``chain``: the frame's calibrated
+    blur and edge enhancement (:mod:`vstent.imaging.calibration`), fixed in that fit.
 
     ``trim_diameters`` × the median diameter is removed at both ends: where the centreline
     runs into the end of the mask (a vessel tip, an ostium, a cut-off branch) the measured
@@ -502,7 +504,7 @@ def qca_from_centerline(
     if lumen == "model":
         edge_ref = robust_reference(centerline.s, diameters.diameter_px)
         offset = (diameters.right_px + diameters.left_px) / 2.0
-        fit = fit_lumen(image, centerline, diameters.diameter_px, offset, edge_ref)
+        fit = fit_lumen(image, centerline, diameters.diameter_px, offset, edge_ref, chain=chain)
         if fit is not None:
             half = fit.diameter_px / 2.0
             diameters = DiameterProfile(

@@ -342,41 +342,35 @@ features.
 - on rendered vessels, an occluded segment in a mask gap is flagged and an open one is not;
 - the CADICA report is regenerated from code, and every result is reported as measured.
 
-## P4d: Frame-level imaging-chain calibration and real-angiogram lesion benchmark (added 2026-10-31)
+## P4d: Cine runs on real angiograms (added 2026-10-31, revised 2026-11-01)
 
-P4c left severity on real angiograms compressed (median 42% DS for lesions graded 90–98%),
-and there is no public angiogram data with exact lumens. Fitted per vessel, the imaging-chain
-settings (blur, edge enhancement) scatter widely between vessels of one frame, although one
-X-ray system and its processing made them all: they trade off against the lumen. The first
-item of P8 (rendered training data) is moved here, but rendered into real angiograms.
+P4c left severity on real angiograms compressed, and the imaging-chain model does not
+describe real frames well enough to insert lesions into them (D46). Clinical angiograms are
+recorded as cine runs, and the clinically validated angiography-FFR methods use them: frames
+are chosen in the opacified phase, and the contrast's transit gives the flow. CADICA contains
+the full runs (19–101 frames) and, for each, the window of frames its clinicians selected:
+real expert ground truth. Parts of P7 move here.
 
-- [ ] **Frame-level calibration:** the chain's blur and edge enhancement are fitted once per
-  frame, jointly over its healthy vessel segments (μ per segment); lumens are then fitted with
-  the chain fixed. Rendered images: the known chain is recovered. Real images: report the
-  spread of per-segment vs frame-level settings and the fit residual.
-- [ ] **Physics-consistent lesion insertion into real angiograms:** a healthy segment's
-  fitted lumen is narrowed (concentric or one-sided, 30–95% DS) and only the model's change in
-  intensity is added to the image; background, noise, other vessels and the vendor's
-  processing stay real, and the inserted lumen is known exactly. Rendered images: insertion
-  matches rendering the lesion directly.
-- [ ] **`vstent lesion-benchmark`:** %DS and FFR error of each lumen method on inserted
-  lesions in real frames, by severity and vessel size. Development: ARCADE val and CADICA
-  development patients; test: ARCADE test and CADICA test patients, run once after the
-  methods are fixed. The lesion's appearance follows the fitted model, so this is a
-  semi-synthetic benchmark; the report says so.
-- [ ] **Lumen-accurate segmentation:** the segmenter is fine-tuned on ARCADE train images with
-  inserted lesions and their exact lumen masks (resumable). Adopted only if, under a rule
-  written before the results: ARCADE val Dice drops by ≤ 0.01, and on development data the
-  benchmark's %DS error and CADICA's kappa and AUC (≥ 70%) improve.
-- [ ] Invention notes: frame-level calibration and physics-consistent lesion insertion, with
-  a prior-art search (generative stenosis editing exists: diffusion, MICCAI 2025; optimal
-  transport, ICML 2026).
+- [x] **Frame-level imaging-chain calibration** (D46): recovers the chain on rendered frames;
+  on real frames the settings are not physically consistent, so it stays an option and lesion
+  insertion is dropped.
+- [ ] **Cine input:** a run as a folder of frames or a multi-frame DICOM (frame time when
+  present), one loader for the CLI, the app and the evaluations.
+- [ ] **Opacification curve and analysis window:** vessel area per frame from the
+  segmentation → contrast arrival, the opacified window and the analysis frame. Agreement with
+  the CADICA clinicians' selected frames (development patients; test patients once).
+- [ ] **Contrast transit:** arrival time of the contrast front along the analysed vessel →
+  front velocity (frame count), with its uncertainty, as an optional patient-specific flow for
+  the FFR model. Tested on synthetic cine runs with a known front velocity and cardiac
+  motion; on CADICA reported descriptively (no flow ground truth, no frame rate).
+- [ ] `vstent analyse` and the app accept a run and pick the analysis frame; reports and
+  invention notes updated.
 
 **Done when:**
-- on rendered images, the frame-level fit recovers blur and edge amount within 20% and
-  insertion matches direct rendering (mean |%DS| difference ≤ 3 points with the model);
-- the lesion benchmark and the CADICA report are regenerated from code, with every result
-  reported as measured, whether or not anything is adopted.
+- on synthetic runs, the analysis frame lies in the opacified window and the front velocity
+  is recovered within 15%;
+- the CADICA window-agreement report is generated from code, with every result reported as
+  measured.
 
 ## P5: Projection geometry and two-view 3D reconstruction
 
@@ -402,14 +396,14 @@ item of P8 (rendered training data) is moved here, but rendered into real angiog
 
 ## P7: Cine angiography
 
-- [ ] Multi-frame DICOM: end-diastolic frame selection (ECG if present, image-based otherwise).
-- [ ] TIMI frame count → a patient-specific flow velocity instead of a fixed hyperemic velocity, with its uncertainty feeding P1.
+- [ ] Multi-frame DICOM: end-diastolic frame selection (ECG if present, image-based otherwise). (Run loading and the opacified analysis window: P4d.)
+- [ ] TIMI frame count → a patient-specific flow velocity instead of a fixed hyperemic velocity, with its uncertainty feeding P1. (Contrast-front transit on single runs: P4d.)
 
 **Done when:** frame selection and frame counting are tested on synthetic cine sequences, and on real cine examples if the human supplies de-identified, licensed ones.
 
 ## P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review]
 
-- [ ] Render synthetic angiograms from 3D trees (projection, contrast, noise, overlap) to train and test segmentation and angiogram → FFR models. (Lesions inserted into real angiograms moved to P4d.)
+- [ ] Render synthetic angiograms from 3D trees (projection, contrast, noise, overlap) to train and test segmentation and angiogram → FFR models. (Lesion insertion into real angiograms was tried in P4d and dropped, D46.)
 - [ ] Regulatory groundwork drafts (not regulatory advice):
   - intended-use statement;
   - IEC 62304 software safety class rationale;

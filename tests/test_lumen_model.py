@@ -12,8 +12,12 @@ from vstent.imaging.centerline import (
     trace_centerline,
     vessel_graph,
 )
-from vstent.imaging.lumen_model import cell_chord, forward, jacobian
-from vstent.imaging.qca import qca_from_centerline
+from vstent.imaging.lumen_model import calibrate_chain, cell_chord, fit_lumen, forward, jacobian
+from vstent.imaging.qca import (
+    measure_diameters,
+    measure_diameters_intensity,
+    qca_from_centerline,
+)
 from vstent.imaging.synthetic import (
     render_projection,
     render_tubes,
@@ -186,3 +190,33 @@ def test_lumen_report(tmp_path, monkeypatch):
     md = (tmp_path / "lumen_synthetic.md").read_text(encoding="utf-8")
     assert "Research use only" in md and "best case" in md
     assert (tmp_path / "figures" / "lumen_synthetic.png").exists()
+
+
+def test_frame_calibration_recovers_the_imaging_chain():
+    """Blur and edge enhancement shared by a frame's vessels (D46): on a rendered frame with
+    vessels of four sizes (6–18 px) the joint fit recovers them, and with the chain fixed each
+    lumen fit still reads its lesion. (With three sizes the edge amount and width still trade
+    off: 3.1 for 2.5.)"""
+    tubes, vessels = [], []
+    for row, ref, sev in ((50, 6.0, 0.0), (125, 10.0, 0.5), (200, 14.0, 0.0), (275, 18.0, 0.3)):
+        pts, s = sine_centerline((float(row), 30.0), 240.0, amplitude_px=8.0, wavelength_px=200.0)
+        d = stenosis_diameter(s, ref, sev, s[-1] / 2, 30.0)
+        tubes.append((pts, d / 2))
+    img = render_projection((330, 300), tubes, mm_per_px=0.25, mu_per_mm=0.06, background=0.6,
+                            blur_sigma=1.0, edge_amount=2.5, edge_sigma=2.0, noise_std=0.015,
+                            seed=3)  # fmt: skip
+    img8 = np.round(img * 255).astype(np.uint8)
+    for pts, r in tubes:
+        cl = smooth_and_resample(np.round(pts[::8]))
+        mask = render_tubes((330, 300), [(pts, 2 * r)], blur_sigma=0, noise_std=0)
+        edges = measure_diameters_intensity(img8, cl, measure_diameters(mask, cl))
+        offset = (edges.right_px + edges.left_px) / 2.0
+        vessels.append((cl, edges.diameter_px, offset, np.full(len(cl.s), 2 * r.max())))
+    cal = calibrate_chain(img8, vessels)
+    assert cal.n_segments == 4 and cal.converged
+    assert cal.blur_px == pytest.approx(1.0, rel=0.2)
+    assert cal.edge_amount == pytest.approx(2.5, rel=0.2)
+    fit = fit_lumen(img8, *vessels[1], chain=cal)
+    assert fit.blur_px == cal.blur_px  # held fixed
+    ds = 100 * (1 - fit.diameter_px.min() / np.median(fit.diameter_px))
+    assert ds == pytest.approx(50.0, abs=6.0)

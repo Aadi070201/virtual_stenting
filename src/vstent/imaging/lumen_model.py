@@ -172,31 +172,50 @@ def _second_difference(n: int) -> sparse.csr_matrix:
     return sparse.diags([1.0, -2.0, 1.0], [0, 1, 2], shape=(k, n), format="csr")
 
 
-def fit_lumen(
-    image: np.ndarray,
-    centerline: Centerline,
-    edge_diameter_px: np.ndarray,
-    edge_offset_px: np.ndarray,
-    reference_px: np.ndarray,
-    *,
-    max_nfev: int = MAX_NFEV,
-) -> LumenFit | None:
-    """Fit the imaging-chain model along ``centerline`` (see the module docstring).
+@dataclass(frozen=True, eq=False)
+class ChainCalibration:
+    """Imaging-chain settings shared by every vessel of one frame (P4d).
 
-    ``image``: greyscale angiogram, vessels dark (uint8 or float in [0, 1]).
-    ``edge_diameter_px``, ``edge_offset_px``: (n,) edge-measured diameter and lumen-centre
-    offset (start values); ``reference_px``: (n,) healthy reference diameter (healthy points set
-    the start value of μ). Returns ``None`` for fewer than ``MIN_POINTS`` points.
+    Attributes:
+        blur_px: system blur σ_b.
+        edge_amount: unsharp-mask amount a.
+        edge_sigma_px: unsharp-mask σ_e.
+        n_segments: vessel segments fitted jointly.
+        rms: root-mean-square residual in noise units over all segments.
+        converged: the optimiser reported convergence.
     """
-    d_edge = np.asarray(edge_diameter_px, dtype=float)
-    n = d_edge.size
-    if n < MIN_POINTS:
-        return None
-    ref = np.asarray(reference_px, dtype=float)
-    img = np.asarray(image, dtype=np.float32)
-    img = img / 255.0 if img.max() > 1.0 else img
-    half_in = 0.5 * float(ref.max()) + WINDOW_MARGIN_PX
-    values, x = straighten(img, centerline, half_in + BAND_PX)
+
+    blur_px: float
+    edge_amount: float
+    edge_sigma_px: float
+    n_segments: int
+    rms: float
+    converged: bool
+
+
+@dataclass(frozen=True, eq=False)
+class _Segment:
+    """One vessel prepared for fitting: straightened, background-normalised image (n, m) at
+    offsets ``x``, its noise and the start values."""
+
+    obs: np.ndarray
+    x: np.ndarray
+    noise: float
+    r0: np.ndarray
+    x0_start: np.ndarray
+    mu0: float
+    r_upper: float
+    x0_bound: float
+
+
+def background_bands(
+    image: np.ndarray, centerline: Centerline, reference_px: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """Straightened image and its background: (values (n, m), offsets x (m,), background
+    (n, m), fitted half-width). The background is the median of a ``BAND_PX`` band on each side
+    beyond the fitted window (smoothed along the centreline), interpolated across it."""
+    half_in = 0.5 * float(np.max(reference_px)) + WINDOW_MARGIN_PX
+    values, x = straighten(image, centerline, half_in + BAND_PX)
     left, right = x < -half_in, x > half_in
     b_left = median_filter(np.median(values[:, left], axis=1), BACKGROUND_MEDIAN_POINTS,
                            mode="nearest")  # fmt: skip
@@ -204,53 +223,167 @@ def fit_lumen(
                             mode="nearest")  # fmt: skip
     frac = np.clip((x + half_in) / (2.0 * half_in), 0.0, 1.0)
     background = b_left[:, None] + frac[None, :] * (b_right - b_left)[:, None]
-    observed = values / np.maximum(background, 1e-3)
-    inner = ~(left | right)
-    xi, obs = x[inner], observed[:, inner]
-    noise = max(float(np.std(observed[:, left | right] - 1.0)), 1e-3)
-    m = xi.size
+    return values, x, background, half_in
 
+
+def _as_unit(image: np.ndarray) -> np.ndarray:
+    img = np.asarray(image, dtype=np.float32)
+    return img / 255.0 if img.max() > 1.0 else img
+
+
+def _prepare(img, centerline, edge_diameter_px, edge_offset_px, reference_px) -> _Segment | None:
+    d_edge = np.asarray(edge_diameter_px, dtype=float)
+    n = d_edge.size
+    if n < MIN_POINTS:
+        return None
+    ref = np.asarray(reference_px, dtype=float)
+    values, x, background, half_in = background_bands(img, centerline, ref)
+    observed = values / np.maximum(background, 1e-3)
+    band = np.abs(x) > half_in
+    obs = observed[:, ~band]
+    noise = max(float(np.std(observed[:, band] - 1.0)), 1e-3)
     r0 = np.maximum(d_edge / 2.0, 0.5)
     healthy = (d_edge > 0.85 * ref) & (d_edge < 1.15 * ref)
     healthy = healthy if healthy.sum() >= 3 else np.ones(n, bool)
     depth = -np.log(np.clip(obs[healthy].min(axis=1), 0.05, 0.999))
     mu0 = float(np.clip(np.median(depth / (2.0 * r0[healthy])), CHAIN_LOWER[0], CHAIN_UPPER[0]))
-    chain0 = np.array([mu0, *CHAIN_START[1:]], dtype=float)
-    lower = np.concatenate([CHAIN_LOWER, np.zeros(n), np.full(n, -0.5 * ref.max())])
-    upper = np.concatenate([CHAIN_UPPER, np.full(n, ref.max() + 2.0), np.full(n, 0.5 * ref.max())])
+    x0_bound = 0.5 * float(ref.max())
     x0_start = np.clip(np.nan_to_num(np.asarray(edge_offset_px, dtype=float)),
-                       lower[4 + n :] + 1e-6, upper[4 + n :] - 1e-6)  # fmt: skip
-    p0 = np.clip(np.concatenate([chain0, r0, x0_start]), lower + 1e-9, upper - 1e-9)
-    weight = SMOOTHNESS / noise
-    d2 = _second_difference(n)
-    zero = sparse.csr_matrix((d2.shape[0], n))
-    penalty = sparse.vstack([
-        sparse.hstack([sparse.csr_matrix((d2.shape[0], 4)), weight * d2, zero]),
-        sparse.hstack([sparse.csr_matrix((d2.shape[0], 4)), zero, weight * d2]),
-    ], format="csr")  # fmt: skip
+                       -x0_bound + 1e-6, x0_bound - 1e-6)  # fmt: skip
+    return _Segment(obs, x[~band], noise, r0, x0_start, mu0, float(ref.max()) + 2.0, x0_bound)
+
+
+def _solve(segments: list[_Segment], chain: ChainCalibration | None, max_nfev: int):
+    """Robust joint fit (soft-L1, curvature penalty on r and x0). Parameters: (σ_b, a, σ_e)
+    shared by all ``segments`` unless ``chain`` fixes them, then μ, r (n), x0 (n) per segment.
+    Returns the solution and a function mapping it to per-segment (chain tuple, r, x0)."""
+    free = chain is None
+    n_shared = 3 if free else 0
+    sizes = [s.r0.size for s in segments]
+    starts = n_shared + np.concatenate([[0], np.cumsum([1 + 2 * n for n in sizes])[:-1]])
+    lower = list(CHAIN_LOWER[1:]) if free else []
+    upper = list(CHAIN_UPPER[1:]) if free else []
+    p0 = list(CHAIN_START[1:]) if free else []
+    for s, n in zip(segments, sizes, strict=True):
+        lower += [CHAIN_LOWER[0], *np.zeros(n), *np.full(n, -s.x0_bound)]
+        upper += [CHAIN_UPPER[0], *np.full(n, s.r_upper), *np.full(n, s.x0_bound)]
+        p0 += [s.mu0, *s.r0, *s.x0_start]
+    lower, upper = np.array(lower), np.array(upper)
+    p0 = np.clip(np.array(p0, dtype=float), lower + 1e-9, upper - 1e-9)
+    weights = [SMOOTHNESS / s.noise for s in segments]
+    d2s = [_second_difference(n) for n in sizes]
+
+    def unpack(p):
+        shared = p[:3] if free else (chain.blur_px, chain.edge_amount, chain.edge_sigma_px)
+        out = []
+        for k, n in zip(starts, sizes, strict=True):
+            out.append(((p[k], *shared), p[k + 1 : k + 1 + n], p[k + 1 + n : k + 1 + 2 * n]))
+        return out
 
     def residuals(p):
-        r, x0 = p[4 : 4 + n], p[4 + n :]
-        model = forward(p[:4], r, x0, xi)
-        return np.concatenate([((model - obs) / noise).ravel(), weight * (d2 @ r),
-                               weight * (d2 @ x0)])  # fmt: skip
+        parts = []
+        for s, (ch, r, x0), w, d2 in zip(segments, unpack(p), weights, d2s, strict=True):
+            parts += [((forward(ch, r, x0, s.x) - s.obs) / s.noise).ravel(), w * (d2 @ r),
+                      w * (d2 @ x0)]  # fmt: skip
+        return np.concatenate(parts)
 
     def jac(p):
-        data = jacobian(p[:4], p[4 : 4 + n], p[4 + n :], xi) / noise
-        return sparse.vstack([data, penalty], format="csr")
+        rows, cols, vals, row0 = [], [], [], 0
+        for s, (ch, r, x0), w, d2, k, n in zip(
+            segments, unpack(p), weights, d2s, starts, sizes, strict=True
+        ):
+            block = (jacobian(ch, r, x0, s.x) / s.noise).tocoo()
+            shared = [0, 1, 2] if free else [-1, -1, -1]
+            col_map = np.array([k, *shared, *range(k + 1, k + 1 + 2 * n)])
+            keep = col_map[block.col] >= 0
+            rows.append(block.row[keep] + row0)
+            cols.append(col_map[block.col][keep])
+            vals.append(block.data[keep])
+            row0 += block.shape[0]
+            pen = (w * d2).tocoo()
+            for first in (k + 1, k + 1 + n):  # r, then x0
+                rows.append(pen.row + row0)
+                cols.append(pen.col + first)
+                vals.append(pen.data)
+                row0 += d2.shape[0]
+        return sparse.csr_matrix(
+            (np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))),
+            shape=(row0, p.size),
+        )
 
     sol = least_squares(
         residuals, p0, jac=jac, bounds=(lower, upper), x_scale="jac", loss="soft_l1",
         f_scale=LOSS_SCALE, max_nfev=max_nfev,
     )  # fmt: skip
+    return sol, unpack
+
+
+def fit_lumen(
+    image: np.ndarray,
+    centerline: Centerline,
+    edge_diameter_px: np.ndarray,
+    edge_offset_px: np.ndarray,
+    reference_px: np.ndarray,
+    *,
+    chain: ChainCalibration | None = None,
+    max_nfev: int = MAX_NFEV,
+) -> LumenFit | None:
+    """Fit the imaging-chain model along ``centerline`` (see the module docstring).
+
+    ``image``: greyscale angiogram, vessels dark (uint8 or float in [0, 1]).
+    ``edge_diameter_px``, ``edge_offset_px``: (n,) edge-measured diameter and lumen-centre
+    offset (start values); ``reference_px``: (n,) healthy reference diameter (healthy points set
+    the start value of μ). ``chain``: the frame's calibrated blur and edge enhancement
+    (:func:`calibrate_chain`), fixed during the fit; without it they are fitted to this vessel
+    alone. Returns ``None`` for fewer than ``MIN_POINTS`` points.
+    """
+    seg = _prepare(_as_unit(image), centerline, edge_diameter_px, edge_offset_px, reference_px)
+    if seg is None:
+        return None
+    sol, unpack = _solve([seg], chain, max_nfev)
+    (mu, blur, amount, sigma), r, x0 = unpack(sol.x)[0]
+    n, m = seg.obs.shape
     data = sol.fun[: n * m]
     return LumenFit(
-        diameter_px=2.0 * sol.x[4 : 4 + n],
-        offset_px=sol.x[4 + n :].copy(),
-        mu_per_px=float(sol.x[0]),
-        blur_px=float(sol.x[1]),
-        edge_amount=float(sol.x[2]),
-        edge_sigma_px=float(sol.x[3]),
+        diameter_px=2.0 * np.asarray(r),
+        offset_px=np.asarray(x0).copy(),
+        mu_per_px=float(mu),
+        blur_px=float(blur),
+        edge_amount=float(amount),
+        edge_sigma_px=float(sigma),
+        rms=float(np.sqrt(np.mean(data**2))),
+        converged=bool(sol.success),
+    )
+
+
+def calibrate_chain(
+    image: np.ndarray,
+    vessels: list[tuple[Centerline, np.ndarray, np.ndarray, np.ndarray]],
+    *,
+    max_nfev: int = MAX_NFEV,
+) -> ChainCalibration | None:
+    """Blur and edge enhancement of one frame, fitted jointly over its ``vessels`` (each:
+    centreline, edge diameter, edge offset, reference diameter, as for :func:`fit_lumen`).
+
+    One X-ray system and its image processing made every vessel of the frame, so σ_b, a and
+    σ_e are shared, while μ (contrast concentration), r and x0 are per vessel. Fitted to one
+    vessel, the chain trades off against the lumen; shared across vessels of different sizes,
+    it is pinned down. Returns ``None`` if no vessel has ``MIN_POINTS`` points.
+    """
+    img = _as_unit(image)
+    segments = [s for s in (_prepare(img, *v) for v in vessels) if s is not None]
+    if not segments:
+        return None
+    sol, unpack = _solve(segments, None, max_nfev)
+    data = np.concatenate([
+        ((forward(ch, r, x0, s.x) - s.obs) / s.noise).ravel()
+        for s, (ch, r, x0) in zip(segments, unpack(sol.x), strict=True)
+    ])  # fmt: skip
+    return ChainCalibration(
+        blur_px=float(sol.x[0]),
+        edge_amount=float(sol.x[1]),
+        edge_sigma_px=float(sol.x[2]),
+        n_segments=len(segments),
         rms=float(np.sqrt(np.mean(data**2))),
         converged=bool(sol.success),
     )
