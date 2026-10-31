@@ -494,8 +494,10 @@ def run_qca(
     mm_per_px: float | None = None,
     level: float = LEVEL,
     image: np.ndarray | None = None,
+    lumen: str = "edges",
 ) -> QCAResult:
     """QCA of the vessel path between ``start`` and ``end`` ((row, col) px) on ``prob``; lumen
-    edges from ``image`` when it is given (:func:`qca_from_centerline`)."""
+    from ``image`` when it is given (``lumen``: :func:`qca_from_centerline`)."""
     centerline = trace_centerline(np.asarray(prob) >= level, start, end)
-    return qca_from_centerline(prob, centerline, mm_per_px=mm_per_px, level=level, image=image)
+    return qca_from_centerline(prob, centerline, mm_per_px=mm_per_px, level=level, image=image,
+                               lumen=lumen)  # fmt: skip

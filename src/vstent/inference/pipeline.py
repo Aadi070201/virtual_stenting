@@ -27,6 +27,9 @@ from vstent.physics.tree import TreeFFRResult, solve_tree
 from vstent.uncertainty.greyzone import Interval, model_interval
 from vstent.units import m_to_mm, pa_to_mmhg
 
+# Lumen measurement when the angiogram is given (an automatic segmentation): "edges" (D43) or
+# "model" (the imaging-chain fit); chosen by the pre-registered rule D44.
+AUTO_LUMEN = "edges"
 MAX_FALLBACK_FRACTION = 0.10
 MAX_CAPPED_FRACTION = 0.10
 
@@ -70,6 +73,15 @@ class VesselAnalysis:
     def ffr_distal_surrogate(self) -> float | None:
         """Distal FFR from the surrogate (``None`` without a surrogate)."""
         return None if self.surrogate_ffr is None else float(self.surrogate_ffr[-1])
+
+
+def _lumen(image: np.ndarray | None, lumen: str | None) -> str:
+    """The lumen option for :func:`~vstent.imaging.qca.qca_from_centerline`."""
+    if image is None:
+        if lumen == "model":
+            raise ValueError("the model-based lumen needs the image")
+        return "edges"
+    return AUTO_LUMEN if lumen is None else lumen
 
 
 def lumen_warnings(qca: QCAResult, name: str = "") -> list[str]:
@@ -123,12 +135,15 @@ def analyse_vessel(
     mm_per_px: float | None = None,
     sampling: SamplingConfig | None = None,
     image: np.ndarray | None = None,
+    lumen: str | None = None,
 ) -> VesselAnalysis:
     """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
     ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
-    ``None`` when ``prob`` is an analyst's mask."""
+    ``None`` when ``prob`` is an analyst's mask. ``lumen``: ``"edges"`` or ``"model"`` (needs
+    ``image``); default :data:`AUTO_LUMEN` with an image, edges without."""
     params = params or PhysicsParams()
-    qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image)
+    qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image,
+                  lumen=_lumen(image, lumen))  # fmt: skip
     solver = solve_ffr(qca.profile, params)
     warnings = []
     if qca.calibration_assumed:
@@ -203,14 +218,16 @@ def analyse_tree(
     mm_per_px: float | None = None,
     max_depth: int = MAX_DEPTH,
     image: np.ndarray | None = None,
+    lumen: str | None = None,
 ) -> TreeAnalysis:
     """Tree QCA from ``start`` (to ``end`` or the farthest point) and tree-solver FFR.
-    ``image``: as :func:`analyse_vessel`.
+    ``image``, ``lumen``: as :func:`analyse_vessel`.
 
     No surrogate yet: the tree surrogate is P3. Pressures and v_hyp come from ``params``.
     """
     params = params or PhysicsParams()
-    tq = tree_qca(prob, start, end, mm_per_px=mm_per_px, max_depth=max_depth, image=image)
+    tq = tree_qca(prob, start, end, mm_per_px=mm_per_px, max_depth=max_depth, image=image,
+                  lumen=_lumen(image, lumen))  # fmt: skip
     result = solve_tree(tq.tree, params)
     single = solve_ffr(tq.tree.branches[0], params)
     warnings = []

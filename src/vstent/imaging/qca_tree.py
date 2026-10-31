@@ -74,6 +74,7 @@ def tree_qca(
     min_branch_ratio: float = MIN_BRANCH_RATIO,
     max_depth: int = MAX_DEPTH,
     image: np.ndarray | None = None,
+    lumen: str = "edges",
 ) -> TreeQCA:
     """QCA of the main path from ``start`` (to ``end``, or the farthest point) and its side
     branches, on the probability map ``prob`` (H, W). Points are (row, col) px. With ``image``
@@ -96,7 +97,7 @@ def tree_qca(
 
     main = qca_from_centerline(
         prob, smooth_and_resample(np.asarray(paths[b]), bridged=bridge_flags(graph, paths[b])),
-        mm_per_px=mm_per_px, level=level, image=image,
+        mm_per_px=mm_per_px, level=level, image=image, lumen=lumen,
     )  # fmt: skip
     accepted: list[dict[str, Any]] = [{"qca": main, "depth": 0, "parent": -1, "attach": 0,
                                        "junction": None}]  # fmt: skip
@@ -126,7 +127,7 @@ def tree_qca(
             continue
         qca = qca_from_centerline(
             prob, smooth_and_resample(pts, bridged=flags), mm_per_px=mm_per_px, level=level,
-            trim_start_diameters=0.0, image=image,
+            trim_start_diameters=0.0, image=image, lumen=lumen,
         )  # fmt: skip
         ratio = float(np.median(qca.diameters.diameter_px)) / (2.0 * half_width[junction])
         if ratio < min_branch_ratio:
