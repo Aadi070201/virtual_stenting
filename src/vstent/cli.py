@@ -549,7 +549,7 @@ def export_seg(
 
 
 def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure,
-                      plan=None):  # fmt: skip
+                      plan=None, lumen=None):  # fmt: skip
     """``vstent analyse --tree``: tree QCA, tree FFR (solver; surrogate if exported),
     optional virtual stent or plans on the path to ``outlet``. ``plan`` = (catalog, config)."""
     from vstent.inference.pipeline import analyse_tree
@@ -557,7 +557,8 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
     from vstent.planning.stent import Stent, apply_path_stents
     from vstent.units import m_to_mm, mm_to_m
 
-    res = analyse_tree(prob, start, end, params=params, mm_per_px=mm_per_px, image=img)
+    res = analyse_tree(prob, start, end, params=params, mm_per_px=mm_per_px, image=img,
+                       lumen=lumen)  # fmt: skip
     tq, sol = res.qca, res.result
     typer.echo(DISCLAIMER)
     typer.echo(
@@ -726,6 +727,10 @@ def analyse(
     outlet: Annotated[
         int, typer.Option("--outlet", min=0, help="With --tree: path to this branch (0 = main).")
     ] = 0,
+    lumen: Annotated[
+        str | None,
+        typer.Option("--lumen", help="Lumen measurement: edges or model (default: the product's)."),
+    ] = None,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
@@ -768,6 +773,9 @@ def analyse(
     if stent is not None and not tree:
         typer.echo("--stent needs --tree (single paths: use --plan or the app).", err=True)
         raise typer.Exit(code=2)
+    if lumen not in (None, "edges", "model"):
+        typer.echo("--lumen: use edges or model.", err=True)
+        raise typer.Exit(code=2)
     seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
     sur_dir = (
         None if tree else surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
@@ -786,18 +794,19 @@ def analyse(
             else None
         )
         _analyse_tree_cli(prob, img, start, end, image.name, params, mm_per_px, stent, outlet,
-                          figure, plan_cfg)  # fmt: skip
+                          figure, plan_cfg, lumen)  # fmt: skip
         return
     surrogate = SurrogateRunner.from_dir(sur_dir)
     result = analyse_vessel(
-        prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px, image=img
-    )
+        prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px, image=img,
+        lumen=lumen,
+    )  # fmt: skip
     q = result.qca
     typer.echo(f"{DISCLAIMER}")
     typer.echo(
         f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
         f"({'assumed' if q.calibration_assumed else 'given'}); MLD {q.mld_mm:.2f} mm; "
-        f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen edges: "
+        f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen: "
         f"{q.lumen_method}"
     )
     typer.echo(
