@@ -52,12 +52,13 @@ def test_phase2_items(tmp_path):
     plan = tmp_path / "PLAN.md"
     plan.write_text(
         "## M8: x\n- [ ] a\n\n## P1: Done one\n- [x] a\n- [x] b\n\n## P2: Half\n- [x] a\n"
-        "- [ ] b\n\n## P3: Later [needs human]\n- [ ] a\n",
+        "- [ ] b\n\n## P2b: Inserted\n- [x] a\n\n## P3: Later [needs human]\n- [ ] a\n",
         "utf-8",
     )
     assert phase2_items(plan) == [
         "P1: Done one (done)",
         "P2: Half (in progress)",
+        "P2b: Inserted (done)",
         "P3: Later [needs human] (not started)",
     ]
     assert phase2_items(tmp_path / "missing.md") == []

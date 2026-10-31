@@ -231,13 +231,14 @@ def collect(reports: Path) -> dict[str, Any]:
 
 
 def phase2_items(plan_path: Path = Path("docs/PLAN.md")) -> list[str]:
-    """Phase 2 milestones of the plan (``## P<n>: title``) with their status from the task
-    checkboxes: done (all ticked), in progress (some ticked) or not started."""
+    """Phase 2 milestones of the plan (``## P<n>: title``, also lettered like ``P4b``) with
+    their status from the task checkboxes: done (all ticked), in progress (some ticked) or not
+    started."""
     if not plan_path.exists():
         return []
     text = plan_path.read_text(encoding="utf-8")
     items = []
-    for m in re.finditer(r"^## (P\d+: .*?)$(.*?)(?=^## |\Z)", text, flags=re.M | re.S):
+    for m in re.finditer(r"^## (P\d+[a-z]?: .*?)$(.*?)(?=^## |\Z)", text, flags=re.M | re.S):
         done = len(re.findall(r"^- \[x\]", m.group(2), flags=re.M))
         todo = len(re.findall(r"^- \[ \]", m.group(2), flags=re.M))
         status = "done" if done and not todo else "in progress" if done else "not started"
