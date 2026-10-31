@@ -1,0 +1,532 @@
+{
+  "cases": [
+    {
+      "orientation": "SE",
+      "reynolds": 500,
+      "q": 5.20624e-06,
+      "v_throat": 0.4142994154613746,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 353.372,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": 0.0
+        },
+        {
+          "lab": "468",
+          "loss": 426.9663,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -27.5353
+        },
+        {
+          "lab": "763",
+          "loss": 440.5643,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -27.5353
+        },
+        {
+          "lab": "999",
+          "loss": 219.27686899999998,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -0.177869
+        }
+      ],
+      "skipped": [
+        {
+          "file": "PIV_Sudden_Expansion_500_297.txt",
+          "reason": "wall pressures marked deleted by the data curators"
+        }
+      ],
+      "measured_median": 390.16915,
+      "measured_min": 219.27686899999998,
+      "measured_max": 440.5643,
+      "model_total": 236.7474945226037,
+      "model_viscous": 127.90434337137206,
+      "model_expansion": 108.84315115123164,
+      "ratio": 0.6067816856422494
+    },
+    {
+      "orientation": "SE",
+      "reynolds": 2000,
+      "q": 2.0825e-05,
+      "v_throat": 1.6572008449443605,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 2882.32,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": 0.0
+        },
+        {
+          "lab": "297",
+          "loss": 5655.4785,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -26.8985
+        },
+        {
+          "lab": "468",
+          "loss": 3227.477,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -128.957
+        },
+        {
+          "lab": "763",
+          "loss": 3223.9269999999997,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -128.957
+        }
+      ],
+      "skipped": [
+        {
+          "file": "LDV_Sudden_Expansion_2000_297.txt",
+          "reason": "no wall pressures (velocity data only)"
+        },
+        {
+          "file": "PIV_Sudden_Expansion_2000_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 3225.7019999999998,
+      "measured_min": 2882.32,
+      "measured_max": 5655.4785,
+      "model_total": 2253.115464624,
+      "model_viscous": 511.61835618581233,
+      "model_expansion": 1741.497108438188,
+      "ratio": 0.6984884110881912
+    },
+    {
+      "orientation": "SE",
+      "reynolds": 3500,
+      "q": 3.64437e-05,
+      "v_throat": 2.900097499779053,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 7533.59,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": 0.0
+        },
+        {
+          "lab": "297",
+          "loss": 9830.290368009,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -0.000368009
+        },
+        {
+          "lab": "468",
+          "loss": 8224.223,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -134.823
+        },
+        {
+          "lab": "763",
+          "loss": 7800.570000000001,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -130.01
+        },
+        {
+          "lab": "999",
+          "loss": 8199.2469598,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": 0.0830402
+        }
+      ],
+      "skipped": [],
+      "measured_median": 8199.2469598,
+      "measured_min": 7533.59,
+      "measured_max": 9830.290368009,
+      "model_total": 6228.651155122272,
+      "model_viscous": 895.3308949497664,
+      "model_expansion": 5333.320260172506,
+      "ratio": 0.7596613671548934
+    },
+    {
+      "orientation": "SE",
+      "reynolds": 5000,
+      "q": 5.20624e-05,
+      "v_throat": 4.1429941546137465,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 15575.447,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -266.247
+        },
+        {
+          "lab": "297",
+          "loss": 18383.099,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -537.599
+        },
+        {
+          "lab": "468",
+          "loss": 14709.444000000001,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -674.744
+        },
+        {
+          "lab": "763",
+          "loss": 13889.193,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -269.693
+        }
+      ],
+      "skipped": [
+        {
+          "file": "LDV_Sudden_Expansion_5000_297.txt",
+          "reason": "no wall pressures (velocity data only)"
+        },
+        {
+          "file": "PIV_Sudden_Expansion_5000_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 15142.445500000002,
+      "measured_min": 13889.193,
+      "measured_max": 18383.099,
+      "model_total": 12163.358548836886,
+      "model_viscous": 1279.0434337137206,
+      "model_expansion": 10884.315115123165,
+      "ratio": 0.8032624947428
+    },
+    {
+      "orientation": "SE",
+      "reynolds": 6500,
+      "q": 6.76811e-05,
+      "v_throat": 5.385890809448439,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 24344.980000000003,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -1667.58
+        },
+        {
+          "lab": "297",
+          "loss": 25089.82,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -1122.72
+        },
+        {
+          "lab": "468",
+          "loss": 24315.91,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -1612.11
+        },
+        {
+          "lab": "763",
+          "loss": 24002.76,
+          "z_up": -0.07696,
+          "z_down": 0.024,
+          "p_down": -1618.16
+        }
+      ],
+      "skipped": [
+        {
+          "file": "PIV_Sudden_Expansion_6500_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 24330.445,
+      "measured_min": 24002.76,
+      "measured_max": 25089.82,
+      "model_total": 20057.23764576784,
+      "model_viscous": 1662.7559724776747,
+      "model_expansion": 18394.481673290164,
+      "ratio": 0.8243678915764936
+    },
+    {
+      "orientation": "CD",
+      "reynolds": 500,
+      "q": 5.20624e-06,
+      "v_throat": 0.4142994154613746,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 262.118,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        },
+        {
+          "lab": "468",
+          "loss": 224.119,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        },
+        {
+          "lab": "763",
+          "loss": 219.1916,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 14.1414
+        }
+      ],
+      "skipped": [
+        {
+          "file": "PIV_conical_diffuser_500_297.txt",
+          "reason": "no wall pressures (velocity data only)"
+        },
+        {
+          "file": "PIV_conical_diffuser_500_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 224.119,
+      "measured_min": 219.1916,
+      "measured_max": 262.118,
+      "model_total": 236.74749452257834,
+      "model_viscous": 127.90434337134641,
+      "model_expansion": 108.84315115123191,
+      "ratio": 1.0563472732011938
+    },
+    {
+      "orientation": "CD",
+      "reynolds": 2000,
+      "q": 2.0825e-05,
+      "v_throat": 1.6572008449443605,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 3060.37,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 105.53
+        },
+        {
+          "lab": "297",
+          "loss": 2891.6276000000003,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -67.2476
+        },
+        {
+          "lab": "468",
+          "loss": 2688.0769999999998,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 141.833
+        },
+        {
+          "lab": "763",
+          "loss": 3091.949,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 199.941
+        }
+      ],
+      "skipped": [
+        {
+          "file": "LDV_conical_diffuser_2000_297.txt",
+          "reason": "no wall pressures (velocity data only)"
+        },
+        {
+          "file": "PIV_conical_diffuser_2000_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 2975.9988000000003,
+      "measured_min": 2688.0769999999998,
+      "measured_max": 3091.949,
+      "model_total": 2253.1154646239024,
+      "model_viscous": 511.61835618570973,
+      "model_expansion": 1741.4971084381925,
+      "ratio": 0.7570955554901104
+    },
+    {
+      "orientation": "CD",
+      "reynolds": 3500,
+      "q": 3.64437e-05,
+      "v_throat": 2.900097499779053,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 7156.7622,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -35.0822
+        },
+        {
+          "lab": "297",
+          "loss": 7456.808,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -171.348
+        },
+        {
+          "lab": "468",
+          "loss": 7216.531,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -212.251
+        },
+        {
+          "lab": "763",
+          "loss": 7405.3461,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 20.7239
+        }
+      ],
+      "skipped": [
+        {
+          "file": "PIV_conical_diffuser_3500_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 7310.93855,
+      "measured_min": 7156.7622,
+      "measured_max": 7456.808,
+      "model_total": 6228.651155122106,
+      "model_viscous": 895.330894949587,
+      "model_expansion": 5333.320260172519,
+      "ratio": 0.851963275648392
+    },
+    {
+      "orientation": "CD",
+      "reynolds": 5000,
+      "q": 5.20624e-05,
+      "v_throat": 4.1429941546137465,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 12989.246,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -186.846
+        },
+        {
+          "lab": "297",
+          "loss": 15966.602,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -33.602
+        },
+        {
+          "lab": "468",
+          "loss": 12689.219,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -239.419
+        },
+        {
+          "lab": "763",
+          "loss": 13008.6,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        }
+      ],
+      "skipped": [
+        {
+          "file": "LDV_conical_diffuser_5000_297.txt",
+          "reason": "no wall pressures (velocity data only)"
+        },
+        {
+          "file": "PIV_conical_diffuser_5000_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 12998.922999999999,
+      "measured_min": 12689.219,
+      "measured_max": 15966.602,
+      "model_total": 12163.358548836657,
+      "model_viscous": 1279.0434337134643,
+      "model_expansion": 10884.315115123192,
+      "ratio": 0.9357204861384791
+    },
+    {
+      "orientation": "CD",
+      "reynolds": 6500,
+      "q": 6.76811e-05,
+      "v_throat": 5.385890809448439,
+      "rho": 1056.0,
+      "mu": 0.0035,
+      "labs": [
+        {
+          "lab": "243",
+          "loss": 22582.8,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        },
+        {
+          "lab": "297",
+          "loss": 24706.60456339,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": -0.00456339
+        },
+        {
+          "lab": "468",
+          "loss": 19363.6,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        },
+        {
+          "lab": "763",
+          "loss": 21798.0,
+          "z_up": -0.024,
+          "z_down": 0.07696,
+          "p_down": 0.0
+        }
+      ],
+      "skipped": [
+        {
+          "file": "PIV_conical_diffuser_6500_999.txt",
+          "reason": "no wall pressures (velocity data only)"
+        }
+      ],
+      "measured_median": 22190.4,
+      "measured_min": 19363.6,
+      "measured_max": 24706.60456339,
+      "model_total": 20057.237645767553,
+      "model_viscous": 1662.7559724773414,
+      "model_expansion": 18394.48167329021,
+      "ratio": 0.9038700359510217
+    }
+  ],
+  "kt": 1.52,
+  "git_commit": "229800e66b2cc1b4b9e259f55320567f7f4deabe",
+  "git_dirty": false
+}
