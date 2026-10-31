@@ -125,14 +125,15 @@ Trainings can be paused and resumed exactly:
 | `vstent validate-synthetic` | the validation tool end to end on synthetic stand-in cases → `reports/validation_synthetic.md` | P4 |
 | `vstent sample-size` | sample size for the validation study (placeholder assumptions) → `reports/validation_sample_size.md` | P4 |
 | `vstent data cadica` / `vstent data fda-nozzle` | download and verify the public validation datasets (CADICA, CC BY 4.0; FDA nozzle, public domain) | P4b |
-| `vstent stenosis-grading` | automatic %DS at every CADICA expert lesion vs the experts' grades → `reports/stenosis_grading.md` | P4b |
+| `vstent stenosis-grading [--edges probability,intensity,model] [--workers N]` | automatic %DS at every CADICA expert lesion vs the experts' grades, per lumen method → `reports/stenosis_grading.md` | P4b–P4c |
+| `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
 | `vstent export-seg --run runs/<name>` | export segmentation to ONNX, parity → `reports/seg_onnx.md` | M5 |
 | `vstent qca-synthetic` | QCA accuracy on rendered synthetic tubes → `reports/qca_synthetic.md` | M5 |
-| `vstent analyse <image> [--start R C --end R C] [--plan]` | segment an angiogram; QCA + FFR (solver and surrogate) for one vessel; optionally stent plans | M5–M6 |
+| `vstent analyse <image> [--start R C --end R C] [--plan] [--lumen edges\|model]` | segment an angiogram; QCA + FFR (solver and surrogate) for one vessel; optionally stent plans; `--lumen` picks the lumen measurement | M5–M6, P4c |
 | `vstent qca-gallery` | qualitative QCA gallery on 20 ARCADE stenosis images → `reports/qca_gallery.md` | M5 |
 | `vstent plan-benchmark` | planner speed (5,000 candidates) and behaviour on synthetic vessels → `reports/planner_benchmark.md` | M6 |
 | `vstent app` | launch the Streamlit app on http://localhost:8501 (`--port`, `--address`) | M7 |

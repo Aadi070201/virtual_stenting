@@ -89,6 +89,7 @@ vstent/
     imaging/            # segment.py (shared pre-processing, augmentation, Dice; torch-free),
                         # seg_train.py, seg_eval.py, seg_export.py, centerline.py, qca.py,
                         # synthetic.py (rendered tubes; X-ray-like projections), qca_validation.py,
+                        # lumen_model.py (imaging-chain lumen fit, P4c), lumen_report.py,
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
@@ -158,6 +159,7 @@ uv run vstent qca-gallery                          # → reports/qca_gallery.md 
 uv run vstent qca-gallery --tree                   # P2: tree physics → reports/qca_tree_gallery.md
 uv run vstent analyse <image.png> --tree [--plan | --stent START LEN DIA] [--outlet K]  # P2-P3: trees
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
+uv run vstent analyse <image.png> --lumen model    # P4c: imaging-chain lumen fit (default: AUTO_LUMEN)
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
 uv run vstent demo              # end-to-end synthetic case → reports/demo/
@@ -170,7 +172,9 @@ uv run vstent validate-synthetic  # P4: stand-in study → reports/validation_sy
 uv run vstent sample-size         # P4: → reports/validation_sample_size.md (placeholder assumptions)
 uv run vstent data cadica         # P4b: CADICA (CC BY 4.0), SHA-256-verified → data/raw/cadica/
 uv run vstent data fda-nozzle     # P4b: FDA benchmark nozzle data (public domain) → data/raw/fda_nozzle/
-uv run vstent stenosis-grading    # P4b: QCA %DS vs CADICA expert grades → reports/stenosis_grading.md
+uv run vstent stenosis-grading [--edges probability,intensity,model] [--workers N]
+                                  # P4b-P4c: QCA %DS vs CADICA expert grades → reports/stenosis_grading.md
+uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccentric lumens → reports/lumen_synthetic.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 ```
 
