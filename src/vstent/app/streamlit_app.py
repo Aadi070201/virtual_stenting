@@ -27,7 +27,13 @@ import streamlit as st  # noqa: E402
 
 from vstent.app import core, tree_view  # noqa: E402
 from vstent.imaging.centerline import longest_path_endpoints  # noqa: E402
-from vstent.imaging.image_io import ImageInput, read_image  # noqa: E402
+from vstent.imaging.cine import contrast_transit, opacification, vessel_areas  # noqa: E402
+from vstent.imaging.image_io import (  # noqa: E402
+    ImageInput,
+    is_multiframe_dicom,
+    read_image,
+    read_run_bytes,
+)
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
 from vstent.inference.pipeline import (  # noqa: E402
     AUTO_LUMEN,
@@ -68,6 +74,16 @@ def get_settings():
 @st.cache_resource(max_entries=8, show_spinner="Segmenting the angiogram…")
 def segment(sha: str, _image: np.ndarray) -> np.ndarray:
     return get_models().segmentation.predict(_image)
+
+
+@st.cache_resource(max_entries=4, show_spinner="Finding the most opacified frame of the run…")
+def run_opacification(sha: str, _frames: np.ndarray):
+    return opacification(vessel_areas(_frames, get_models().segmentation.predict))
+
+
+@st.cache_resource(max_entries=16, show_spinner="Measuring the contrast transit…")
+def run_transit(key: str, _frames: np.ndarray, _centerline):
+    return contrast_transit(_frames, _centerline)
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
@@ -165,13 +181,26 @@ if mode == "Synthetic vessel":
             f"{case.v_hyp:.2f} m/s come from the synthetic sampler."
         )
 else:
+    run = None
     with st.sidebar:
         sources = ["Upload"] + (["ARCADE example"] if examples else [])
         source = st.radio("Image source", sources, key="source")
         if source == "Upload":
-            up = st.file_uploader("PNG, JPG or DICOM", type=["png", "jpg", "jpeg", "dcm"])
+            up = st.file_uploader("PNG, JPG or DICOM (single frame or cine run)",
+                                  type=["png", "jpg", "jpeg", "dcm"])  # fmt: skip
             if up is not None:
-                image_input = read_image(up.getvalue(), up.name)
+                data = up.getvalue()
+                if is_multiframe_dicom(data, up.name) and models.segmentation is not None:
+                    run = read_run_bytes(data, up.name)
+                    op = run_opacification(run.sha256, run.frames)
+                    t = st.number_input(
+                        "Frame of the run (0-based)", 0, len(run) - 1, op.analysis_frame,
+                        key=f"cine_{run.sha256[:12]}",
+                    )  # fmt: skip
+                    st.caption(core.cine_caption(len(run), op))
+                    image_input = run.frame(int(t))
+                else:
+                    image_input = read_image(data, up.name)
         else:
             choice = st.selectbox(
                 "ARCADE stenosis/val image (CC0)", [p.name for p in examples], key="example"
@@ -271,6 +300,9 @@ if mode == "Angiogram image":
             state.uncertainty = input_mc(
                 img_key, qca.profile, pa, pv, params.v_hyp, qca.mm_per_px, qca.calibration_assumed
             )
+            if run is not None:
+                tr = run_transit(img_key, run.frames, qca.centerline)
+                st.sidebar.caption(core.transit_caption(tr, run.frame_time_ms, mm_per_px))
 
 # --- stents: manual controls or a selected plan ---------------------------------------------
 stents: list[Stent] = []

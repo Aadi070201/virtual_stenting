@@ -412,3 +412,16 @@ def test_tree_view_pieces():
     rep = _json.loads(tree_view.tree_report_json(res, 0, [stent], None, None, "y.png"))
     assert rep["disclaimer"].startswith("Research use only") and len(rep["branches"]) == 2
     assert rep["input"]["lumen_edges"] == "outline of the vessel mask"
+
+
+def test_cine_and_transit_captions():
+    from vstent.imaging.cine import ContrastTransit, opacification
+
+    op = opacification(np.array([0, 0, 10, 60, 90, 100, 95, 85, 40, 5], float))
+    text = core.cine_caption(10, op)
+    assert "Cine run of 10 frames" in text and f"({op.analysis_frame}, 0-based)" in text
+    tr = ContrastTransit(np.arange(3.0), np.arange(3.0), 0.0, 20.0, (18.0, 22.0), 30)
+    assert "20.0 px/frame (95%: 18.0–22.0)" in core.transit_caption(tr, None, None)
+    with_units = core.transit_caption(tr, 100.0, 0.3)  # 20 px × 0.3 mm / 0.1 s
+    assert "60 mm/s" in with_units and "not used for FFR" in with_units
+    assert "no arrival" in core.transit_caption(None, None, None)

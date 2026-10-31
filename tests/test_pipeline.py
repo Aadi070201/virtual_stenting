@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import cv2
@@ -268,3 +269,35 @@ def test_tree_gallery_on_fake_arcade(tiny_arcade, dark_seg_dir, tmp_path):
             assert r["ffr_tree"] == pytest.approx(r["ffr_single"], abs=1e-12)
     md = (tmp_path / "tree.md").read_text(encoding="utf-8")
     assert "Research use only" in md and "single path" in md
+
+
+def test_cli_analyse_cine_run(dark_seg_dir, tiny_export, tmp_path):
+    """A frame folder is a cine run: the most opacified frame is analysed and the contrast
+    transit is reported (P4d)."""
+    from vstent.imaging.synthetic import render_cine, sine_centerline
+
+    pts, s = sine_centerline((64.0, 10.0), 110.0, amplitude_px=6.0, wavelength_px=120.0)
+    frames = render_cine((128, 128), [(pts, np.full(s.size, 4.0))], n_frames=24,
+                         arrival_frame=3.0, front_px_per_frame=10.0, washout_frame=18.0,
+                         background=0.6, blur_sigma=0.8, noise_std=0.01, mu_per_mm=0.2)  # fmt: skip
+    folder = tmp_path / "run"
+    folder.mkdir()
+    for k, f in enumerate(frames):
+        cv2.imwrite(str(folder / f"f_{k:03d}.png"), f)
+    args = ["analyse", str(folder), "--seg-model", str(dark_seg_dir),
+            "--surrogate-model", tiny_export["out_dir"]]  # fmt: skip
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 0, result.output
+    out = result.output
+    chosen_frame = int(re.search(r"most opacified frame (\d+)", out).group(1))
+    # the front reaches the vessel's end at frame ~14; the contrast fades after frame 18
+    assert "Cine run of 24 frames" in out and 14 <= chosen_frame <= 19
+    assert f"Analysing frame {chosen_frame}." in out and "not used for FFR" in out
+    speed = float(re.search(r"Contrast transit: front ([\d.]+) px/frame", out).group(1))
+    assert speed == pytest.approx(10.0, rel=0.15)
+    chosen = CliRunner().invoke(app, args + ["--frame", "4"])
+    assert chosen.exit_code == 0 and "outside the opacified frames" in chosen.output
+    single = tmp_path / "one.png"
+    cv2.imwrite(str(single), frames[15])
+    bad = CliRunner().invoke(app, ["analyse", str(single), "--frame", "2"])
+    assert bad.exit_code == 1 and "single image only has frame 0" in bad.output

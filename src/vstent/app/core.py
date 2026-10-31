@@ -103,6 +103,29 @@ def load_models() -> Models:
     )
 
 
+def cine_caption(n_frames: int, op) -> str:
+    """What the app says about a cine run (``op``: :class:`~vstent.imaging.cine.Opacification`)."""
+    first, last = op.window
+    return (
+        f"Cine run of {n_frames} frames: contrast arrival at frame {op.arrival}, opacified frames "
+        f"{first}–{last}; the most opacified frame ({op.analysis_frame}, 0-based) is analysed. "
+        "The first frames of a run are usually recorded before the contrast arrives."
+    )
+
+
+def transit_caption(tr, frame_time_ms: float | None, mm_per_px: float | None) -> str:
+    """Contrast transit along the analysed vessel (``tr``:
+    :class:`~vstent.imaging.cine.ContrastTransit` or ``None``)."""
+    if tr is None:
+        return "Contrast transit: no arrival measured along the path."
+    lo, hi = tr.interval
+    text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"
+    if frame_time_ms and mm_per_px:
+        v = tr.velocity_mm_s(mm_per_px, frame_time_ms)
+        text += f", {v:.0f} mm/s"
+    return text + ". Recorded at rest, not at hyperaemia: shown only, not used for FFR."
+
+
 def load_settings(root: Path = Path(".")):
     """Physics, planner and catalogue configs from ``configs/`` (defaults if missing)."""
 

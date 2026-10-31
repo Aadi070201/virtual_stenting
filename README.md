@@ -126,6 +126,7 @@ Trainings can be paused and resumed exactly:
 | `vstent sample-size` | sample size for the validation study (placeholder assumptions) → `reports/validation_sample_size.md` | P4 |
 | `vstent data cadica` / `vstent data fda-nozzle` | download and verify the public validation datasets (CADICA, CC BY 4.0; FDA nozzle, public domain) | P4b |
 | `vstent stenosis-grading [--edges probability,intensity,model] [--workers N]` | automatic %DS at every CADICA expert lesion vs the experts' grades, per lumen method → `reports/stenosis_grading.md` | P4b–P4c |
+| `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |

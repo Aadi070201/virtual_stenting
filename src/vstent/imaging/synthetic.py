@@ -162,3 +162,42 @@ def render_projection(
         img = img + edge_amount * (img - gaussian_filter(img, edge_sigma))
     img = img + np.random.default_rng(seed).normal(0.0, noise_std, size=shape)
     return np.clip(img, 0.0, 1.0).astype(np.float32)
+
+
+def render_cine(
+    shape: tuple[int, int],
+    tubes: Sequence[tuple[np.ndarray, np.ndarray]],
+    *,
+    n_frames: int,
+    arrival_frame: float,
+    front_px_per_frame: float,
+    washout_frame: float,
+    washout_frames: float = 8.0,
+    motion_px: float = 0.0,
+    motion_period_frames: float = 12.0,
+    mm_per_px: float = 0.25,
+    mu_per_mm: float = 0.06,
+    seed: int = 0,
+    **projection,
+) -> np.ndarray:
+    """A synthetic cine run (P4d): contrast enters every tube (``(points (n, 2), radius (n,))``
+    in px, from its first point) at ``arrival_frame`` and its front advances
+    ``front_px_per_frame`` px of arc length per frame; from ``washout_frame`` the attenuation
+    fades linearly over ``washout_frames``. The vessels move with a periodic (cardiac-like)
+    displacement of amplitude ``motion_px``. Frames as :func:`render_projection` (``projection``:
+    its other options). Returns (T, H, W) uint8."""
+    frames = []
+    for t in range(n_frames):
+        front = (t - arrival_frame) * front_px_per_frame
+        fade = float(np.clip(1.0 - (t - washout_frame) / washout_frames, 0.0, 1.0))
+        phase = 2.0 * np.pi * t / motion_period_frames
+        shift = motion_px * np.array([np.sin(phase), 0.5 * np.sin(2.0 * phase)])
+        filled = []
+        for points, radius in tubes:
+            seg = np.linalg.norm(np.diff(points, axis=0), axis=1)
+            s = np.concatenate([[0.0], np.cumsum(seg)])
+            filled.append((points + shift, np.where(s <= front, radius, 0.0)))
+        img = render_projection(shape, filled, mm_per_px=mm_per_px, mu_per_mm=mu_per_mm * fade,
+                                seed=seed + t, **projection)  # fmt: skip
+        frames.append(np.round(img * 255).astype(np.uint8))
+    return np.stack(frames)

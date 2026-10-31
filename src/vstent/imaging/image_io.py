@@ -81,3 +81,94 @@ def read_image_file(path: str | Path, frame: int | None = None) -> ImageInput:
 def _check_frame(name: str, frame: int | None, frames: int) -> None:
     if frame is not None and not 0 <= frame < frames:
         raise ValueError(f"{name}: frame {frame} requested, the image has {frames} frame(s)")
+
+
+FRAME_SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
+
+
+@dataclass
+class RunInput:
+    """A cine run: greyscale frames on one intensity scale (P4d). Frame-wise stretching would
+    distort the contrast's arrival and washout, so non-8-bit runs are stretched once."""
+
+    frames: np.ndarray  # (T, H, W) uint8
+    name: str
+    sha256: str
+    frame_time_ms: float | None = None  # DICOM FrameTime (or 1000 / CineRate), if present
+    pixel_spacing_mm: float | None = None
+    note: str = ""
+
+    def __len__(self) -> int:
+        return len(self.frames)
+
+    def frame(self, t: int) -> ImageInput:
+        """Frame ``t`` (0-based) as a single image for the single-frame pipeline."""
+        if not 0 <= t < len(self.frames):
+            raise ValueError(f"{self.name}: frame {t} requested, the run has {len(self)} frames")
+        img = np.ascontiguousarray(self.frames[t])
+        note = f"Frame {t} of {len(self)} (0-based). {self.note}".strip()
+        return ImageInput(img, f"{self.name} frame {t}", hashlib.sha256(img.tobytes()).hexdigest(),
+                          self.pixel_spacing_mm, note)  # fmt: skip
+
+
+def is_run(path: str | Path) -> bool:
+    """A cine run: a folder of frames, or a DICOM file with more than one frame."""
+    path = Path(path)
+    if path.is_dir():
+        return True
+    return is_multiframe_dicom(path.read_bytes(), path.name)
+
+
+def read_run(path: str | Path) -> RunInput:
+    """A cine run from a multi-frame DICOM file or a folder of frame images (sorted by file
+    name; all the same size)."""
+    path = Path(path)
+    if path.is_dir():
+        files = sorted(p for p in path.iterdir() if p.suffix.lower() in FRAME_SUFFIXES)
+        if not files:
+            raise ValueError(f"{path}: no frame images ({', '.join(FRAME_SUFFIXES)})")
+        digest, frames = hashlib.sha256(), []
+        for f in files:
+            data = f.read_bytes()
+            digest.update(data)
+            img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
+            if img is None:
+                raise ValueError(f"{f}: not a readable image")
+            if img.ndim == 3:
+                code = cv2.COLOR_BGRA2GRAY if img.shape[2] == 4 else cv2.COLOR_BGR2GRAY
+                img = cv2.cvtColor(img, code)
+            frames.append(img)
+        if len({f.shape for f in frames}) > 1:
+            raise ValueError(f"{path}: frames of different sizes")
+        note = "Frame folder: frame time unknown."
+        return RunInput(to_uint8(np.stack(frames)), path.name, digest.hexdigest(), note=note)
+    return read_run_bytes(path.read_bytes(), path.name)
+
+
+def is_multiframe_dicom(data: bytes, name: str) -> bool:
+    """DICOM bytes with more than one frame (a cine run)."""
+    if not (name.lower().endswith((".dcm", ".dicom")) or data[128:132] == b"DICM"):
+        return False
+    import pydicom
+
+    ds = pydicom.dcmread(io.BytesIO(data), stop_before_pixels=True, force=True)
+    return int(getattr(ds, "NumberOfFrames", 1) or 1) > 1
+
+
+def read_run_bytes(data: bytes, name: str) -> RunInput:
+    """A cine run from DICOM bytes (one intensity scale for all frames)."""
+    import pydicom
+
+    ds = pydicom.dcmread(io.BytesIO(data), force=True)
+    arr = ds.pixel_array
+    if int(getattr(ds, "NumberOfFrames", 1) or 1) == 1:
+        arr = arr[None]
+    if arr.ndim == 4:  # colour frames
+        arr = np.stack([cv2.cvtColor(to_uint8(f), cv2.COLOR_RGB2GRAY) for f in arr])
+    frame_time = ds.get("FrameTime")
+    rate = ds.get("CineRate") or ds.get("RecommendedDisplayFrameRate")
+    ms = float(frame_time) if frame_time else (1000.0 / float(rate) if rate else None)
+    spacing = ds.get("ImagerPixelSpacing")
+    note = "" if ms else "DICOM without FrameTime / CineRate: frame time unknown."
+    return RunInput(to_uint8(arr), name, hashlib.sha256(data).hexdigest(), ms,
+                    float(spacing[0]) if spacing else None, note)  # fmt: skip

@@ -548,6 +548,42 @@ def export_seg(
         raise typer.Exit(code=1)
 
 
+def _run_frame(run, segmenter, frame: int | None):
+    """The frame of a cine run to analyse: ``frame`` or the most completely opacified one."""
+    from vstent.imaging.cine import opacification, vessel_areas
+
+    op = opacification(vessel_areas(run.frames, segmenter.predict))
+    first, last = op.window
+    typer.echo(
+        f"Cine run of {len(run)} frames: contrast arrival at frame {op.arrival}, opacified "
+        f"frames {first}–{last}, most opacified frame {op.analysis_frame} (0-based)."
+    )
+    t = op.analysis_frame if frame is None else frame
+    if frame is not None and not first <= frame <= last:
+        typer.echo(f"Warning: frame {frame} is outside the opacified frames.")
+    typer.echo(f"Analysing frame {t}.")
+    return run.frame(t)
+
+
+def _echo_transit(run, qca, mm_per_px: float | None) -> None:
+    """Contrast transit along the analysed centreline (px per frame; mm/s when the frame time
+    and the pixel size are known)."""
+    from vstent.imaging.cine import contrast_transit
+
+    tr = contrast_transit(run.frames, qca.centerline)
+    if tr is None:
+        typer.echo("Contrast transit: no arrival measured along the path.")
+        return
+    lo, hi = tr.interval
+    text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"
+    if run.frame_time_ms and mm_per_px:
+        v = tr.velocity_mm_s(mm_per_px, run.frame_time_ms)
+        text += f", {v:.0f} mm/s at {mm_per_px:g} mm/px and {run.frame_time_ms:g} ms/frame"
+    else:
+        text += " (mm/s needs the frame time and --mm-per-px)"
+    typer.echo(text + "; at rest, not hyperemic: not used for FFR.")
+
+
 def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure,
                       plan=None, lumen=None):  # fmt: skip
     """``vstent analyse --tree``: tree QCA, tree FFR (solver; surrogate if exported),
@@ -686,7 +722,12 @@ def _latest_model_dir(root: Path, filename: str) -> Path:
 
 @app.command()
 def analyse(
-    image: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Angiogram image.")],
+    image: Annotated[
+        Path,
+        typer.Argument(
+            exists=True, help="Angiogram image, or a cine run: multi-frame DICOM / frame folder."
+        ),
+    ],
     start: Annotated[
         tuple[int, int] | None, typer.Option("--start", help="Start point: ROW COL (px).")
     ] = None,
@@ -731,8 +772,17 @@ def analyse(
         str | None,
         typer.Option("--lumen", help="Lumen measurement: edges or model (default: the product's)."),
     ] = None,
+    frame: Annotated[
+        int | None,
+        typer.Option(
+            "--frame", min=0, help="Cine run: analyse this frame (0-based), not the auto one."
+        ),
+    ] = None,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
+
+    A cine run (multi-frame DICOM or a folder of frames) is analysed on its most completely
+    opacified frame (or --frame), and the contrast's transit along the vessel is reported.
 
     Without --start / --end the longest vessel path in the mask is used. With --plan the
     virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
@@ -745,7 +795,7 @@ def analyse(
     """
     from vstent.config import load_config
     from vstent.imaging.centerline import longest_path_endpoints
-    from vstent.imaging.image_io import read_image_file
+    from vstent.imaging.image_io import is_run, read_image_file, read_run
     from vstent.imaging.segment import THRESHOLD
     from vstent.inference.onnx_runtime import (
         ONNX_FILE,
@@ -756,8 +806,17 @@ def analyse(
     from vstent.inference.pipeline import analyse_vessel
     from vstent.physics.solver import PhysicsParams
 
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    segmenter = SegmentationRunner.from_dir(seg_dir)
+    run = None
     try:  # the app's loader: the same pixels reach the segmentation model
-        image_input = read_image_file(image)
+        if is_run(image):
+            run = read_run(image)
+            image_input = _run_frame(run, segmenter, frame)
+        elif frame not in (None, 0):
+            raise ValueError(f"--frame {frame}: a single image only has frame 0")
+        else:
+            image_input = read_image_file(image)
     except ValueError as exc:
         typer.echo(f"Cannot read {image}: {exc}", err=True)
         raise typer.Exit(code=1) from exc
@@ -776,11 +835,10 @@ def analyse(
     if lumen not in (None, "edges", "model"):
         typer.echo("--lumen: use edges or model.", err=True)
         raise typer.Exit(code=2)
-    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
     sur_dir = (
         None if tree else surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
     )
-    prob = SegmentationRunner.from_dir(seg_dir).predict(img)
+    prob = segmenter.predict(img)
     if not start or not end or start[0] is None or end[0] is None:
         start, end = longest_path_endpoints(prob >= THRESHOLD)
         typer.echo(f"Auto-selected path: start {start}, end {end} (row, col)")
@@ -844,6 +902,8 @@ def analyse(
         typer.echo(f"Grey zone: {reason}")
     for w in result.warnings:
         typer.echo(f"Warning: {w}")
+    if run is not None:
+        _echo_transit(run, q, mm_per_px)
     if plan:
         from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
 
@@ -1421,6 +1481,63 @@ def stenosis_grading(
             typer.echo(f"{m}: test kappa {t['kappa']:.2f}, AUC>=70% {t['auc_ge70']:.2f}, "
                        f"measured {t['n_measured']}/{t['n_lesions']}")  # fmt: skip
     typer.echo("Wrote reports/stenosis_grading.md")
+
+
+@app.command()
+def cine_frames(
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
+        "data/raw/cadica"
+    ),
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    n_boot: Annotated[int, typer.Option("--n-boot", min=100, help="Bootstrap resamples.")] = 2000,
+) -> None:
+    """Automatic analysis frame and opacified window of every CADICA run vs the frames its
+    clinicians selected, plus contrast transit → reports/cine_frames.md (public data; P4d)."""
+    from vstent.config import git_info
+    from vstent.data.cadica import (
+        SOURCE_FILE,
+        fetch_cadica,
+        load_artery_groups,
+        load_lesion_boxes,
+        load_selected_runs,
+    )
+    from vstent.imaging.cine import OPACIFIED_FRACTION, opacification
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+    from vstent.validation import cine_frames as cf
+    from vstent.validation.stenosis_grading import lesion_tracks, patient_split
+
+    git = git_info()  # before anything is written
+    if not (raw_dir / SOURCE_FILE).exists():
+        fetch_cadica(raw_dir, log=typer.echo)
+    model_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    seg = SegmentationRunner.from_dir(model_dir)
+    runs = load_selected_runs(raw_dir)
+    split = patient_split([t.patient for t in lesion_tracks(load_lesion_boxes(raw_dir))])
+    typer.echo(f"{len(runs)} selected runs of {len({r.patient for r in runs})} patients")
+
+    def progress(k, n):
+        if k % 50 == 0 or k == n:
+            typer.echo(f"  {k} / {n} runs")
+
+    areas = cf.run_areas(runs, seg.predict, cf.AREAS_DIR / f"areas_{model_dir.name}.json",
+                         progress)  # fmt: skip
+    rows = [{**cf.score_run(r, areas[cf.run_key(r)]), "split": split[r.patient]} for r in runs]
+    typer.echo("Contrast transit …")
+    transit = []
+    for k, r in enumerate(runs, 1):
+        frame = opacification(areas[cf.run_key(r)]).analysis_frame
+        transit.append(cf.transit_for_run(r, seg.predict, frame))
+        progress(k, len(runs))
+    stats = cf.write_report(
+        rows, transit, areas, Path("reports/cine_frames.md"), fraction=OPACIFIED_FRACTION,
+        arteries=load_artery_groups(raw_dir), model=model_dir.as_posix(), git=git, n_boot=n_boot,
+    )  # fmt: skip
+    for sp, st in stats.items():
+        typer.echo(f"{sp}: analysis frame among the selected frames {st['hit']['k']}/"
+                   f"{st['hit']['n']}, median window IoU {st['iou']['median']:.2f}")  # fmt: skip
+    typer.echo("Wrote reports/cine_frames.md")
 
 
 APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"

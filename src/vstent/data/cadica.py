@@ -130,3 +130,40 @@ def load_lesion_boxes(raw_dir: str | Path = RAW_DIR) -> list[LesionBox]:
             boxes.append(LesionBox(patient, video, frame, x, y, w, h, parts[4], image))
     key = lambda b: (int(b.patient[1:]), int(b.video[1:]), b.frame)  # noqa: E731
     return sorted(boxes, key=key)
+
+
+@dataclass(frozen=True)
+class SelectedRun:
+    """One selected cine run and the frames its clinicians chose (P4d). Frame numbers are those
+    of the file names (1-based); ``frames_dir`` holds one PNG per frame."""
+
+    patient: str
+    video: str
+    frames_dir: Path
+    selected: tuple[int, ...]
+    lesion: bool
+
+
+def load_selected_runs(raw_dir: str | Path = RAW_DIR) -> list[SelectedRun]:
+    """Every selected run with a ``pX_vY_selectedFrames.txt``, ordered by patient and video."""
+    root = Path(raw_dir) / ROOT / "selectedVideos"
+    runs = []
+    for sel in root.glob("p*/v*/p*_v*_selectedFrames.txt"):
+        vdir = sel.parent
+        patient, video = vdir.parent.name, vdir.name
+        ids = sorted(
+            {int(tok.rsplit("_", 1)[1]) for tok in sel.read_text(encoding="utf-8").split()}
+        )
+        if ids:
+            runs.append(SelectedRun(patient, video, vdir / "input", tuple(ids),
+                                    (vdir / "groundtruth").is_dir()))  # fmt: skip
+    return sorted(runs, key=lambda r: (int(r.patient[1:]), int(r.video[1:])))
+
+
+def load_artery_groups(raw_dir: str | Path = RAW_DIR) -> dict[str, str]:
+    """Run key (``pX_vY``) → ``"left"`` or ``"right"`` coronary, from CADICA's
+    ``CADICAprojections.json`` (groups ``videosLCA``, ``videosLCA2``, ``videosRCA``)."""
+    path = Path(raw_dir) / ROOT / "selectedVideos" / "CADICAprojections.json"
+    groups = json.loads(path.read_text(encoding="utf-8"))
+    side = {"videosLCA": "left", "videosLCA2": "left", "videosRCA": "right"}
+    return {key: side[g] for g, keys in groups.items() if g in side for key in keys}

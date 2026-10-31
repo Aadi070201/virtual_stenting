@@ -91,6 +91,7 @@ vstent/
                         # synthetic.py (rendered tubes; X-ray-like projections), qca_validation.py,
                         # lumen_model.py (imaging-chain lumen fit, P4c), lumen_report.py,
                         # calibration.py (frame-level imaging-chain calibration, D46),
+                        # cine.py (opacification window, analysis frame, contrast transit, P4d),
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
@@ -106,7 +107,8 @@ vstent/
                         # run.py (predictions, locking, scoring), stats.py (AUC, Bland–Altman,
                         # Wilson, cluster bootstrap, weighted kappa), report.py, sample_size.py,
                         # synthetic.py + synthetic_report.py (stand-in study), stenosis_grading.py
-                        # (CADICA expert grades, P4b)
+                        # (CADICA expert grades, P4b), cine_frames.py (CADICA runs: analysis
+                        # frame vs the clinicians' frames, contrast transit, P4d)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -176,6 +178,7 @@ uv run vstent data fda-nozzle     # P4b: FDA benchmark nozzle data (public domai
 uv run vstent stenosis-grading [--edges probability,intensity,model] [--workers N]
                                   # P4b-P4c: QCA %DS vs CADICA expert grades → reports/stenosis_grading.md
 uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccentric lumens → reports/lumen_synthetic.md
+uv run vstent cine-frames         # P4d: CADICA runs, analysis frame vs clinicians' frames → reports/cine_frames.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 ```
 
