@@ -487,3 +487,23 @@ the vessel as not analysable).
 - Comparing whole pressure profiles: not meaningful without the reversible term.
 - Fitting Kt to the nozzle: tuning, and it would hide the finding that the loss depends on the
   exit shape, which the model cannot represent.
+
+### D43 — Edge method for stenosis grading: rule fixed before the results (2026-10-31)
+**Decision:** for the CADICA grading (P4b), the intensity-edge QCA replaces the
+probability-map edges as the grading method only if, on the **development** patients, both its
+weighted kappa and its AUC for ≥ 70% lesions are higher. The test patients are not looked at
+before this choice, and the test results of both methods are reported whatever they show.
+Committed before any development result was seen.
+
+**Reason:**
+- **The suspected flaw.** On CADICA frames the segmenter appears to smooth over severe
+  narrowings.
+- **The synthetic check.** On rendered tubes, probability-map edges see 1–2% DS when the
+  segmentation fills a stenosis, while intensity edges recover it to within about ±9 points,
+  but with more noise when the segmentation is good.
+- **No looking first.** Which effect dominates on real angiograms must be measured, not
+  assumed, and choosing after seeing the test half would overfit the evaluation.
+
+**Alternatives:**
+- Choosing on all patients: no unbiased estimate is left.
+- Always reporting both without a rule: the product needs one default.
