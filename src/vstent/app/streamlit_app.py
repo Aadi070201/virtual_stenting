@@ -64,20 +64,21 @@ def segment(sha: str, _image: np.ndarray) -> np.ndarray:
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
-def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob):
+def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob, _image):
     # the user's pressures, so the solver, R_micro and the range warnings all use them
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
     params = get_settings()[0].model_copy(update=pressures)
     return analyse_vessel(
-        _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px
-    )
+        _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px,
+        image=_image,
+    )  # fmt: skip
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the vessel tree…")
-def analyse_tree_cached(sha: str, start, end, mm_per_px, pa, pv, _prob):
+def analyse_tree_cached(sha: str, start, end, mm_per_px, pa, pv, _prob, _image):
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
     params = get_settings()[0].model_copy(update=pressures)
-    return analyse_tree(_prob, start, end, params=params, mm_per_px=mm_per_px)
+    return analyse_tree(_prob, start, end, params=params, mm_per_px=mm_per_px, image=_image)
 
 
 @st.cache_resource
@@ -222,12 +223,16 @@ if mode == "Angiogram image":
     start, end = st.session_state.get("start"), st.session_state.get("end")
     if start and end and tree_mode:
         try:
-            tree_res = analyse_tree_cached(image_input.sha256, start, end, mm_per_px, pa, pv, prob)
+            tree_res = analyse_tree_cached(
+                image_input.sha256, start, end, mm_per_px, pa, pv, prob, image_input.image
+            )
         except ValueError as exc:
             st.error(f"Could not trace the vessel tree: {exc}")
     elif start and end:
         try:
-            result = analyse(image_input.sha256, start, end, mm_per_px, pa, pv, prob)
+            result = analyse(
+                image_input.sha256, start, end, mm_per_px, pa, pv, prob, image_input.image
+            )
         except ValueError as exc:
             st.error(f"Could not trace the vessel: {exc}")
             result = None

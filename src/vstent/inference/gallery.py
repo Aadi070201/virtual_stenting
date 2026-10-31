@@ -68,7 +68,7 @@ def qca_gallery(
         prob = seg.predict(img)
         try:
             start, end = longest_path_endpoints(prob >= THRESHOLD)
-            res = analyse_vessel(prob, start, end, params=params, surrogate=sur)
+            res = analyse_vessel(prob, start, end, params=params, surrogate=sur, image=img)
         except ValueError as exc:
             rows.append({"image": stem, "error": str(exc)})
             log(f"{stem}: {exc}")
@@ -145,7 +145,8 @@ def _markdown(report: dict[str, Any], out_dir: Path, split: str) -> str:
         "illustrative only. The model has no side branches: the full inflow is carried along "
         "the whole path, so long paths that taper into thin distal branches show large "
         "viscous pressure losses that real flow, which leaves through the branches, would not "
-        "produce. Dashed orange boxes: ARCADE stenosis annotations.",
+        "produce. Dashed orange boxes: ARCADE stenosis annotations. Lumen edges: from the "
+        "image intensity, guided by the segmentation (the product default, D43).",
         "",
         f"- Analysed: {s['n_analysed']} of {s['n_images']} (failed: {s['n_failed']}).",
         f"- Auto-selected path crosses an annotated stenosis box: {s['n_path_crosses_box']}; "
@@ -209,7 +210,7 @@ def tree_gallery(
         prob = seg.predict(img)
         try:
             start, end = longest_path_endpoints(prob >= THRESHOLD)
-            res = analyse_tree(prob, start, end, params=params)
+            res = analyse_tree(prob, start, end, params=params, image=img)
         except ValueError as exc:
             rows.append({"image": stem, "error": str(exc)})
             log(f"{stem}: {exc}")
@@ -286,7 +287,8 @@ def _tree_markdown(report: dict[str, Any], split: str) -> str:
         "The images and auto-selected paths of `reports/qca_gallery.md`. The side branches "
         "leaving the path are measured too (docs/PHYSICS.md, *Vessel trees*), and FFR comes "
         "from the tree solver. *Single path* is the main path alone with the single-vessel "
-        "solver, the same value as the solver column in the single-path gallery. Pixel size "
+        "solver, the same value as the solver column in the single-path gallery. Lumen edges "
+        "from the image intensity, guided by the segmentation (D43). Pixel size "
         "0.30 mm/px assumed. There is no ground truth: this checks that the side-branch effect "
         "behaves plausibly. It is not a validation.",
         "",

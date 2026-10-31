@@ -95,7 +95,8 @@ def sha256_file(path: str | Path) -> str:
 
 
 def _probability(c: CaseRow, base: Path, segmenter: Segmenter | None, use_masks: bool):
-    """Vessel probability map of a case: its mask if given (and used), else the segmenter's."""
+    """Vessel probability map of a case: its mask if given (and used), else the segmenter's.
+    Returns ``(prob, mask_used, image)``."""
     image = read_image_file(resolve(base, c.image), frame=c.frame).image
     if use_masks and c.mask:
         m = cv2.imread(str(resolve(base, c.mask)), cv2.IMREAD_UNCHANGED)
@@ -105,10 +106,10 @@ def _probability(c: CaseRow, base: Path, segmenter: Segmenter | None, use_masks:
             m = cv2.cvtColor(m, cv2.COLOR_BGR2GRAY)
         if m.shape != image.shape:
             raise ValueError(f"mask {m.shape} and image {image.shape} differ in size")
-        return m.astype(np.float32) / float(np.iinfo(m.dtype).max), True
+        return m.astype(np.float32) / float(np.iinfo(m.dtype).max), True, image
     if segmenter is None:
         raise ValueError("no segmentation model and no mask")
-    return segmenter.predict(image), False
+    return segmenter.predict(image), False, image
 
 
 def predict_case(
@@ -131,16 +132,17 @@ def predict_case(
     p = params.model_copy(update=pressures)
     warnings: list[str] = []
     try:
-        prob, mask_used = _probability(c, base, segmenter, use_masks)
+        prob, mask_used, image = _probability(c, base, segmenter, use_masks)
     except Exception as exc:  # unreadable input: neither mode can run
         err = f"input: {type(exc).__name__}: {exc}"
         row.update(single_status="failed", single_error=err, tree_status="failed", tree_error=err)
         row["seconds"] = round(time.perf_counter() - t0, 3)
         return row
     row["mask_used"] = mask_used
+    image = None if mask_used else image  # analyst masks keep their own edges (D43)
     try:
         a = analyse_vessel(prob, c.start, c.end, params=p, surrogate=surrogate,
-                           mm_per_px=c.mm_per_px)  # fmt: skip
+                           mm_per_px=c.mm_per_px, image=image)  # fmt: skip
         q = a.qca
         ref = q.profile.reference_radius()  # m; the inlet value sets the flow (M1)
         i_mld = int(np.argmin(q.profile.r))
@@ -170,7 +172,7 @@ def predict_case(
     except Exception as exc:
         row.update(single_status="failed", single_error=f"{type(exc).__name__}: {exc}")
     try:
-        t = analyse_tree(prob, c.start, c.end, params=p, mm_per_px=c.mm_per_px)
+        t = analyse_tree(prob, c.start, c.end, params=p, mm_per_px=c.mm_per_px, image=image)
         row.update(tree_status="ok", tree_solver=round(float(t.result.ffr[0][-1]), 4),
                    n_side_branches=t.qca.tree.n_branches - 1)  # fmt: skip
         warnings += [f"tree: {w}" for w in t.warnings]

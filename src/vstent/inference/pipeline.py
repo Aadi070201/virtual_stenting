@@ -5,6 +5,9 @@ diameter profile (``VesselProfile``, SI units) → FFR pullback from the reduced
 from the ONNX surrogate. R_micro is calibrated by the solver on the QCA reference diameter and
 the same Pa, Pv and R_micro are given to the surrogate.
 
+Lumen edges: from the angiogram's intensity when the image is given (``image``; the default
+for an automatic segmentation, D43), else from the probability map (an analyst's mask).
+
 Warnings flag what the user must know: an assumed pixel size, many fallback diameter
 measurements, and inputs outside the surrogate's synthetic training ranges.
 """
@@ -98,10 +101,13 @@ def analyse_vessel(
     surrogate: SurrogateRunner | None = None,
     mm_per_px: float | None = None,
     sampling: SamplingConfig | None = None,
+    image: np.ndarray | None = None,
 ) -> VesselAnalysis:
-    """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``."""
+    """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
+    ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
+    ``None`` when ``prob`` is an analyst's mask."""
     params = params or PhysicsParams()
-    qca = run_qca(prob, start, end, mm_per_px=mm_per_px)
+    qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image)
     solver = solve_ffr(qca.profile, params)
     warnings = []
     if qca.calibration_assumed:
@@ -140,8 +146,9 @@ def analyse_vessel(
 def analyse_image(
     image: np.ndarray, start, end, *, segmenter: Segmenter, **kwargs
 ) -> VesselAnalysis:
-    """Segment ``image`` (greyscale (H, W)) and analyse the vessel between two points."""
-    return analyse_vessel(segmenter.predict(image), start, end, **kwargs)
+    """Segment ``image`` (greyscale (H, W)) and analyse the vessel between two points; lumen
+    edges from the image (the automatic-segmentation default)."""
+    return analyse_vessel(segmenter.predict(image), start, end, image=image, **kwargs)
 
 
 @dataclass(frozen=True, eq=False)
@@ -173,13 +180,15 @@ def analyse_tree(
     params: PhysicsParams | None = None,
     mm_per_px: float | None = None,
     max_depth: int = MAX_DEPTH,
+    image: np.ndarray | None = None,
 ) -> TreeAnalysis:
     """Tree QCA from ``start`` (to ``end`` or the farthest point) and tree-solver FFR.
+    ``image``: as :func:`analyse_vessel`.
 
     No surrogate yet: the tree surrogate is P3. Pressures and v_hyp come from ``params``.
     """
     params = params or PhysicsParams()
-    tq = tree_qca(prob, start, end, mm_per_px=mm_per_px, max_depth=max_depth)
+    tq = tree_qca(prob, start, end, mm_per_px=mm_per_px, max_depth=max_depth, image=image)
     result = solve_tree(tq.tree, params)
     single = solve_ffr(tq.tree.branches[0], params)
     warnings = []

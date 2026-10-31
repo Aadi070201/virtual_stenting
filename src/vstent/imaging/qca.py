@@ -1,5 +1,11 @@
 """2D quantitative coronary analysis (QCA) on a vessel probability map.
 
+**Edge method.** With the angiogram itself (``image``), the lumen edges come from its intensity,
+guided by the probability map (:func:`measure_diameters_intensity`): the product default
+wherever the vessel map is an automatic segmentation, because the segmenter smooths over
+narrowings (``reports/stenosis_grading.md``, D43). Without it (an analyst's mask, or rendered
+test tubes), the edges are the probability map's, as follows.
+
 The lumen diameter at each centreline point is the distance between the two crossings of the
 probability map with the 0.5 level along the local normal (bilinear sampling, linear sub-pixel
 interpolation of the crossing). If one edge is much farther than the other (a side branch or
@@ -43,6 +49,10 @@ BRANCH_SLACK_PX = 1.0
 REF_LOWER = 0.85
 REF_UPPER = 1.15
 REF_MAX_ITER = 5
+EDGE_METHOD_LABELS = {  # for reports
+    "intensity": "image intensity, guided by the automatic segmentation (D43)",
+    "probability": "outline of the vessel mask",
+}
 
 
 @dataclass(frozen=True, eq=False)
@@ -213,6 +223,7 @@ class QCAResult:
     calibration_assumed: bool
     profile: VesselProfile
     capped: np.ndarray
+    edge_method: str = "probability"  # or "intensity" (edges from the angiogram, D43)
 
     @property
     def s_mm(self) -> np.ndarray:
@@ -367,7 +378,8 @@ def qca_from_centerline(
         r=mm_to_m(d_used * scale) / 2.0,
         r_ref=mm_to_m(d_ref * scale) / 2.0,
     )
-    return QCAResult(centerline, diameters, scale, assumed, profile, capped)
+    method = "probability" if image is None else "intensity"
+    return QCAResult(centerline, diameters, scale, assumed, profile, capped, method)
 
 
 def run_qca(
@@ -377,7 +389,9 @@ def run_qca(
     *,
     mm_per_px: float | None = None,
     level: float = LEVEL,
+    image: np.ndarray | None = None,
 ) -> QCAResult:
-    """QCA of the vessel path between ``start`` and ``end`` ((row, col) px) on ``prob``."""
+    """QCA of the vessel path between ``start`` and ``end`` ((row, col) px) on ``prob``; lumen
+    edges from ``image`` when it is given (:func:`qca_from_centerline`)."""
     centerline = trace_centerline(np.asarray(prob) >= level, start, end)
-    return qca_from_centerline(prob, centerline, mm_per_px=mm_per_px, level=level)
+    return qca_from_centerline(prob, centerline, mm_per_px=mm_per_px, level=level, image=image)

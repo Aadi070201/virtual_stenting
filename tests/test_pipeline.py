@@ -11,12 +11,21 @@ from vstent.imaging.centerline import longest_path_endpoints
 from vstent.imaging.seg_eval import evaluate_seg_run
 from vstent.imaging.seg_export import export_seg_run
 from vstent.imaging.seg_train import SegConfig, SegModelConfig, SegTrainConfig, train_seg
-from vstent.imaging.synthetic import render_tube, sine_centerline, stenosis_diameter
+from vstent.imaging.synthetic import (
+    render_projection,
+    render_tube,
+    render_tubes,
+    sine_centerline,
+    stenosis_diameter,
+)
 from vstent.inference.figures import plot_analysis
 from vstent.inference.onnx_runtime import SegmentationRunner, SurrogateRunner
-from vstent.inference.pipeline import analyse_image, analyse_vessel, range_warnings
+from vstent.inference.pipeline import analyse_image, analyse_tree, analyse_vessel, range_warnings
 from vstent.physics.geometry import cosine_lesion_profile
+from vstent.physics.solver import PhysicsParams
 from vstent.units import mmhg_to_pa
+
+PARAMS = PhysicsParams()
 
 
 def _tube_prob(shape=(240, 240)):
@@ -99,6 +108,32 @@ def test_analyse_image_uses_segmenter():
     res = analyse_image(blank, tube.points[0], tube.points[-1], segmenter=Fake())
     assert res.surrogate_ffr is None and res.ffr_distal_surrogate is None
     assert res.prob is tube.image
+
+
+def test_automatic_segmentation_uses_intensity_edges():
+    """D43: with the angiogram given, a narrowing the segmentation smoothed over is measured
+    from the image; an analyst's mask (no image) keeps its own edges."""
+    pts, s = sine_centerline((120.0, 30.0), 340.0, amplitude_px=15.0)
+    d = stenosis_diameter(s, 12.0, 0.5, s[-1] / 2, 30.0)
+    img = render_projection((240, 400), [(pts, d / 2)], mm_per_px=0.25, mu_per_mm=0.06,
+                            background=0.6, blur_sigma=1.0, edge_amount=2.5, edge_sigma=2.0,
+                            noise_std=0.015, seed=1)  # fmt: skip
+    img8 = np.round(img * 255).astype(np.uint8)
+    smoothed = render_tubes((240, 400), [(pts, np.full_like(d, 12.0))], blur_sigma=0,
+                            noise_std=0)  # fmt: skip
+
+    class Smoothing:
+        def predict(self, image):
+            return smoothed
+
+    auto = analyse_image(img8, pts[0], pts[-1], segmenter=Smoothing(), params=PARAMS)
+    assert auto.qca.edge_method == "intensity"
+    assert auto.qca.max_percent_stenosis == pytest.approx(50.0, abs=8.0)
+    mask = analyse_vessel(smoothed, pts[0], pts[-1], params=PARAMS)
+    assert mask.qca.edge_method == "probability" and mask.qca.max_percent_stenosis < 10
+    tree = analyse_tree(smoothed, pts[0], pts[-1], params=PARAMS, image=img8)
+    assert tree.qca.branches[0].edge_method == "intensity"
+    assert tree.qca.branches[0].max_percent_stenosis == pytest.approx(50.0, abs=8.0)
 
 
 def test_range_warnings():

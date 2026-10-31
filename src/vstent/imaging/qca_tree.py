@@ -72,9 +72,11 @@ def tree_qca(
     min_branch_mm: float = MIN_BRANCH_MM,
     min_branch_ratio: float = MIN_BRANCH_RATIO,
     max_depth: int = MAX_DEPTH,
+    image: np.ndarray | None = None,
 ) -> TreeQCA:
     """QCA of the main path from ``start`` (to ``end``, or the farthest point) and its side
-    branches, on the probability map ``prob`` (H, W). Points are (row, col) px."""
+    branches, on the probability map ``prob`` (H, W). Points are (row, col) px. With ``image``
+    (the angiogram), lumen edges come from its intensity (:func:`qca_from_centerline`)."""
     mask = np.asarray(prob) >= level
     graph = vessel_graph(mask)
     half_width = distance_transform_edt(clean_mask(mask))
@@ -92,8 +94,9 @@ def tree_qca(
     scale = DEFAULT_MM_PER_PX if mm_per_px is None else float(mm_per_px)
 
     main = qca_from_centerline(
-        prob, smooth_and_resample(np.asarray(paths[b])), mm_per_px=mm_per_px, level=level
-    )
+        prob, smooth_and_resample(np.asarray(paths[b])), mm_per_px=mm_per_px, level=level,
+        image=image,
+    )  # fmt: skip
     accepted: list[dict[str, Any]] = [{"qca": main, "depth": 0, "parent": -1, "attach": 0,
                                        "junction": None}]  # fmt: skip
     owner = {node: 0 for node in paths[b]}
@@ -121,7 +124,7 @@ def tree_qca(
             continue
         qca = qca_from_centerline(
             prob, smooth_and_resample(pts), mm_per_px=mm_per_px, level=level,
-            trim_start_diameters=0.0,
+            trim_start_diameters=0.0, image=image,
         )  # fmt: skip
         ratio = float(np.median(qca.diameters.diameter_px)) / (2.0 * half_width[junction])
         if ratio < min_branch_ratio:

@@ -313,6 +313,34 @@ independent ground truth, part by part. No public dataset pairs angiograms with 
   number traceable;
 - missed expectations are reported as measured.
 
+## P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b)
+
+P4b showed that on real angiograms the automatic QCA compresses stenosis severity and reads
+total occlusions as open. FFR is computed from this geometry, so this is fixed before new
+features.
+
+- [x] **Intensity edges are the QCA default** wherever the vessel map is an automatic
+  segmentation (`vstent analyse`, the app, `vstent validate` without masks, the galleries);
+  analyst masks keep their own edges (D43). Case reports state the edge method.
+- [ ] **Densitometric lumen area:** the vessel's integrated contrast across its width is
+  proportional to the lumen area (Beer–Lambert). Calibrated per vessel on its healthy segments
+  by the edge diameters, it measures lumens narrower than the edge detector resolves and
+  eccentric (elliptical) lumens from one view. Tested on rendered vessels with known lumens.
+- [ ] **Mask gaps and occlusions:** gaps in the segmentation between aligned vessel ends are
+  bridged and measured from the image (never interpolated). A bridge without contrast, or a
+  path that stops abruptly while still wide, is flagged "total occlusion suspected", and no
+  FFR is reported for that path.
+- [ ] **CADICA re-run:** candidate measurements are explored on the development patients only,
+  the choice is committed (D44) before the test patients are run once; occlusion-flag
+  sensitivity on total occlusions and false-flag rate on 0–98% lesions.
+- [ ] Image-based reports regenerated; invention notes with a first prior-art search.
+
+**Done when:**
+- on rendered vessels, densitometric %DS of tight lesions (lumen ≤ 2 px) is within 10 points
+  of the truth where edge %DS is not, and elliptical lumens give the true area within 15%;
+- on rendered vessels, an occluded segment is flagged and an open severe narrowing is not;
+- the CADICA report is regenerated from code, and every result is reported as measured.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [ ] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.

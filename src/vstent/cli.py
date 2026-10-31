@@ -557,7 +557,7 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
     from vstent.planning.stent import Stent, apply_path_stents
     from vstent.units import m_to_mm, mm_to_m
 
-    res = analyse_tree(prob, start, end, params=params, mm_per_px=mm_per_px)
+    res = analyse_tree(prob, start, end, params=params, mm_per_px=mm_per_px, image=img)
     tq, sol = res.qca, res.result
     typer.echo(DISCLAIMER)
     typer.echo(
@@ -790,14 +790,15 @@ def analyse(
         return
     surrogate = SurrogateRunner.from_dir(sur_dir)
     result = analyse_vessel(
-        prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px
+        prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px, image=img
     )
     q = result.qca
     typer.echo(f"{DISCLAIMER}")
     typer.echo(
         f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
         f"({'assumed' if q.calibration_assumed else 'given'}); MLD {q.mld_mm:.2f} mm; "
-        f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}"
+        f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen edges: "
+        f"{q.edge_method}"
     )
     typer.echo(
         f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "

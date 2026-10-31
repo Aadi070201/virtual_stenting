@@ -399,3 +399,4 @@ def test_tree_view_pieces():
     assert [r["Branch"] for r in rows] == ["main", "side 1"]
     rep = _json.loads(tree_view.tree_report_json(res, 0, [stent], None, None, "y.png"))
     assert rep["disclaimer"].startswith("Research use only") and len(rep["branches"]) == 2
+    assert rep["input"]["lumen_edges"] == "outline of the vessel mask"
