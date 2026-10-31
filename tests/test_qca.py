@@ -11,7 +11,7 @@ from vstent.imaging.centerline import (
     snap_to_graph,
     trace_centerline,
 )
-from vstent.imaging.qca import DEFAULT_MM_PER_PX, qca_from_centerline, run_qca
+from vstent.imaging.qca import DEFAULT_MM_PER_PX, qca_from_centerline, run_qca, track_edge
 from vstent.imaging.qca_validation import (
     CASES,
     SHAPE,
@@ -193,3 +193,17 @@ def test_crossing_vessel_is_capped_not_a_stenosis():
     np.testing.assert_allclose(res.reference_diameter_mm / res.mm_per_px, ref, atol=0.5)
     assert np.all(res.diameter_mm <= 1.15 * res.reference_diameter_mm + 1e-9)
     assert res.max_percent_stenosis < 10.0
+
+
+def test_edge_tracking_follows_one_contour():
+    """A wall is a continuous contour: a slightly stronger gradient on every other point (a
+    competing structure inside the lumen) must not pull the edge back and forth (D45), while
+    a wall that moves steadily (a narrowing) is followed."""
+    n, m = 60, 120
+    wall = np.round(80 - 20 * np.clip((np.arange(n) - 20) / 20, 0, 1)).astype(int)  # 80 → 60
+    grad = np.full((n, m), 0.05)
+    grad[np.arange(n), wall] = 1.0
+    grad[::2, 15] = 1.1  # spurious, every other point
+    grad[:, 110:] = -np.inf  # outside the search range
+    assert set(np.argmax(grad, axis=1)[::2]) == {15}  # the per-point maximum flickers
+    assert np.array_equal(track_edge(grad, max_jump=10, move_cost=0.01), wall)

@@ -197,6 +197,32 @@ def test_intensity_edges_recover_a_stenosis_the_segmentation_filled():
     assert np.allclose(flat.diameter_px, guide.diameter_px)
 
 
+def test_intensity_edges_off_centre_and_eccentric_lumen():
+    """One intensity edge much nearer the centreline than the other is not a side branch: the
+    mask's centreline need not lie on the image's lumen axis, and an eccentric lesion narrows one
+    side only. Neither may be read as 2 × the near edge (D45)."""
+    ref = 12.0
+    pts, s = sine_centerline((150.0, 30.0), 340.0, amplitude_px=0.0)  # along the columns
+    r = stenosis_diameter(s, ref, 0.4, s[-1] / 2, 30.0) / 2
+    lumen = pts + np.stack([ref / 2 - r, np.zeros_like(r)], axis=1)  # the lower wall stays
+    img = render_projection((300, 400), [(lumen, r)], mm_per_px=0.25, mu_per_mm=0.06,
+                            background=0.6, blur_sigma=1.0, edge_amount=2.5, edge_sigma=2.0,
+                            noise_std=0.015, seed=1)  # fmt: skip
+    img8 = np.round(img * 255).astype(np.uint8)
+    for offset in (0.0, 2.0):  # the segmentation (and its centreline) on the lumen / 2 px off it
+        moved = pts + np.array([offset, 0.0])
+        filled = render_tubes((300, 400), [(moved, np.full_like(s, ref))], blur_sigma=0,
+                              noise_std=0)  # fmt: skip
+        cl = smooth_and_resample(np.round(moved[::8]))
+        q = qca_from_centerline(filled, cl, image=img8)
+        ds = 100 * (1 - q.profile.r / q.profile.reference_radius())
+        # a 40% lumen; edge enhancement makes edges read moderate lesions some points high
+        # (concentric 40%: 47–57% here), and 2 × the near edge read it as 78%
+        assert 30.0 < ds.max() < 62.0
+        healthy = np.abs(q.centerline.points[:, 1] - (30.0 + s[-1] / 2)) > 30.0
+        assert np.percentile(ds[healthy], 99) < 15.0
+
+
 def test_grading_statistics():
     rng = np.random.default_rng(0)
     a, b = rng.integers(0, 5, 200), rng.integers(0, 5, 200)

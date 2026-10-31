@@ -148,6 +148,39 @@ INTENSITY_SMOOTH_PX = 1.0  # Gaussian smoothing of the image before edge detecti
 INTENSITY_SLACK_PX = 4.0  # edge search: up to 2 × the guide's half-width + this
 MIN_CONTRAST = 0.04  # background − lumen (image in [0, 1]); less → keep the guide's diameter
 EDGE_MEDIAN_POINTS = 5  # median filter of each edge along the centreline (points ≈ px)
+EDGE_MAX_SLOPE = 1.0  # an edge moves at most this far (px) per px along the centreline (D45)
+EDGE_MOVE_COST = 0.1  # edge-tracking cost per px of edge movement (edge cost per point: 0–1)
+
+
+def track_edge(grad: np.ndarray, max_jump: int, move_cost: float) -> np.ndarray:
+    """Minimum-cost edge contour, the classical QCA edge criterion: one search position (column)
+    per centreline point (row) minimising Σ (1 − gradient / the row's largest gradient) +
+    ``move_cost`` × |column change|, with at most ``max_jump`` columns between neighbouring
+    rows. A wall is a continuous contour, so the edge cannot flicker between two candidate
+    gradients from one point to the next. ``grad`` (n, m): −inf outside the search range.
+    Returns the column of every row."""
+    n, m = grad.shape
+    finite = np.isfinite(grad)
+    top = np.max(np.where(finite, grad, 0.0), axis=1, keepdims=True)
+    rel = np.clip(np.where(finite, grad, 0.0), 0.0, None) / np.where(top > 0, top, 1.0)
+    cost = np.where(finite, 1.0 - rel, np.inf)
+    offsets = np.arange(-max_jump, max_jump + 1)
+    source = np.arange(m)[None, :] + offsets[:, None]  # (2 J + 1, m) column in the row above
+    valid = (source >= 0) & (source < m)
+    source = np.clip(source, 0, m - 1)
+    penalty = move_cost * np.abs(offsets)[:, None]
+    cols = np.arange(m)
+    acc, back = cost[0], np.zeros((n, m), dtype=np.int32)
+    for i in range(1, n):
+        cand = np.where(valid, acc[source], np.inf) + penalty
+        best = np.argmin(cand, axis=0)
+        back[i] = source[best, cols]
+        acc = cand[best, cols] + cost[i]
+    path = np.empty(n, dtype=np.int64)
+    path[-1] = int(np.argmin(acc))
+    for i in range(n - 1, 0, -1):
+        path[i - 1] = back[i, path[i]]
+    return path
 
 
 def measure_diameters_intensity(
@@ -160,13 +193,14 @@ def measure_diameters_intensity(
     median_points: int = EDGE_MEDIAN_POINTS,
 ) -> DiameterProfile:
     """Lumen edges from the image intensity (vessels dark): on each side of the centreline the
-    edge is the steepest intensity rise along the normal (parabolic sub-pixel peak), searched
-    up to 2 × the ``guide`` half-width + ``INTENSITY_SLACK_PX``. The classical edge criterion
-    of QCA; it does not depend on how the segmentation draws the vessel's outline.
+    edge follows the steep intensity rises along the normals as one continuous contour
+    (:func:`track_edge`; parabolic sub-pixel peak), searched up to 2 × the ``guide``
+    half-width + ``INTENSITY_SLACK_PX``. The classical edge criterion of QCA; it does not
+    depend on how the segmentation draws the vessel's outline.
 
     Where the contrast (brightest − centre intensity in the search range) is below
-    ``MIN_CONTRAST`` or an edge is missing, the ``guide`` diameter (probability-map edges) is
-    kept. Side branches / overlaps: as :func:`measure_diameters`. Pixels throughout.
+    ``MIN_CONTRAST``, an edge is missing, or the guide shows a side branch / overlap, the
+    ``guide`` diameter (probability-map edges) is kept. Pixels throughout.
     """
     img = np.asarray(image, dtype=np.float32)
     img = img / 255.0 if img.max() > 1.0 else img
@@ -176,6 +210,8 @@ def measure_diameters_intensity(
     t = np.arange(0.0, float(limit.max()) + step_px / 2, step_px)
     in_range = t[None, :] <= limit[:, None]
     centre = map_coordinates(img, [pts[:, 0], pts[:, 1]], order=1, mode="nearest")
+    spacing = float(np.median(np.diff(centerline.s))) if len(pts) > 1 else 1.0
+    max_jump = max(1, int(round(EDGE_MAX_SLOPE * spacing / step_px)))
 
     def edge(sign: float) -> tuple[np.ndarray, np.ndarray]:
         q = pts[:, None, :] + sign * t[None, :, None] * nrm[:, None, :]
@@ -183,7 +219,7 @@ def measure_diameters_intensity(
                                mode="nearest").reshape(q.shape[:2])  # fmt: skip
         grad = np.gradient(vals, step_px, axis=1)
         grad = np.where(in_range, grad, -np.inf)
-        k = np.argmax(grad, axis=1)
+        k = track_edge(grad, max_jump, EDGE_MOVE_COST * step_px)
         rows = np.arange(len(k))
         km, kp = np.clip(k - 1, 0, len(t) - 1), np.clip(k + 1, 0, len(t) - 1)
         g0, g1, g2 = grad[rows, km], grad[rows, k], grad[rows, kp]
@@ -201,17 +237,17 @@ def measure_diameters_intensity(
     left, ok_l = edge(-1.0)
     if median_points > 1:  # edge contours are smooth; single-point noise is not a narrowing
         right, left = (median_filter(v, size=median_points, mode="nearest") for v in (right, left))
-    both = ok_r & ok_l
-    near, far = np.minimum(left, right), np.maximum(left, right)
-    branch = both & (far > BRANCH_RATIO * near + BRANCH_SLACK_PX)
-    diameter = np.where(branch, 2.0 * near, right + left)
-    use = both
+    # Side branches / overlaps are where the segmentation's outline shows one; the guide's
+    # diameter is kept there, as superimposed vessels put intensity steps inside the lumen (D45).
+    # One edge much nearer than the other is not a branch: the centreline (the mask's skeleton)
+    # need not lie on the image's lumen axis, and an eccentric lesion narrows one side only.
+    use = ok_r & ok_l & ~guide.branch
     return DiameterProfile(
-        diameter_px=np.maximum(np.where(use, diameter, guide.diameter_px), MIN_DIAMETER_PX),
+        diameter_px=np.maximum(np.where(use, right + left, guide.diameter_px), MIN_DIAMETER_PX),
         left_px=np.where(use, -left, guide.left_px),
         right_px=np.where(use, right, guide.right_px),
         fallback=np.where(use, False, guide.fallback),
-        branch=np.where(use, branch, guide.branch),
+        branch=guide.branch.copy(),
     )
 
 
@@ -341,12 +377,15 @@ def recentre_gaps(image: np.ndarray, centerline: Centerline, guide: DiameterProf
 
 def _gap_guide(centerline: Centerline, guide: DiameterProfile) -> DiameterProfile:
     """The guide for the intensity edges, with the median measured diameter on bridged gaps:
-    there the mask has no vessel, and its tapering ends would limit the edge search."""
+    there the mask has no vessel (so no side branch either), and its tapering ends would limit
+    the edge search."""
     gap = centerline.bridged_mask
     if not gap.any() or gap.all():
         return guide
     d = np.where(gap, float(np.median(guide.diameter_px[~gap])), guide.diameter_px)
-    return DiameterProfile(d, guide.left_px, guide.right_px, guide.fallback | gap, guide.branch)
+    return DiameterProfile(
+        d, guide.left_px, guide.right_px, guide.fallback | gap, guide.branch & ~gap
+    )
 
 
 def _no_lumen_in_gaps(centerline: Centerline, diameters: DiameterProfile) -> DiameterProfile:

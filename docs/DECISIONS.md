@@ -557,3 +557,40 @@ background structure, overlapping vessels, the vendor's processing), and visual 
 known to read higher than QCA. Every number here is reproduced by `vstent stenosis-grading`
 (development table of `reports/stenosis_grading.md`). The test half is run once for the
 report, with all three methods, and nothing is chosen on it.
+
+### D45 — Intensity edges: no side branch from edge asymmetry; minimum-cost edge tracking (2026-10-31)
+**Decision:** three corrections to the intensity edges (D43), found when the ARCADE gallery
+was regenerated after the D44 run, before any CADICA result with them:
+1. **Side branches only where the segmentation's outline shows one.** One intensity edge much
+   nearer the centreline than the other was taken for a branch on the far side and the
+   diameter set to 2 × the near edge. But the centreline is the mask's skeleton, not the
+   image's lumen axis, an eccentric lesion narrows one side only, and a gradient inside the
+   lumen (contrast streaming, a superimposed vessel) is a near edge too. The diameter is now
+   left + right. Where the mask's outline does show a branch, the probability-map diameter is
+   kept, as superimposed vessels put intensity steps inside the lumen there.
+2. **Minimum-cost edge tracking** (the classical QCA edge criterion): each wall is one
+   continuous contour along the centreline (dynamic programming, at most 1 px of wall
+   movement per px of path), instead of the steepest rise per normal, which flickered between
+   two candidate gradients.
+3. **Bridged gap points never count as a branch** (the mask has no vessel there).
+
+**Evidence (before CADICA):** on the gallery's 20 ARCADE paths, with the original intensity
+edges, 8 paths read ≥ 85% DS and 13 a distal FFR ≤ 0.2 (probability edges: 0 and 2); every
+dip below 40% of the mask's diameter came from the 2 × near-edge rule (25 of 25, 9 of 9, 3 of
+3 points on three images). With the corrections, 0 paths read ≥ 85% DS and 5 an FFR ≤ 0.2; two
+of these 5 are as low with probability edges (long paths into thin branches, no side-branch
+outflow). Short dips (≤ 3 points below 50% of the reference) fell from 75 to 25
+(probability edges: 11). New tests: an eccentric 40% lesion read 78% before (now within the
+edges' usual bias), and a flickering competing gradient is ignored by the tracking.
+
+**Pre-registered check (written before the development run):** these are corrections of a
+geometric error, adopted whatever CADICA shows. Intensity edges stay the product's default
+only if, on the CADICA development patients, their weighted kappa and their AUC for ≥ 70%
+lesions are each at least those of probability edges (the D43 comparison); otherwise the
+default returns to probability edges. The full report is then run once more, with all three
+methods (the third look at the test patients; nothing is chosen on it).
+
+**Alternatives:**
+- A median filter on the final diameter, or a minimum lesion length: suppresses short real
+  lesions as well, and hides the cause.
+- Keeping the 2 × near-edge rule with a stricter ratio: still wrong for eccentric lumens.
