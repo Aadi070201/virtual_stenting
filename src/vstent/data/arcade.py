@@ -37,33 +37,43 @@ EXTRACTED_MARKER = ".extracted"
 CHUNK = 1 << 20
 
 
-def md5sum(path: str | Path) -> str:
-    """MD5 hex digest of a file (read in 1 MiB chunks)."""
-    h = hashlib.md5()
+def file_digest(path: str | Path, algorithm: str = "md5") -> str:
+    """Hex digest of a file with ``algorithm`` (``md5``, ``sha256``; read in 1 MiB chunks)."""
+    h = hashlib.new(algorithm)
     with Path(path).open("rb") as f:
         for block in iter(lambda: f.read(CHUNK), b""):
             h.update(block)
     return h.hexdigest()
 
 
+def md5sum(path: str | Path) -> str:
+    """MD5 hex digest of a file."""
+    return file_digest(path, "md5")
+
+
 def download(
     url: str,
     dest: str | Path,
     *,
-    expected_md5: str,
+    expected_md5: str | None = None,
+    expected_sha256: str | None = None,
     expected_size: int | None = None,
     log: Callable[[str], None] | None = None,
     timeout: float = 60.0,
 ) -> Path:
-    """Stream ``url`` to ``dest`` via ``dest.part``; rename only if the MD5 matches.
+    """Stream ``url`` to ``dest`` via ``dest.part``; rename only if the checksum matches (SHA-256
+    if given, else MD5; one of them is required).
 
     Raises ``ValueError`` on a checksum or size mismatch (the partial file is removed).
     """
+    if expected_md5 is None and expected_sha256 is None:
+        raise ValueError("download needs an expected MD5 or SHA-256")
+    algorithm, expected = ("sha256", expected_sha256) if expected_sha256 else ("md5", expected_md5)
     log = log or (lambda _msg: None)
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
-    h = hashlib.md5()
+    h = hashlib.new(algorithm)
     done, next_report = 0, 0
     request = urllib.request.Request(url, headers={"User-Agent": "vstent-research-prototype"})
     with urllib.request.urlopen(request, timeout=timeout) as resp, part.open("wb") as f:
@@ -78,9 +88,9 @@ def download(
     if expected_size is not None and done != expected_size:
         part.unlink()
         raise ValueError(f"{url}: got {done} bytes, expected {expected_size}")
-    if h.hexdigest() != expected_md5:
+    if h.hexdigest() != expected:
         part.unlink()
-        raise ValueError(f"{url}: MD5 {h.hexdigest()} != expected {expected_md5}")
+        raise ValueError(f"{url}: {algorithm.upper()} {h.hexdigest()} != expected {expected}")
     part.replace(dest)
     return dest
 

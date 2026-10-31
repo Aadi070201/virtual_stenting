@@ -434,3 +434,56 @@ the vessel as not analysable).
 - A warning only: the result would still be shown, and in a validation it would count as a
   success for the wrong vessel.
 - A fixed pixel limit: it does not scale with vessel width.
+
+### D41 — Validation on public data, part by part (2026-10-31)
+**Decision:**
+- **Why public data.** The human cannot obtain a hospital partner, so validation uses public
+  data with independent ground truth, one component at a time (P4b):
+  - stenosis grading on real angiograms from another hospital against expert grades
+    (CADICA, CC BY 4.0);
+  - the pressure-loss physics against an inter-laboratory bench experiment (FDA benchmark
+    nozzle, public domain);
+  - P5–P7 use public multi-view and ECG data where it exists.
+- **The P4 tool stays as built.** It is the path for real FFR data when any becomes available.
+- **ICADD.** Its 70 Indian patients with angiography and invasive FFR are the only paired data
+  found, and access must be requested by the human.
+
+**Reason:**
+- **Search result.** No public dataset pairs angiograms with invasive FFR (searched
+  2026-10-31). Component-level evidence is what public data can give.
+- **Rigour.** Each validation uses ground truth that the pipeline never saw. Each has a
+  pre-defined comparison and reports what it measures, with every lab, lesion or failure
+  shown.
+- **Not a clinical validation.** Regulators (CDSCO, CE, FDA) expect clinical performance data
+  against the reference standard for a device like this. Public data supports the technical
+  file but does not replace that.
+
+**Alternatives:**
+- **Synthetic data only:** it cannot reveal errors shared by the generator and the model. The
+  nozzle and CADICA did reveal such errors.
+- **Literature-level comparison with published QFR results:** not reproducible from our code,
+  and not the same patients.
+
+### D42 — Physics check: FDA nozzle, net loss, nothing fitted (2026-10-31)
+**Decision:**
+- **Comparison.** The M1 loss model (Poiseuille + Kt expansion, unchanged constants) on the
+  exact nozzle geometry (Stewart et al. 2012: 12 mm pipe, 20° cone, 4 × 40 mm throat, step)
+  with the experiment's fluid and flow rates, against each laboratory's measured net loss.
+- **Net loss.** Median of the three most upstream wall taps minus median of the three most
+  downstream taps.
+- **Scope.** Both orientations and all five Reynolds numbers, with every usable data set; files
+  without wall pressures and the curator-deleted set are listed.
+
+**Reason:**
+- **Like for like.** The model has no reversible (Bernoulli) dip, so only the net loss
+  between straight pipes compares like with like.
+- **Robust to bad taps.** Medians of three taps absorb single bad taps (one laboratory's first
+  tap reads a third of its neighbours).
+- **No tuning.** Kt and the viscous term are not tuned to the data (CLAUDE.md). A
+  developing-flow correction was considered, but its published form could not be verified
+  and was not used.
+
+**Alternatives:**
+- Comparing whole pressure profiles: not meaningful without the reversible term.
+- Fitting Kt to the nozzle: tuning, and it would hide the finding that the loss depends on the
+  exit shape, which the model cannot represent.

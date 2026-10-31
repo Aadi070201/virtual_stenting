@@ -442,6 +442,47 @@ def arcade(
     typer.echo(f"ARCADE ready in {out} (licence {source['licence']}, MD5 {source['md5']})")
 
 
+@data_app.command()
+def cadica(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/cadica"),
+    force: Annotated[bool, typer.Option("--force", help="Download and extract again.")] = False,
+) -> None:
+    """Download (3.1 GB), verify (SHA-256) and extract the CADICA angiography dataset."""
+    from urllib.error import URLError
+
+    from vstent.data.cadica import URL, fetch_cadica
+
+    try:
+        source = fetch_cadica(out, force=force, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(
+            f"CADICA download failed: {exc}\nDownload {URL} manually as {out}/CADICA.zip "
+            "and run this command again (the archive is verified, then extracted).",
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"CADICA ready in {out} (licence {source['licence']})")
+
+
+@data_app.command("fda-nozzle")
+def fda_nozzle(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path(
+        "data/raw/fda_nozzle"
+    ),
+) -> None:
+    """Download and verify the FDA benchmark nozzle's experimental data (public domain)."""
+    from urllib.error import URLError
+
+    from vstent.data.fda_nozzle import fetch_fda_nozzle
+
+    try:
+        source = fetch_fda_nozzle(out, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(f"FDA nozzle download failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"FDA nozzle data ready in {out} (commit {source['commit'][:12]})")
+
+
 @app.command()
 def train_seg(
     config: Annotated[
@@ -1269,6 +1310,87 @@ def sample_size(
         f"{res['governing']}); the assumptions are placeholders to set with a statistician."
     )
     typer.echo(f"Wrote {out}")
+
+
+@app.command()
+def physics_nozzle(
+    physics: Annotated[
+        Path, typer.Option("--physics", exists=True, dir_okay=False, help="Physics YAML.")
+    ] = PHYSICS_CONFIG,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="FDA nozzle data folder.")] = Path(
+        "data/raw/fda_nozzle"
+    ),
+) -> None:
+    """The loss model against the FDA benchmark nozzle experiments → reports/physics_nozzle.md."""
+    from vstent.config import load_config
+    from vstent.data.fda_nozzle import fetch_fda_nozzle
+    from vstent.physics.nozzle import LAMINAR_RE, write_nozzle_report
+    from vstent.physics.solver import PhysicsParams
+
+    fetch_fda_nozzle(raw_dir, log=typer.echo)
+    res = write_nozzle_report(load_config(physics, PhysicsParams), raw_dir=raw_dir)
+    for c in res["cases"]:
+        if c["reynolds"] == LAMINAR_RE and c["labs"]:
+            typer.echo(
+                f"{c['orientation']} Re {LAMINAR_RE}: model {c['model_total']:.0f} Pa vs measured "
+                f"median {c['measured_median']:.0f} Pa (ratio {c['ratio']:.2f})"
+            )
+    typer.echo("Wrote reports/physics_nozzle.md")
+
+
+@app.command()
+def stenosis_grading(
+    edges: Annotated[
+        str, typer.Option("--edges", help="Comma-separated: probability, intensity.")
+    ] = "probability,intensity",
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
+        "data/raw/cadica"
+    ),
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    n_boot: Annotated[int, typer.Option("--n-boot", min=100, help="Bootstrap resamples.")] = 2000,
+) -> None:
+    """Automatic %DS at every CADICA expert lesion vs the experts' grades
+    → reports/stenosis_grading.md (public data; P4b)."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.cadica import SOURCE_FILE, fetch_cadica, load_lesion_boxes
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+    from vstent.validation import stenosis_grading as sg
+
+    methods = [m.strip() for m in edges.split(",") if m.strip()]
+    unknown = [m for m in methods if m not in sg.EDGE_METHODS]
+    if unknown or not methods:
+        typer.echo(f"--edges: unknown {unknown}; use {list(sg.EDGE_METHODS)}", err=True)
+        raise typer.Exit(code=2)
+    git = git_info()  # before anything is written
+    if not (raw_dir / SOURCE_FILE).exists():
+        fetch_cadica(raw_dir, log=typer.echo)
+    source = json.loads((raw_dir / SOURCE_FILE).read_text(encoding="utf-8"))
+    tracks = sg.lesion_tracks(load_lesion_boxes(raw_dir))
+    split = sg.patient_split([t.patient for t in tracks])
+    seg = SegmentationRunner.from_dir(
+        seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    )
+    typer.echo(f"{len(tracks)} expert lesions in {len({t.patient for t in tracks})} patients")
+    rows = {}
+    for m in methods:
+
+        def progress(k, n, m=m):
+            if k % 500 == 0 or k == n:
+                typer.echo(f"  {m}: {k} / {n} frames")
+
+        rows[m] = sg.measure_tracks(tracks, seg, split=split, edges=m, progress=progress)
+    stats = sg.write_grading_report(rows, Path("reports/stenosis_grading.md"), source=source,
+                                    n_boot=n_boot, git=git)  # fmt: skip
+    for m, s in stats.items():
+        t = s["test"]
+        if "kappa" in t:
+            typer.echo(f"{m}: test kappa {t['kappa']:.2f}, AUC>=70% {t['auc_ge70']:.2f}, "
+                       f"measured {t['n_measured']}/{t['n_lesions']}")  # fmt: skip
+    typer.echo("Wrote reports/stenosis_grading.md")
 
 
 APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"

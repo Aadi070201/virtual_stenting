@@ -20,7 +20,7 @@ that explicit reference, goes to the M1 functions (%DS, lesions, MLD) and the ph
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.ndimage import distance_transform_edt, map_coordinates
+from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinates, median_filter
 from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
@@ -124,6 +124,77 @@ def measure_diameters(
         right_px=np.where(ok_r, right, np.nan),
         fallback=~either | ~inside,
         branch=branch & inside,
+    )
+
+
+INTENSITY_SMOOTH_PX = 1.0  # Gaussian smoothing of the image before edge detection
+INTENSITY_SLACK_PX = 4.0  # edge search: up to 2 × the guide's half-width + this
+MIN_CONTRAST = 0.04  # background − lumen (image in [0, 1]); less → keep the guide's diameter
+EDGE_MEDIAN_POINTS = 5  # median filter of each edge along the centreline (points ≈ px)
+
+
+def measure_diameters_intensity(
+    image: np.ndarray,
+    centerline: Centerline,
+    guide: DiameterProfile,
+    *,
+    smooth_px: float = INTENSITY_SMOOTH_PX,
+    step_px: float = EDGE_STEP_PX,
+    median_points: int = EDGE_MEDIAN_POINTS,
+) -> DiameterProfile:
+    """Lumen edges from the image intensity (vessels dark): on each side of the centreline the
+    edge is the steepest intensity rise along the normal (parabolic sub-pixel peak), searched
+    up to 2 × the ``guide`` half-width + ``INTENSITY_SLACK_PX``. The classical edge criterion
+    of QCA; it does not depend on how the segmentation draws the vessel's outline.
+
+    Where the contrast (brightest − centre intensity in the search range) is below
+    ``MIN_CONTRAST`` or an edge is missing, the ``guide`` diameter (probability-map edges) is
+    kept. Side branches / overlaps: as :func:`measure_diameters`. Pixels throughout.
+    """
+    img = np.asarray(image, dtype=np.float32)
+    img = img / 255.0 if img.max() > 1.0 else img
+    img = gaussian_filter(img, smooth_px) if smooth_px > 0 else img
+    pts, nrm = centerline.points, centerline.normals
+    limit = guide.diameter_px + INTENSITY_SLACK_PX  # 2 × half-width + slack
+    t = np.arange(0.0, float(limit.max()) + step_px / 2, step_px)
+    in_range = t[None, :] <= limit[:, None]
+    centre = map_coordinates(img, [pts[:, 0], pts[:, 1]], order=1, mode="nearest")
+
+    def edge(sign: float) -> tuple[np.ndarray, np.ndarray]:
+        q = pts[:, None, :] + sign * t[None, :, None] * nrm[:, None, :]
+        vals = map_coordinates(img, [q[..., 0].ravel(), q[..., 1].ravel()], order=1,
+                               mode="nearest").reshape(q.shape[:2])  # fmt: skip
+        grad = np.gradient(vals, step_px, axis=1)
+        grad = np.where(in_range, grad, -np.inf)
+        k = np.argmax(grad, axis=1)
+        rows = np.arange(len(k))
+        km, kp = np.clip(k - 1, 0, len(t) - 1), np.clip(k + 1, 0, len(t) - 1)
+        g0, g1, g2 = grad[rows, km], grad[rows, k], grad[rows, kp]
+        ok_peak = np.isfinite(g0) & np.isfinite(g2)
+        g0, g2 = np.where(ok_peak, g0, g1), np.where(ok_peak, g2, g1)  # no inf − inf
+        den = g0 - 2.0 * g1 + g2
+        ok_peak &= den < 0
+        shift = np.where(ok_peak, 0.5 * (g0 - g2) / np.where(den < 0, den, -1.0), 0.0)
+        pos = t[k] + np.clip(shift, -0.5, 0.5) * step_px
+        bright = np.max(np.where(in_range, vals, -np.inf), axis=1)
+        found = (grad[rows, k] > 0) & (bright - centre >= MIN_CONTRAST) & (k > 0)
+        return pos, found
+
+    right, ok_r = edge(+1.0)
+    left, ok_l = edge(-1.0)
+    if median_points > 1:  # edge contours are smooth; single-point noise is not a narrowing
+        right, left = (median_filter(v, size=median_points, mode="nearest") for v in (right, left))
+    both = ok_r & ok_l
+    near, far = np.minimum(left, right), np.maximum(left, right)
+    branch = both & (far > BRANCH_RATIO * near + BRANCH_SLACK_PX)
+    diameter = np.where(branch, 2.0 * near, right + left)
+    use = both
+    return DiameterProfile(
+        diameter_px=np.maximum(np.where(use, diameter, guide.diameter_px), MIN_DIAMETER_PX),
+        left_px=np.where(use, -left, guide.left_px),
+        right_px=np.where(use, right, guide.right_px),
+        fallback=np.where(use, False, guide.fallback),
+        branch=np.where(use, branch, guide.branch),
     )
 
 
@@ -265,8 +336,11 @@ def qca_from_centerline(
     level: float = LEVEL,
     trim_diameters: float = END_TRIM_DIAMETERS,
     trim_start_diameters: float | None = None,
+    image: np.ndarray | None = None,
 ) -> QCAResult:
     """QCA along a given centreline. ``mm_per_px=None`` uses the assumed default 0.30 mm/px.
+    With ``image`` (the greyscale angiogram) the lumen edges come from its intensity
+    (:func:`measure_diameters_intensity`, guided by the probability-map edges).
 
     ``trim_diameters`` × the median diameter is removed at both ends: where the centreline
     runs into the end of the mask (a vessel tip, an ostium, a cut-off branch) the measured
@@ -276,6 +350,8 @@ def qca_from_centerline(
     assumed = mm_per_px is None
     scale = DEFAULT_MM_PER_PX if assumed else float(mm_per_px)
     diameters = measure_diameters(prob, centerline, level=level)
+    if image is not None:
+        diameters = measure_diameters_intensity(image, centerline, diameters)
     start = trim_diameters if trim_start_diameters is None else trim_start_diameters
     if trim_diameters > 0 or start > 0:
         median = float(np.median(diameters.diameter_px))

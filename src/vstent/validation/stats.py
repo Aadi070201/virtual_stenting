@@ -127,6 +127,19 @@ def pearson(x: np.ndarray, y: np.ndarray, level: float = 0.95) -> tuple[float, t
     return r, (float(np.tanh(z - half)), float(np.tanh(z + half)))
 
 
+def weighted_kappa(a: np.ndarray, b: np.ndarray, k: int) -> float:
+    """Linearly weighted Cohen's kappa of two ordinal ratings in 0 … k − 1 (disagreement weight
+    |i − j| / (k − 1)); NaN when the expected disagreement is zero."""
+    a, b = np.asarray(a, int), np.asarray(b, int)
+    obs = np.zeros((k, k))
+    np.add.at(obs, (a, b), 1.0)
+    obs /= obs.sum()
+    exp = np.outer(obs.sum(axis=1), obs.sum(axis=0))
+    w = np.abs(np.subtract.outer(np.arange(k), np.arange(k))) / (k - 1)
+    den = float((w * exp).sum())
+    return float("nan") if den == 0 else 1.0 - float((w * obs).sum()) / den
+
+
 def cluster_bootstrap(
     clusters: np.ndarray,
     statistic: Callable[[np.ndarray], dict[str, float]],

@@ -74,9 +74,10 @@ vstent/
                         # DATA_SPEC.md, templates/)
   src/vstent/
     physics/            # geometry.py, solver.py, report.py, tree.py (vessel trees, P2),
-                        # tree_report.py (tree checks + throughput)
+                        # tree_report.py (tree checks + throughput), nozzle.py (FDA nozzle check, P4b)
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py,
-                        # synth_tree.py + tree_card.py (synthetic vessel trees, P2)
+                        # synth_tree.py + tree_card.py (synthetic vessel trees, P2), cadica.py and
+                        # fda_nozzle.py (public validation data, P4b)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
                         # ensemble.py (5-seed ensemble trainer, resumable),
@@ -101,8 +102,9 @@ vstent/
                         # latency.py (AppTest-driven update timing)
     validation/         # P4, torch-free: manifest.py (cases.csv / reference.csv, local-only guard),
                         # run.py (predictions, locking, scoring), stats.py (AUC, Bland–Altman,
-                        # Wilson, cluster bootstrap), report.py, sample_size.py, synthetic.py +
-                        # synthetic_report.py (stand-in study)
+                        # Wilson, cluster bootstrap, weighted kappa), report.py, sample_size.py,
+                        # synthetic.py + synthetic_report.py (stand-in study), stenosis_grading.py
+                        # (CADICA expert grades, P4b)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -166,6 +168,10 @@ uv run vstent validate --manifest cases.csv [--reference reference.csv]  # P4: l
 uv run vstent validate --predictions <dir>/predictions.csv --reference reference.csv  # score locked
 uv run vstent validate-synthetic  # P4: stand-in study → reports/validation_synthetic.md
 uv run vstent sample-size         # P4: → reports/validation_sample_size.md (placeholder assumptions)
+uv run vstent data cadica         # P4b: CADICA (CC BY 4.0), SHA-256-verified → data/raw/cadica/
+uv run vstent data fda-nozzle     # P4b: FDA benchmark nozzle data (public domain) → data/raw/fda_nozzle/
+uv run vstent stenosis-grading    # P4b: QCA %DS vs CADICA expert grades → reports/stenosis_grading.md
+uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 ```
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)

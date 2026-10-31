@@ -19,10 +19,33 @@ milestones.
 
 ## 2. Start early (months of lead time)
 
-### A clinical partner and ethics approval (P4)
+### Ground truth without a hospital partner (P4b, from 2026-10-31)
 
-This is the most important item for both the research and the product: there is **no
-comparison with invasive FFR yet**, so nobody can say how accurate the tool is.
+You told me a hospital partner is not possible now, so validation runs on **public data**, one
+component at a time (`docs/PLAN.md`, P4b):
+- stenosis grading against expert grades on real angiograms (CADICA, CC BY 4.0);
+- the pressure physics against an FDA bench experiment (public domain).
+
+What public data cannot do:
+- **No paired data.** No openly downloadable dataset pairs angiograms with invasive FFR
+  (searched 2026-10-31), so **agreement with FFR itself stays unmeasured**.
+- **Approval still needs a clinical study.** Regulators (CDSCO in India, CE in the EU, FDA in
+  the US) expect clinical performance data against the reference standard before a device like
+  this can be sold. Public data builds the technical file and the pitch; the clinical study
+  will still be needed.
+
+**The one lead for real FFR ground truth: ICADD.** It is an Indian dataset from the group of
+Prof. Santosh Ansumali (JNCASR, Bangalore): 70 patients with CT, invasive angiography and
+invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public download.
+- **Your action:** email the authors and request access for research. Ask:
+  - which licence applies;
+  - whether commercial use is allowed;
+  - whether the angiograms are DICOM with the FFR wire position.
+- **Note:** the same group works on CT-FFR, so they may also be a collaborator or a
+  competitor; decide what you share.
+- **With access:** `vstent validate` (P4) runs on it unchanged, locally.
+
+### If a clinical partner becomes possible later (P4)
 
 - **What:** an interventional cardiologist at a hospital that performs pressure-wire FFR (or
   iFR) and is willing to share **retrospective, de-identified** cases.
@@ -96,9 +119,17 @@ comparison with invasive FFR yet**, so nobody can say how accurate the tool is.
 - **Patents:** talk to a patent attorney **before any public disclosure** (papers, preprints,
   conference talks, open demos, detailed investor decks). `docs/INVENTION_NOTES.md` lists the
   candidate ideas with dates and commits.
-- **Data licences:**
-  - ARCADE is CC0, so commercial use is fine.
-  - Keep `docs/DATA.md` up to date for every new dataset.
+- **India-specific patent points (confirm with an Indian patent attorney):**
+  - The Indian Patents Act excludes "a computer programme per se" and algorithms (section
+    3(k)), and methods of diagnosis of humans (section 3(i)).
+  - Claims for software that diagnoses therefore have to be drafted around a technical
+    system and its technical effect. File where the claims are strongest, and use PCT for the
+    global markets.
+- **Data licences** (all recorded in `docs/DATA.md`):
+  - ARCADE is CC0, and CADICA is CC BY 4.0 (cite it). The FDA nozzle data is public domain.
+    Commercial use is fine for all three.
+  - Datasets with non-commercial licences may be used for research only. I will flag each
+    one before using it.
 - **Better segmentation data:** the tree work showed that the segmentation model rarely finds
   small side branches, because ARCADE does not annotate them. Annotated angiograms from a
   partner, or P8's synthetic angiograms, would improve this more than further physics work.

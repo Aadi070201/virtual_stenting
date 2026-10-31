@@ -287,6 +287,32 @@ The report must state that model intervals cover only surrogate-vs-solver error,
 
 **Done when:** the protocol and data specification exist, and the validation tool runs end to end on synthetic stand-in data. Real data only after the human confirms ethics approval and a data agreement.
 
+## P4b: Validation on public data (added 2026-10-31: no hospital partner, D41)
+
+The human cannot obtain a hospital partner. Validation therefore uses public data with
+independent ground truth, part by part. No public dataset pairs angiograms with invasive FFR
+(searched 2026-10-31), so this measures each component; it does not replace a clinical study.
+
+- [ ] `vstent data cadica`: download, SHA-256-verify and extract CADICA (42 patients, cine
+  angiograms with expert lesion boxes and visual lesion grades; CC BY 4.0).
+- [ ] **Stenosis grading on real angiograms.** The product's QCA, measured automatically at
+  every expert lesion box, against the expert grades:
+  - weighted kappa, AUC for ≥ 70% and ≥ 50%, rank correlation, feasibility;
+  - patient-level bootstrap;
+  - a fixed development / test split by patient; any improvement to the measurement is chosen
+    on the development half and reported on the test half.
+- [ ] **Physics against a bench experiment.** The reduced-order loss model against the FDA
+  benchmark nozzle's inter-laboratory wall-pressure data (public domain): net pressure loss at
+  throat Re 500–6500, nothing fitted.
+- [ ] Record sources, licences and hashes in `docs/DATA.md`.
+- [ ] [needs human] **Invasive FFR ground truth:** request ICADD (70 Indian patients, angiography
+  + invasive FFR; available from its authors, not openly downloadable).
+
+**Done when:**
+- the CADICA grading report and the nozzle report exist, generated from code with every
+  number traceable;
+- missed expectations are reported as measured.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [ ] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.

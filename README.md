@@ -37,6 +37,13 @@ and `vstent validate`, tested only on synthetic stand-in cases
 ([reports/validation_synthetic.md](reports/validation_synthetic.md)). Patient data never enters
 this repository; the tool refuses tracked locations.
 
+P4b validates the parts on public data with independent ground truth, because no public
+dataset pairs angiograms with invasive FFR:
+- stenosis grading against expert grades on real angiograms from another hospital
+  ([reports/stenosis_grading.md](reports/stenosis_grading.md));
+- the pressure-loss physics against the FDA's inter-laboratory nozzle experiment
+  ([reports/physics_nozzle.md](reports/physics_nozzle.md)).
+
 **What the numbers mean:**
 - The surrogate's accuracy is its agreement with the reduced-order physics model on synthetic
   vessels, not agreement with invasive FFR.
@@ -117,6 +124,9 @@ Trainings can be paused and resumed exactly:
 | `vstent validate --manifest cases.csv [--reference reference.csv]` | validation against wire FFR on a local, de-identified case list: locked predictions, then AUC, Bland–Altman, sensitivity / specificity, grey zone, per-territory tables ([docs/validation/](docs/validation/)) | P4 |
 | `vstent validate-synthetic` | the validation tool end to end on synthetic stand-in cases → `reports/validation_synthetic.md` | P4 |
 | `vstent sample-size` | sample size for the validation study (placeholder assumptions) → `reports/validation_sample_size.md` | P4 |
+| `vstent data cadica` / `vstent data fda-nozzle` | download and verify the public validation datasets (CADICA, CC BY 4.0; FDA nozzle, public domain) | P4b |
+| `vstent stenosis-grading` | automatic %DS at every CADICA expert lesion vs the experts' grades → `reports/stenosis_grading.md` | P4b |
+| `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |
