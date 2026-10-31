@@ -4,9 +4,10 @@
 >
 > **What this file is:** a dated technical record of ideas in this repository that *might* be
 > new, kept as a starting point for a conversation with a patent attorney. **It is not a patent
-> draft, not a novelty or freedom-to-operate opinion, and not legal advice.** No prior-art
-> search has been done; each section lists the prior art that most obviously needs checking,
-> and several of these ideas may well turn out to be known.
+> draft, not a novelty or freedom-to-operate opinion, and not legal advice.** No professional
+> prior-art search has been done. For items 5–6 a first web search was made on 2026-10-31 (its
+> hits are listed); for the others, each section lists the prior art that most obviously needs
+> checking. Several of these ideas may well turn out to be known.
 >
 > **Disclosure caution:** in many jurisdictions (e.g. under the European Patent Convention)
 > any public disclosure before filing (a public repository, a paper, a talk, a demo) can
@@ -104,6 +105,93 @@ generated reports in `reports/`.
 - **Status:** an idea only; record its date, and do not describe it publicly before advice.
 - **Prior art to check:** synthetic angiogram rendering, domain randomisation and sim-to-real
   in medical imaging; multi-fidelity surrogate modelling for CFD.
+
+## 5. Imaging-chain model fit for the lumen in 2D angiography (P4c)
+
+- **First implemented:** 2026-10-31, commit `d37915f` (`src/vstent/imaging/lumen_model.py`;
+  option `lumen="model"` of `qca_from_centerline`); evidence `reports/lumen_synthetic.md`
+  (commit `b71e60a`) and, on real angiograms, `reports/stenosis_grading.md`.
+- **The problem it addresses:** edge-based QCA reads a lumen's edges where the blurred
+  intensity profile is steepest. Below a few pixels the blur, not the lumen, sets that distance,
+  so tight stenoses are under-read. X-ray systems also apply edge enhancement (unsharp masking),
+  which shifts edges and, along the vessel, exaggerates the contrast deficit of a short lesion.
+  On rendered vessels with clinical-like settings, edges never read more than ~40–75% diameter
+  stenosis, however tight the lesion, and the FFR computed from them is far too high.
+- **What it is:**
+  - The image is resampled along the normals of the centreline (a straightened vessel).
+  - A forward model predicts the straightened image:
+    - exact cell-averaged chord through a circular lumen of radius r(z) centred at x0(z);
+    - Beer–Lambert transmission exp(−μ · chord);
+    - system blur (Gaussian, σ_b);
+    - the system's unsharp-mask edge enhancement ((1 + a)·Y − a·Gauss(Y, σ_e));
+    - the background from bands on both sides.
+  - **The imaging-chain parameters (μ, σ_b, a, σ_e) are estimated from the clinical image
+    itself, shared along the path**, jointly with r(z) and x0(z) per point, by robust
+    (soft-L1) nonlinear least squares with a curvature penalty. No calibration of the X-ray
+    system is needed.
+  - The Jacobian is analytic and sparse, because blur and edge enhancement are linear
+    separable filters. The fit takes about 1 s per vessel on a laptop CPU.
+  - The deep segmentation only provides the centreline and start values, and the fitted lumen
+    feeds the reduced-order FFR model and the virtual-stent planner.
+- **Why it may matter (synthetic evidence, best case: the renderer shares the model's
+  physics):**
+  - lesions ≥ 85% DS read within 2.3 points vs 28.5 for edges;
+  - the FFR error on those falls from 0.50 to 0.04;
+  - a lumen narrowed only along the X-ray (invisible in width) is seen through its area:
+    eccentric lumens are read within 5.5 points vs 19.1.
+  - Whether this holds on real angiograms is measured on CADICA (D44).
+- **Possible claim elements (for the attorney):**
+  - joint, along-path estimation of the imaging system's blur and edge-enhancement parameters
+    from the angiogram being measured;
+  - its use to recover sub-resolution and eccentric lumen areas;
+  - feeding them into a physics-based FFR and virtual-stent computation.
+- **Prior art found (first search, 2026-10-31), to be reviewed by a professional:**
+  - Pappas & Lim: a parametric model of film density along lines perpendicular to the vessel,
+    with background and imaging-system distortions, estimating diameter and centre per line
+    (SPIE vol. 504, 1984; IEEE Trans. ASSP 36(9), 1988; MIT RLE Technical Report 528, 1987).
+    **Closest known prior art**: model-based fitting per profile is not new.
+  - Model-based estimation of arterial diameter from X-ray angiograms (Chan, MIT thesis,
+    1996).
+  - Small-vessel diameters overestimated because of the system's point-spread function, and a
+    size-adaptive edge operator (Reddy et al., IEEE Trans. Med. Imaging, 1997).
+  - A commercial QCA package that reverses unsharp masking by iterative deconvolution before
+    edge detection (Philips automated coronary analysis, studied in 1995).
+  - **US 10,580,141 B2** (Koninklijke Philips, granted 2020-03-03, listed as active):
+    sub-resolution lumen diameters in CT from centreline intensity profiles (FWHM). It is a
+    different modality, but its claims as summarised are broadly worded, so **a
+    freedom-to-operate review is needed**.
+  - Densitometric QCA (Reiber and others, 1980s–90s), known to fail on the tightest lesions
+    and on uneven backgrounds.
+- **What may still be new** (to be judged by an attorney):
+  - estimating the edge-enhancement parameters jointly along the whole path from the clinical
+    image, not from vendor calibration or deconvolution with known settings;
+  - the exact cell-integrated chord for sub-pixel lumens;
+  - the combination with automatic segmentation and FFR or virtual-stent planning.
+- **India:** algorithms and computer programmes per se are excluded (Patents Act s. 3(k)), as
+  are methods of diagnosis (s. 3(i)). Claims would need to be framed as a technical
+  improvement of an X-ray imaging measurement system, not as a diagnostic method.
+
+## 6. Mask-gap bridging with image-only measurement and a no-lumen flag (P4c)
+
+- **First implemented:** 2026-10-31, commits `d37915f` and `cacd7bd`
+  (`imaging/centerline.py` `bridge_gaps`; `imaging/qca.py` `recentre_gaps`,
+  `_no_lumen_in_gaps`; `inference/pipeline.py` `lumen_warnings`).
+- **The problem it addresses:** a segmentation network often breaks a vessel exactly at its
+  tightest narrowing or occlusion, or smooths across it. Path tracing then fails, or measures
+  the gap with diameters interpolated from the healthy vessel, so a total occlusion reads as
+  open (P4b: 10 of 11 occlusions measured, median 6% DS).
+- **What it is:**
+  - Skeleton ends of different components that face each other across a short gap are joined
+    from anchors a few pixels back (skipping the skeleton's end hook).
+  - Bridged points are re-centred on the image's lumen and measured from the image only, never
+    from the mask.
+  - A bridged point without lumen edges gets no lumen.
+  - A run of points below 1 px of lumen is reported as "critical stenosis or total
+    occlusion", with the warning that FFR is not valid for an occluded vessel.
+- **Prior art to check:** gap filling and minimal-path vessel tracking (e.g. Deschamps &
+  Cohen, minimal paths, 2001), connectivity-preserving segmentation, deep-learning detection of
+  chronic total occlusions. **Likely known as separate elements**; any value lies in the system
+  combination.
 
 ---
 
