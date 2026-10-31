@@ -231,3 +231,16 @@ def test_grading_end_to_end(tmp_path, dark_seg_dir):
     md = (tmp_path / "rep" / "grading.md").read_text(encoding="utf-8")
     assert "visual estimates" in md and "Development patients" in md
     assert (tmp_path / "rep" / "grading" / "lesions_intensity.csv").exists()
+
+
+def test_occlusion_summary_counts_critical_readings():
+    grades = [
+        {"category": "p100", "ds": 97.0}, {"category": "p100", "ds": 10.0},
+        {"category": "p100", "ds": None}, {"category": "p99", "ds": 92.0},
+        {"category": "p0_20", "ds": 95.0}, {"category": "p20_50", "ds": 30.0},
+        {"category": "p70_90", "ds": 99.0},
+    ]  # fmt: skip
+    o = sg.occlusion_summary(grades)
+    assert o["p100"] == {"n": 3, "n_measured": 2, "median_ds": 53.5, "n_critical": 1}
+    assert o["p99"]["n_critical"] == 1
+    assert o["mild"] == {"n": 2, "n_measured": 2, "median_ds": 62.5, "n_critical": 1}
