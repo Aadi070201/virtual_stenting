@@ -619,3 +619,73 @@ approval and a data agreement).
   single-path intervals.
 - **The segmenter's domain gap on rendered images** is left to P8.
 - **App latency** is still not re-measured with tree mode (carried over from P3).
+
+## 2026-10-31 — P4b: Validation on public data (done; FFR ground truth waits for the human)
+
+The human cannot obtain a hospital partner, so validation moved to public data with
+independent ground truth (D41). No openly downloadable dataset pairs angiograms with invasive
+FFR (searched 2026-10-31). ICADD (70 Indian patients, angiography + invasive FFR) must be
+requested from its authors.
+
+**What was done**
+- **Datasets:**
+  - `vstent data cadica`: CADICA, 42 patients, cine angiograms with expert lesion boxes and
+    visual grades; CC BY 4.0; SHA-256 as published.
+  - `vstent data fda-nozzle`: FDA benchmark nozzle, inter-laboratory wall pressures; public
+    domain; pinned commit, per-file SHA-256.
+- **`vstent physics-nozzle`** (`reports/physics_nozzle.md`, D42): the unchanged loss model on
+  the exact nozzle geometry against every laboratory's net pressure loss.
+- **`vstent stenosis-grading`** (`reports/stenosis_grading.md`):
+  - automatic %DS at every expert lesion (6,161 boxes, 497 lesion tracks; path through the box
+    from the skeleton, the product's QCA, median over keyframes) against the experts' grades;
+  - development / test split by patient;
+  - edge-method rule committed before any result (D43).
+- **Intensity-edge QCA** (`imaging/qca.py`, `measure_diameters_intensity`): each lumen edge is
+  the steepest intensity rise along the normal, guided by the segmentation, with a 5-point
+  median along the vessel. It is an option for now; the product default is unchanged.
+
+**Results**
+- **Physics (FDA nozzle, laminar Re = 500, the coronary regime):**
+  - sudden expansion: model 237 Pa vs measured median 390 Pa (labs 219–441), ratio 0.61;
+  - conical diffuser: 237 vs 224 Pa, ratio 1.06.
+
+  The model's loss depends only on the areas, while the measured losses differ by a factor of
+  1.7 with the exit shape. Abrupt-exit lesions are likely underestimated, so their FFR would be
+  too high. Transitional and turbulent Reynolds numbers: ratios 0.70–0.94. Nothing was fitted.
+- **Stenosis grading, current product QCA (probability-map edges), test half** (208 / 214
+  lesions measured, 21 patients):
+  - weighted kappa 0.12 (0.06–0.19), AUC for ≥ 70% 0.69;
+  - median measured %DS of 90–98% lesions: 32;
+  - no lesion measured ≥ 70%;
+  - total occlusions measured as open (10 / 11, median 6% DS).
+
+  **The segmentation smooths over narrowings, so the current QCA compresses severity.** This
+  is the most important product finding so far.
+- **With intensity edges, test half:**
+  - weighted kappa 0.22 (0.15–0.31), within one grade 71% (vs 54%), AUC for ≥ 70% 0.73
+    (0.61–0.84), AUC for ≥ 50% 0.76;
+  - median %DS of 70–90% lesions 53, of 90–98% lesions 48.
+
+  On the development half: kappa 0.36, AUC for ≥ 70% 0.81. Better on both halves, but
+  agreement is still modest and severe lesions are still measured low.
+- **Why severe lesions read low** (inspected on development patients only): of the 4 lesions
+  graded ≥ 70% but measured below 20%,
+  - in 2 the narrowing lies outside the mask (an ostial lesion; a gap at a branch origin), so
+    the measured path starts beyond it;
+  - in 1 the path ran through two adjacent vessels;
+  - in 1 the vessel is segmented but neither edge method finds the narrowing on that frame.
+
+  Together with the compression seen in the probability edges, this points to the segmenter
+  (trained on ARCADE's segment-level masks) as the main limit.
+
+**Open issues and next steps**
+- **Product default.** Make intensity edges the QCA default for automatically segmented
+  vessels (analyst masks keep mask edges), then regenerate the image-based reports.
+- **Segmentation at stenoses.** Train with lumen-accurate labels at narrowings: rendered
+  angiograms with exact lumens (P8, sim-to-real). Total occlusions are bridged by the
+  segmentation and measured as open; there is no occlusion detection yet.
+- **Visual grades are not ground truth.** Visual and quantitative grading are known to differ,
+  so part of the gap may lie in the reference.
+- **Physics.** Quantify the abrupt-exit effect with CFD (P6). A literature developing-flow
+  correction was not applied because its published form could not be verified.
+- **Real FFR ground truth.** ICADD access requested by the human.

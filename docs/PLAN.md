@@ -293,18 +293,18 @@ The human cannot obtain a hospital partner. Validation therefore uses public dat
 independent ground truth, part by part. No public dataset pairs angiograms with invasive FFR
 (searched 2026-10-31), so this measures each component; it does not replace a clinical study.
 
-- [ ] `vstent data cadica`: download, SHA-256-verify and extract CADICA (42 patients, cine
+- [x] `vstent data cadica`: download, SHA-256-verify and extract CADICA (42 patients, cine
   angiograms with expert lesion boxes and visual lesion grades; CC BY 4.0).
-- [ ] **Stenosis grading on real angiograms.** The product's QCA, measured automatically at
+- [x] **Stenosis grading on real angiograms.** The product's QCA, measured automatically at
   every expert lesion box, against the expert grades:
   - weighted kappa, AUC for ≥ 70% and ≥ 50%, rank correlation, feasibility;
   - patient-level bootstrap;
   - a fixed development / test split by patient; any improvement to the measurement is chosen
     on the development half and reported on the test half.
-- [ ] **Physics against a bench experiment.** The reduced-order loss model against the FDA
+- [x] **Physics against a bench experiment.** The reduced-order loss model against the FDA
   benchmark nozzle's inter-laboratory wall-pressure data (public domain): net pressure loss at
   throat Re 500–6500, nothing fitted.
-- [ ] Record sources, licences and hashes in `docs/DATA.md`.
+- [x] Record sources, licences and hashes in `docs/DATA.md`.
 - [ ] [needs human] **Invasive FFR ground truth:** request ICADD (70 Indian patients, angiography
   + invasive FFR; available from its authors, not openly downloadable).
 

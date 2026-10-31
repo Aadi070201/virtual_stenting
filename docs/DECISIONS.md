@@ -507,3 +507,14 @@ Committed before any development result was seen.
 **Alternatives:**
 - Choosing on all patients: no unbiased estimate is left.
 - Always reporting both without a rule: the product needs one default.
+
+**Outcome** (`reports/stenosis_grading.md`):
+- **Development half: intensity edges selected** (both conditions met):
+  - weighted kappa 0.36 vs 0.12;
+  - AUC for ≥ 70% 0.81 vs 0.73.
+- **Test half: confirmed, with a smaller margin** (patient-bootstrap intervals overlap):
+  - kappa 0.22 (0.15–0.31) vs 0.12 (0.06–0.19);
+  - AUC for ≥ 70% 0.73 (0.61–0.84) vs 0.69 (0.60–0.79);
+  - within one grade 71% vs 54%.
+- **Next:** make intensity edges the product's QCA default where the segmentation is
+  automatic; analyst-corrected masks keep mask edges.
