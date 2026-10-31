@@ -50,6 +50,10 @@ BRANCH_SLACK_PX = 1.0
 REF_LOWER = 0.85
 REF_UPPER = 1.15
 REF_MAX_ITER = 5
+# A lumen narrower than NO_LUMEN_PX cannot be told apart from none in one frame; a run of at
+# least NO_LUMEN_MIN_POINTS such points is reported (critical stenosis or total occlusion).
+NO_LUMEN_PX = 1.0
+NO_LUMEN_MIN_POINTS = 3
 LUMEN_METHOD_LABELS = {  # for reports
     "intensity": "image intensity edges, guided by the automatic segmentation (D43)",
     "probability": "outline of the vessel mask",
@@ -288,6 +292,21 @@ class QCAResult:
     def lesions(self) -> list[Lesion]:
         """Segments with DS above the M1 threshold (positions in m)."""
         return self.profile.lesions()
+
+    @property
+    def no_lumen_segments(self) -> list[tuple[float, float]]:
+        """(start, end) arc length (mm) of every run of at least ``NO_LUMEN_MIN_POINTS`` points
+        whose measured lumen is at most ``NO_LUMEN_PX``: critical stenosis or total occlusion."""
+        low = self.diameters.diameter_px <= NO_LUMEN_PX
+        edges = np.flatnonzero(np.diff(np.r_[0, low.astype(int), 0]))
+        s = self.s_mm
+        return [(float(s[a]), float(s[b - 1])) for a, b in zip(edges[::2], edges[1::2],
+                strict=True) if b - a >= NO_LUMEN_MIN_POINTS]  # fmt: skip
+
+    @property
+    def bridged_mm(self) -> float:
+        """Length (mm) of the path on bridged gaps of the mask (measured from the image)."""
+        return float(self.centerline.bridged_mask.sum() * np.mean(np.diff(self.s_mm)))
 
     @property
     def fallback_fraction(self) -> float:

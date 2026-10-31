@@ -23,6 +23,7 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 from vstent.imaging.centerline import (
+    bridge_flags,
     clean_mask,
     smooth_and_resample,
     snap_point,
@@ -78,7 +79,7 @@ def tree_qca(
     branches, on the probability map ``prob`` (H, W). Points are (row, col) px. With ``image``
     (the angiogram), lumen edges come from its intensity (:func:`qca_from_centerline`)."""
     mask = np.asarray(prob) >= level
-    graph = vessel_graph(mask)
+    graph = vessel_graph(mask, bridge=True)
     half_width = distance_transform_edt(clean_mask(mask))
     a = snap_point(graph, start, half_width, "start")
     component = graph.subgraph(nx.node_connected_component(graph, a))
@@ -94,8 +95,8 @@ def tree_qca(
     scale = DEFAULT_MM_PER_PX if mm_per_px is None else float(mm_per_px)
 
     main = qca_from_centerline(
-        prob, smooth_and_resample(np.asarray(paths[b])), mm_per_px=mm_per_px, level=level,
-        image=image,
+        prob, smooth_and_resample(np.asarray(paths[b]), bridged=bridge_flags(graph, paths[b])),
+        mm_per_px=mm_per_px, level=level, image=image,
     )  # fmt: skip
     accepted: list[dict[str, Any]] = [{"qca": main, "depth": 0, "parent": -1, "attach": 0,
                                        "junction": None}]  # fmt: skip
@@ -116,6 +117,7 @@ def tree_qca(
         if not outside.any():
             dropped.append({**info, "reason": "does not leave the parent's lumen"})
             continue
+        flags = bridge_flags(graph, path[j:])[int(np.argmax(outside)) :]
         pts = pts[int(np.argmax(outside)) :]
         length_mm = _path_length(pts) * scale
         if length_mm < min_branch_mm or len(pts) < MIN_BRANCH_POINTS:
@@ -123,7 +125,7 @@ def tree_qca(
                             "length_mm": length_mm})  # fmt: skip
             continue
         qca = qca_from_centerline(
-            prob, smooth_and_resample(pts), mm_per_px=mm_per_px, level=level,
+            prob, smooth_and_resample(pts, bridged=flags), mm_per_px=mm_per_px, level=level,
             trim_start_diameters=0.0, image=image,
         )  # fmt: skip
         ratio = float(np.median(qca.diameters.diameter_px)) / (2.0 * half_width[junction])

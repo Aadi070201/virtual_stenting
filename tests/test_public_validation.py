@@ -223,6 +223,9 @@ def test_grading_end_to_end(tmp_path, dark_seg_dir):
     assert all(r["status"] == "ok" for rs in rows.values() for r in rs)
     for rs in rows.values():
         assert all(abs(float(r["ds"]) - 60.0) < 15.0 for r in rs)
+    # parallel measurement: the same rows in the same order
+    assert sg.measure_tracks(tracks, seg, split=split, methods=("intensity", "model"),
+                             workers=2) == {m: rows[m] for m in ("intensity", "model")}  # fmt: skip
     source = {"doi": cadica.DOI, "licence": cadica.LICENCE}
     sg.write_grading_report(rows, tmp_path / "rep" / "grading.md", source=source, n_boot=100)
     md = (tmp_path / "rep" / "grading.md").read_text(encoding="utf-8")

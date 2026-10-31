@@ -1342,8 +1342,8 @@ def physics_nozzle(
 @app.command()
 def stenosis_grading(
     edges: Annotated[
-        str, typer.Option("--edges", help="Comma-separated: probability, intensity.")
-    ] = "probability,intensity",
+        str, typer.Option("--edges", help="Comma-separated: probability, intensity, model.")
+    ] = "probability,intensity,model",
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
         "data/raw/cadica"
     ),
@@ -1351,9 +1351,12 @@ def stenosis_grading(
         Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
     ] = None,
     n_boot: Annotated[int, typer.Option("--n-boot", min=100, help="Bootstrap resamples.")] = 2000,
+    workers: Annotated[
+        int, typer.Option("--workers", min=1, help="Processes for the measurements.")
+    ] = 1,
 ) -> None:
     """Automatic %DS at every CADICA expert lesion vs the experts' grades
-    → reports/stenosis_grading.md (public data; P4b)."""
+    → reports/stenosis_grading.md (public data; P4b, P4c)."""
     import json
 
     from vstent.config import git_info
@@ -1381,7 +1384,8 @@ def stenosis_grading(
         if k % 500 == 0 or k == n:
             typer.echo(f"  {k} / {n} frames")
 
-    rows = sg.measure_tracks(tracks, seg, split=split, methods=tuple(methods), progress=progress)
+    rows = sg.measure_tracks(tracks, seg, split=split, methods=tuple(methods), progress=progress,
+                             workers=workers)  # fmt: skip
     stats = sg.write_grading_report(rows, Path("reports/stenosis_grading.md"), source=source,
                                     n_boot=n_boot, git=git)  # fmt: skip
     for m, s in stats.items():

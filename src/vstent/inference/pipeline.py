@@ -18,7 +18,7 @@ from typing import Protocol
 import numpy as np
 
 from vstent.data.synth import SamplingConfig
-from vstent.imaging.qca import DEFAULT_MM_PER_PX, QCAResult, run_qca
+from vstent.imaging.qca import DEFAULT_MM_PER_PX, NO_LUMEN_PX, QCAResult, run_qca
 from vstent.imaging.qca_tree import MAX_DEPTH, TreeQCA, tree_qca
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile
@@ -70,6 +70,27 @@ class VesselAnalysis:
     def ffr_distal_surrogate(self) -> float | None:
         """Distal FFR from the surrogate (``None`` without a surrogate)."""
         return None if self.surrogate_ffr is None else float(self.surrogate_ffr[-1])
+
+
+def lumen_warnings(qca: QCAResult, name: str = "") -> list[str]:
+    """Bridged gaps of the segmentation and stretches without a measurable lumen (P4c).
+    ``name`` prefixes the messages (a tree branch)."""
+    out = []
+    prefix = f"{name}: " if name else ""
+    if qca.bridged_mm > 0:
+        out.append(
+            f"{prefix}the segmentation missed {qca.bridged_mm:.1f} mm of the vessel (a gap "
+            "between aligned vessel ends, bridged); that part was measured from the image only"
+        )
+    for a, b in qca.no_lumen_segments:
+        out.append(
+            f"{prefix}no measurable lumen (below {NO_LUMEN_PX:g} px = "
+            f"{NO_LUMEN_PX * qca.mm_per_px:.2f} mm) over {b - a:.1f} mm at {a:.0f}–{b:.0f} mm "
+            "from the start: critical stenosis or total occlusion. A total occlusion is supplied "
+            "by collaterals, which the flow model does not represent: if the vessel is occluded, "
+            "the FFR shown is not valid"
+        )
+    return out
 
 
 def range_warnings(
@@ -127,6 +148,7 @@ def analyse_vessel(
         )
     if solver.r_micro_clamped:
         warnings.append("R_micro hit its lower bound during calibration")
+    warnings += lumen_warnings(qca)
     s = ffr = std = interval = None
     if surrogate is not None:
         s, ffr, std = surrogate.predict_profile_with_spread(
@@ -198,6 +220,7 @@ def analyse_tree(
             "lengths and FFR depend on it"
         )
     for name, q in zip(tq.tree.names, tq.branches, strict=True):
+        warnings += lumen_warnings(q, name)
         if q.fallback_fraction > MAX_FALLBACK_FRACTION:
             warnings.append(f"{name}: {q.fallback_fraction:.0%} of diameters used the fallback")
         if q.capped_fraction > MAX_CAPPED_FRACTION:

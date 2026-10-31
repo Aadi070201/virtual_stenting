@@ -143,3 +143,20 @@ def test_gap_bridging_needs_aligned_nearby_ends():
     offset[10:20, 10:140] = True
     offset[50:60, 160:290] = True  # ends 40 px apart vertically, 20 px horizontally: not aligned
     assert not any(d.get("bridge") for _, d in bridge_gaps(vessel_graph(offset)).nodes(data=True))
+
+
+def test_occlusion_and_gap_are_reported_to_the_user():
+    from vstent.inference.pipeline import analyse_tree, analyse_vessel
+
+    img, mask, pts = _gap_case(0.0)
+    res = analyse_vessel(mask, pts[0], pts[-1], image=img, mm_per_px=0.25)
+    assert res.qca.bridged_mm > 5.0 and res.qca.no_lumen_segments
+    a, b = res.qca.no_lumen_segments[0]
+    assert 15.0 < a < b < 40.0  # in the middle of the 55 mm path
+    assert any("segmentation missed" in w for w in res.warnings)
+    assert any("no measurable lumen" in w and "total occlusion" in w for w in res.warnings)
+    tree = analyse_tree(mask, pts[0], pts[-1], image=img, mm_per_px=0.25)
+    assert any(w.startswith("main: no measurable lumen") for w in tree.warnings)
+    img1, mask1, _ = _gap_case(1.0)
+    open_ = analyse_vessel(mask1, pts[0], pts[-1], image=img1, mm_per_px=0.25)
+    assert not open_.qca.no_lumen_segments  # an open lumen in the gap is not flagged
