@@ -42,7 +42,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - Surrogate distal-FFR MAE: test 0.0013 vs gradient-boosting baseline 0.0342; out-of-distribution 0.0039 (no target).
 - For context, the reduced-order solver computes 1,024 vessels in 18.1 ms, the ONNX surrogate in 188 ms: no speed-up is claimed.
 - INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99× → not kept.
-- ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 8/20; 19 outside the surrogate's training range.
+- ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 10/20; 19 outside the surrogate's training range.
 - Planner on 100 synthetic vessels: target reached 84 (solver) / 83 (surrogate); solver confirms 81/83 surrogate plans; same total length 80/83.
 - App update medians: synthetic 66 ms, image 113 ms.
 - Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 → 0.976 (solver) with 3.25 × 12 mm at 14.5 mm + 3.25 × 12 mm at 43.0 mm; planning 0.67 s.
@@ -64,6 +64,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P3: Tree surrogate (graph network) + ONNX (done)
 - P4: Clinical-validation readiness [needs human: partner, ethics approval] (done)
 - P4b: Validation on public data (added 2026-10-31: no hospital partner, D41) (in progress)
+- P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b) (done)
 - P5: Projection geometry and two-view 3D reconstruction (not started)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
 - P7: Cine angiography (not started)
@@ -80,9 +81,9 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [Segmentation evaluation](seg_eval.md) | `e245936699` | False | 2026-10-30T15:57:00+00:00 |
 | [Segmentation ONNX](seg_onnx.md) | `20d7f6b33c` | False | 2026-10-28T14:47:02+00:00 |
 | [QCA synthetic validation](qca_synthetic.md) | `186b932015` | False | 2026-10-30T10:26:02+00:00 |
-| [QCA gallery](qca_gallery.md) | `6b388bc15b` | False | 2026-10-28T14:58:01+00:00 |
+| [QCA gallery](qca_gallery.md) | `8856a9ef6d` | False | 2026-10-31T20:36:09+00:00 |
 | [Planner benchmark](planner_benchmark.md) | `c95b317ba6` | False | 2026-10-30T19:12:07+00:00 |
 | [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `1b7856aa129567ca8110437df049eeabe1a9fa39` (dirty: False), vstent 0.1.0, 2026-10-31T09:04:44+00:00.
+This summary: commit `0c7e83e71329530bec91840617c76735223c4063` (dirty: False), vstent 0.1.0, 2026-10-31T22:23:22+00:00.

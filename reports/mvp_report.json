@@ -190,7 +190,7 @@
     "Surrogate distal-FFR MAE: test 0.0013 vs gradient-boosting baseline 0.0342; out-of-distribution 0.0039 (no target).",
     "For context, the reduced-order solver computes 1,024 vessels in 18.1 ms, the ONNX surrogate in 188 ms: no speed-up is claimed.",
     "INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99\u00d7 \u2192 not kept.",
-    "ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 8/20; 19 outside the surrogate's training range.",
+    "ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 10/20; 19 outside the surrogate's training range.",
     "Planner on 100 synthetic vessels: target reached 84 (solver) / 83 (surrogate); solver confirms 81/83 surrogate plans; same total length 80/83.",
     "App update medians: synthetic 66 ms, image 113 ms.",
     "Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 \u2192 0.976 (solver) with 3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm; planning 0.67 s."
@@ -248,9 +248,9 @@
     {
       "report": "qca_gallery.json",
       "title": "QCA gallery",
-      "commit": "6b388bc15b3e0367f7e3b90d252065a3738e1942",
+      "commit": "8856a9ef6d021fad94285ae8e6c9350943678bcf",
       "dirty": false,
-      "created": "2026-10-28T14:58:01+00:00"
+      "created": "2026-10-31T20:36:09+00:00"
     },
     {
       "report": "planner_benchmark.json",
@@ -281,16 +281,17 @@
     "P3: Tree surrogate (graph network) + ONNX (done)",
     "P4: Clinical-validation readiness [needs human: partner, ethics approval] (done)",
     "P4b: Validation on public data (added 2026-10-31: no hospital partner, D41) (in progress)",
+    "P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b) (done)",
     "P5: Projection geometry and two-view 3D reconstruction (not started)",
     "P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)",
     "P7: Cine angiography (not started)",
     "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (not started)"
   ],
   "provenance_report": {
-    "git_commit": "1b7856aa129567ca8110437df049eeabe1a9fa39",
+    "git_commit": "0c7e83e71329530bec91840617c76735223c4063",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-31T09:04:44+00:00"
+    "created_utc": "2026-10-31T22:23:22+00:00"
   },
   "all_targets_met": true
 }
