@@ -18,6 +18,7 @@ measurement is chosen on the development half only. Units: px and %.
 """
 
 import csv
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -131,17 +132,19 @@ def stenosis_in_box(
     graph: nx.Graph,
     box: tuple[float, float, float, float],
     image: np.ndarray | None = None,
+    lumen: str = "edges",
 ) -> dict[str, Any]:
     """%DS of the vessel crossing ``box`` (see the module docstring). Lumen edges from the
     probability map ``prob``, or from the ``image`` intensity when it is given
-    (:func:`~vstent.imaging.qca.measure_diameters_intensity`). Returns
+    (:func:`~vstent.imaging.qca.measure_diameters_intensity`); ``lumen="model"``: the
+    imaging-chain fit (:func:`~vstent.imaging.qca.qca_from_centerline`). Returns
     ``{"ds", "mld_px", "ref_px", "path_px"}`` or ``{"error"}``."""
     path = path_through_box(graph, box)
     if path is None or len(path) < 5:
         return {"error": "no segmented vessel crosses the box"}
     try:
         cl = smooth_and_resample(path)
-        q = qca_from_centerline(prob, cl, image=image)
+        q = qca_from_centerline(prob, cl, image=image, lumen=lumen)
     except ValueError as exc:
         return {"error": f"QCA: {exc}"}
     x, y, w, h = box
@@ -163,6 +166,29 @@ FRAME_COLUMNS = ("track", "patient", "video", "category", "split", "frame", "sta
                  "ds", "mld_px", "ref_px", "path_px")  # fmt: skip
 
 
+# method → (lumen measured on the image?, ``lumen`` option of qca_from_centerline)
+METHOD_ARGS = {"probability": (False, "edges"), "intensity": (True, "edges"),
+               "model": (True, "model")}  # fmt: skip
+
+
+def _measure_frame(img, prob, items, split, methods) -> list[tuple[str, dict[str, Any]]]:
+    """Rows of one frame: every (lesion, box) in ``items`` × every method."""
+    graph = vessel_graph(prob >= LEVEL)
+    out = []
+    for (t, b), m in ((item, m) for item in items for m in methods):
+        use_image, lumen = METHOD_ARGS[m]
+        res = stenosis_in_box(prob, graph, (b.x, b.y, b.w, b.h), img if use_image else None,
+                              lumen)  # fmt: skip
+        out.append((m, {
+            "track": t.key, "patient": t.patient, "video": t.video, "category": t.category,
+            "split": split[t.patient], "frame": b.frame,
+            "status": "failed" if "error" in res else "ok", "error": res.get("error", ""),
+            **{c: round(res[c], 3) if c in res else "" for c in ("ds", "mld_px", "ref_px",
+                                                                 "path_px")},
+        }))  # fmt: skip
+    return out
+
+
 def measure_tracks(
     tracks: list[Track],
     segmenter,
@@ -170,30 +196,55 @@ def measure_tracks(
     split: dict[str, str],
     methods: tuple[str, ...] = ("probability",),
     progress: Callable[[int, int], None] | None = None,
+    workers: int = 1,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Per edge method (``probability``: the product's QCA; ``intensity``), one row per expert
-    box (frame) with its %DS or the reason it failed. Each frame is segmented once."""
+    """Per method (:data:`METHOD_ARGS`; ``probability``: mask edges, ``intensity``: the
+    product's QCA, ``model``: the imaging-chain fit), one row per expert box (frame) with its
+    %DS or the reason it failed. Each frame is segmented once, in this process; with
+    ``workers`` > 1 the measurements run in that many processes. Row order does not depend on
+    ``workers``."""
+    from concurrent.futures import ProcessPoolExecutor
+
+    unknown = [m for m in methods if m not in METHOD_ARGS]
+    if unknown:
+        raise ValueError(f"unknown methods {unknown}; use {list(METHOD_ARGS)}")
     by_frame: dict[Path, list[tuple[Track, LesionBox]]] = {}
     for t in tracks:
         for b in t.boxes:
             by_frame.setdefault(b.image, []).append((t, b))
-    rows: dict[str, list[dict[str, Any]]] = {m: [] for m in methods}
-    for k, (image, items) in enumerate(sorted(by_frame.items(), key=lambda kv: str(kv[0]))):
-        img = read_image_file(image).image
-        prob = segmenter.predict(img)
-        graph = vessel_graph(prob >= LEVEL)
-        for (t, b), m in ((item, m) for item in items for m in methods):
-            box = (b.x, b.y, b.w, b.h)
-            res = stenosis_in_box(prob, graph, box, img if m == "intensity" else None)
-            rows[m].append({
-                "track": t.key, "patient": t.patient, "video": t.video, "category": t.category,
-                "split": split[t.patient], "frame": b.frame,
-                "status": "failed" if "error" in res else "ok", "error": res.get("error", ""),
-                **{c: round(res[c], 3) if c in res else "" for c in ("ds", "mld_px", "ref_px",
-                                                                     "path_px")},
-            })  # fmt: skip
+    frames = sorted(by_frame.items(), key=lambda kv: str(kv[0]))
+    results: list[list[tuple[str, dict[str, Any]]] | None] = [None] * len(frames)
+    done = 0
+
+    def finished(k, out):
+        nonlocal done
+        results[k] = out
+        done += 1
         if progress is not None:
-            progress(k + 1, len(by_frame))
+            progress(done, len(frames))
+
+    if workers <= 1:
+        for k, (image, items) in enumerate(frames):
+            img = read_image_file(image).image
+            finished(k, _measure_frame(img, segmenter.predict(img), items, split, methods))
+    else:
+        for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+            os.environ.setdefault(var, "1")  # one thread per worker process (no oversubscription)
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            pending = {}
+            for k, (image, items) in enumerate(frames):
+                img = read_image_file(image).image
+                pending[pool.submit(_measure_frame, img, segmenter.predict(img), items, split,
+                                    methods)] = k  # fmt: skip
+                while len(pending) >= 2 * workers:  # bounded memory
+                    fut = next(iter(pending))
+                    finished(pending.pop(fut), fut.result())
+            for fut, k in pending.items():
+                finished(k, fut.result())
+    rows: dict[str, list[dict[str, Any]]] = {m: [] for m in methods}
+    for out in results:
+        for m, row in out or []:
+            rows[m].append(row)
     return rows
 
 
@@ -301,8 +352,9 @@ def occlusion_summary(grades: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 EDGE_METHODS = {
-    "probability": "probability-map edges (the product's QCA)",
-    "intensity": "intensity edges guided by the segmentation (candidate)",
+    "probability": "probability-map edges (the QCA before D43)",
+    "intensity": "intensity edges guided by the segmentation (the product's QCA, D43)",
+    "model": "imaging-chain model fitted to the image (candidate, P4c)",
 }
 
 
@@ -342,6 +394,7 @@ def grading_figure(grades: dict[str, list[dict[str, Any]]], path: Path, split: s
         INK_SECONDARY,
         SERIES_1,
         SERIES_2,
+        SERIES_3,
         new_figure,
         save_figure,
         style_axes,
@@ -353,7 +406,7 @@ def grading_figure(grades: dict[str, list[dict[str, Any]]], path: Path, split: s
     axes = np.atleast_1d(fig.subplots(1, len(grades), sharey=True, gridspec_kw={"wspace": 0.08}))
     fig.subplots_adjust(left=0.07, right=0.98, top=0.80, bottom=0.17)
     rng = np.random.default_rng(0)
-    colors = {"probability": SERIES_1, "intensity": SERIES_2}
+    colors = {"probability": SERIES_1, "intensity": SERIES_2, "model": SERIES_3}
     for ax, (method, gs) in zip(axes, grades.items(), strict=True):
         style_axes(ax)
         for i, c in enumerate(ORDINAL):

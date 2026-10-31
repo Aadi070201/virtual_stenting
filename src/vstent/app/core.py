@@ -21,7 +21,7 @@ from vstent import DISCLAIMER, __version__
 from vstent.config import git_info, load_config
 from vstent.data.synth import SamplingConfig, sample_vessel
 from vstent.imaging.image_io import ImageInput
-from vstent.imaging.qca import EDGE_METHOD_LABELS, QCAResult
+from vstent.imaging.qca import LUMEN_METHOD_LABELS, QCAResult
 from vstent.imaging.segment import THRESHOLD
 from vstent.inference.models import SEG_MODELS, SURROGATE_MODELS, latest_model_dir
 from vstent.inference.onnx_runtime import (
@@ -561,7 +561,7 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
     if state.qca is not None:
         report["assumptions"]["calibration_mm_per_px"] = state.qca.mm_per_px
         report["assumptions"]["calibration_assumed"] = state.qca.calibration_assumed
-        report["assumptions"]["lumen_edges"] = EDGE_METHOD_LABELS[state.qca.edge_method]
+        report["assumptions"]["lumen_edges"] = LUMEN_METHOD_LABELS[state.qca.lumen_method]
     if state.plans is not None:
         pr = state.plans
         report["plans"] = {

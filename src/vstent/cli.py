@@ -798,7 +798,7 @@ def analyse(
         f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
         f"({'assumed' if q.calibration_assumed else 'given'}); MLD {q.mld_mm:.2f} mm; "
         f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen edges: "
-        f"{q.edge_method}"
+        f"{q.lumen_method}"
     )
     typer.echo(
         f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "

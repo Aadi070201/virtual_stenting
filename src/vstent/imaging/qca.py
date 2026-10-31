@@ -30,6 +30,7 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinat
 from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
+from vstent.imaging.lumen_model import LumenFit, fit_lumen
 from vstent.physics.geometry import Lesion, VesselProfile
 from vstent.units import m_to_mm, mm_to_m
 
@@ -49,10 +50,12 @@ BRANCH_SLACK_PX = 1.0
 REF_LOWER = 0.85
 REF_UPPER = 1.15
 REF_MAX_ITER = 5
-EDGE_METHOD_LABELS = {  # for reports
-    "intensity": "image intensity, guided by the automatic segmentation (D43)",
+LUMEN_METHOD_LABELS = {  # for reports
+    "intensity": "image intensity edges, guided by the automatic segmentation (D43)",
     "probability": "outline of the vessel mask",
+    "model": "imaging-chain model fitted to the image (blur, edge enhancement; P4c)",
 }
+LUMEN_OPTIONS = ("edges", "model")
 
 
 @dataclass(frozen=True, eq=False)
@@ -223,7 +226,8 @@ class QCAResult:
     calibration_assumed: bool
     profile: VesselProfile
     capped: np.ndarray
-    edge_method: str = "probability"  # or "intensity" (edges from the angiogram, D43)
+    lumen_method: str = "probability"  # "intensity" (D43), "model" (P4c): LUMEN_METHOD_LABELS
+    lumen_fit: LumenFit | None = None  # the imaging-chain fit, for lumen_method "model"
 
     @property
     def s_mm(self) -> np.ndarray:
@@ -291,6 +295,57 @@ class QCAResult:
         return float(self.diameters.fallback.mean())
 
 
+GAP_SMOOTH_PX = 1.5  # image smoothing for re-centring a bridged gap
+
+
+def recentre_gaps(image: np.ndarray, centerline: Centerline, guide: DiameterProfile) -> Centerline:
+    """Bridged gaps (``centerline.bridged``) are straight lines between the vessel ends; move each
+    of their points along its normal to the darkest point of the smoothed image within half the
+    median vessel diameter (median-filtered along the gap), so that the lumen is measured from
+    its centre. Other points and the arc length are kept. Units: px."""
+    gap = centerline.bridged_mask
+    if not gap.any() or gap.all():
+        return centerline
+    img = np.asarray(image, dtype=np.float32)
+    img = gaussian_filter(img / 255.0 if img.max() > 1.0 else img, GAP_SMOOTH_PX)
+    half = 0.5 * float(np.median(guide.diameter_px[~gap]))
+    t = np.arange(-half, half + EDGE_STEP_PX / 2, EDGE_STEP_PX)
+    pts, nrm = centerline.points[gap], centerline.normals[gap]
+    q = pts[:, None, :] + t[None, :, None] * nrm[:, None, :]
+    vals = map_coordinates(img, [q[..., 0].ravel(), q[..., 1].ravel()], order=1, mode="nearest")
+    offset = t[np.argmin(vals.reshape(q.shape[:2]), axis=1)]
+    offset = median_filter(offset, size=EDGE_MEDIAN_POINTS, mode="nearest")
+    points = centerline.points.copy()
+    points[gap] = pts + offset[:, None] * nrm
+    return Centerline(points=points, s=centerline.s, bridged=centerline.bridged)
+
+
+def _gap_guide(centerline: Centerline, guide: DiameterProfile) -> DiameterProfile:
+    """The guide for the intensity edges, with the median measured diameter on bridged gaps:
+    there the mask has no vessel, and its tapering ends would limit the edge search."""
+    gap = centerline.bridged_mask
+    if not gap.any() or gap.all():
+        return guide
+    d = np.where(gap, float(np.median(guide.diameter_px[~gap])), guide.diameter_px)
+    return DiameterProfile(d, guide.left_px, guide.right_px, guide.fallback | gap, guide.branch)
+
+
+def _no_lumen_in_gaps(centerline: Centerline, diameters: DiameterProfile) -> DiameterProfile:
+    """Points on a bridged gap of the mask (``centerline.bridged``) whose lumen was not found
+    (``fallback``: no edge in the image, or the mask has none) get ``MIN_DIAMETER_PX``, never a
+    diameter interpolated from the healthy vessel around the gap (P4c)."""
+    gap = centerline.bridged_mask & diameters.fallback
+    if not gap.any():
+        return diameters
+    return DiameterProfile(
+        diameter_px=np.where(gap, MIN_DIAMETER_PX, diameters.diameter_px),
+        left_px=diameters.left_px,
+        right_px=diameters.right_px,
+        fallback=diameters.fallback,
+        branch=diameters.branch & ~gap,
+    )
+
+
 def robust_reference(s: np.ndarray, d: np.ndarray) -> np.ndarray:
     """Healthy reference diameter along the vessel (same units as ``d``).
 
@@ -328,7 +383,8 @@ def trim_ends(
     keep = (s >= trim_px) & (s <= s[-1] - end_px)
     if keep.sum() < MIN_POINTS_AFTER_TRIM:
         return centerline, diameters
-    cl = Centerline(points=centerline.points[keep], s=s[keep] - s[keep][0])
+    bridged = None if centerline.bridged is None else centerline.bridged[keep]
+    cl = Centerline(points=centerline.points[keep], s=s[keep] - s[keep][0], bridged=bridged)
     d = DiameterProfile(
         diameter_px=diameters.diameter_px[keep],
         left_px=diameters.left_px[keep],
@@ -348,27 +404,57 @@ def qca_from_centerline(
     trim_diameters: float = END_TRIM_DIAMETERS,
     trim_start_diameters: float | None = None,
     image: np.ndarray | None = None,
+    lumen: str = "edges",
 ) -> QCAResult:
     """QCA along a given centreline. ``mm_per_px=None`` uses the assumed default 0.30 mm/px.
     With ``image`` (the greyscale angiogram) the lumen edges come from its intensity
     (:func:`measure_diameters_intensity`, guided by the probability-map edges).
+    ``lumen="model"`` (needs ``image``) replaces the edge diameters by the imaging-chain fit
+    (:func:`~vstent.imaging.lumen_model.fit_lumen`), started from the intensity edges; where
+    the fit cannot run (too few points), the edges are kept.
 
     ``trim_diameters`` × the median diameter is removed at both ends: where the centreline
     runs into the end of the mask (a vessel tip, an ostium, a cut-off branch) the measured
     width falls off for geometric reasons that are not lumen narrowing. ``trim_start_diameters``
     overrides the start (0 for a side branch that already starts at its parent's wall).
     """
+    if lumen not in LUMEN_OPTIONS:
+        raise ValueError(f"lumen must be one of {LUMEN_OPTIONS}, not {lumen!r}")
+    if lumen == "model" and image is None:
+        raise ValueError("the model-based lumen needs the image")
     assumed = mm_per_px is None
     scale = DEFAULT_MM_PER_PX if assumed else float(mm_per_px)
     diameters = measure_diameters(prob, centerline, level=level)
     if image is not None:
-        diameters = measure_diameters_intensity(image, centerline, diameters)
+        if centerline.bridged_mask.any():
+            centerline = recentre_gaps(image, centerline, diameters)
+            diameters = measure_diameters(prob, centerline, level=level)
+        diameters = measure_diameters_intensity(
+            image, centerline, _gap_guide(centerline, diameters)
+        )
+    diameters = _no_lumen_in_gaps(centerline, diameters)
     start = trim_diameters if trim_start_diameters is None else trim_start_diameters
     if trim_diameters > 0 or start > 0:
         median = float(np.median(diameters.diameter_px))
         centerline, diameters = trim_ends(
             centerline, diameters, start * median, trim_diameters * median
         )
+    method = "probability" if image is None else "intensity"
+    fit = None
+    if lumen == "model":
+        edge_ref = robust_reference(centerline.s, diameters.diameter_px)
+        offset = (diameters.right_px + diameters.left_px) / 2.0
+        fit = fit_lumen(image, centerline, diameters.diameter_px, offset, edge_ref)
+        if fit is not None:
+            half = fit.diameter_px / 2.0
+            diameters = DiameterProfile(
+                diameter_px=np.maximum(fit.diameter_px, MIN_DIAMETER_PX),
+                left_px=fit.offset_px - half,
+                right_px=fit.offset_px + half,
+                fallback=diameters.fallback,
+                branch=diameters.branch,
+            )
+            method = "model"
     d = diameters.diameter_px
     d_ref = robust_reference(centerline.s, d)
     capped = d > REF_UPPER * d_ref
@@ -378,8 +464,7 @@ def qca_from_centerline(
         r=mm_to_m(d_used * scale) / 2.0,
         r_ref=mm_to_m(d_ref * scale) / 2.0,
     )
-    method = "probability" if image is None else "intensity"
-    return QCAResult(centerline, diameters, scale, assumed, profile, capped, method)
+    return QCAResult(centerline, diameters, scale, assumed, profile, capped, method, fit)
 
 
 def run_qca(

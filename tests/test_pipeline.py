@@ -127,12 +127,12 @@ def test_automatic_segmentation_uses_intensity_edges():
             return smoothed
 
     auto = analyse_image(img8, pts[0], pts[-1], segmenter=Smoothing(), params=PARAMS)
-    assert auto.qca.edge_method == "intensity"
+    assert auto.qca.lumen_method == "intensity"
     assert auto.qca.max_percent_stenosis == pytest.approx(50.0, abs=8.0)
     mask = analyse_vessel(smoothed, pts[0], pts[-1], params=PARAMS)
-    assert mask.qca.edge_method == "probability" and mask.qca.max_percent_stenosis < 10
+    assert mask.qca.lumen_method == "probability" and mask.qca.max_percent_stenosis < 10
     tree = analyse_tree(smoothed, pts[0], pts[-1], params=PARAMS, image=img8)
-    assert tree.qca.branches[0].edge_method == "intensity"
+    assert tree.qca.branches[0].lumen_method == "intensity"
     assert tree.qca.branches[0].max_percent_stenosis == pytest.approx(50.0, abs=8.0)
 
 

@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 
 from vstent import DISCLAIMER, __version__
 from vstent.config import git_info
-from vstent.imaging.qca import EDGE_METHOD_LABELS
+from vstent.imaging.qca import LUMEN_METHOD_LABELS
 from vstent.imaging.qca_tree import TreeQCA
 from vstent.imaging.segment import THRESHOLD
 from vstent.inference.models import latest_model_dir
@@ -152,7 +152,7 @@ def tree_report_json(
             "image": image_name,
             "mm_per_px": tq.mm_per_px,
             "pixel_size_assumed": tq.calibration_assumed,
-            "lumen_edges": EDGE_METHOD_LABELS[tq.branches[0].edge_method],
+            "lumen_edges": LUMEN_METHOD_LABELS[tq.branches[0].lumen_method],
         },  # fmt: skip
         "assumptions": {
             "model": TREE_NOTE,

@@ -102,7 +102,7 @@ def render_tubes(
 
 def render_projection(
     shape: tuple[int, int],
-    tubes: Sequence[tuple[np.ndarray, np.ndarray]],
+    tubes: Sequence[tuple[np.ndarray, ...]],
     *,
     mm_per_px: float,
     mu_per_mm: float,
@@ -115,10 +115,13 @@ def render_projection(
     seed: int = 0,
 ) -> np.ndarray:
     """X-ray-like projection of contrast-filled tubes, each ``(points (n, 2), radius (n,))`` in
-    px, as an angiogram: dark vessels on ``background``.
+    px, as an angiogram: dark vessels on ``background``. An optional third element
+    ``depth_radius (n,)`` makes the lumen elliptical: ``radius`` is its half-width in the image
+    and ``depth_radius`` its half-depth along the ray (an eccentric lesion seen from one side).
 
     A ray's transmission is exp(−μ · chord), with the chord (mm) through a cylinder of the local
-    radius r at distance d from the centreline: 2·sqrt(r² − d²). Where tubes overlap the longest
+    radius r at distance d from the centreline: 2·sqrt(r² − d²) (× depth_radius / r for an
+    elliptical lumen). Where tubes overlap the longest
     chord counts, so a side branch starting inside its parent adds nothing. Transmission is
     averaged over ``supersample``² sub-pixels (thin lumens fade as on a real detector), blurred
     by ``blur_sigma`` px and multiplied by the background. Edge enhancement as on clinical
@@ -131,7 +134,10 @@ def render_projection(
     rows = (np.arange(h)[:, None] + offs).ravel()
     cols = (np.arange(w)[:, None] + offs).ravel()
     chord = np.zeros((rows.size, cols.size))
-    for points, radius in tubes:
+    for tube in tubes:
+        points, radius = tube[0], np.asarray(tube[1], dtype=float)
+        depth = radius if len(tube) < 3 else np.asarray(tube[2], dtype=float)
+        aspect = np.divide(depth, radius, out=np.zeros_like(radius), where=radius > 0)
         reach = float(np.max(radius)) + 1.0
         lo, hi = points.min(axis=0) - reach, points.max(axis=0) + reach
         r0, r1 = np.searchsorted(rows, [lo[0], hi[0]])
@@ -143,7 +149,8 @@ def render_projection(
         d, idx = cKDTree(points).query(query, distance_upper_bound=reach)
         hit = np.isfinite(d)
         c = np.zeros(d.size)
-        c[hit] = 2.0 * np.sqrt(np.maximum(radius[idx[hit]] ** 2 - d[hit] ** 2, 0.0))
+        c[hit] = 2.0 * aspect[idx[hit]] * np.sqrt(np.maximum(radius[idx[hit]] ** 2 - d[hit] ** 2,
+                                                             0.0))  # fmt: skip
         block = chord[r0:r1, c0:c1]
         np.maximum(block, c.reshape(block.shape), out=block)
     trans = np.exp(-mu_per_mm * mm_per_px * chord)

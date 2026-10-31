@@ -1,8 +1,14 @@
 """Vessel centreline between two user points on a binary vessel mask.
 
 Steps: clean the mask → skeletonise → 8-connected pixel graph → prune spurs shorter than
-``min_spur_px`` → snap the start / end points to the nearest skeleton pixels → shortest path
-(networkx, Euclidean edge weights) → Savitzky–Golay smoothing → uniform arc-length resampling.
+``min_spur_px`` → bridge gaps between aligned vessel ends (:func:`bridge_gaps`) → snap the
+start / end points to the nearest skeleton pixels → shortest path (networkx, Euclidean edge
+weights) → Savitzky–Golay smoothing → uniform arc-length resampling.
+
+Gaps: a segmentation often breaks a vessel exactly at its tightest narrowing or at a total
+occlusion, where the lumen is faint or absent. Two vessel ends that face each other across a
+short gap are joined by a straight bridge; the centreline marks bridged points (``bridged``),
+and QCA measures them from the image, never from the mask (P4c).
 A point farther from its skeleton pixel than the vessel's half-width there plus
 ``SNAP_TOLERANCE_PX`` is refused: it is not on the segmented vessel, and snapping it would
 silently measure a different (usually shorter) path.
@@ -26,6 +32,16 @@ SMOOTH_WINDOW_PX = 15
 SMOOTH_POLYORDER = 3
 STEP_PX = 1.0
 SNAP_TOLERANCE_PX = 5.0  # beyond the vessel wall
+# Gap bridging: two skeleton ends of different components at most BRIDGE_MAX_GAP_PX apart, each
+# pointing at the other within BRIDGE_MAX_ANGLE_DEG. An end's direction is taken from the
+# skeleton BRIDGE_DIRECTION_PX back to BRIDGE_END_SKIP_PX back (a skeleton hooks towards a corner
+# in its last pixels). Bridge edges cost BRIDGE_PENALTY × their length, so a real vessel path is
+# preferred.
+BRIDGE_MAX_GAP_PX = 40.0
+BRIDGE_MAX_ANGLE_DEG = 45.0
+BRIDGE_DIRECTION_PX = 15
+BRIDGE_END_SKIP_PX = 4
+BRIDGE_PENALTY = 2.0
 
 # Forward half of the 8-neighbourhood (each undirected edge is generated once).
 _OFFSETS = ((0, 1), (1, -1), (1, 0), (1, 1))
@@ -40,10 +56,18 @@ class Centerline:
     Attributes:
         points: (n, 2) positions (row, col) in pixels.
         s: (n,) arc length from the start point (px), uniformly spaced.
+        bridged: (n,) True where the path crosses a bridged gap in the mask (``None``: no
+            information, e.g. a path not traced on a mask).
     """
 
     points: np.ndarray
     s: np.ndarray
+    bridged: np.ndarray | None = None
+
+    @property
+    def bridged_mask(self) -> np.ndarray:
+        """(n,) ``bridged``, all False when unknown."""
+        return np.zeros(len(self.s), bool) if self.bridged is None else self.bridged
 
     @property
     def length(self) -> float:
@@ -155,8 +179,10 @@ def smooth_and_resample(
     window_px: int = SMOOTH_WINDOW_PX,
     polyorder: int = SMOOTH_POLYORDER,
     step_px: float = STEP_PX,
+    bridged: np.ndarray | None = None,
 ) -> Centerline:
-    """Savitzky–Golay smoothing of a pixel path (n, 2), then resampling every ``step_px``."""
+    """Savitzky–Golay smoothing of a pixel path (n, 2), then resampling every ``step_px``.
+    ``bridged``: (n,) flags of the path pixels, carried to the resampled points (nearest)."""
     pts = np.asarray(path, dtype=float)
     window = min(window_px, pts.shape[0] - (1 - pts.shape[0] % 2))  # odd, ≤ n
     if window > polyorder:
@@ -168,7 +194,12 @@ def smooth_and_resample(
     n = max(2, int(round(s[-1] / step_px)) + 1)
     s_new = np.linspace(0.0, s[-1], n)
     resampled = np.stack([np.interp(s_new, s, pts[:, k]) for k in range(2)], axis=1)
-    return Centerline(points=resampled, s=s_new)
+    flags = None
+    if bridged is not None:
+        flags = np.asarray(bridged, dtype=float)[
+            np.clip(np.searchsorted(s, s_new), 0, len(s) - 1)
+        ].astype(bool)
+    return Centerline(points=resampled, s=s_new, bridged=flags)
 
 
 def trace_centerline(
@@ -185,7 +216,7 @@ def trace_centerline(
     Raises ``ValueError`` if a point is not on the vessel mask (:func:`snap_point`) or the two
     points do not lie on a connected part of the skeleton.
     """
-    graph = vessel_graph(mask, min_spur_px)
+    graph = vessel_graph(mask, min_spur_px, bridge=True)
     half_width = distance_transform_edt(clean_mask(mask))
     a = snap_point(graph, start, half_width, "start")
     b = snap_point(graph, end, half_width, "end")
@@ -193,12 +224,92 @@ def trace_centerline(
         path = nx.shortest_path(graph, a, b, weight="weight")
     except nx.NetworkXNoPath as exc:
         raise ValueError(f"no vessel path connects {tuple(start)} and {tuple(end)}") from exc
-    return smooth_and_resample(np.asarray(path), smooth_window_px, step_px=step_px)
+    return smooth_and_resample(np.asarray(path), smooth_window_px, step_px=step_px,
+                               bridged=bridge_flags(graph, path))  # fmt: skip
 
 
-def vessel_graph(mask: np.ndarray, min_spur_px: float = MIN_SPUR_PX) -> nx.Graph:
-    """Pruned skeleton graph of a vessel mask (the graph ``trace_centerline`` searches)."""
-    return prune_spurs(skeleton_graph(skeletonize(clean_mask(mask))), min_spur_px)
+def vessel_graph(
+    mask: np.ndarray, min_spur_px: float = MIN_SPUR_PX, *, bridge: bool = False
+) -> nx.Graph:
+    """Pruned skeleton graph of a vessel mask (the graph ``trace_centerline`` searches), with
+    gaps bridged if ``bridge`` (:func:`bridge_gaps`)."""
+    graph = prune_spurs(skeleton_graph(skeletonize(clean_mask(mask))), min_spur_px)
+    return bridge_gaps(graph) if bridge else graph
+
+
+def bridge_flags(graph: nx.Graph, path) -> np.ndarray:
+    """(n,) True for the path's pixels that lie on a bridge (:func:`bridge_gaps`)."""
+    return np.array([graph.nodes[n].get("bridge", False) for n in path], dtype=bool)
+
+
+def _end_walk(graph: nx.Graph, end: Pixel, n_back: int = BRIDGE_DIRECTION_PX) -> list[Pixel]:
+    """Skeleton pixels from ``end`` back along its branch, at most ``n_back`` steps (stops at a
+    junction)."""
+    walk, prev, node = [end], None, end
+    while len(walk) <= n_back:
+        nxt = [m for m in graph.neighbors(node) if m != prev]
+        if len(nxt) != 1:
+            break
+        prev, node = node, nxt[0]
+        walk.append(node)
+    return walk
+
+
+def bridge_gaps(
+    graph: nx.Graph,
+    *,
+    max_gap_px: float = BRIDGE_MAX_GAP_PX,
+    max_angle_deg: float = BRIDGE_MAX_ANGLE_DEG,
+) -> nx.Graph:
+    """Copy of ``graph`` in which gaps between aligned vessel ends are bridged.
+
+    Each skeleton end (degree 1) gets an anchor ``BRIDGE_END_SKIP_PX`` steps back along its
+    branch (a skeleton hooks towards a corner of the mask's end in its last pixels) and a
+    direction from ``BRIDGE_DIRECTION_PX`` steps back to the anchor. Candidates: ends of
+    different connected components at most ``max_gap_px`` apart, each pointing at the other
+    within ``max_angle_deg``. Closest pairs first, each end bridged at most once. The two hooks
+    are removed and the anchors joined by a straight pixel line whose pixels get
+    ``bridge=True`` and whose edges cost ``BRIDGE_PENALTY`` × length. A bridge that would run
+    through another skeleton pixel is not made.
+    """
+    g = graph.copy()
+    component = {n: k for k, comp in enumerate(nx.connected_components(g)) for n in comp}
+    walks = {e: _end_walk(g, e) for e, d in g.degree() if d == 1}
+    walks = {e: w for e, w in walks.items() if len(w) - 1 >= BRIDGE_END_SKIP_PX + 3}
+    if len(walks) < 2:
+        return g
+    ends = list(walks)
+    anchors = np.asarray([walks[e][BRIDGE_END_SKIP_PX] for e in ends], dtype=float)
+    dirs = anchors - np.asarray([walks[e][-1] for e in ends], dtype=float)
+    dirs /= np.linalg.norm(dirs, axis=1, keepdims=True)
+    cos_max = float(np.cos(np.deg2rad(max_angle_deg)))
+    candidates = []
+    tips = np.asarray(ends, dtype=float)
+    for i, j in cKDTree(tips).query_pairs(max_gap_px):
+        if component[ends[i]] == component[ends[j]]:
+            continue
+        v = anchors[j] - anchors[i]
+        dist = float(np.linalg.norm(v))
+        if dist > 0 and dirs[i] @ v / dist >= cos_max and dirs[j] @ -v / dist >= cos_max:
+            candidates.append((dist, i, j))
+    used: set[int] = set()
+    for dist, i, j in sorted(candidates):
+        if i in used or j in used:
+            continue
+        hooks = set(walks[ends[i]][:BRIDGE_END_SKIP_PX]) | set(walks[ends[j]][:BRIDGE_END_SKIP_PX])
+        n = max(2, int(np.ceil(dist)) + 1)
+        raw = np.round(np.linspace(anchors[i], anchors[j], n)).astype(int)
+        keep = np.r_[True, (np.diff(raw, axis=0) != 0).any(axis=1)]
+        line = [tuple(map(int, p)) for p in raw[keep]]
+        inner = line[1:-1]
+        if any(p in g and p not in hooks for p in inner):
+            continue
+        g.remove_nodes_from(hooks)
+        g.add_nodes_from(inner, bridge=True)
+        for p, q in zip(line[:-1], line[1:], strict=True):
+            g.add_edge(p, q, weight=BRIDGE_PENALTY * float(np.hypot(p[0] - q[0], p[1] - q[1])))
+        used |= {i, j}
+    return g
 
 
 def longest_path_endpoints(
