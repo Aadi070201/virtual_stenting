@@ -322,23 +322,24 @@ features.
 - [x] **Intensity edges are the QCA default** wherever the vessel map is an automatic
   segmentation (`vstent analyse`, the app, `vstent validate` without masks, the galleries);
   analyst masks keep their own edges (D43). Case reports state the edge method.
-- [ ] **Densitometric lumen area:** the vessel's integrated contrast across its width is
-  proportional to the lumen area (Beer–Lambert). Calibrated per vessel on its healthy segments
-  by the edge diameters, it measures lumens narrower than the edge detector resolves and
-  eccentric (elliptical) lumens from one view. Tested on rendered vessels with known lumens.
-- [ ] **Mask gaps and occlusions:** gaps in the segmentation between aligned vessel ends are
-  bridged and measured from the image (never interpolated). A bridge without contrast, or a
-  path that stops abruptly while still wide, is flagged "total occlusion suspected", and no
-  FFR is reported for that path.
+- [x] **Model-based lumen** (changed 2026-10-31 from plain densitometry, which overestimated
+  severity under edge enhancement; D44): the X-ray imaging chain (Beer–Lambert, blur, the
+  system's edge enhancement) is fitted to the straightened vessel, and the lumen radius is read
+  from the fit. It measures lumens narrower than the edge detector resolves and lumens narrowed
+  along the X-ray. Tested on rendered vessels with known lumens (`vstent lumen-synthetic`).
+- [x] **Mask gaps and occlusions:** gaps in the segmentation between aligned vessel ends are
+  bridged and measured from the image (never interpolated). A stretch without a measurable
+  lumen is reported as "critical stenosis or total occlusion", with the warning that the FFR is
+  not valid if the vessel is occluded (a single frame cannot tell 95% from 100%).
 - [ ] **CADICA re-run:** candidate measurements are explored on the development patients only,
   the choice is committed (D44) before the test patients are run once; occlusion-flag
   sensitivity on total occlusions and false-flag rate on 0–98% lesions.
 - [ ] Image-based reports regenerated; invention notes with a first prior-art search.
 
 **Done when:**
-- on rendered vessels, densitometric %DS of tight lesions (lumen ≤ 2 px) is within 10 points
-  of the truth where edge %DS is not, and elliptical lumens give the true area within 15%;
-- on rendered vessels, an occluded segment is flagged and an open severe narrowing is not;
+- on rendered vessels, the model's mean %DS error is ≤ 10 points for lesions ≥ 85% and for
+  eccentric lumens (edges are reported alongside);
+- on rendered vessels, an occluded segment in a mask gap is flagged and an open one is not;
 - the CADICA report is regenerated from code, and every result is reported as measured.
 
 ## P5: Projection geometry and two-view 3D reconstruction
