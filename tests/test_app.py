@@ -1,3 +1,4 @@
+import gc
 import io
 import json
 import re
@@ -156,6 +157,17 @@ def _server_ms(at: AppTest) -> float:
     return float(re.search(r"(\d+) ms", text).group(1))
 
 
+def _slide_ms(at: AppTest, key: str, value: float) -> float:
+    """Move a slider; return the app's server time for that update (ms). Garbage is collected
+    first: with the whole test suite loaded (torch etc., which the app never imports) a full
+    collection takes ~250 ms and can land in any timed update. `vstent app-latency` measures
+    the real app process, collections included."""
+    gc.collect()
+    at.slider(key=key).set_value(value).run()
+    assert not at.exception
+    return _server_ms(at)
+
+
 def test_app_synthetic_mode_end_to_end(app_env):
     at = AppTest.from_file(str(APP_SCRIPT), default_timeout=120).run()
     assert not at.exception
@@ -164,9 +176,7 @@ def test_app_synthetic_mode_end_to_end(app_env):
     at.toggle(key="place").set_value(True).run()
     assert not at.exception and "after stent" in at.metric[3].delta
     for start in (10.0, 20.0, 25.0):
-        at.slider(key="stent_start").set_value(start).run()
-        assert not at.exception
-        assert _server_ms(at) < SLIDER_BUDGET_MS
+        assert _slide_ms(at, "stent_start", start) < SLIDER_BUDGET_MS
     at.button(key="suggest").click().run()
     assert not at.exception and len(at.dataframe) == 1
     at.radio(key="show").set_value("Plan 1").run()
@@ -189,6 +199,9 @@ def test_app_image_mode_with_example(app_env):
     assert not at.exception
     assert any(m.label == "Distal FFR (solver)" for m in at.metric)
     assert any("Pixel size not calibrated" in w.value for w in at.warning)
+    at.selectbox(key="lumen").set_value("Imaging-chain model").run()
+    assert not at.exception
+    assert any(m.label == "Distal FFR (solver)" for m in at.metric)
     at.toggle(key="place").set_value(True).run()
     assert not at.exception
     at.button(key="reset").click().run()
@@ -331,8 +344,7 @@ def test_app_shows_intervals_and_grey_zone(app_env_ensemble):
     at.toggle(key="place").set_value(True).run()
     assert "Post-PCI distal FFR, 90% intervals" in " ".join(m.value for m in at.markdown)
     for start in (10.0, 20.0):
-        at.slider(key="stent_start").set_value(start).run()
-        assert not at.exception and _server_ms(at) < SLIDER_BUDGET_MS
+        assert _slide_ms(at, "stent_start", start) < SLIDER_BUDGET_MS
     at.button(key="suggest").click().run()
     assert not at.exception
     columns = list(at.dataframe[0].value.columns)

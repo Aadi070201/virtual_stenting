@@ -29,7 +29,12 @@ from vstent.app import core, tree_view  # noqa: E402
 from vstent.imaging.centerline import longest_path_endpoints  # noqa: E402
 from vstent.imaging.image_io import ImageInput, read_image  # noqa: E402
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
-from vstent.inference.pipeline import analyse_tree, analyse_vessel, range_warnings  # noqa: E402
+from vstent.inference.pipeline import (  # noqa: E402
+    AUTO_LUMEN,
+    analyse_tree,
+    analyse_vessel,
+    range_warnings,
+)
 from vstent.inference.tree_runtime import (  # noqa: E402
     TreeSurrogateRunner,
     floor_warnings,
@@ -43,6 +48,8 @@ from vstent.uncertainty.inputs import SOURCE_LABELS, Measurement  # noqa: E402
 from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa, pa_to_mmhg  # noqa: E402
 
 DISPLAY_WIDTH = 512
+LUMEN_LABELS = {"edges": "Intensity edges", "model": "Imaging-chain model"}
+LUMEN_CHOICES = {LUMEN_LABELS[k]: k for k in sorted(LUMEN_LABELS, key=lambda k: k != AUTO_LUMEN)}
 
 st.set_page_config(page_title="vstent research prototype", layout="wide")
 st.error(core.BANNER, icon="⚠️")
@@ -64,21 +71,23 @@ def segment(sha: str, _image: np.ndarray) -> np.ndarray:
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
-def analyse(sha: str, start, end, mm_per_px, pa, pv, _prob, _image):
+def analyse(sha: str, start, end, mm_per_px, pa, pv, lumen, _prob, _image):
     # the user's pressures, so the solver, R_micro and the range warnings all use them
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
     params = get_settings()[0].model_copy(update=pressures)
     return analyse_vessel(
         _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px,
-        image=_image,
+        image=_image, lumen=lumen,
     )  # fmt: skip
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the vessel tree…")
-def analyse_tree_cached(sha: str, start, end, mm_per_px, pa, pv, _prob, _image):
+def analyse_tree_cached(sha: str, start, end, mm_per_px, pa, pv, lumen, _prob, _image):
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
     params = get_settings()[0].model_copy(update=pressures)
-    return analyse_tree(_prob, start, end, params=params, mm_per_px=mm_per_px, image=_image)
+    return analyse_tree(
+        _prob, start, end, params=params, mm_per_px=mm_per_px, image=_image, lumen=lumen
+    )
 
 
 @st.cache_resource
@@ -184,6 +193,12 @@ else:
             "Side branches (tree model)", key="tree_mode",
             help="Measure the side branches leaving the path and compute FFR on the whole tree.",
         )  # fmt: skip
+        lumen = LUMEN_CHOICES[st.selectbox(
+            "Lumen measurement", list(LUMEN_CHOICES), key="lumen",
+            help="Intensity edges: where the image brightness changes fastest. Imaging-chain "
+            "model: blur and the X-ray system's edge enhancement fitted to the image (resolves "
+            "tight lesions; about 1 s per vessel).",
+        )]  # fmt: skip
     if image_input is None:
         st.info("Upload an angiogram (or pick an ARCADE example) to start.")
         st.stop()
@@ -224,14 +239,14 @@ if mode == "Angiogram image":
     if start and end and tree_mode:
         try:
             tree_res = analyse_tree_cached(
-                image_input.sha256, start, end, mm_per_px, pa, pv, prob, image_input.image
+                image_input.sha256, start, end, mm_per_px, pa, pv, lumen, prob, image_input.image
             )
         except ValueError as exc:
             st.error(f"Could not trace the vessel tree: {exc}")
     elif start and end:
         try:
             result = analyse(
-                image_input.sha256, start, end, mm_per_px, pa, pv, prob, image_input.image
+                image_input.sha256, start, end, mm_per_px, pa, pv, lumen, prob, image_input.image
             )
         except ValueError as exc:
             st.error(f"Could not trace the vessel: {exc}")
