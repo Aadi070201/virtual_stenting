@@ -135,11 +135,23 @@ generated reports in `reports/`.
     feeds the reduced-order FFR model and the virtual-stent planner.
 - **Why it may matter (synthetic evidence, best case: the renderer shares the model's
   physics):**
-  - lesions ≥ 85% DS read within 2.3 points vs 28.5 for edges;
-  - the FFR error on those falls from 0.50 to 0.04;
+  - lesions ≥ 85% DS read within 2.3 points vs 30.7 for edges
+    (`reports/lumen_synthetic.md`, after D45);
+  - the FFR error on those falls from 0.53 to 0.04;
   - a lumen narrowed only along the X-ray (invisible in width) is seen through its area:
-    eccentric lumens are read within 5.5 points vs 19.1.
-  - Whether this holds on real angiograms is measured on CADICA (D44).
+    eccentric lumens are read within 5.5 points vs 19.7.
+- **On real angiograms (CADICA, expert visual grades; `reports/stenosis_grading.md`,
+  commit `2c93bbd`) the advantage is not shown:**
+  - development patients: weighted kappa 0.25 vs 0.19 for the product's intensity edges, but
+    AUC for ≥ 70% lesions 0.73 vs 0.82, so it did not replace them (D44, rule fixed before the
+    results);
+  - test patients: kappa 0.23 vs 0.14, AUC 0.74 vs 0.72 (nothing chosen on these);
+  - median %DS of lesions graded 90–98%: 53 (edges 42) on the test patients, still far below
+    the grade.
+
+  Something in real images (scatter, background structure, overlapping vessels, the vendor's
+  processing) is missing from the model. **For a filing, the evidence is synthetic only**;
+  a pitch must not claim a real-angiogram advantage until a fresh test set shows one.
 - **Possible claim elements (for the attorney):**
   - joint, along-path estimation of the imaging system's blur and edge-enhancement parameters
     from the angiogram being measured;
@@ -192,6 +204,10 @@ generated reports in `reports/`.
   Cohen, minimal paths, 2001), connectivity-preserving segmentation, deep-learning detection of
   chronic total occlusions. **Likely known as separate elements**; any value lies in the system
   combination.
+- **On real angiograms it did not trigger:** none of CADICA's 11 total occlusions was read as
+  critical (≥ 90% DS) by any method; 10 were measured as open. The segmentation draws a vessel
+  through the occlusion, so there is no gap to bridge. It works on rendered gaps only, so
+  occlusion detection needs a different signal (e.g. contrast washout over the cine frames).
 
 ---
 
@@ -199,6 +215,8 @@ generated reports in `reports/`.
 
 The following are recorded only so they are not mistaken for claims:
 - shared pre-processing for training, ONNX and the app;
+- minimum-cost edge tracking along the vessel and side branches taken from the segmentation's
+  outline (D45): the classical QCA edge criterion (Reiber and others, 1980s), corrected here;
 - chunked, parallel ONNX inference;
 - resumable checkpoints;
 - report provenance;

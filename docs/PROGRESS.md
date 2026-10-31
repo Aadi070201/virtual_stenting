@@ -689,3 +689,76 @@ requested from its authors.
 - **Physics.** Quantify the abrupt-exit effect with CFD (P6). A literature developing-flow
   correction was not applied because its published form could not be verified.
 - **Real FFR ground truth.** ICADD access requested by the human.
+
+## 2026-10-31 — P4c: Lesion-accurate QCA (done; severity on real angiograms still compressed)
+
+P4b showed that the automatic QCA compresses stenosis severity on real angiograms and reads
+total occlusions as open. P4c tried to fix both. Methods were chosen on CADICA's development
+patients only, with each rule committed before its results (D44, D45).
+
+**What was done**
+- **Intensity edges are the default** for automatic segmentations (D43); analyst masks keep
+  their own edges. Reports state the edge method.
+- **Imaging-chain lumen model** (`imaging/lumen_model.py`, `--lumen model`, the app's "Lumen
+  measurement" selector): Beer–Lambert transmission, blur and the X-ray system's edge
+  enhancement fitted to the straightened vessel; analytic sparse Jacobian, ~1 s per vessel.
+  `vstent lumen-synthetic` tests it on rendered vessels with known lumens.
+- **Mask gaps and occlusions:** skeleton ends facing each other across a gap are bridged; the
+  bridge is measured from the image only; a stretch without a measurable lumen is reported as
+  "critical stenosis or total occlusion" with an FFR warning.
+- **Intensity-edge corrections (D45)**, found when the ARCADE gallery was regenerated: side
+  branches only where the mask's outline shows one (the 2 × near-edge rule turned off-centre
+  centrelines, one-sided lesions and gradients inside the lumen into deep narrowings);
+  minimum-cost edge tracking along each wall; bridged points never count as branches.
+- `vstent stenosis-grading --edges … --workers N` (parallel, same results as serial).
+- Slider-latency tests collect garbage before each timed update: with the whole test suite
+  loaded, one full collection took ~250 ms (the app itself ~60 ms).
+
+**Results**
+- **Rendered vessels** (`reports/lumen_synthetic.md`, both criteria PASS):
+  - lesions ≥ 85% DS: model error 2.3 points, edges 30.7; FFR error 0.035 vs 0.53;
+  - eccentric lumens: 5.5 vs 19.7 points;
+  - healthy vessels: edges read 6.5 points of false narrowing (11.6 before D45).
+- **ARCADE gallery, 20 whole paths** (`reports/qca_gallery.md`): with the uncorrected
+  intensity edges, 8 paths read ≥ 85% DS and 13 had a distal FFR ≤ 0.2; after D45, 0 and 5
+  (probability edges: 0 and 2). Two of the 5 are as low with probability edges (long paths into
+  thin branches). Tree gallery: implausibly low main-path FFR in 5 single paths / 4 trees
+  (3 / 3 with probability edges).
+- **CADICA expert grades** (`reports/stenosis_grading.md`, commit `2c93bbd`; 21 test patients,
+  214 lesions; development half in brackets):
+
+  | Method | Weighted kappa | AUC ≥ 70% | ±1 grade | Median %DS, 90–98% lesions |
+  |---|---:|---:|---:|---:|
+  | probability edges | 0.12 (0.12) | 0.69 (0.73) | 54% | 32 |
+  | intensity edges, corrected (default) | 0.14 (0.19) | 0.72 (0.82) | 62% | 42 |
+  | imaging-chain model | 0.23 (0.25) | 0.74 (0.73) | 70% | 53 |
+
+  - D44: the model lost to the uncorrected intensity edges on development patients (kappa 0.25
+    vs 0.36, AUC 0.73 vs 0.81), so it stayed an option. That test run is kept in history
+    (commit `8d78d72`).
+  - D45: the corrections kept intensity edges ahead of probability edges on development
+    patients, so they stay the default. **But kappa fell from 0.36 to 0.19 (development) and
+    from 0.22 to 0.14 (test):** much of the earlier agreement came from the bug, which
+    exaggerated one-sided narrowings.
+  - The model is the most consistent across halves and the best on the test half, but it
+    missed D44's AUC criterion on development patients. Nothing was chosen on the test half,
+    which has now been used three times; a further method choice needs a fresh test set.
+- **Occlusions:** none of the 11 total occlusions was read as critical by any method (10
+  measured as open). The segmentation draws a vessel through them, so there is no gap to
+  bridge. False alarms on lesions graded 0–50%: 0 / 223 (intensity), 1 / 223 (model).
+- **Synthetic validation, automatic-segmenter arm:** 42 of 102 vessels analysable (39 before),
+  AUC 0.92 (0.91).
+
+**Open issues and next steps**
+- **Severity on real angiograms is still compressed:** median 42% DS for lesions graded
+  90–98%. Candidate causes: the segmentation at narrowings (P8 sim-to-real labels), and
+  physics missing from the imaging-chain model (scatter / veiling glare, background
+  structure, overlapping vessels). Part of the gap may lie in the visual grades themselves.
+- **Occlusion detection needs another signal**, e.g. contrast arrival and washout over the
+  cine frames.
+- **A fresh, independent test set** is needed before choosing between intensity edges and
+  the model (ICADD, or a partner's data).
+- **Patents:** for the model fit (invention note 5), the evidence is synthetic only.
+  Gap bridging (note 6) did not work on real occlusions.
+- `reports/app_latency.md` was not re-run: the stent controls' code path is unchanged, and it
+  needs an idle machine.

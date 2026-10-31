@@ -331,10 +331,10 @@ features.
   bridged and measured from the image (never interpolated). A stretch without a measurable
   lumen is reported as "critical stenosis or total occlusion", with the warning that the FFR is
   not valid if the vessel is occluded (a single frame cannot tell 95% from 100%).
-- [ ] **CADICA re-run:** candidate measurements are explored on the development patients only,
-  the choice is committed (D44) before the test patients are run once; occlusion-flag
-  sensitivity on total occlusions and false-flag rate on 0–98% lesions.
-- [ ] Image-based reports regenerated; invention notes with a first prior-art search.
+- [x] **CADICA re-run:** candidate measurements are explored on the development patients only,
+  the choice is committed (D44, D45) before the test patients are run; occlusion-flag
+  sensitivity on total occlusions and false-flag rate on lesions graded 0–50%.
+- [x] Image-based reports regenerated; invention notes with a first prior-art search.
 
 **Done when:**
 - on rendered vessels, the model's mean %DS error is ≤ 10 points for lesions ≥ 85% and for
