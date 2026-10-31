@@ -1077,6 +1077,24 @@ def qca_synthetic(
 
 
 @app.command()
+def lumen_synthetic(
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write lumen_synthetic.md.")
+    ] = Path("reports"),
+) -> None:
+    """Lumen accuracy on rendered vessels with known lumens: intensity edges vs the
+    imaging-chain model, and their FFR (P4c)."""
+    from vstent.imaging.lumen_report import write_lumen_report
+
+    report = write_lumen_report(report_dir)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'lumen_synthetic.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def mvp_report(
     report_dir: Annotated[
         Path, typer.Option("--report-dir", help="Folder with the generated reports.")

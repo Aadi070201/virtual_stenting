@@ -1,6 +1,8 @@
 """P4c: model-based lumen (imaging-chain fit) and gap bridging, on rendered vessels with
 known lumens."""
 
+import json
+
 import numpy as np
 import pytest
 
@@ -160,3 +162,26 @@ def test_occlusion_and_gap_are_reported_to_the_user():
     img1, mask1, _ = _gap_case(1.0)
     open_ = analyse_vessel(mask1, pts[0], pts[-1], image=img1, mm_per_px=0.25)
     assert not open_.qca.no_lumen_segments  # an open lumen in the gap is not flagged
+
+
+def test_lumen_report(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from vstent.cli import app
+    from vstent.imaging import lumen_report
+
+    monkeypatch.setattr(lumen_report, "REFERENCES_PX", (12.0,))
+    monkeypatch.setattr(lumen_report, "N_SEEDS", 1)
+    monkeypatch.setattr(lumen_report, "LESIONS", ((0.9, "circular"), (0.5, "along the ray"),
+                                                  (0.0, "none")))  # fmt: skip
+    result = CliRunner().invoke(app, ["lumen-synthetic", "--report-dir", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    rep = json.loads((tmp_path / "lumen_synthetic.json").read_text(encoding="utf-8"))
+    tight = next(r for r in rep["rows"] if r["kind"] == "circular")
+    assert abs(tight["model"]["ds"] - tight["true_ds"]) < abs(
+        tight["edges"]["ds"] - tight["true_ds"]
+    )
+    assert tight["true_ffr"] < 0.8 and abs(tight["model"]["ffr"] - tight["true_ffr"]) < 0.1
+    md = (tmp_path / "lumen_synthetic.md").read_text(encoding="utf-8")
+    assert "Research use only" in md and "best case" in md
+    assert (tmp_path / "figures" / "lumen_synthetic.png").exists()
