@@ -57,7 +57,10 @@ class Track:
 
     @property
     def key(self) -> str:
-        return f"{self.patient}_{self.video}_{self.category}_{self.boxes[0].frame}"
+        """Unique per lesion: two lesions of one grade can start on the same keyframe, so the
+        first box's position is part of the key."""
+        b = self.boxes[0]
+        return f"{self.patient}_{self.video}_{self.category}_f{b.frame}_x{b.x:g}_y{b.y:g}"
 
 
 def lesion_tracks(boxes: list[LesionBox]) -> list[Track]:

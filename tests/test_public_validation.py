@@ -156,6 +156,8 @@ def test_lesion_tracks_and_split():
     tracks = sg.lesion_tracks([box(1, 10), box(2, 14), box(1, 200), box(2, 205),
                                box(1, 100, "p20_50")])  # fmt: skip
     assert sorted(len(t.boxes) for t in tracks) == [1, 2, 2]
+    # two lesions of one grade starting on the same keyframe keep separate keys
+    assert len({t.key for t in tracks}) == len(tracks) == 3
     split = sg.patient_split([f"p{k}" for k in range(1, 11)])
     assert sorted(split.values()).count("dev") == 5 and split == sg.patient_split(list(split))
 
