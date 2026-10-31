@@ -118,6 +118,11 @@ def transit_caption(tr, frame_time_ms: float | None, mm_per_px: float | None) ->
     :class:`~vstent.imaging.cine.ContrastTransit` or ``None``)."""
     if tr is None:
         return "Contrast transit: no arrival measured along the path."
+    if not tr.plausible:
+        return (
+            "Contrast transit: not measurable along this path (arrival does not advance "
+            "steadily: overlapping vessels or the catheter)."
+        )
     lo, hi = tr.interval
     text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"
     if frame_time_ms and mm_per_px:

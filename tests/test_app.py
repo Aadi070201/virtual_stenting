@@ -425,3 +425,6 @@ def test_cine_and_transit_captions():
     with_units = core.transit_caption(tr, 100.0, 0.3)  # 20 px × 0.3 mm / 0.1 s
     assert "60 mm/s" in with_units and "not used for FFR" in with_units
     assert "no arrival" in core.transit_caption(None, None, None)
+    backwards = ContrastTransit(np.arange(3.0), np.arange(3.0), 0.0, -6.0, (-8.0, -5.0), 30)
+    assert not backwards.plausible and tr.plausible
+    assert "not measurable" in core.transit_caption(backwards, 100.0, 0.3)

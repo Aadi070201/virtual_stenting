@@ -190,6 +190,6 @@ def test_cine_report_end_to_end(tmp_path, dark_seg_dir):
                     arteries=load_artery_groups(tmp_path / "raw"), model="m", git=git,
                     n_boot=50)  # fmt: skip
     md = (tmp_path / "rep" / "cine.md").read_text(encoding="utf-8")
-    assert "clinicians" in md and "Measured in 2 of 2 runs" in md and "left coronary" in md
+    assert "clinicians" in md and "Plausible in 2 of 2 runs" in md and "left coronary" in md
     assert (tmp_path / "rep" / "figures" / "cine_frames.png").exists()
     assert (tmp_path / "rep" / "cine.json").exists()

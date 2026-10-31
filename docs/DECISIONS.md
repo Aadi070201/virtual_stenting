@@ -634,3 +634,31 @@ physics-consistent lesion insertion into real angiograms (planned in P4d) is dro
   done yet; it needs catheter detection.
 - Generative lesion editing (diffusion, optimal transport; published 2025–2026): looks
   realistic, but its lumen is not known exactly, so it cannot serve as measurement truth.
+
+### D47 — Cine runs: analysis frame and opacified window, chosen on development runs (2026-11-01)
+**Decision:** the analysis frame of a cine run is the peak of its opacification curve (the
+segmented vessel area per frame, median-filtered over 3 frames), and the opacified window is
+the run of frames around the peak above **70%** of it. Contrast transit along the analysed
+vessel is reported only when its front speed and the lower end of the speed's 95% interval
+are positive; it is shown, not used for FFR (runs are recorded at rest).
+
+**Reason (CADICA development patients only, 205 runs; written before the test runs were
+scored):**
+- the peak frame is one of the clinicians' selected frames in 84% of runs and lies within
+  their span in 90%, whatever the window fraction;
+- window overlap with the selected frames (median IoU): 0.60, 0.62, 0.56, 0.33 for fractions
+  0.6, 0.7, 0.8, 0.9; 0.7 is the best;
+- contrast arrival precedes the first selected frame in 95% of runs;
+- transit on 12 development runs: 2 gave negative speeds and some had intervals spanning 0
+  (overlapping vessels, the catheter in the path), so a speed is shown only for a front that
+  advances.
+
+**Pre-registered test:** `vstent cine-frames` scores the test patients once with these
+settings. Primary measure: the share of runs whose analysis frame is one of the selected
+frames; secondary: within their span, window IoU, contrast arrival, transit feasibility.
+Results are reported whatever they show.
+
+**Alternatives:**
+- An image-only opacification proxy (black top-hat of each frame): it barely moved over the
+  runs (background structure dominates), so the segmentation is used.
+- End-diastolic frame selection from the ECG: CADICA has no ECG; it stays in P7.

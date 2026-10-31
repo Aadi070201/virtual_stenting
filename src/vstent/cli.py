@@ -571,8 +571,9 @@ def _echo_transit(run, qca, mm_per_px: float | None) -> None:
     from vstent.imaging.cine import contrast_transit
 
     tr = contrast_transit(run.frames, qca.centerline)
-    if tr is None:
-        typer.echo("Contrast transit: no arrival measured along the path.")
+    if tr is None or not tr.plausible:
+        reason = "no arrival measured" if tr is None else "arrival does not advance steadily"
+        typer.echo(f"Contrast transit: not measurable along this path ({reason}).")
         return
     lo, hi = tr.interval
     text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"

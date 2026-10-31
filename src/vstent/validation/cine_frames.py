@@ -109,7 +109,8 @@ def transit_for_run(
     if tr is None:
         return {**out, "error": "no contrast arrival measured along the path"}
     return {**out, "path_px": float(cl.s[-1]), "px_per_frame": tr.px_per_frame,
-            "low": tr.interval[0], "high": tr.interval[1], "n_points": tr.n_points}  # fmt: skip
+            "low": tr.interval[0], "high": tr.interval[1], "n_points": tr.n_points,
+            "plausible": tr.plausible}  # fmt: skip
 
 
 def _pct(x: dict) -> str:
@@ -173,7 +174,8 @@ def write_report(
         "lesion runs": summarise([r for r in test if r["lesion"]], n_boot),
         "runs without lesion": summarise([r for r in test if not r["lesion"]], n_boot),
     }
-    ok = [t for t in transit if "px_per_frame" in t]
+    ok = [t for t in transit if t.get("plausible")]
+    n_implausible = sum("px_per_frame" in t and not t["plausible"] for t in transit)
     speeds = np.array([t["px_per_frame"] for t in ok])
     rel = np.array([100 * (t["high"] - t["low"]) / t["px_per_frame"] for t in ok
                     if t["px_per_frame"] > 0])  # fmt: skip
@@ -240,14 +242,15 @@ def write_report(
         "Along the longest vessel path of each run's analysis frame: the frame in which the "
         "contrast arrives at each point (the darkest value within 6 px, for cardiac motion), "
         "and the front speed, the Theil–Sen slope of the distance from the inflow on the "
-        "arrival frame. CADICA gives neither the frame rate nor the pixel size, so speeds are "
-        "in px per frame; without a flow reference this shows only how often the measurement "
-        "is possible and how precise it is.",
+        "arrival frame. A speed counts only if it and the lower end of its 95% interval are "
+        "positive (a front that advances); otherwise the product reports the transit as not "
+        "measurable. CADICA gives no pixel size, so speeds are in px per frame; without a flow "
+        "reference this shows only how often the measurement is possible and how precise it "
+        "is.",
         "",
-        f"- Measured in {len(ok)} of {len(transit)} runs "
-        f"({100 * len(ok) / max(len(transit), 1):.0f}%). Not measured: "
-        + ("; ".join(errors) or "none")
-        + ".",
+        f"- Plausible in {len(ok)} of {len(transit)} runs "
+        f"({100 * len(ok) / max(len(transit), 1):.0f}%); front not advancing steadily: "
+        f"{n_implausible}; not measured: " + ("; ".join(errors) or "none") + ".",
         f"- Front speed, px per frame, median (IQR): all runs {_quartiles(speeds)}; left "
         f"coronary {_quartiles(side['left'])}; right coronary {_quartiles(side['right'])}.",
         f"- Width of the speed's 95% interval relative to the speed, %, median (IQR): "

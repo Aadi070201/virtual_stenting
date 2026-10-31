@@ -22,7 +22,7 @@ from vstent.imaging.centerline import Centerline
 
 LEVEL = 0.5  # vessel probability threshold, as in QCA
 SMOOTH_FRAMES = 3  # median filter of the area curve (single-frame segmentation dropouts)
-OPACIFIED_FRACTION = 0.8  # window: frames above this share of the peak area (D47)
+OPACIFIED_FRACTION = 0.7  # window: frames above this share of the peak area (D47)
 ARRIVAL_FRACTION = 0.5  # contrast arrival: first frame above this share of the peak area
 
 
@@ -98,6 +98,13 @@ class ContrastTransit:
     px_per_frame: float
     interval: tuple[float, float]
     n_points: int
+
+    @property
+    def plausible(self) -> bool:
+        """A forward-moving front: the speed and the lower end of its 95% interval are
+        positive. Otherwise arrival along the path is not monotonic (overlapping vessels, the
+        catheter, a wrong inflow) and no speed should be reported."""
+        return self.px_per_frame > 0 and self.interval[0] > 0
 
     def velocity_mm_s(self, mm_per_px: float, frame_time_ms: float) -> float:
         """Front speed in mm/s (needs the pixel size and the frame time)."""
