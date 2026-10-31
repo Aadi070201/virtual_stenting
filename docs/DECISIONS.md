@@ -518,3 +518,29 @@ Committed before any development result was seen.
   - within one grade 71% vs 54%.
 - **Next:** make intensity edges the product's QCA default where the segmentation is
   automatic; analyst-corrected masks keep mask edges.
+
+### D44 — Lumen method: imaging-chain model vs intensity edges, rule fixed before the results (2026-10-31)
+**Decision:** the model-based lumen (`imaging/lumen_model.py`: blur and the X-ray system's
+edge enhancement fitted to the straightened vessel) replaces intensity edges (D43) as the
+product's lumen measurement for automatic segmentations only if, on the CADICA **development**
+patients, both its weighted kappa and its AUC for ≥ 70% lesions are higher. The test patients
+are then run once, and both methods' test results are reported whatever they show. Otherwise
+the model stays an option and intensity edges stay the default. Written while the development
+run was in progress, before any of its results were seen. During prototyping, six development
+lesions were inspected visually; no test lesion was looked at.
+
+**Reason:**
+- **Edges have a resolution floor.** On rendered vessels of 8–16 px with ARCADE-like blur and
+  edge enhancement, intensity edges never read more than ~35–75% DS, however tight the lesion
+  (true 85–95%), the same compression seen on CADICA. The model fit read 50–95% lesions
+  within ~2 points and recovered the blur and edge-enhancement settings.
+- **But the renderer and the model share their physics**, so the synthetic result is a best
+  case; real angiograms (scatter, background texture, processing the model lacks) decide.
+- **The test half was used once before** (P4b, D43). This is a second look at the same 21
+  patients, for one pre-specified comparison; there is no fresh public test set.
+
+**Alternatives:**
+- Simple densitometry (integrated contrast across the vessel, calibrated on healthy
+  segments): tried first; on rendered vessels it overestimated severity by 10–25 points
+  because edge enhancement also acts along the vessel, so it was dropped.
+- Choosing on all patients, or after looking at the test half: no unbiased estimate left.
