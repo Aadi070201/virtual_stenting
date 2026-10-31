@@ -594,3 +594,15 @@ methods (the third look at the test patients; nothing is chosen on it).
 - A median filter on the final diameter, or a minimum lesion length: suppresses short real
   lesions as well, and hides the cause.
 - Keeping the 2 × near-edge rule with a stricter ratio: still wrong for eccentric lumens.
+
+**Outcome (2026-10-31, development patients, recorded before the test half was run):** the
+corrected intensity edges stay the product's default: weighted kappa 0.19 vs 0.12 for
+probability edges, AUC for ≥ 70% lesions 0.82 vs 0.73 (251 of 256 lesions measured by each).
+**Against the uncorrected intensity edges, kappa fell from 0.36 to 0.19 while the AUC held
+(0.81 → 0.82).** Median %DS by expert grade (0–20, 20–50, 50–70, 70–90, 90–98%): 19, 27, 34,
+42, 42, vs 23, 31, 45, 51, 55 before. Part of the earlier agreement with the visual grades
+came from the 2 × near-edge rule, which exaggerated exactly the one-sided narrowings lesions
+have. The corrected geometry is the right input for the FFR model (left + right is the
+projected lumen width), but it reads severity lower than visual estimates, so the severity
+compression on real angiograms is larger than P4b's kappa suggested. Reproduced by the
+development table of `reports/stenosis_grading.md` (run next).
