@@ -1,8 +1,8 @@
 {
   "disclaimer": "Research use only \u2014 not for clinical decisions.",
-  "created_utc": "2026-10-30T23:04:42+00:00",
+  "created_utc": "2026-10-31T20:48:01+00:00",
   "vstent_version": "0.1.0",
-  "git_commit": "fc64006c04461915f970233dc5af16648515d788",
+  "git_commit": "07a1c2be83cdd1f3cfdc8296b09b8c45a19c2625",
   "git_dirty": false,
   "manifest": {
     "path": "data/validation_synthetic/cases.csv",
@@ -54,5 +54,5 @@
     }
   },
   "predictions_file": "predictions_masks.csv",
-  "predictions_sha256": "8befd8cd5c9db479587ba0e27d51c163b489b4fac7724c4fda2c142bf7d4eed9"
+  "predictions_sha256": "6debab15ae6e46e0994a9b91203fb62c539832402ca04589216991b086883ec8"
 }
