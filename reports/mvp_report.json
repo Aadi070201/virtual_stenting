@@ -280,16 +280,17 @@
     "P2: Vessel trees with side branches (done)",
     "P3: Tree surrogate (graph network) + ONNX (done)",
     "P4: Clinical-validation readiness [needs human: partner, ethics approval] (done)",
+    "P4b: Validation on public data (added 2026-10-31: no hospital partner, D41) (in progress)",
     "P5: Projection geometry and two-view 3D reconstruction (not started)",
     "P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)",
     "P7: Cine angiography (not started)",
     "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (not started)"
   ],
   "provenance_report": {
-    "git_commit": "bcffc45c6e1d749eff60b28493f3de2a32ff879c",
+    "git_commit": "1b7856aa129567ca8110437df049eeabe1a9fa39",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-30T23:06:27+00:00"
+    "created_utc": "2026-10-31T09:04:44+00:00"
   },
   "all_targets_met": true
 }

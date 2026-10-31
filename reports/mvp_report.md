@@ -63,6 +63,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P2: Vessel trees with side branches (done)
 - P3: Tree surrogate (graph network) + ONNX (done)
 - P4: Clinical-validation readiness [needs human: partner, ethics approval] (done)
+- P4b: Validation on public data (added 2026-10-31: no hospital partner, D41) (in progress)
 - P5: Projection geometry and two-view 3D reconstruction (not started)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
 - P7: Cine angiography (not started)
@@ -84,4 +85,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `bcffc45c6e1d749eff60b28493f3de2a32ff879c` (dirty: False), vstent 0.1.0, 2026-10-30T23:06:27+00:00.
+This summary: commit `1b7856aa129567ca8110437df049eeabe1a9fa39` (dirty: False), vstent 0.1.0, 2026-10-31T09:04:44+00:00.
