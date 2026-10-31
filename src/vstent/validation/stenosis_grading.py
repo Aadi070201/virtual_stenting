@@ -165,24 +165,24 @@ def measure_tracks(
     segmenter,
     *,
     split: dict[str, str],
-    edges: str = "probability",
+    methods: tuple[str, ...] = ("probability",),
     progress: Callable[[int, int], None] | None = None,
-) -> list[dict[str, Any]]:
-    """One row per expert box (frame) with its %DS or the reason it failed. Each frame is
-    segmented once. ``edges``: ``probability`` (the product's QCA) or ``intensity``."""
+) -> dict[str, list[dict[str, Any]]]:
+    """Per edge method (``probability``: the product's QCA; ``intensity``), one row per expert
+    box (frame) with its %DS or the reason it failed. Each frame is segmented once."""
     by_frame: dict[Path, list[tuple[Track, LesionBox]]] = {}
     for t in tracks:
         for b in t.boxes:
             by_frame.setdefault(b.image, []).append((t, b))
-    rows = []
+    rows: dict[str, list[dict[str, Any]]] = {m: [] for m in methods}
     for k, (image, items) in enumerate(sorted(by_frame.items(), key=lambda kv: str(kv[0]))):
         img = read_image_file(image).image
         prob = segmenter.predict(img)
         graph = vessel_graph(prob >= LEVEL)
-        for t, b in items:
+        for (t, b), m in ((item, m) for item in items for m in methods):
             box = (b.x, b.y, b.w, b.h)
-            res = stenosis_in_box(prob, graph, box, img if edges == "intensity" else None)
-            rows.append({
+            res = stenosis_in_box(prob, graph, box, img if m == "intensity" else None)
+            rows[m].append({
                 "track": t.key, "patient": t.patient, "video": t.video, "category": t.category,
                 "split": split[t.patient], "frame": b.frame,
                 "status": "failed" if "error" in res else "ok", "error": res.get("error", ""),

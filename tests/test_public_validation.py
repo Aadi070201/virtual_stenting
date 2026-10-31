@@ -216,7 +216,8 @@ def test_grading_end_to_end(tmp_path, dark_seg_dir):
     tracks = sg.lesion_tracks(cadica.load_lesion_boxes(raw))
     split = sg.patient_split([t.patient for t in tracks])
     seg = SegmentationRunner.from_dir(dark_seg_dir)
-    rows = {m: sg.measure_tracks(tracks, seg, split=split, edges=m) for m in sg.EDGE_METHODS}
+    rows = sg.measure_tracks(tracks, seg, split=split, methods=tuple(sg.EDGE_METHODS))
+    assert list(rows) == list(sg.EDGE_METHODS)
     assert all(r["status"] == "ok" for rs in rows.values() for r in rs)
     for rs in rows.values():
         assert all(abs(float(r["ds"]) - 60.0) < 15.0 for r in rs)

@@ -1375,14 +1375,12 @@ def stenosis_grading(
         seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
     )
     typer.echo(f"{len(tracks)} expert lesions in {len({t.patient for t in tracks})} patients")
-    rows = {}
-    for m in methods:
 
-        def progress(k, n, m=m):
-            if k % 500 == 0 or k == n:
-                typer.echo(f"  {m}: {k} / {n} frames")
+    def progress(k, n):
+        if k % 500 == 0 or k == n:
+            typer.echo(f"  {k} / {n} frames")
 
-        rows[m] = sg.measure_tracks(tracks, seg, split=split, edges=m, progress=progress)
+    rows = sg.measure_tracks(tracks, seg, split=split, methods=tuple(methods), progress=progress)
     stats = sg.write_grading_report(rows, Path("reports/stenosis_grading.md"), source=source,
                                     n_boot=n_boot, git=git)  # fmt: skip
     for m, s in stats.items():
