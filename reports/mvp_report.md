@@ -69,7 +69,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P5: Projection geometry and two-view 3D reconstruction (not started)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
 - P7: Cine angiography (not started)
-- P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (not started)
+- P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)
 
 ## Sources and provenance
 
@@ -87,4 +87,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `08f96c51adbbcf1677f8d77366b1138d08b63b75` (dirty: False), vstent 0.1.0, 2026-11-01T00:01:06+00:00.
+This summary: commit `c346970c115694f39ff144d1376373dcf77c690f` (dirty: False), vstent 0.1.0, 2026-11-01T07:09:03+00:00.

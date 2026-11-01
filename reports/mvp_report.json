@@ -286,13 +286,13 @@
     "P5: Projection geometry and two-view 3D reconstruction (not started)",
     "P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)",
     "P7: Cine angiography (not started)",
-    "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (not started)"
+    "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)"
   ],
   "provenance_report": {
-    "git_commit": "08f96c51adbbcf1677f8d77366b1138d08b63b75",
+    "git_commit": "c346970c115694f39ff144d1376373dcf77c690f",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-11-01T00:01:06+00:00"
+    "created_utc": "2026-11-01T07:09:03+00:00"
   },
   "all_targets_met": true
 }
