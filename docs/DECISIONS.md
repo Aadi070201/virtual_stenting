@@ -751,3 +751,53 @@ All are drafts for a qualified reviewer.
 The angle convention and the real C-arm's distances must be confirmed on real two-view DICOM
 (a phantom or de-identified runs): the renderer shares the projection model, so the
 synthetic test cannot reveal a convention error.
+
+### D50 — Scaled lumen as the default; two-view knots 8 mm and a reliability check (2026-11-01)
+**Decision:**
+- **Scaled lumen** (`lumen="scaled"`, now `AUTO_LUMEN`). Intensity edges give the lumen's
+  shape, so %DS and the CADICA grading are unchanged. The absolute size is the median of
+  fit / edge diameters, with the imaging chain fitted jointly on up to 4 healthy windows of
+  30 points. A factor outside 1.0–1.4, or a failed fit, keeps the edges' size with a
+  warning. Side branches take the main vessel's factor.
+- **Chosen by the rule pre-registered in docs/PLAN.md** (commit 7437238, before any held-out
+  or real-frame measurement). The first variant fitted the whole vessel; it met the rule but
+  took 6–16 s per vessel on ARCADE:
+  - held-out renders (seeds 920000+): median −0.7%, 100% within ±15%;
+  - ARCADE frames 1–20: factor accepted on 85%, median 1.133 (development range 1.100–1.198).
+
+  The windowed fit (0.6–1.3 s) replaced it and was judged again on fresh data:
+  - development renders (910000+): median +0.1%, 96% within ±5%; central 80% of the factor
+    1.120–1.209;
+  - held-out renders (930000+): median 0.0%, 97% within ±15%; 5 of 79 views without a
+    healthy window kept the edges' size;
+  - ARCADE frames 21–40: factor accepted on 18 of 20, median 1.148.
+
+  Intensity edges alone read the same renders 13–14% narrow.
+- **Two views:** the spline knot spacing is now 8 mm, chosen on 199 development cases. Cases
+  with length error > 5% dropped from 17 to 8 (4 mm: median 0.74%; 8 mm: 0.78%; bias −0.6%;
+  12 mm cuts corners). A **reliability check** refits the curve with twice the knot spacing
+  and warns when the length changes by more than 2.5% or the median reprojection residual
+  exceeds 0.30 px. On development data it flagged 7 of the 8 large errors, with 13.6% of all
+  cases flagged. It was chosen for sensitivity over the 10% alarm target: a missed wrong
+  length is a hazard, while an alarm only asks the user to check the views.
+
+**Reason:**
+- Absolute size sets the stent diameter and part of the viscous loss. With DICOM geometry
+  there is no catheter to cancel the edge bias, as catheter calibration in classical QCA
+  does.
+- Keeping the edges' shape keeps D44's real-data choice for severity.
+- The chain model explains the blur and edge enhancement that cause the bias, and fitting it
+  only where the lumen is healthy keeps it fast and away from lesions.
+
+**Alternatives:**
+- The full model lumen as the default: slow on real vessels, and its severity was not chosen
+  on CADICA (D44).
+- An additive correction from the fitted blur: it changes %DS towards milder lesions, the
+  direction of the known compression (H-01).
+- Catheter calibration: needs a catheter in view and the user's input; a possible addition.
+- Frame-level chain calibration: not physically consistent on real frames (D46).
+
+**Risk:** the absolute size on real angiograms is unverified. If real edges were not biased,
+the scaled lumen would oversize by about 15%. The factor range, the warning and hazard H-09
+cover this until there is real ground truth (a phantom, or IVUS / OCT reference diameters).
+

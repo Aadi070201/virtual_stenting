@@ -396,8 +396,18 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     flagged = sum(c["flagged"] for c in large)
     sens = flagged / len(large) if large else None
     rate = summary["warned"] / len(ok) if ok else None
-    summary["check"] = {"n_large": len(large), "flagged_large": flagged, "sensitivity": sens,
-                        "flag_rate": rate}  # fmt: skip
+    unreliable = [r for r in ok if not r["two_view"]["reliable"]]
+    warned = np.array([bool(r["two_view"]["warnings"]) for r in ok], dtype=bool)
+    abs_err = np.abs(np.array(_get(ok, "two_view", "length_err"), dtype=float)) * 100
+
+    def median_of(mask):
+        return float(np.median(abs_err[mask])) if mask.any() else None
+
+    summary["check"] = {
+        "n_large": len(large), "flagged_large": flagged, "sensitivity": sens, "flag_rate": rate,
+        "n_unreliable": len(unreliable), "flagged_median_abs_err": median_of(warned),
+        "unflagged_median_abs_err": median_of(~warned),
+    }  # fmt: skip
     summary["targets"] = [
         {
             "metric": "3D centreline error, median over cases of the per-case mean (mm)",
@@ -559,7 +569,7 @@ def _fmt(stats: dict[str, Any], digits: int = 1, field: str = "median") -> str:
 
 
 def _pct(x: float | None) -> str:
-    return "–" if x is None else f"{x:.0%}"
+    return "–" if x is None else f"{x:.1%}"
 
 
 def write_two_view_report(
@@ -666,6 +676,13 @@ def write_two_view_report(
             for c in sorted(s["large"], key=lambda c: -abs(c["length_err"]))
         ),
         *([""] if s["large"] else []),
+        f"Warnings on {s['warned']} of {len(ok)} cases, {s['check']['n_unreliable']} of them from "
+        "the reliability check (D50: the length changes by more than 2.5% with smoother fitting, "
+        "or the 3D path departs from a traced path by more than 0.30 px), the others from views "
+        "close together or a vessel running mostly along the epipolar lines. Median abs. length "
+        f"error {_fmt({'median': s['check']['flagged_median_abs_err']})}% in flagged cases, "
+        f"{_fmt({'median': s['check']['unflagged_median_abs_err']})}% in the others.",
+        "",
         "## FFR error from the geometry alone",
         "",
         "The true lumen seen through each method's geometry with a perfect measurement in "
