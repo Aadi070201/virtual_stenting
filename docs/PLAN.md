@@ -382,6 +382,41 @@ real expert ground truth. Parts of P7 move here.
 - on synthetic two-view pairs, the 3D centreline error is ≤ 1 mm (median) and the length error is ≤ 5%;
 - the length error of single-view QCA vs two-view is reported.
 
+## P5b: Absolute lumen size and two-view reliability (added 2026-11-01)
+
+P5 found two weaknesses on synthetic data:
+- intensity edges read healthy vessels about 14% narrow (P4c's %DS reports cancel a uniform
+  scale, so they could not show this). This biases stent sizing and FFR;
+- 5 of 100 two-view reconstructions were off by more than 5% in length, and the check
+  flagged none of them.
+
+Method choices are made on fresh development seeds (910000+). They are reported on held-out
+seeds (920000+ for the lumen, 7001+ for the two-view report) and, for the lumen, on real
+ARCADE frames without ground truth.
+
+- [ ] **Scaled lumen:** intensity edges keep the lumen's shape (%DS unchanged by
+  construction, so the CADICA grading is unaffected); the imaging-chain fit on the healthy
+  part sets the absolute size (one factor per vessel; fallback to edges with a warning when
+  the fit fails or the factor is implausible). Used in single view, trees, two views and the
+  planner's sizing.
+- [ ] **Default rule (pre-registered).** `AUTO_LUMEN` becomes the scaled lumen only if both
+  hold, otherwise edges stay the default and the scaled lumen is an option:
+  1. on held-out renders, its median healthy-diameter error is within ±5% and 90% of views
+     are within ±15%;
+  2. on the 20 ARCADE gallery frames, the size factor is accepted on ≥ 80% of paths, and its
+     median lies within the central 80% of the factors on development renders (real frames
+     behave like the renders).
+- [ ] **Two-view reliability check** that catches poorly conditioned reconstructions,
+  designed on development seeds.
+- [ ] Reports regenerated: the two-view report on fresh seeds with the check's sensitivity
+  and false-alarm rate; the lumen report with absolute size; the image-based reports whose
+  default changes.
+
+**Done when:**
+- the default rule has been applied and its outcome recorded;
+- on fresh two-view seeds, the check flags ≥ 80% of reconstructions with |length error|
+  > 5% while flagging ≤ 10% of all cases; or the real result is reported.
+
 ## P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute]
 
 - [ ] Coronary trees from ImageCAS and / or ASOCA (registration and licence acceptance by the human).
