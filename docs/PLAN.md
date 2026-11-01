@@ -466,3 +466,20 @@ lies on its epipolar guide, and the checks pass.
 **Done when:**
 - rendered angiograms improve segmentation on the ARCADE test split, or the real result is reported;
 - the regulatory drafts exist and are marked for review by a qualified person.
+
+**Sim-to-real plan (pre-registered 2026-11-01, before any rendered data or training):**
+- [ ] `vstent synth-angio`: rendered angiograms from the P5 3D trees (one or two trees from one
+  ostium, random clinical views, the ARCADE-fitted imaging chain of D39). Distractors are
+  drawn but not labelled: a contrast-filled catheter, smooth anatomy-like shadows, rib-like
+  bands, and small branches. Labels follow ARCADE's annotation of the major (SYNTAX)
+  segments: the lumen of every vessel whose reference diameter is ≥ 1.5 mm. Splits: train
+  2,000, val 200, test 200; dataset card.
+- [ ] Training `configs/seg_synth.yaml`: the M5 configuration (same seed, schedule, early
+  stopping) with 1,000 rendered images added to ARCADE's 1,000 training images. The epoch is
+  chosen on ARCADE val, as in M5.
+- [ ] Evaluation: the new run on ARCADE val and test (`reports/seg_synth/`); both models on
+  the rendered test split; `reports/sim_to_real.md` with the paired per-image Dice
+  difference on ARCADE test and its 95% bootstrap interval.
+- [ ] **Adoption rule:** the new model replaces the product's segmenter only if its mean
+  ARCADE test Dice is higher than the M5 model's and the lower bound of the paired
+  difference's 95% interval is above −0.01. Otherwise M5 stays and the result is reported.
