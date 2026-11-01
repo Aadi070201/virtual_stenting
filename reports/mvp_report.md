@@ -68,6 +68,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P4d: Cine runs on real angiograms (added 2026-10-31, revised 2026-11-01) (done)
 - P5: Projection geometry and two-view 3D reconstruction (done)
 - P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)
+- P5c: Two views in the app (added 2026-11-01) (done)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
 - P7: Cine angiography (not started)
 - P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)
@@ -88,4 +89,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `e2ca69747f10d0c7dbf424a2b2aca11c813c9328` (dirty: False), vstent 0.1.0, 2026-11-01T17:03:12+00:00.
+This summary: commit `1aa6c9d363f5a94853b189296f4a18e1bc264dbc` (dirty: False), vstent 0.1.0, 2026-11-01T17:54:53+00:00.
