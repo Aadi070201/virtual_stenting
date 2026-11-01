@@ -275,8 +275,8 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** In two views, the traced path follows a crossing vessel, the start and end points are not the same landmarks in both views, the heart is in a different cardiac phase in the two runs, or the projection angles are read with the wrong convention.
 - **Hazardous situation:** The 3D length and the diameters are wrong, so the FFR and the stent length are wrong, while the result looks like a two-view measurement.
 - **Harm:** As H-01, H-02 or H-05.
-- **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Measured on synthetic random views (stress test): where the vessel overlaps, the length error reached 5.7% (90th percentile) and the 3D error 1.3 mm, and a wrong path that fits the other view is not flagged. Phase and convention errors are not measured.
+- **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Measured on synthetic cases: with views chosen without overlap, 5 of 100 were off by more than 5% in length (worst −21%, 5.9 mm 3D error, views 33° apart) and the check flagged none of them. With random views the length error reached 5.7% (90th percentile) where the vessel overlaps. Phase and convention errors are not measured.
 - **Controls:** SR-41 Foreshortening-free lengths; SR-02 Plain-language warnings with every result; SR-01 Research-use notice everywhere
-- **After controls:** P3 Occasional = 12 unacceptable. The ray-gap and residual check flags motion and inconsistent landmarks on synthetic cases; the figure lets the user check the path in both views. Not verified on real data.
+- **After controls:** P3 Occasional = 12 unacceptable. The figure lets the user check the path in both views, and the ray-gap and residual check flags uncorrected motion (23 of 100 synthetic cases), but it missed all 5 large length errors above. Not verified on real data.
 - **Evidence:** [two_view_synthetic.md](../../reports/two_view_synthetic.md)
-- **Needed:** Real two-view runs (or a phantom) to confirm the angle convention (D49); end-diastolic frame matching (P7); overlap detection on the traced path.
+- **Needed:** A check that catches poorly conditioned reconstructions (developed on new synthetic seeds); real two-view runs (or a phantom) to confirm the angle convention (D49); end-diastolic frame matching (P7); overlap detection on the traced path.

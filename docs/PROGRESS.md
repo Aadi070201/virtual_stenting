@@ -920,6 +920,11 @@ qualified person, not regulatory advice.
 **Results** (report seeds; method fixed beforehand on development seeds)
 - **Targets met:** 3D centreline error 0.23 mm (median over cases; target ≤ 1 mm); length
   error 0.6% (median abs.; target ≤ 5%), 90th percentile 2.0%, 95% of cases within 5%.
+- **Silent failures:** 5 of the 100 cases were off by more than 5% (worst −21% with 5.9 mm 3D
+  error, views 33° apart; the others +7% to +12%), and the check flagged none of them. These
+  are poorly conditioned cases (strong foreshortening, part of the vessel along the epipolar
+  lines), where the spline is not held well. The method was not changed afterwards (it was
+  fixed on development seeds); a better check is the next step (H-20).
 - **Single view vs two views, length:**
   - single view at the isocentre pixel size: 13.0% short (median), 16% of views within 5%;
   - uncorrected detector spacing: 20.3% off (median abs.);

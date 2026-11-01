@@ -430,16 +430,18 @@ hazards:
     severity: 4
     probability: 4
     basis: >-
-      Measured on synthetic random views (stress test): where the vessel overlaps, the length
-      error reached 5.7% (90th percentile) and the 3D error 1.3 mm, and a wrong path that
-      fits the other view is not flagged. Phase and convention errors are not measured.
+      Measured on synthetic cases: with views chosen without overlap, 5 of 100 were off by
+      more than 5% in length (worst −21%, 5.9 mm 3D error, views 33° apart) and the check
+      flagged none of them. With random views the length error reached 5.7% (90th percentile)
+      where the vessel overlaps. Phase and convention errors are not measured.
     controls: [SR-41, SR-02, SR-01]
     residual_probability: 3
     residual_basis: >-
-      The ray-gap and residual check flags motion and inconsistent landmarks on synthetic
-      cases; the figure lets the user check the path in both views. Not verified on real
-      data.
+      The figure lets the user check the path in both views, and the ray-gap and residual
+      check flags uncorrected motion (23 of 100 synthetic cases), but it missed all 5 large
+      length errors above. Not verified on real data.
     evidence: [reports/two_view_synthetic.md]
     needed: >-
-      Real two-view runs (or a phantom) to confirm the angle convention (D49); end-diastolic
-      frame matching (P7); overlap detection on the traced path.
+      A check that catches poorly conditioned reconstructions (developed on new synthetic
+      seeds); real two-view runs (or a phantom) to confirm the angle convention (D49);
+      end-diastolic frame matching (P7); overlap detection on the traced path.
