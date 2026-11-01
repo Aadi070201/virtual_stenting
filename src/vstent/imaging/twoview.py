@@ -18,10 +18,11 @@ landmarks (the user's start and end points in each view).
 4. **Check.** The 3D centreline is projected back into both views; its distance from the 2D
    centrelines (the reprojection residual) and the mean gap between paired rays show a
    geometry that does not fit (motion between the runs, wrong angles or distances).
-   **Reliability** (P5b, D50): where depth is poorly determined the result depends on the
-   smoothing, so the curve is refitted with twice the knot spacing; a length change above
-   ``MAX_SMOOTHING_CHANGE`` or a residual above ``MAX_FIT_RESIDUAL_PX`` gives a warning that
-   the length may be wrong.
+   **Smoothing sensitivity** (P5b, D50, D51): where depth is poorly determined the result
+   depends on the smoothing, so the curve is refitted with twice the knot spacing and the
+   length change is reported (``reliable``: change ≤ ``MAX_SMOOTHING_CHANGE`` and residual
+   ≤ ``MAX_FIT_RESIDUAL_PX``). It is information, not a warning: as a warning it flagged 18%
+   of synthetic cases and missed the one large error.
 
 **Motion between the runs.** The two runs are acquired one after the other, so the heart may
 have moved (breathing, table). A shift of view 2 across its epipolar lines breaks the pairing;
@@ -62,7 +63,7 @@ SHIFT_RANGE_M = 10e-3  # motion search: ± this at the isocentre, across the epi
 SHIFT_STEPS = 41
 MAX_GAP_M = 0.5e-3  # check: mean ray gap above this → the two views do not fit (warning)
 MAX_RESIDUAL_PX = 2.0  # check: median reprojection residual above this (warning)
-# reliability check (D50, set on development seeds; favours catching errors over few alarms)
+# smoothing sensitivity (D50, set on development seeds; reported, not a warning: D51)
 MAX_SMOOTHING_CHANGE = 0.025  # |length change| when the knot spacing is doubled
 MAX_FIT_RESIDUAL_PX = 0.30  # median reprojection residual in either view
 
@@ -232,14 +233,6 @@ class Reconstruction:
             out.append(
                 f"{self.weak_fraction:.0%} of the vessel runs along the epipolar lines: "
                 "its 3D course there is interpolated"
-            )
-        if not self.reliable:
-            out.append(
-                f"The 3D course is poorly determined (the length changes by "
-                f"{100 * abs(self.smoothing_change):.1f}% with smoother fitting; the 3D path "
-                f"deviates {np.max(self.residual_px):.2f} px from a traced path): the length may "
-                "be wrong by more than 5%. Check that both paths follow the same vessel, or use "
-                "views further apart with less foreshortening"
             )
         return out
 

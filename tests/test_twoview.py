@@ -186,12 +186,12 @@ def test_reconstruction_recovers_a_projected_curve():
     assert any("apart" in w for w in rec.warnings())
 
 
-def test_reliability_check_warns_when_the_length_depends_on_the_smoothing():
+def test_smoothing_sensitivity_is_reported_not_warned():
     curve = _curve()
     g1, g2 = _geometry(-30, 20), _geometry(45, 25)
     rec = reconstruct(g1, *_views_of(curve, g1, g2)[:1], g2, _views_of(curve, g1, g2)[1])
     shaky = dataclasses.replace(rec, smoothing_change=0.04)
-    assert not shaky.reliable and any("poorly determined" in w for w in shaky.warnings())
+    assert not shaky.reliable and shaky.warnings() == []  # information only (D51)
     off = dataclasses.replace(rec, residual_px=np.array([0.1, 0.5]))
     assert not off.reliable
 

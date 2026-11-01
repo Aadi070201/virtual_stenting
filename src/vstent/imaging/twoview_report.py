@@ -50,8 +50,6 @@ REPORT = "two_view_synthetic"
 STRESS_SEED_OFFSET = 100_000
 TARGET_ERROR_MM = 1.0  # median over static cases of the per-case mean 3D distance
 TARGET_LENGTH = 0.05  # median over static cases of |length error|
-TARGET_SENSITIVITY = 0.80  # P5b: the check flags this share of |length error| > 5% ...
-TARGET_FLAG_RATE = 0.10  # ... while flagging at most this share of all cases
 
 
 def _trace(view, *, trimmed: bool):
@@ -397,7 +395,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     sens = flagged / len(large) if large else None
     rate = summary["warned"] / len(ok) if ok else None
     unreliable = [r for r in ok if not r["two_view"]["reliable"]]
-    warned = np.array([bool(r["two_view"]["warnings"]) for r in ok], dtype=bool)
+    marked = np.array([not r["two_view"]["reliable"] for r in ok], dtype=bool)
     abs_err = np.abs(np.array(_get(ok, "two_view", "length_err"), dtype=float)) * 100
 
     def median_of(mask):
@@ -405,8 +403,8 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     summary["check"] = {
         "n_large": len(large), "flagged_large": flagged, "sensitivity": sens, "flag_rate": rate,
-        "n_unreliable": len(unreliable), "flagged_median_abs_err": median_of(warned),
-        "unflagged_median_abs_err": median_of(~warned),
+        "n_unreliable": len(unreliable), "marked_median_abs_err": median_of(marked),
+        "unmarked_median_abs_err": median_of(~marked),
     }  # fmt: skip
     summary["targets"] = [
         {
@@ -420,18 +418,6 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "value": "–" if length is None else f"{length:.1f}",
             "target": f"≤ {TARGET_LENGTH:.0%}",
             "passed": length is not None and length <= TARGET_LENGTH * 100,
-        },
-        {
-            "metric": "Check: share of |length error| > 5% flagged (P5b)",
-            "value": "–" if sens is None else f"{sens:.0%} ({flagged} of {len(large)})",
-            "target": f"≥ {TARGET_SENSITIVITY:.0%}",
-            "passed": sens is not None and sens >= TARGET_SENSITIVITY,
-        },
-        {
-            "metric": "Check: share of all cases flagged (P5b)",
-            "value": "–" if rate is None else f"{rate:.0%}",
-            "target": f"≤ {TARGET_FLAG_RATE:.0%}",
-            "passed": rate is not None and rate <= TARGET_FLAG_RATE,
         },
     ]
     summary["targets_met"] = all(t["passed"] for t in summary["targets"])
@@ -676,12 +662,13 @@ def write_two_view_report(
             for c in sorted(s["large"], key=lambda c: -abs(c["length_err"]))
         ),
         *([""] if s["large"] else []),
-        f"Warnings on {s['warned']} of {len(ok)} cases, {s['check']['n_unreliable']} of them from "
-        "the reliability check (D50: the length changes by more than 2.5% with smoother fitting, "
-        "or the 3D path departs from a traced path by more than 0.30 px), the others from views "
-        "close together or a vessel running mostly along the epipolar lines. Median abs. length "
-        f"error {_fmt({'median': s['check']['flagged_median_abs_err']})}% in flagged cases, "
-        f"{_fmt({'median': s['check']['unflagged_median_abs_err']})}% in the others.",
+        f"Warnings on {s['warned']} of {len(ok)} cases (views close together, or a vessel "
+        "running mostly along the epipolar lines). The smoothing sensitivity (D50; reported, not "
+        "a warning, since D51) marks "
+        f"{s['check']['n_unreliable']} cases (length change > 2.5% with twice the knot spacing, "
+        "or a residual > 0.30 px); median abs. length error "
+        f"{_fmt({'median': s['check']['marked_median_abs_err']})}% in marked cases, "
+        f"{_fmt({'median': s['check']['unmarked_median_abs_err']})}% in the others.",
         "",
         "## FFR error from the geometry alone",
         "",

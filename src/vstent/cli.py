@@ -729,7 +729,8 @@ def _analyse_two_views_cli(
         f"Two views: {rec.geometries[0].label()} and {rec.geometries[1].label()}, "
         f"{rec.separation_deg:.0f}° apart; mean ray gap {rec.gap_m * 1e3:.2f} mm, residual "
         f"{rec.residual_px[0]:.1f} / {rec.residual_px[1]:.1f} px; view 2 shifted by "
-        f"({rec.shift_px[0]:.1f}, {rec.shift_px[1]:.1f}) px (motion between the runs)."
+        f"({rec.shift_px[0]:.1f}, {rec.shift_px[1]:.1f}) px (motion between the runs); length "
+        f"change with smoother fitting {100 * rec.smoothing_change:+.1f}%."
     )
     prof = result.profile
     d_ref = 2e3 * prof.reference_radius()

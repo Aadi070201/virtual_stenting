@@ -439,11 +439,12 @@ hazards:
     controls: [SR-41, SR-02, SR-01]
     residual_probability: 3
     residual_basis: >-
-      The figure lets the user check the path in both views, and the ray-gap and residual
-      check flags uncorrected motion (23 of 100 synthetic cases), but it missed all 5 large
-      length errors above. Not verified on real data.
+      Smoother fitting (8 mm knots, D50) cut large length errors to 1 in 200 synthetic cases.
+      The figure lets the user check the path in both views; the ray-gap and residual check
+      flags uncorrected motion, but no check caught the large errors (a reliability warning
+      was tried and dropped, D51). Not verified on real data.
     evidence: [reports/two_view_synthetic.md]
     needed: >-
-      A check that catches poorly conditioned reconstructions (developed on new synthetic
-      seeds); real two-view runs (or a phantom) to confirm the angle convention (D49);
-      end-diastolic frame matching (P7); overlap detection on the traced path.
+      Real two-view runs (or a phantom) to confirm the angle convention (D49) and to measure
+      how often large errors occur on real data; end-diastolic frame matching (P7); overlap
+      detection on the traced path.

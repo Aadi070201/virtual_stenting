@@ -801,3 +801,14 @@ synthetic test cannot reveal a convention error.
 the scaled lumen would oversize by about 15%. The factor range, the warning and hazard H-09
 cover this until there is real ground truth (a phantom, or IVUS / OCT reference diameters).
 
+### D51 — The two-view smoothing check is reported, not a warning (2026-11-01)
+**Decision:** the founder chose to drop the P5b reliability warning and keep the number. The
+length change under twice the knot spacing is printed with every two-view result and stored in
+the case report; it no longer raises a warning.
+
+**Reason:** on 200 fresh synthetic cases the warning fired on 21 cases, plus 14 from the older
+warnings (18% in all), and missed the one large error. Large errors are now rare (1 in 200)
+after the 8 mm knots. Frequent alarms without a measured benefit invite alarm fatigue (H-19).
+
+**Alternatives:** keep it as a warning; redesign it on a much larger synthetic set.
+
