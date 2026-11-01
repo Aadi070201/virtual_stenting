@@ -460,9 +460,11 @@ run once). CADICA development patients for real-data choices; CADICA test patien
   wave), end-systolic radius 8–15% smaller, heart rate 50–110 bpm, frame rate 7.5, 15 or
   30 fps, 2–5 beats per run. Breathing drift (a slow 3D shift). A contrast front advances
   along every branch at a known mean velocity (resting runs 0.10–0.35 m/s), then washes out.
-  The D39 imaging chain renders each frame. Each run is written as a DICOM with FrameTime and
-  C-arm geometry; half the runs also carry an ECG waveform (WaveformSequence) and the
-  R-wave pointer.
+  The D39 imaging chain renders each frame. Each case has two runs from two views (P5),
+  with their own heart-cycle phase and breathing. Coronary flow is phasic: the front moves
+  faster in diastole (diastolic / systolic speed ratio 1.5–2.5); the true velocity is the
+  cycle average. Each run is written as a DICOM with FrameTime and C-arm geometry; half the
+  runs also carry an ECG waveform (WaveformSequence) and the R-wave pointer.
 - [ ] End-diastolic (ED) frames:
   - from the DICOM when present: the R-wave pointer (0028,6040); else R peaks of the ECG
     waveform (band-pass, derivative energy, 250 ms refractory period), mapped to frames
@@ -484,7 +486,12 @@ run once). CADICA development patients for real-data choices; CADICA test patien
   (D54).
 - [ ] Flow velocity from the contrast transit:
   - CFV (contrast flow velocity) = the P4d front speed (Theil–Sen) × the pixel size at the
-    vessel ÷ the frame time; on a two-view path, the 3D arc length is used instead;
+    vessel ÷ the frame time; on a two-view path (both runs at their ED frames), the 3D arc
+    length is used instead;
+  - one view foreshortens the path, so its CFV is biased low (P5b: lengths −13% median). Its
+    point estimate is not corrected; its 95% interval's upper end is multiplied by the 95th
+    percentile of true / single-view length on the P5 development cases (seeds 5001), and
+    the user is told that two views remove the bias;
   - a run marked hyperemic (adenosine; the user says so, DICOM does not record it) uses CFV
     as the hyperemic velocity. A resting run uses the FAVOR Pilot relation HFV = 0.10 +
     1.55·CFV − 0.93·CFV² (m/s), as quoted by Tar et al., Cardiol J 2021;28:163–165,
@@ -495,10 +502,16 @@ run once). CADICA development patients for real-data choices; CADICA test patien
   - the CFV's 95% interval, passed through the conversion, replaces P1's ±0.10 m/s velocity
     half-width in the input Monte Carlo.
 
-  **Targets (held-out synthetic runs, true velocity known, pixel size from the DICOM):**
-  median |CFV error| ≤ 10%; ≥ 90% of accepted runs within ±25%; the 95% interval covers
-  the true velocity in ≥ 85% of accepted runs; the guards reject ≤ 20% of runs; median
-  |FFR(measured velocity) − FFR(true velocity)| ≤ 0.02.
+  **Targets (held-out synthetic cases, true velocity known, pixel size from the DICOM):**
+  - two views (3D path): median |CFV error| ≤ 10%; ≥ 90% of accepted cases within ±25%;
+    the 95% interval covers the true velocity in ≥ 85% of accepted cases; median
+    |FFR(measured velocity) − FFR(true velocity)| ≤ 0.02;
+  - one view: the widened interval covers the true velocity in ≥ 85% of accepted runs;
+    the median error is reported;
+  - the guards reject ≤ 20% of runs.
+
+  (Amended 2026-11-02, before any beating-heart run existed: the first version set the
+  accuracy targets for any run, but one view cannot meet them because of foreshortening.)
 - [ ] Product: the fixed velocity stays the default until a measured velocity has been
   checked against real flow (a phantom or a Doppler wire, HUMAN_ACTIONS). `vstent analyse
   <run>` and the app also show the FFR from the measured velocity, with its interval and
