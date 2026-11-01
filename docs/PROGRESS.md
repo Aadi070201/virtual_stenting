@@ -762,3 +762,62 @@ patients only, with each rule committed before its results (D44, D45).
   Gap bridging (note 6) did not work on real occlusions.
 - `reports/app_latency.md` was not re-run: the stent controls' code path is unchanged, and it
   needs an idle machine.
+
+## 2026-11-01 — P4d: Cine runs on real angiograms (done)
+
+P4c left severity on real angiograms compressed. P4d first tried to calibrate the imaging
+chain once per frame, to insert physics-consistent lesions into real angiograms as a
+benchmark with exact lumens; that did not hold on real frames (D46), so P4d turned to the
+cine run, the form in which clinics record angiograms (parts of P7 moved here).
+
+**What was done**
+- **Frame-level imaging-chain calibration** (`imaging/calibration.py`, `calibrate_chain`,
+  `fit_lumen(chain=...)`): kept as an option, not the default (D46).
+- **One loader for runs** (`imaging/image_io.py`: `read_run`, `read_run_bytes`, `is_run`):
+  multi-frame DICOM (frame time from FrameTime / CineRate) or a folder of frames, on one
+  intensity scale for the whole run (frame-wise stretching would distort the opacification).
+- **Opacification and analysis frame** (`imaging/cine.py`): segmented vessel area per frame →
+  contrast arrival, the opacified window (frames above 70% of the peak, D47) and the analysis
+  frame (the peak).
+- **Contrast transit**: arrival frame at each centreline point (darkest value within 6 px, for
+  cardiac motion), inflow found on the path, Theil–Sen front speed with its 95% interval;
+  shown only when the front advances (D47), never used for FFR (runs are at rest).
+- **Product:** `vstent analyse` accepts a run (`--frame` to override) and reports the
+  transit; the app treats an uploaded multi-frame DICOM as a run and analyses its most
+  opacified frame (before, it used frame 0, usually recorded before the contrast arrives).
+- **`vstent cine-frames`** (`validation/cine_frames.py`, `reports/cine_frames.md`).
+- Synthetic cine runs (`synthetic.render_cine`: contrast front, washout, cardiac motion) for
+  the tests.
+
+**Results**
+- **Rendered frames (D46):** the joint calibration recovers blur 1.01 (1.0) and edge amount
+  2.20 (2.5). **Real ARCADE frames:** blur 0.6–3.0 px and edge amount 0.2–5.0 across frames,
+  often at a bound; fixing them barely raises the residual. Lesion insertion was dropped.
+- **Synthetic runs:** front speed recovered within 15% (10.0 px/frame for 10 in the CLI test;
+  12 px/frame with 3 px of cardiac motion; a path through the inflow).
+- **CADICA, 382 runs of 42 patients, the clinicians' selected frames as reference**
+  (`reports/cine_frames.md`, commit `296b430`):
+
+  | | Test (177 runs, 21 patients) | Development (205 runs) |
+  |---|---:|---:|
+  | Analysis frame among the selected frames (primary) | 77% (70–82%) | 84% |
+  | Within their span | 88% (82–92%) | 90% |
+  | Window overlap, median IoU | 0.61 (0.55–0.67) | 0.62 |
+  | Contrast arrival ≤ first selected frame | 94% | 95% |
+
+  Lesion runs: 72% among the selected frames (runs without a lesion 85%).
+- **Contrast transit on CADICA:** a plausible, advancing front in 213 of 382 runs (56%); the
+  95% interval's width is a median 44% of the speed. Too imprecise to set the flow; shown
+  only.
+
+**Open issues and next steps**
+- **Transit:** the longest path often crosses overlapping vessels or the catheter. Measuring
+  along the user's selected vessel (the app does), and a dedicated catheter / ostium detector,
+  should raise feasibility; turning a resting transit into a hyperaemic flow needs a validated
+  relation or an adenosine run.
+- **Frame choice** misses most often in lesion runs (the clinicians pick frames where the
+  lesion is best seen, not only the most filled); a lesion-aware choice needs the user's
+  vessel.
+- **Novelty:** this is established practice (invention notes, "not considered inventive"); it
+  makes the product's input match the clinic's.
+- Real FFR ground truth (ICADD) still waits for the human.

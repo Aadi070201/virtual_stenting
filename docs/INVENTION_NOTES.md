@@ -217,6 +217,10 @@ The following are recorded only so they are not mistaken for claims:
 - shared pre-processing for training, ONNX and the app;
 - minimum-cost edge tracking along the vessel and side branches taken from the segmentation's
   outline (D45): the classical QCA edge criterion (Reiber and others, 1980s), corrected here;
+- frame-level calibration of the imaging chain (D46): did not hold on real frames;
+- the cine analysis frame from the opacification curve and contrast transit along the vessel
+  (P4d, D47): automated frame selection and frame-count flow are established (e.g. QFR's
+  contrast-flow variant, automated TIMI frame counting);
 - chunked, parallel ONNX inference;
 - resumable checkpoints;
 - report provenance;

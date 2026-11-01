@@ -354,16 +354,16 @@ real expert ground truth. Parts of P7 move here.
 - [x] **Frame-level imaging-chain calibration** (D46): recovers the chain on rendered frames;
   on real frames the settings are not physically consistent, so it stays an option and lesion
   insertion is dropped.
-- [ ] **Cine input:** a run as a folder of frames or a multi-frame DICOM (frame time when
+- [x] **Cine input:** a run as a folder of frames or a multi-frame DICOM (frame time when
   present), one loader for the CLI, the app and the evaluations.
-- [ ] **Opacification curve and analysis window:** vessel area per frame from the
+- [x] **Opacification curve and analysis window:** vessel area per frame from the
   segmentation → contrast arrival, the opacified window and the analysis frame. Agreement with
   the CADICA clinicians' selected frames (development patients; test patients once).
-- [ ] **Contrast transit:** arrival time of the contrast front along the analysed vessel →
+- [x] **Contrast transit:** arrival time of the contrast front along the analysed vessel →
   front velocity (frame count), with its uncertainty, as an optional patient-specific flow for
   the FFR model. Tested on synthetic cine runs with a known front velocity and cardiac
   motion; on CADICA reported descriptively (no flow ground truth, no frame rate).
-- [ ] `vstent analyse` and the app accept a run and pick the analysis frame; reports and
+- [x] `vstent analyse` and the app accept a run and pick the analysis frame; reports and
   invention notes updated.
 
 **Done when:**

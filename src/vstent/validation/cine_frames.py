@@ -265,5 +265,5 @@ def write_report(
     payload = {"fraction": fraction, "stats": stats, "by_kind": by_kind, "runs": rows,
                "transit": transit, "model": model, **git}  # fmt: skip
     out_md.with_suffix(".json").write_text(json.dumps(payload, indent=1, default=float),
-                                           encoding="utf-8")  # fmt: skip
+                                           encoding="utf-8", newline="\n")  # fmt: skip
     return stats
