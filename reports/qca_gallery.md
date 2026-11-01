@@ -9,29 +9,29 @@ The first 20 `stenosis/val` images (by COCO id). For each one the longest path o
 - Analysed: 20 of 20 (failed: 0).
 - Auto-selected path crosses an annotated stenosis box: 20; of those, point of maximum %DS inside a box: 10, MLD (narrowest absolute diameter, often in a thin distal branch) inside a box: 2.
 - Outside the surrogate's training range (mostly vessel length): 19 of 20.
-- Median |distal FFR solver − surrogate|: 0.030
+- Median |distal FFR solver − surrogate|: 0.035
 
 | Image | Path (mm) | Max DS (%) | MLD (mm) | FFR solver | FFR surrogate | Boxes | Path crosses box | Max DS in box | MLD in box |
 |---|---|---|---|---|---|---|---|---|---|
-| [val_1](figures/qca_examples/val_1.png) | 161 | 77 | 0.65 | 0.17 | 0.15 | 1 | yes | no | no |
+| [val_1](figures/qca_examples/val_1.png) | 161 | 77 | 0.73 | 0.19 | 0.17 | 1 | yes | no | no |
 | [val_10](figures/qca_examples/val_10.png) | 110 | 32 | 0.79 | 0.06 | -0.18 | 1 | yes | yes | no |
-| [val_100](figures/qca_examples/val_100.png) | 199 | 59 | 1.49 | 0.59 | 0.56 | 2 | yes | yes | no |
-| [val_101](figures/qca_examples/val_101.png) | 125 | 59 | 0.93 | 0.38 | 0.37 | 3 | yes | yes | no |
-| [val_102](figures/qca_examples/val_102.png) | 243 | 56 | 0.94 | 0.57 | 0.57 | 2 | yes | no | no |
-| [val_103](figures/qca_examples/val_103.png) | 162 | 58 | 0.78 | 0.26 | 0.27 | 3 | yes | yes | no |
-| [val_104](figures/qca_examples/val_104.png) | 265 | 52 | 1.38 | 0.76 | 0.71 | 3 | yes | no | no |
-| [val_105](figures/qca_examples/val_105.png) | 177 | 58 | 1.57 | 0.69 | 0.66 | 1 | yes | yes | no |
+| [val_100](figures/qca_examples/val_100.png) | 199 | 59 | 1.75 | 0.62 | 0.61 | 2 | yes | yes | no |
+| [val_101](figures/qca_examples/val_101.png) | 125 | 59 | 1.21 | 0.42 | 0.42 | 3 | yes | yes | no |
+| [val_102](figures/qca_examples/val_102.png) | 243 | 56 | 1.09 | 0.61 | 0.58 | 2 | yes | no | no |
+| [val_103](figures/qca_examples/val_103.png) | 162 | 58 | 0.88 | 0.29 | 0.29 | 3 | yes | yes | no |
+| [val_104](figures/qca_examples/val_104.png) | 265 | 52 | 1.59 | 0.78 | 0.73 | 3 | yes | no | no |
+| [val_105](figures/qca_examples/val_105.png) | 177 | 58 | 1.87 | 0.72 | 0.72 | 1 | yes | yes | no |
 | [val_106](figures/qca_examples/val_106.png) | 148 | 78 | 0.92 | 0.24 | 0.32 | 1 | yes | no | no |
 | [val_107](figures/qca_examples/val_107.png) | 138 | 85 | 0.33 | 0.19 | 0.48 | 2 | yes | no | no |
-| [val_108](figures/qca_examples/val_108.png) | 198 | 67 | 0.89 | 0.26 | 0.32 | 1 | yes | no | no |
-| [val_109](figures/qca_examples/val_109.png) | 179 | 50 | 1.65 | 0.66 | 0.59 | 2 | yes | yes | no |
+| [val_108](figures/qca_examples/val_108.png) | 198 | 67 | 0.99 | 0.27 | 0.34 | 1 | yes | no | no |
+| [val_109](figures/qca_examples/val_109.png) | 179 | 50 | 1.84 | 0.69 | 0.63 | 2 | yes | yes | no |
 | [val_11](figures/qca_examples/val_11.png) | 152 | 39 | 1.13 | 0.51 | 0.50 | 2 | yes | no | no |
-| [val_110](figures/qca_examples/val_110.png) | 68 | 56 | 1.05 | 0.71 | 0.72 | 2 | yes | yes | yes |
-| [val_111](figures/qca_examples/val_111.png) | 242 | 70 | 0.91 | 0.18 | 0.17 | 4 | yes | yes | no |
-| [val_112](figures/qca_examples/val_112.png) | 143 | 58 | 1.17 | 0.49 | 0.53 | 4 | yes | yes | yes |
-| [val_113](figures/qca_examples/val_113.png) | 159 | 67 | 1.05 | 0.36 | 0.33 | 1 | yes | no | no |
-| [val_114](figures/qca_examples/val_114.png) | 151 | 42 | 0.70 | 0.06 | -0.24 | 8 | yes | yes | no |
-| [val_115](figures/qca_examples/val_115.png) | 174 | 67 | 1.02 | 0.32 | 0.38 | 2 | yes | no | no |
-| [val_116](figures/qca_examples/val_116.png) | 229 | 50 | 0.86 | 0.57 | 0.64 | 3 | yes | no | no |
+| [val_110](figures/qca_examples/val_110.png) | 68 | 56 | 1.23 | 0.73 | 0.74 | 2 | yes | yes | yes |
+| [val_111](figures/qca_examples/val_111.png) | 242 | 70 | 1.00 | 0.20 | 0.19 | 4 | yes | yes | no |
+| [val_112](figures/qca_examples/val_112.png) | 143 | 58 | 1.52 | 0.52 | 0.58 | 4 | yes | yes | yes |
+| [val_113](figures/qca_examples/val_113.png) | 159 | 67 | 1.23 | 0.40 | 0.38 | 1 | yes | no | no |
+| [val_114](figures/qca_examples/val_114.png) | 151 | 42 | 0.88 | 0.06 | -0.22 | 8 | yes | yes | no |
+| [val_115](figures/qca_examples/val_115.png) | 174 | 67 | 1.14 | 0.35 | 0.41 | 2 | yes | no | no |
+| [val_116](figures/qca_examples/val_116.png) | 229 | 50 | 0.95 | 0.61 | 0.65 | 3 | yes | no | no |
 
-Models: segmentation `models/seg/seg_unet_r34-20261028-141743`, surrogate `models/surrogate/unet1d_ens5-20261030-113237`. Commit `8856a9ef6d021fad94285ae8e6c9350943678bcf` (dirty: False), 2026-10-31T20:36:09+00:00.
+Models: segmentation `models/seg/seg_unet_r34-20261028-141743`, surrogate `models/surrogate/unet1d_ens5-20261030-113237`. Commit `4c920e5b437be819d9e30ae800e9ae8538d6e574` (dirty: False), 2026-11-01T16:52:37+00:00.
