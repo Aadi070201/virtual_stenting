@@ -1,0 +1,41 @@
+# Vessel segmentation with rendered angiograms added (docs/PLAN.md, P8 sim-to-real).
+# Identical to configs/seg.yaml (M5) except the `synthetic` block (pre-registered).
+name: seg_unet_r34_synth
+raw_dir: data/raw/arcade
+runs_dir: runs
+seed: 0
+
+model:
+  encoder: resnet34
+  encoder_weights: imagenet
+  image_size: 512
+
+train:
+  epochs: 60
+  batch_size: 8
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  dice_weight: 1.0
+  patience: 15
+  grad_clip: 1.0
+  amp: true
+  device: auto
+  workers: 2
+  eval_batch_size: 16
+  max_train_images: null
+  max_val_images: null
+
+augment:
+  rotation_deg: 15.0
+  scale: [0.9, 1.1]
+  brightness: 0.1
+  contrast: [0.8, 1.2]
+  gamma: [0.8, 1.25]
+  noise_std: [0.0, 0.03]
+  p_noise: 0.5
+  p_clahe: 0.3
+  clahe_clip: 2.0
+
+synthetic:                   # rendered angiograms (vstent synth-angio) added to ARCADE's 1,000
+  dir: data/synth_angio/v1
+  n_train: 1000

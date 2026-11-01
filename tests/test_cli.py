@@ -29,6 +29,9 @@ COMMANDS = [
     "train-ensemble",
     "export-ensemble",
     "uncertainty-report",
+    "two-view-synthetic",
+    "synth-angio",
+    "sim-to-real-report",
 ]
 
 

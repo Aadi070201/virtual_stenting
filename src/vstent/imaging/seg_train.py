@@ -85,6 +85,13 @@ class SegTrainConfig(StrictModel):
     max_val_images: int | None = Field(None, gt=0)
 
 
+class SegSyntheticData(StrictModel):
+    """Rendered angiograms added to ARCADE's training images (P8 sim-to-real)."""
+
+    dir: str = "data/synth_angio/v1"
+    n_train: int = Field(1000, gt=0)
+
+
 class SegConfig(StrictModel):
     """Full segmentation-training config (``configs/seg.yaml``)."""
 
@@ -95,6 +102,7 @@ class SegConfig(StrictModel):
     model: SegModelConfig = SegModelConfig()
     train: SegTrainConfig = SegTrainConfig()
     augment: AugmentConfig = AugmentConfig()
+    synthetic: SegSyntheticData | None = None  # P8: rendered training images
 
 
 def resolve_device(spec: str = "auto") -> torch.device:
@@ -257,7 +265,15 @@ def _fit(
 
     train_split = load_split(config.raw_dir, "syntax", "train", tc.max_train_images)
     val_split = load_split(config.raw_dir, "syntax", "val", tc.max_val_images)
-    train = SegDataset(train_split.images, train_split.masks, size, config.augment)
+    images, masks = train_split.images, train_split.masks
+    if config.synthetic is not None:
+        from vstent.data.synth_angio import load_synth_split
+
+        syn_images, syn_masks = load_synth_split(config.synthetic.dir, "train",
+                                                 config.synthetic.n_train)  # fmt: skip
+        images, masks = np.concatenate([images, syn_images]), np.concatenate([masks, syn_masks])
+        log(f"Training images: {len(train_split.images)} ARCADE + {len(syn_images)} rendered")
+    train = SegDataset(images, masks, size, config.augment)
     x_val, y_val = validation_tensors(val_split.images, val_split.masks, size)
 
     # ImageNet weights are only downloaded for a new run; a resumed run loads its own state.

@@ -508,6 +508,53 @@ def train_seg(
 
 
 @app.command()
+def synth_angio(
+    config: Annotated[
+        Path, typer.Option("--config", "-c", exists=True, dir_okay=False, help="YAML config.")
+    ] = Path("configs/synth_angio_v1.yaml"),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write synth_angio_card.md.")
+    ] = Path("reports"),
+    workers: Annotated[int | None, typer.Option("--workers", help="Processes.")] = None,
+) -> None:
+    """Render synthetic angiograms with vessel labels for segmentation training (P8)."""
+    from vstent.config import load_config
+    from vstent.data.synth_angio import SynthAngioConfig, generate, write_card
+
+    cfg = load_config(config, SynthAngioConfig)
+    if workers is not None:
+        cfg = cfg.model_copy(update={"workers": workers})
+    out = generate(cfg, log=typer.echo)
+    write_card(out, report_dir)
+    typer.echo(f"Wrote {out} and {report_dir / 'synth_angio_card.md'}")
+
+
+@app.command()
+def sim_to_real_report(
+    base: Annotated[Path, typer.Option("--base", exists=True, help="Baseline run (M5).")],
+    new: Annotated[Path, typer.Option("--new", exists=True, help="Run with rendered data.")],
+    synth_dir: Annotated[Path, typer.Option("--synth-dir", help="Rendered dataset.")] = Path(
+        "data/synth_angio/v1"
+    ),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write sim_to_real.md.")
+    ] = Path("reports"),
+    device: Annotated[str, typer.Option("--device", help="auto, cpu or cuda.")] = "auto",
+) -> None:
+    """Both segmenters on ARCADE val / test and the rendered test split, with the
+    pre-registered adoption rule (P8)."""
+    from vstent.imaging.sim_to_real import compare_runs
+
+    typer.echo(DISCLAIMER)
+    report = compare_runs(base, new, synth_dir, report_dir, device=device)
+    for r in report["rows"]:
+        typer.echo(f"{r['split']}: baseline {r['baseline']:.4f}, new {r['new']:.4f}, "
+                   f"difference {r['diff']:+.4f} ({r['lo']:+.4f} to {r['hi']:+.4f})")  # fmt: skip
+    typer.echo(f"Adoption rule: {'adopt' if report['adopt'] else 'keep the baseline'}")
+    typer.echo(f"Wrote {report_dir / 'sim_to_real.md'}")
+
+
+@app.command()
 def eval_seg(
     run: RunOpt,
     report_dir: Annotated[

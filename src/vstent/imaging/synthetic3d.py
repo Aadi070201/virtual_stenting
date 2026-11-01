@@ -172,14 +172,15 @@ def _tangent_at(points: np.ndarray, k: int) -> np.ndarray:
     return (b - a) / np.linalg.norm(b - a)
 
 
-def layout_tree(rng, tree: SyntheticTree, centre: np.ndarray, radius: float, cfg):
-    """3D curves of every branch of ``tree`` on the sphere. Returns (curves, arc lengths)."""
+def layout_tree(rng, tree: SyntheticTree, centre: np.ndarray, radius: float, cfg, start=None):
+    """3D curves of every branch of ``tree`` on the sphere, the main vessel from ``start`` (a
+    point on the sphere; random if ``None``). Returns (curves, arc lengths)."""
     curves, arcs = [], []
     for k, branch in enumerate(tree.tree.branches):
         length = float(branch.s[-1])
         if k == 0:
-            p0 = centre + radius * _random_unit(rng)
-            nrm = (p0 - centre) / radius
+            p0 = centre + radius * _random_unit(rng) if start is None else np.asarray(start)
+            nrm = (p0 - centre) / np.linalg.norm(p0 - centre)
             t0 = np.cross(nrm, _random_unit(rng))
         else:
             parent = tree.tree.parent[k]
