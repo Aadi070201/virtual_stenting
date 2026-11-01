@@ -10,8 +10,8 @@ What it measures: the pipeline's image → geometry → FFR error under its own 
 
 ## Run
 
-- Predictions locked 2026-10-31T20:48:01+00:00: `predictions_masks.csv`, SHA-256 `6debab15ae6e46e0…` (verified unchanged before scoring).
-- Software: vstent 0.1.0, commit `07a1c2be83cdd1f3cfdc8296b09b8c45a19c2625` (dirty: False). Manifest SHA-256 `f60e58f85e6a9e15…`.
+- Predictions locked 2026-11-01T16:58:21+00:00: `predictions_masks.csv`, SHA-256 `92bef98311144fe8…` (verified unchanged before scoring).
+- Software: vstent 0.1.0, commit `cb6f8fbfa77c25644ac8866af7eebd0da93430c7` (dirty: False). Manifest SHA-256 `f60e58f85e6a9e15…`.
 - Models: segmentation: `models/seg/seg_unet_r34-20261028-141743` (SHA-256 d4fe13dcb979…); surrogate: `models/surrogate/unet1d_ens5-20261030-113237` (SHA-256 780064ab4ece…). Vessel masks from the manifest used: True.
 
 ## Flow of vessels
@@ -126,9 +126,9 @@ The same cases, with the vessel segmented by the ARCADE-trained model instead of
 
 | Index test | Analysable / eligible | AUC | Accuracy | Accuracy, ITD | MAE |
 |---|---:|---:|---:|---:|---:|
-| single path, reduced-order solver | 42 / 102 (41%) | 0.918 (0.799–0.970) | 0.762 | 0.314 | 0.113 |
-| single path, surrogate (ensemble mean) | 42 / 102 (41%) | 0.918 (0.800–0.969) | 0.786 | 0.324 | 0.105 |
-| tree with side branches, reduced-order solver | 42 / 102 (41%) | 0.925 (0.808–0.973) | 0.762 | 0.314 | 0.112 |
+| single path, reduced-order solver | 42 / 102 (41%) | 0.923 (0.805–0.972) | 0.833 | 0.343 | 0.106 |
+| single path, surrogate (ensemble mean) | 42 / 102 (41%) | 0.912 (0.788–0.966) | 0.786 | 0.324 | 0.098 |
+| tree with side branches, reduced-order solver | 42 / 102 (41%) | 0.923 (0.805–0.972) | 0.833 | 0.343 | 0.105 |
 
 Why single-path analysis failed:
 
