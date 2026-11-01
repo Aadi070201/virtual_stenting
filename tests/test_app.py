@@ -59,7 +59,8 @@ def test_read_image_png_jpg_dicom():
         assert out.pixel_spacing_mm is None and len(out.sha256) == 64
     dcm = read_image(_dicom_bytes(), "angio.dcm")
     assert dcm.image.shape == (32, 40) and dcm.image[:, 30].mean() > dcm.image[:, 5].mean()
-    assert dcm.pixel_spacing_mm == pytest.approx(0.25)
+    # detector spacing without SID / SOD: kept for the record, not offered as a calibration
+    assert dcm.pixel_spacing_mm is None and dcm.detector_spacing_mm == pytest.approx(0.25)
     assert "magnification" in dcm.note and "Frame 0 of 2" in dcm.note
     second = read_image(_dicom_bytes(), "angio.dcm", frame=1)  # frame 1 is uniform
     assert second.image.max() == second.image.min() and "Frame 1 of 2" in second.note

@@ -56,6 +56,7 @@ from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa, pa_to_mmhg  # noqa: E402
 DISPLAY_WIDTH = 512
 LUMEN_LABELS = {"edges": "Intensity edges", "model": "Imaging-chain model"}
 LUMEN_CHOICES = {LUMEN_LABELS[k]: k for k in sorted(LUMEN_LABELS, key=lambda k: k != AUTO_LUMEN)}
+DICOM_CALIBRATION = "DICOM geometry (at the isocentre)"
 
 st.set_page_config(page_title="vstent research prototype", layout="wide")
 st.error(core.BANNER, icon="⚠️")
@@ -210,14 +211,16 @@ else:
         st.subheader("Calibration")
         options = ["Assume 0.30 mm/px", "Enter pixel size"]
         if image_input is not None and image_input.pixel_spacing_mm:
-            options.append("DICOM ImagerPixelSpacing")
+            options.insert(0, DICOM_CALIBRATION)  # magnification-corrected (P5)
         calib = st.radio("Pixel size", options, key="calib")
         mm_per_px = None
         if calib == "Enter pixel size":
             mm_per_px = st.number_input("mm per pixel", 0.05, 1.0, 0.30, 0.01, key="mm_px")
-        elif calib == "DICOM ImagerPixelSpacing":
+        elif calib == DICOM_CALIBRATION:
             mm_per_px = image_input.pixel_spacing_mm
-            st.caption(f"{mm_per_px:.4f} mm/px. {image_input.note}")
+            st.caption(image_input.note)
+        elif image_input is not None and image_input.detector_spacing_mm:
+            st.caption(image_input.note)
         tree_mode = st.toggle(
             "Side branches (tree model)", key="tree_mode",
             help="Measure the side branches leaving the path and compute FFR on the whole tree.",

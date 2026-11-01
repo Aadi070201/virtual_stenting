@@ -687,6 +687,92 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
         typer.echo(f"Wrote {figure}")
 
 
+def _analyse_two_views_cli(
+    inputs, starts, ends, segmenter, physics, surrogate_model, figure, plan_paths, lumen,
+    uncertainty,
+) -> None:  # fmt: skip
+    """``vstent analyse --view2``: two-view QCA + FFR (P5)."""
+    from vstent.config import load_config
+    from vstent.inference.onnx_runtime import ONNX_FILE, SurrogateRunner
+    from vstent.inference.pipeline import analyse_two_views
+    from vstent.physics.solver import PhysicsParams
+    from vstent.uncertainty.greyzone import assessment, load_uncertainty, plan_assessments
+    from vstent.uncertainty.inputs import SOURCE_LABELS, InputUncertainty, Measurement
+
+    missing = [i.name for i in inputs if i.geometry is None]
+    if missing:
+        typer.echo(
+            f"No complete projection geometry in {', '.join(missing)}: two-view analysis needs "
+            "DICOM with PositionerPrimaryAngle, PositionerSecondaryAngle, "
+            "DistanceSourceToDetector, DistanceSourceToPatient and ImagerPixelSpacing.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+    params = load_config(physics, PhysicsParams)
+    surrogate = SurrogateRunner.from_dir(
+        surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
+    )
+    images = tuple(i.image for i in inputs)
+    try:
+        result = analyse_two_views(
+            tuple(segmenter.predict(img) for img in images), starts, ends,
+            tuple(i.geometry for i in inputs), params=params, surrogate=surrogate,
+            images=images, lumen=lumen,
+        )  # fmt: skip
+    except ValueError as exc:
+        typer.echo(f"Two-view analysis failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    rec = result.reconstruction
+    single = result.single_view_lengths_mm
+    typer.echo(DISCLAIMER)
+    typer.echo(
+        f"Two views: {rec.geometries[0].label()} and {rec.geometries[1].label()}, "
+        f"{rec.separation_deg:.0f}° apart; mean ray gap {rec.gap_m * 1e3:.2f} mm, residual "
+        f"{rec.residual_px[0]:.1f} / {rec.residual_px[1]:.1f} px; view 2 shifted by "
+        f"({rec.shift_px[0]:.1f}, {rec.shift_px[1]:.1f}) px (motion between the runs)."
+    )
+    prof = result.profile
+    d_ref = 2e3 * prof.reference_radius()
+    typer.echo(
+        f"3D path length {rec.length * 1e3:.1f} mm (single views {single[0]:.1f} and "
+        f"{single[1]:.1f} mm); analysed {prof.length * 1e3:.1f} mm; reference diameter "
+        f"{d_ref[0]:.2f} → {d_ref[-1]:.2f} mm; MLD {2e3 * prof.r.min():.2f} mm"
+    )
+    typer.echo(
+        f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
+        f"{result.ffr_distal_surrogate:.3f}"
+    )
+    ucfg, qca_error = load_uncertainty(uncertainty)
+    mc = InputUncertainty(
+        prof, params, result.solver.pa, result.solver.pv,
+        measurement=Measurement(rec.geometries[0].iso_pixel_m * 1e3, False),
+        config=ucfg.inputs, qca_error=qca_error,
+    )  # fmt: skip
+    pre = assessment(ucfg.pre_pci_threshold, result.ffr_distal_solver,
+                     result.ffr_distal_surrogate, result.model_interval, mc.pre_samples,
+                     ucfg.level)  # fmt: skip
+    typer.echo(f"{pre.level_text} intervals: {_interval_text(pre)}")
+    typer.echo(f"  inputs varied: {', '.join(SOURCE_LABELS[s] for s in mc.sources)}")
+    for reason in pre.reasons("Pre-PCI distal FFR"):
+        typer.echo(f"Grey zone: {reason}")
+    for w in result.warnings:
+        typer.echo(f"Warning: {w}")
+    if plan_paths is not None:
+        from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
+
+        planned = plan_stents(prof, catalog=load_config(plan_paths[0], StentCatalog),
+                              config=load_config(plan_paths[1], PlannerConfig), params=params,
+                              runner=surrogate)  # fmt: skip
+        _echo_plans(planned, plan_assessments(planned, mc, ucfg.level))
+    surrogate.close()
+    if figure is not None:
+        from vstent.inference.figures import plot_two_view_analysis
+
+        title = f"Two-view analysis: {inputs[0].name} + {inputs[1].name}"
+        plot_two_view_analysis(result, images, figure, title=title)
+        typer.echo(f"Wrote {figure}")
+
+
 def _interval_text(a) -> str:
     parts = [f"inputs {a.inputs.text()}"] if a.inputs else []
     parts += [f"model {a.model.text()}"] if a.model else []
@@ -779,6 +865,20 @@ def analyse(
             "--frame", min=0, help="Cine run: analyse this frame (0-based), not the auto one."
         ),
     ] = None,
+    view2: Annotated[
+        Path | None,
+        typer.Option(
+            "--view2", exists=True, help="Second view (DICOM with geometry): 3D analysis (P5)."
+        ),
+    ] = None,
+    start2: Annotated[
+        tuple[int, int] | None,
+        typer.Option("--start2", help="With --view2: the start point in view 2: ROW COL (px)."),
+    ] = None,
+    end2: Annotated[
+        tuple[int, int] | None,
+        typer.Option("--end2", help="With --view2: the end point in view 2: ROW COL (px)."),
+    ] = None,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
@@ -793,6 +893,11 @@ def analyse(
     solver (and the tree surrogate, if exported; no intervals for trees yet). --plan proposes
     plans and --stent places a virtual stent along the path to branch --outlet; outlet
     resistances stay as before the stent.
+
+    With --view2 (P5) the same vessel in a second projection gives its 3D centreline: length
+    free of foreshortening, diameters at their true magnification. Both images need the DICOM
+    projection geometry, and the same two landmarks in each view (--start/--end,
+    --start2/--end2).
     """
     from vstent.config import load_config
     from vstent.imaging.centerline import longest_path_endpoints
@@ -823,10 +928,29 @@ def analyse(
         raise typer.Exit(code=1) from exc
     img = image_input.image
     if mm_per_px is None and image_input.pixel_spacing_mm:
-        typer.echo(
-            f"DICOM ImagerPixelSpacing is {image_input.pixel_spacing_mm:g} mm/px (detector, "
-            "magnification not corrected); pass --mm-per-px to use it."
-        )
+        mm_per_px = image_input.pixel_spacing_mm  # magnification-corrected (P5)
+        typer.echo(f"Calibration from the DICOM geometry. {image_input.note}")
+    elif mm_per_px is None and image_input.detector_spacing_mm:
+        typer.echo(f"{image_input.note} Pass --mm-per-px to set the pixel size.")
+    if view2 is not None:
+        if tree or stent is not None:
+            typer.echo("--view2 does not combine with --tree or --stent yet.", err=True)
+            raise typer.Exit(code=2)
+        if not (start and end and start2 and end2) or None in (*start, *end, *start2, *end2):
+            typer.echo("--view2 needs --start, --end, --start2 and --end2 (the same two "
+                       "landmarks in each view).", err=True)  # fmt: skip
+            raise typer.Exit(code=2)
+        try:
+            run2 = read_run(view2) if is_run(view2) else None
+            input2 = _run_frame(run2, segmenter, None) if run2 else read_image_file(view2)
+        except ValueError as exc:
+            typer.echo(f"Cannot read {view2}: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+        _analyse_two_views_cli(
+            (image_input, input2), (start, start2), (end, end2), segmenter, physics,
+            surrogate_model, figure, (catalog, planner) if plan else None, lumen, uncertainty,
+        )  # fmt: skip
+        return
     if tree and plan and stent is not None:
         typer.echo("With --tree give either --plan or --stent, not both.", err=True)
         raise typer.Exit(code=2)
@@ -1160,6 +1284,29 @@ def lumen_synthetic(
     for t in report["targets"]:
         typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
     typer.echo(f"Wrote {report_dir / 'lumen_synthetic.md'}")
+    if not report["targets_met"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def two_view_synthetic(
+    config: Annotated[Path, typer.Option("--config", help="Synthetic two-view cases.")] = Path(
+        "configs/two_view_synthetic.yaml"
+    ),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write two_view_synthetic.md.")
+    ] = Path("reports"),
+    workers: Annotated[int, typer.Option("--workers", help="Parallel processes.")] = 1,
+) -> None:
+    """Two-view 3D reconstruction on synthetic angiograms with known geometry: 3D centreline,
+    length, diameter and FFR against the truth and against single-view QCA (P5)."""
+    from vstent.imaging.twoview_report import write_two_view_report
+
+    typer.echo(DISCLAIMER)
+    report = write_two_view_report(report_dir, config, workers)
+    for t in report["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'two_view_synthetic.md'}")
     if not report["targets_met"]:
         raise typer.Exit(code=1)
 

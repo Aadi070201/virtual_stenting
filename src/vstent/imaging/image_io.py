@@ -3,6 +3,11 @@
 The single image loader for the app and ``vstent analyse``, so both segment exactly the same
 pixels. Images that are not 8-bit (e.g. 12- or 16-bit DICOM) are stretched between their 0.5th
 and 99.5th percentiles.
+
+DICOM pixel size (P5): ImagerPixelSpacing is measured at the detector, where the vessels are
+magnified by SID / SOD. The pixel size used for measurement is corrected to the isocentre
+(:mod:`vstent.imaging.projection`); without SID / SOD the detector spacing is kept for the
+record but not offered as a calibration.
 """
 
 import hashlib
@@ -13,6 +18,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from vstent.imaging.projection import DicomProjection, ProjectionGeometry, read_projection
+
 
 @dataclass
 class ImageInput:
@@ -21,8 +28,10 @@ class ImageInput:
     image: np.ndarray  # (H, W) uint8
     name: str
     sha256: str
-    pixel_spacing_mm: float | None = None  # from DICOM ImagerPixelSpacing, if present
+    pixel_spacing_mm: float | None = None  # DICOM, magnification-corrected to the isocentre
     note: str = ""
+    detector_spacing_mm: float | None = None  # DICOM ImagerPixelSpacing (at the detector)
+    geometry: ProjectionGeometry | None = None  # DICOM projection geometry (P5), if complete
 
 
 def to_uint8(arr: np.ndarray) -> np.ndarray:
@@ -52,17 +61,12 @@ def read_image(data: bytes, name: str, frame: int | None = None) -> ImageInput:
             arr = arr[frame or 0]
         if arr.ndim == 3:  # colour
             arr = cv2.cvtColor(to_uint8(arr), cv2.COLOR_RGB2GRAY)
-        spacing = ds.get("ImagerPixelSpacing")
-        mm = float(spacing[0]) if spacing else None
-        note = (
-            "DICOM ImagerPixelSpacing is measured at the detector; geometric magnification is "
-            "not corrected."
-            if mm
-            else "DICOM without ImagerPixelSpacing."
-        )
+        proj = read_projection(ds)
+        note = proj.note
         if frames > 1:
             note += f" Frame {frame or 0} of {frames} used (0-based)."
-        return ImageInput(to_uint8(arr), name, digest, mm, note)
+        return ImageInput(to_uint8(arr), name, digest, proj.iso_spacing_mm, note,
+                          proj.detector_spacing_mm, proj.geometry)  # fmt: skip
     _check_frame(name, frame, 1)
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
     if img is None:
@@ -95,8 +99,10 @@ class RunInput:
     name: str
     sha256: str
     frame_time_ms: float | None = None  # DICOM FrameTime (or 1000 / CineRate), if present
-    pixel_spacing_mm: float | None = None
+    pixel_spacing_mm: float | None = None  # magnification-corrected, as in ImageInput
     note: str = ""
+    detector_spacing_mm: float | None = None
+    geometry: ProjectionGeometry | None = None
 
     def __len__(self) -> int:
         return len(self.frames)
@@ -108,7 +114,8 @@ class RunInput:
         img = np.ascontiguousarray(self.frames[t])
         note = f"Frame {t} of {len(self)} (0-based). {self.note}".strip()
         return ImageInput(img, f"{self.name} frame {t}", hashlib.sha256(img.tobytes()).hexdigest(),
-                          self.pixel_spacing_mm, note)  # fmt: skip
+                          self.pixel_spacing_mm, note, self.detector_spacing_mm,
+                          self.geometry)  # fmt: skip
 
 
 def is_run(path: str | Path) -> bool:
@@ -168,7 +175,10 @@ def read_run_bytes(data: bytes, name: str) -> RunInput:
     frame_time = ds.get("FrameTime")
     rate = ds.get("CineRate") or ds.get("RecommendedDisplayFrameRate")
     ms = float(frame_time) if frame_time else (1000.0 / float(rate) if rate else None)
-    spacing = ds.get("ImagerPixelSpacing")
-    note = "" if ms else "DICOM without FrameTime / CineRate: frame time unknown."
+    proj: DicomProjection = read_projection(ds)
+    note = (
+        proj.note if ms else f"DICOM without FrameTime / CineRate: frame time unknown. {proj.note}"
+    )
     return RunInput(to_uint8(arr), name, hashlib.sha256(data).hexdigest(), ms,
-                    float(spacing[0]) if spacing else None, note)  # fmt: skip
+                    proj.iso_spacing_mm, note, proj.detector_spacing_mm,
+                    proj.geometry)  # fmt: skip

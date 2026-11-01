@@ -10,6 +10,11 @@ for an automatic segmentation, D43), else from the probability map (an analyst's
 
 Warnings flag what the user must know: an assumed pixel size, many fallback diameter
 measurements, and inputs outside the surrogate's synthetic training ranges.
+
+Two views (P5, :func:`analyse_two_views`): the same vessel between the same landmarks in two
+projections with known geometry → 3D centreline (:mod:`vstent.imaging.twoview`) → a lumen
+profile along the true 3D length, with diameters from both views at their exact magnification
+→ the same solver and surrogate.
 """
 
 from dataclasses import dataclass, field
@@ -18,8 +23,18 @@ from typing import Protocol
 import numpy as np
 
 from vstent.data.synth import SamplingConfig
-from vstent.imaging.qca import DEFAULT_MM_PER_PX, NO_LUMEN_PX, QCAResult, run_qca
+from vstent.imaging.centerline import trace_centerline
+from vstent.imaging.projection import ProjectionGeometry
+from vstent.imaging.qca import (
+    DEFAULT_MM_PER_PX,
+    LEVEL,
+    NO_LUMEN_PX,
+    QCAResult,
+    qca_from_centerline,
+    run_qca,
+)
 from vstent.imaging.qca_tree import MAX_DEPTH, TreeQCA, tree_qca
+from vstent.imaging.twoview import Reconstruction, TwoViewProfile, reconstruct, two_view_profile
 from vstent.inference.onnx_runtime import SurrogateRunner
 from vstent.physics.geometry import VesselProfile
 from vstent.physics.solver import FFRResult, PhysicsParams, solve_ffr
@@ -178,6 +193,117 @@ def analyse_vessel(
                 f"Pv/Pa = {floor:.2f}: the input is far outside what it was trained on"
             )
     return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings, std, interval)
+
+
+@dataclass(frozen=True, eq=False)
+class TwoViewAnalysis:
+    """Result of :func:`analyse_two_views` (P5).
+
+    Attributes:
+        probs: vessel probability map of each view.
+        qca: each view's QCA along its traced centreline (ends not trimmed; isocentre pixel
+            size).
+        reconstruction: the 3D centreline.
+        lumen: the lumen profile along it (``lumen.profile`` goes to the physics).
+        solver: reduced-order FFR pullback along the 3D centreline.
+        surrogate_s, surrogate_ffr, surrogate_std, model_interval: as in
+            :class:`VesselAnalysis`.
+        params: physics constants used.
+        warnings: plain-language caveats for this analysis.
+    """
+
+    probs: tuple[np.ndarray, np.ndarray]
+    qca: tuple[QCAResult, QCAResult]
+    reconstruction: Reconstruction
+    lumen: TwoViewProfile
+    solver: FFRResult
+    surrogate_s: np.ndarray | None
+    surrogate_ffr: np.ndarray | None
+    params: PhysicsParams
+    warnings: list[str] = field(default_factory=list)
+    surrogate_std: np.ndarray | None = None
+    model_interval: Interval | None = None
+
+    @property
+    def profile(self) -> VesselProfile:
+        return self.lumen.profile
+
+    @property
+    def ffr_distal_solver(self) -> float:
+        return float(self.solver.ffr[-1])
+
+    @property
+    def ffr_distal_surrogate(self) -> float | None:
+        return None if self.surrogate_ffr is None else float(self.surrogate_ffr[-1])
+
+    @property
+    def single_view_lengths_mm(self) -> tuple[float, float]:
+        """Each view's 2D path length at its isocentre pixel size (mm): what a single view
+        would report."""
+        return tuple(  # type: ignore[return-value]
+            m_to_mm(q.centerline.length * g.iso_pixel_m)
+            for q, g in zip(self.qca, self.reconstruction.geometries, strict=True)
+        )
+
+
+def analyse_two_views(
+    probs: tuple[np.ndarray, np.ndarray],
+    starts,
+    ends,
+    geometries: tuple[ProjectionGeometry, ProjectionGeometry],
+    *,
+    params: PhysicsParams | None = None,
+    surrogate: SurrogateRunner | None = None,
+    sampling: SamplingConfig | None = None,
+    images: tuple[np.ndarray | None, np.ndarray | None] = (None, None),
+    lumen: str | None = None,
+    correct_shift: bool = True,
+) -> TwoViewAnalysis:
+    """QCA + FFR of one vessel seen in two views. ``starts`` / ``ends``: the same two
+    landmarks ((row, col) px) in each view; ``geometries``: each view's projection (DICOM).
+    ``images``, ``lumen``: as in :func:`analyse_vessel`. ``correct_shift``: estimate motion
+    between the runs (:func:`~vstent.imaging.twoview.estimate_shift`)."""
+    params = params or PhysicsParams()
+    qcas = []
+    for k in range(2):
+        cl = trace_centerline(np.asarray(probs[k]) >= LEVEL, starts[k], ends[k])
+        qcas.append(qca_from_centerline(
+            probs[k], cl, mm_per_px=m_to_mm(geometries[k].iso_pixel_m), image=images[k],
+            lumen=_lumen(images[k], lumen), trim_diameters=0,
+        ))  # fmt: skip
+    rec = reconstruct(geometries[0], qcas[0].centerline, geometries[1], qcas[1].centerline,
+                      correct_shift=correct_shift)  # fmt: skip
+    prof = two_view_profile(
+        rec,
+        (qcas[0].diameters.diameter_px, qcas[1].diameters.diameter_px),
+        (qcas[0].centerline.s, qcas[1].centerline.s),
+    )
+    solver = solve_ffr(prof.profile, params)
+    warnings = rec.warnings()
+    for k, q in enumerate(qcas):
+        name = f"View {k + 1}"
+        if q.fallback_fraction > MAX_FALLBACK_FRACTION:
+            warnings.append(
+                f"{name}: {q.fallback_fraction:.0%} of diameters used the distance-transform "
+                "fallback (edges not found along the normal)"
+            )
+        warnings += lumen_warnings(q, name)
+    if prof.capped.mean() > MAX_CAPPED_FRACTION:
+        warnings.append(
+            f"{prof.capped.mean():.0%} of diameters exceeded 1.15 × the reference (side "
+            "branches or overlapping vessels) and were capped"
+        )
+    if solver.r_micro_clamped:
+        warnings.append("R_micro hit its lower bound during calibration")
+    s = ffr = std = interval = None
+    if surrogate is not None:
+        s, ffr, std = surrogate.predict_profile_with_spread(
+            prof.profile, solver.pa, solver.pv, solver.r_micro
+        )
+        interval = model_interval(surrogate, ffr[-1], None if std is None else std[-1])
+        warnings += range_warnings(prof.profile, solver.pa, solver.pv, sampling)
+    return TwoViewAnalysis(tuple(probs), tuple(qcas), rec, prof, solver, s, ffr, params, warnings,
+                           std, interval)  # fmt: skip
 
 
 def analyse_image(

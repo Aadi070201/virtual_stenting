@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib.patches import Rectangle
 
-from vstent.inference.pipeline import TreeAnalysis, VesselAnalysis
+from vstent.inference.pipeline import TreeAnalysis, TwoViewAnalysis, VesselAnalysis
 from vstent.physics.tree import TreeFFRResult
 from vstent.plotting import (
     AXIS,
@@ -95,6 +95,67 @@ def plot_analysis(
     ax_f.axhline(CUTOFF, color=INK_MUTED, lw=0.8, ls=(0, (4, 3)), zorder=1)
     ax_f.set_ylim(lo, 1.02)
     ax_f.set_xlabel("Distance from start (mm)", fontsize=8, color=INK_SECONDARY)
+    ax_f.set_ylabel("FFR", fontsize=8, color=INK_SECONDARY)
+    ax_f.legend(frameon=False, fontsize=7.5, labelcolor=INK_SECONDARY, loc="lower left")
+    save_figure(fig, path)
+
+
+def plot_two_view_analysis(
+    analysis: TwoViewAnalysis,
+    images: tuple[np.ndarray, np.ndarray],
+    path: str | Path,
+    *,
+    title: str = "Two-view analysis",
+) -> None:
+    """Both views with the traced path and the 3D centreline projected back, and the FFR
+    pullback along the 3D length (P5)."""
+    rec, solver = analysis.reconstruction, analysis.solver
+    single = analysis.single_view_lengths_mm
+    fig = new_figure(
+        11.0,
+        3.9,
+        title,
+        f"{rec.geometries[0].label()} and {rec.geometries[1].label()}, "
+        f"{rec.separation_deg:.0f}° apart; 3D length {m_to_mm(rec.length):.1f} mm (single views "
+        f"{single[0]:.1f} and {single[1]:.1f} mm); distal FFR solver "
+        f"{analysis.ffr_distal_solver:.2f}"
+        + (
+            f", surrogate {analysis.ffr_distal_surrogate:.2f}"
+            if analysis.surrogate_ffr is not None
+            else ""
+        ),
+    )
+    for k in range(2):
+        ax = fig.add_axes((0.02 + 0.31 * k, 0.10, 0.28, 0.74))
+        cl = analysis.qca[k].centerline
+        back = rec.geometries[k].project(rec.points)
+        ax.imshow(images[k], cmap="gray", vmin=0, vmax=255)
+        ax.plot(cl.points[:, 1], cl.points[:, 0], color=SERIES_2, lw=1.0, label="Traced")
+        ax.plot(back[:, 1], back[:, 0], color=SERIES_1, lw=1.0, ls=(0, (3, 2)),
+                label="3D, projected back")  # fmt: skip
+        ax.plot(*cl.points[0, ::-1], "o", color=SERIES_3, ms=4)
+        ax.plot(*cl.points[-1, ::-1], "s", color=SERIES_3, ms=4)
+        ax.set_title(f"View {k + 1}: {rec.geometries[k].label()}", fontsize=8,
+                     color=INK_SECONDARY)  # fmt: skip
+        ax.set_axis_off()
+        if k == 0:
+            ax.legend(frameon=False, fontsize=7, labelcolor=INK_SECONDARY, loc="lower left")
+    ax_f = fig.add_axes((0.71, 0.14, 0.27, 0.66))
+    style_axes(ax_f)
+    lowest = float(solver.ffr.min())
+    if analysis.surrogate_ffr is not None:
+        lowest = min(lowest, float(analysis.surrogate_ffr.min()))
+    lo = min(0.5, lowest - 0.05)
+    ax_f.axhspan(lo, CUTOFF, color=BAND, zorder=0.5)
+    ax_f.plot(m_to_mm(solver.s), solver.ffr, color=INK_SECONDARY, lw=2.0, label="Solver", zorder=2)
+    if analysis.surrogate_ffr is not None:
+        ax_f.plot(
+            m_to_mm(analysis.surrogate_s), analysis.surrogate_ffr, color=SERIES_1, lw=2.0,
+            ls=(0, (5, 2)), label="Surrogate (ONNX)", zorder=3,
+        )  # fmt: skip
+    ax_f.axhline(CUTOFF, color=INK_MUTED, lw=0.8, ls=(0, (4, 3)), zorder=1)
+    ax_f.set_ylim(lo, 1.02)
+    ax_f.set_xlabel("Distance along the 3D centreline (mm)", fontsize=8, color=INK_SECONDARY)
     ax_f.set_ylabel("FFR", fontsize=8, color=INK_SECONDARY)
     ax_f.legend(frameon=False, fontsize=7.5, labelcolor=INK_SECONDARY, loc="lower left")
     save_figure(fig, path)

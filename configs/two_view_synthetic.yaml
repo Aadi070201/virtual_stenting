@@ -1,0 +1,52 @@
+# Synthetic two-view cases (docs/PLAN.md, P5). NOT clinical data.
+# `vstent two-view-synthetic` renders these cases and writes reports/two_view_synthetic.md.
+# Ranges are [low, high], sampled uniformly. All values are sampling choices (they may be tuned);
+# the physics comes from configs/physics.yaml. Method choices (D49) were made on other seeds.
+name: two_view_synthetic
+seed: 5001                 # static case i: seed 5001 + i; stress cases: seed 105001 + i
+n_cases: 100
+n_stress: 50               # random views, overlap allowed
+
+# lumen profiles: the P2 tree sampler with these overrides (the validation stand-in's segment)
+tree_config: configs/synth_tree_v1.yaml
+sampling:
+  length_mm: [40.0, 90.0]
+  d0_mm: [2.5, 4.0]
+  side_count_probs: [0.2, 0.4, 0.3, 0.1, 0.0]
+  side_length_mm: [10.0, 40.0]
+n_points: 256
+
+# heart: branches on a sphere around a centre offset from the isocentre
+heart_radius_mm: [40.0, 55.0]
+heart_offset_sd_mm: 15.0
+curvature_sd_per_mm: 0.03      # turning within the surface (radius of curvature ~ 30 mm)
+curvature_corr_mm: 10.0
+wobble_sd_mm: 1.5              # rise and fall off the surface
+wobble_corr_mm: 15.0
+side_angle_deg: [35.0, 75.0]
+
+# views (one C-arm: SOD shared, SID per run); angles in the clinical range
+primary_deg: [-45.0, 60.0]     # RAO 45 .. LAO 60
+secondary_deg: [-35.0, 40.0]   # CAU 35 .. CRA 40
+separation_deg: [30.0, 110.0]
+sid_mm: [900.0, 1200.0]
+sod_mm: [720.0, 800.0]
+iso_pixel_mm: [0.22, 0.30]     # pixel size at the isocentre, as ARCADE (D39)
+image_size: 512
+margin_px: 16.0
+layout_tries: 100              # layouts and views per tree, then a new tree ...
+max_trees: 50                  # ... up to this many
+motion_sd_mm: 2.0              # heart shift between the runs (motion scenario), SD per axis
+avoid_overlap: true            # QCA practice: the analysed vessel overlaps nothing
+overlap_gap_px: 2.0
+click_sd_px: 1.0
+
+# imaging: as configs/validation_synthetic.yaml (ARCADE-fitted, D39)
+mu_per_mm: [0.04, 0.08]
+background: [0.49, 0.64]
+texture_sd: 0.04
+texture_scale_px: 40.0
+blur_px: [0.8, 1.2]
+edge_amount: [2.0, 3.0]
+edge_sigma_px: [1.5, 3.0]
+noise_sd: [0.012, 0.022]
