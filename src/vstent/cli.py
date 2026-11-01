@@ -1666,9 +1666,8 @@ def stenosis_grading(
     source = json.loads((raw_dir / SOURCE_FILE).read_text(encoding="utf-8"))
     tracks = sg.lesion_tracks(load_lesion_boxes(raw_dir))
     split = sg.patient_split([t.patient for t in tracks])
-    seg = SegmentationRunner.from_dir(
-        seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
-    )
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    seg = SegmentationRunner.from_dir(seg_dir)
     typer.echo(f"{len(tracks)} expert lesions in {len({t.patient for t in tracks})} patients")
 
     def progress(k, n):
@@ -1678,7 +1677,8 @@ def stenosis_grading(
     rows = sg.measure_tracks(tracks, seg, split=split, methods=tuple(methods), progress=progress,
                              workers=workers)  # fmt: skip
     stats = sg.write_grading_report(rows, Path("reports/stenosis_grading.md"), source=source,
-                                    n_boot=n_boot, git=git)  # fmt: skip
+                                    n_boot=n_boot, git=git,
+                                    seg_model=Path(seg_dir).as_posix())  # fmt: skip
     for m, s in stats.items():
         t = s["test"]
         if "kappa" in t:

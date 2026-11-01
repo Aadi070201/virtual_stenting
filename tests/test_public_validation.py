@@ -253,9 +253,11 @@ def test_grading_end_to_end(tmp_path, dark_seg_dir):
     assert sg.measure_tracks(tracks, seg, split=split, methods=("intensity", "model"),
                              workers=2) == {m: rows[m] for m in ("intensity", "model")}  # fmt: skip
     source = {"doi": cadica.DOI, "licence": cadica.LICENCE}
-    sg.write_grading_report(rows, tmp_path / "rep" / "grading.md", source=source, n_boot=100)
+    sg.write_grading_report(rows, tmp_path / "rep" / "grading.md", source=source, n_boot=100,
+                            seg_model="models/seg/x")  # fmt: skip
     md = (tmp_path / "rep" / "grading.md").read_text(encoding="utf-8")
     assert "visual estimates" in md and "Development patients" in md
+    assert "segmentation model `models/seg/x`" in md
     assert (tmp_path / "rep" / "grading" / "lesions_intensity.csv").exists()
 
 
