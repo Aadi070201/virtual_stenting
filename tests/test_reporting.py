@@ -77,3 +77,13 @@ def test_cli_demo_and_qca_synthetic(tmp_path, monkeypatch):
 def test_mvp_provenance_has_creation_times():
     data = collect(Path("reports"))
     assert all(p["created"] for p in data["provenance"])
+
+
+def test_every_report_states_research_use_only():
+    """CLAUDE.md: every report says research use only (requirement SR-01)."""
+    pages = sorted(Path("reports").rglob("*.md")) + sorted(Path("docs/regulatory").glob("*.md"))
+    assert pages
+    missing = [
+        p.as_posix() for p in pages if "research use only" not in p.read_text("utf-8").lower()
+    ]
+    assert missing == []

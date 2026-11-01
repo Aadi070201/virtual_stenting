@@ -1,0 +1,402 @@
+# Hazard analysis (ISO 14971 §5–§7), DRAFT for review by a qualified person.
+# Research use only: this software is not a medical device and is not for clinical use.
+#
+# Risks are evaluated for the INTENDED CLINICAL USE in INTENDED_USE.md, not for today's
+# research use (no patient decisions). Probabilities are the probability of harm per use,
+# assuming the clinician acts on the output (P2 = 1) unless stated. "Measured" cites a
+# generated report; "estimated" is engineering judgement, to be replaced by data. Where
+# nothing is measured, the probability is set conservatively high (RISK_MANAGEMENT_PLAN.md).
+# Controls are requirement IDs from requirements.yaml. `vstent regulatory` checks every
+# reference and renders HAZARD_ANALYSIS.md and TRACEABILITY.md.
+
+policy:
+  use: one analysed vessel
+  severity:
+    1:
+      name: Negligible
+      meaning: "inconvenience or temporary discomfort"
+    2:
+      name: Minor
+      meaning: "temporary injury or impairment not needing medical intervention"
+    3:
+      name: Serious
+      meaning: "injury needing medical intervention, e.g. a repeat revascularisation"
+    4:
+      name: Critical
+      meaning: "life-threatening injury or permanent impairment, e.g. myocardial infarction"
+    5:
+      name: Catastrophic
+      meaning: "death"
+  probability:
+    1:
+      name: Improbable
+      meaning: "fewer than 1 in 100,000 uses"
+    2:
+      name: Remote
+      meaning: "1 in 100,000 to 1 in 10,000 uses"
+    3:
+      name: Occasional
+      meaning: "1 in 10,000 to 1 in 1,000 uses"
+    4:
+      name: Probable
+      meaning: "1 in 1,000 to 1 in 100 uses"
+    5:
+      name: Frequent
+      meaning: "1 in 100 uses or more"
+  acceptable_max: 4
+  unacceptable_min: 10
+
+hazards:
+  - id: H-01
+    title: Stenosis severity underestimated
+    cause: >-
+      The lumen edges are blurred in the angiogram, the segmentation fills a tight lesion, or
+      the lesion is narrowed along the X-ray; QCA reads a smaller %DS than the true one.
+    situation: >-
+      The FFR shown is too high (above 0.80) for a haemodynamically significant lesion.
+    harm: >-
+      Revascularisation deferred for an ischaemic lesion: angina, myocardial infarction,
+      urgent revascularisation.
+    severity: 4
+    probability: 5
+    basis: >-
+      Measured. CADICA test patients, intensity edges (the product default): weighted kappa
+      0.14 against expert grades, median measured %DS 44% for lesions graded 70–90%. Rendered
+      vessels: edges read 95% lesions as 37–59% DS.
+    controls: [SR-10, SR-11, SR-12, SR-23, SR-24, SR-02, SR-01]
+    residual_probability: 5
+    residual_basis: >-
+      Measured with the controls in place (the CADICA result is the product's own method).
+      Intervals and warnings inform the user but do not correct the compression.
+    evidence: [reports/stenosis_grading.md, reports/lumen_synthetic.md]
+    needed: >-
+      Lesion-accurate QCA on real angiograms (agreement with expert or core-lab QCA), then
+      agreement with invasive FFR (ICADD or a clinical study).
+
+  - id: H-02
+    title: Stenosis severity overestimated
+    cause: >-
+      Overlapping or crossing vessels, poor filling, a foreshortened bend or the catheter in
+      the path create a false narrowing.
+    situation: >-
+      The FFR shown is too low (0.80 or below) for a lesion that is not significant.
+    harm: >-
+      Unnecessary PCI: dissection, perforation, peri-procedural myocardial infarction,
+      bleeding on antiplatelet therapy, later stent thrombosis or restenosis.
+    severity: 4
+    probability: 4
+    basis: >-
+      Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 223); smaller
+      overestimates were not quantified, and nothing is measured against FFR.
+    controls: [SR-10, SR-06, SR-13, SR-24, SR-01]
+    residual_probability: 4
+    residual_basis: Not measured after the controls; unchanged.
+    evidence: [reports/stenosis_grading.md]
+    needed: Agreement with invasive FFR; false-positive rate in vessels with FFR > 0.80.
+
+  - id: H-03
+    title: Wrong pixel size
+    cause: >-
+      The image has no calibrated pixel size at the vessel (exported frames, or DICOM pixel
+      spacing at the detector without magnification correction); the default is assumed.
+    situation: >-
+      Absolute diameters and lengths are wrong by the scale error, so the FFR is wrong in
+      either direction and the stent diameter is mis-sized.
+    harm: >-
+      As H-01 or H-02; an oversized stent can dissect or perforate, an undersized one can be
+      malapposed (thrombosis, restenosis).
+    severity: 4
+    probability: 5
+    basis: >-
+      Estimated from the data seen so far: the public angiograms (ARCADE, CADICA) carry no
+      pixel size, and magnification is never corrected.
+    controls: [SR-09, SR-02, SR-23, SR-26]
+    residual_probability: 5
+    residual_basis: >-
+      The warning and the ±10% input interval show the problem but do not remove it.
+    needed: >-
+      Pixel size from the projection geometry (SR-40, P5) or catheter calibration, verified
+      on phantoms.
+
+  - id: H-04
+    title: Total occlusion read as open
+    cause: >-
+      In a single frame the segmentation bridges an occluded segment (collateral filling,
+      overlapping vessels), and the QCA measures a lumen there.
+    situation: >-
+      An FFR is shown for an occluded vessel supplied by collaterals, which the flow model
+      does not represent.
+    harm: Wrong treatment decision for a chronic total occlusion; delayed treatment.
+    severity: 4
+    probability: 5
+    basis: >-
+      Measured on CADICA: 10 of 11 total occlusions were measured and none was read as
+      ≥ 90% DS, so the occlusion warning never fired on a real occlusion.
+    controls: [SR-12, SR-02, SR-01]
+    residual_probability: 5
+    residual_basis: The occlusion warning works on rendered vessels only.
+    evidence: [reports/stenosis_grading.md]
+    needed: >-
+      Occlusion detection that works on real runs (e.g. delayed or retrograde filling over
+      the cine) and an explicit user confirmation that the vessel is open.
+
+  - id: H-05
+    title: Lesion length underestimated
+    cause: >-
+      One projection foreshortens the vessel or overlaps it with another; the measured
+      lesion is shorter than the real one.
+    situation: The planned stent is too short to cover the lesion.
+    harm: "Geographic miss: restenosis, repeat revascularisation."
+    severity: 3
+    probability: 5
+    basis: >-
+      Estimated: foreshortening is inherent in a single projection; its size is not
+      measured.
+    controls: [SR-13, SR-01]
+    residual_probability: 5
+    residual_basis: No control yet removes foreshortening (SR-41 is a gap).
+    needed: Two-view 3D reconstruction (SR-41, P5) and its length error against 3D truth.
+
+  - id: H-06
+    title: Reduced-order physics error
+    cause: >-
+      The model assumes steady, fully developed flow, an area-only expansion loss, a fixed
+      hyperaemic velocity and a healthy microcirculation; real lesions, diffuse disease,
+      microvascular dysfunction and collaterals differ.
+    situation: The FFR shown is systematically wrong for the patient.
+    harm: As H-01 (FFR too high) or H-02 (too low).
+    severity: 4
+    probability: 5
+    basis: >-
+      Measured where possible. FDA benchmark nozzle, abrupt exit, Re 500: modelled loss 0.61
+      × the measured median (FFR too high). Synthetic stand-in study with the product's fixed
+      assumptions, scored against its own physics: limits of agreement −0.135 to +0.152,
+      accuracy at 0.80 of 0.902. Nothing is measured against invasive FFR.
+    controls: [SR-14, SR-15, SR-16, SR-23, SR-03, SR-01]
+    residual_probability: 5
+    residual_basis: The intervals cover the listed assumptions, not the model's own error.
+    evidence: [reports/physics_nozzle.md, reports/validation_synthetic.md]
+    needed: >-
+      3D CFD comparison on coronary geometries (P6), a patient-specific flow, and agreement
+      with invasive FFR.
+
+  - id: H-07
+    title: Surrogate error or extrapolation
+    cause: >-
+      The learned surrogate differs from the reduced-order solver, most of all for inputs
+      outside its synthetic training ranges.
+    situation: The surrogate's FFR crosses 0.80 where the solver's does not.
+    harm: As H-01 or H-02, if the user relies on the surrogate's value.
+    severity: 4
+    probability: 4
+    basis: >-
+      Measured on synthetic test vessels: 0.24% disagree with the solver at 0.80 (agreement
+      99.76%). On real images extrapolation is common: 19 of 20 ARCADE gallery cases were
+      outside the training ranges (mostly vessel length).
+    controls: [SR-18, SR-19, SR-20, SR-21, SR-22, SR-02]
+    residual_probability: 2
+    residual_basis: >-
+      Estimated: the solver's FFR is shown beside the surrogate's, plans are re-checked with
+      the solver, and out-of-range inputs are warned; the user would have to prefer the
+      surrogate's value against the reference shown next to it.
+    evidence: [reports/surrogate_eval.md, reports/qca_gallery.md]
+    needed: Training ranges that cover real angiograms; a usability check that users read the solver value.
+
+  - id: H-08
+    title: Wrong vessel or path analysed
+    cause: >-
+      The user clicks a neighbouring vessel, or the path runs through a side branch, the
+      catheter or an overlapping vessel.
+    situation: The profile, FFR and plan belong to another vessel or a mix of vessels.
+    harm: As H-01 or H-02 for the intended vessel.
+    severity: 4
+    probability: 4
+    basis: Estimated; user-dependent and not measured.
+    controls: [SR-08, SR-13, SR-10, SR-02]
+    residual_probability: 4
+    residual_basis: >-
+      The overlay lets the user check the path; whether users do is not measured.
+    needed: Usability study (SR-42); automatic vessel labelling (coronary segments).
+
+  - id: H-09
+    title: Plan used as a sizing instruction
+    cause: >-
+      The user takes the suggested stent diameter and length as the device to implant.
+    situation: >-
+      A stent sized from 2D QCA (with H-01, H-03, H-05 errors) is chosen without intravascular
+      imaging or the operator's own sizing.
+    harm: >-
+      Oversizing: dissection, perforation. Undersizing: malapposition, thrombosis,
+      restenosis.
+    severity: 4
+    probability: 4
+    basis: Estimated; use-dependent and not measured.
+    controls: [SR-26, SR-25, SR-27, SR-09, SR-01]
+    residual_probability: 4
+    residual_basis: The sizing rule and the oversize flag limit gross errors only.
+    needed: >-
+      Instructions that the plan is an estimate, sizing compared with IVUS or OCT, and a
+      usability check.
+
+  - id: H-10
+    title: Post-PCI FFR overestimated
+    cause: >-
+      The virtual stent restores an ideal lumen: no recoil, malapposition, side-branch
+      jailing or diffuse disease outside the stent, and an unchanged microcirculation.
+    situation: A plan predicted to reach the target leaves residual ischaemia.
+    harm: Persistent angina, repeat revascularisation.
+    severity: 3
+    probability: 5
+    basis: Estimated; post-PCI predictions are not compared with post-PCI wire FFR.
+    controls: [SR-15, SR-24, SR-03, SR-01]
+    residual_probability: 5
+    residual_basis: Not measured.
+    needed: Post-PCI invasive FFR for validation.
+
+  - id: H-11
+    title: Wrong analysis frame
+    cause: >-
+      The chosen frame of a run is before full opacification, during washout or blurred by
+      motion.
+    situation: An under-filled vessel shows a false narrowing or hides a lesion.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 5
+    basis: >-
+      Measured on CADICA test patients: the analysis frame lies outside the span of the
+      clinicians' selected frames in 22 of 177 runs (12%).
+    controls: [SR-05, SR-06, SR-13]
+    residual_probability: 5
+    residual_basis: Measured with the controls (the CADICA result is the product's own rule).
+    evidence: [reports/cine_frames.md]
+    needed: A lesion-aware and end-diastolic frame choice (P7); the user's confirmation.
+
+  - id: H-12
+    title: Contrast transit read as flow
+    cause: A user reads the displayed contrast-front speed as a measured coronary flow.
+    situation: The user changes the flow assumptions or the decision on the basis of a resting, imprecise speed.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 2
+    basis: >-
+      Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and
+      is shown only when the front advances (CADICA: 56% of runs).
+    controls: [SR-31]
+    residual_probability: 2
+    residual_basis: Unchanged; the label is the control.
+    evidence: [reports/cine_frames.md]
+    needed: A validated relation between transit and hyperaemic flow before any use.
+
+  - id: H-13
+    title: Result attributed to the wrong patient
+    cause: >-
+      Files are exported, renamed and loaded by hand; the software holds no patient identity.
+    situation: A result is read for another patient's angiogram.
+    harm: A wrong decision for that patient (as H-01 or H-02).
+    severity: 4
+    probability: 3
+    basis: Estimated; depends on the site's handling of files.
+    controls: [SR-36, SR-04]
+    residual_probability: 3
+    residual_basis: >-
+      The report records the input's SHA-256, which proves which file was analysed but not
+      whose it is.
+    needed: DICOM / PACS integration with patient identity checks under the site's procedures.
+
+  - id: H-14
+    title: Unit or conversion error
+    cause: A length or pressure is converted wrongly between mm / m or mmHg / Pa.
+    situation: Diameters, pressures and FFR are wrong by a constant factor.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 2
+    basis: Estimated.
+    controls: [SR-09, SR-14, SR-17]
+    residual_probability: 1
+    residual_basis: >-
+      Estimated: SI everywhere, conversions in one tested module, physics sanity bands checked
+      in clinical units.
+    needed: Keep the conversions in units.py; review new input and output boundaries.
+
+  - id: H-15
+    title: Patient data disclosed
+    cause: >-
+      De-identified study data are committed to the repository, the app is exposed on a
+      network, or a third-party component is compromised.
+    situation: Patient data reach people who should not have them.
+    harm: Breach of privacy (not a physical injury; handled with the security risk process).
+    severity: 2
+    probability: 2
+    basis: Estimated.
+    controls: [SR-33, SR-34, SR-35, SR-39]
+    residual_probability: 2
+    residual_basis: >-
+      Estimated: tracked locations are refused, the app is local by default, downloads are
+      verified, the SBOM lists every component.
+    needed: >-
+      A threat model and security activities under IEC 81001-5-1; vulnerability monitoring of
+      the SBOM.
+
+  - id: H-16
+    title: Software failure during a procedure
+    cause: A crash, hang or slow update while the patient is on the table.
+    situation: The analysis is delayed or unavailable.
+    harm: Longer procedure, more contrast and radiation.
+    severity: 2
+    probability: 3
+    basis: Estimated.
+    controls: [SR-29, SR-30, SR-32, SR-17]
+    residual_probability: 2
+    residual_basis: >-
+      Estimated: interactive updates within 300 ms and the planner within 1 s are tested;
+      invalid inputs are refused with a message.
+    evidence: [reports/app_latency.md, reports/planner_benchmark.md]
+    needed: Reliability testing on the target hardware; a fallback (the procedure continues without the software).
+
+  - id: H-17
+    title: Use outside the intended population
+    cause: >-
+      The software is used for bypass grafts, left main or ostial lesions, in-stent
+      restenosis, the culprit vessel of an acute myocardial infarction, severe microvascular
+      disease or poor-quality images.
+    situation: An FFR is shown where the model's assumptions do not hold.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 5
+    basis: Estimated; nothing detects these situations.
+    controls: [SR-01, SR-02]
+    residual_probability: 5
+    residual_basis: Labelling only; no automatic detection.
+    needed: >-
+      Exclusions in the instructions for use, automatic detection where possible, clinical
+      data per subgroup.
+
+  - id: H-18
+    title: Wrong or corrupted model file
+    cause: A model file is replaced, corrupted or paired with the wrong normalisation statistics.
+    situation: Segmentation or surrogate outputs are wrong.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 2
+    basis: Estimated.
+    controls: [SR-07, SR-18, SR-36, SR-38]
+    residual_probability: 1
+    residual_basis: >-
+      Estimated: mismatched statistics and non-segmentation models are refused; model hashes
+      are recorded in the case report.
+    needed: Signed model files in a release.
+
+  - id: H-19
+    title: Display misread
+    cause: >-
+      The user reads the curve instead of the distal value, misses the grey-zone flag,
+      misunderstands what the intervals cover, or over-trusts a single number.
+    situation: The output is understood differently from what it says.
+    harm: As H-01 or H-02.
+    severity: 4
+    probability: 5
+    basis: Estimated; no usability evaluation has been done.
+    controls: [SR-24, SR-03, SR-02, SR-01]
+    residual_probability: 5
+    residual_basis: Not measured (SR-42 is a gap).
+    needed: Usability engineering under IEC 62366-1 with interventional cardiologists.

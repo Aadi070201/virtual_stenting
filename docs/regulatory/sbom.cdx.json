@@ -1,0 +1,2046 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "bom-ref": "vstent@0.1.0",
+      "name": "vstent",
+      "version": "0.1.0",
+      "description": "Virtual stenting planner: research prototype, not a medical device, not for clinical use."
+    },
+    "properties": [
+      {
+        "name": "vstent:uv.lock:sha256",
+        "value": "38685e871705698f50552827e83426ace9229d878f49b85692d11f811d38fb97"
+      },
+      {
+        "name": "vstent:python",
+        "value": "3.14"
+      },
+      {
+        "name": "vstent:platforms",
+        "value": "win32, linux"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/altair@6.3.0",
+      "name": "altair",
+      "version": "6.3.0",
+      "purl": "pkg:pypi/altair@6.3.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/annotated-doc@0.0.5",
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "purl": "pkg:pypi/annotated-doc@0.0.5",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/annotated-types@0.8.0",
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "purl": "pkg:pypi/annotated-types@0.8.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/anyio@4.15.1",
+      "name": "anyio",
+      "version": "4.15.1",
+      "purl": "pkg:pypi/anyio@4.15.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/attrs@26.1.0",
+      "name": "attrs",
+      "version": "26.1.0",
+      "purl": "pkg:pypi/attrs@26.1.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/certifi@2026.10.23",
+      "name": "certifi",
+      "version": "2026.10.23",
+      "purl": "pkg:pypi/certifi@2026.10.23",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/charset-normalizer@3.5.2",
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "purl": "pkg:pypi/charset-normalizer@3.5.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/click@8.5.0",
+      "name": "click",
+      "version": "8.5.0",
+      "purl": "pkg:pypi/click@8.5.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/cloudpickle@3.1.2",
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "purl": "pkg:pypi/cloudpickle@3.1.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/colorama@0.4.6",
+      "name": "colorama",
+      "version": "0.4.6",
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/contourpy@1.4.0",
+      "name": "contourpy",
+      "version": "1.4.0",
+      "purl": "pkg:pypi/contourpy@1.4.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/cuda-bindings@12.9.10",
+      "name": "cuda-bindings",
+      "version": "12.9.10",
+      "purl": "pkg:pypi/cuda-bindings@12.9.10",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/cuda-pathfinder@1.8.4",
+      "name": "cuda-pathfinder",
+      "version": "1.8.4",
+      "purl": "pkg:pypi/cuda-pathfinder@1.8.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/cuda-toolkit@12.6.3",
+      "name": "cuda-toolkit",
+      "version": "12.6.3",
+      "purl": "pkg:pypi/cuda-toolkit@12.6.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/cycler@0.12.1",
+      "name": "cycler",
+      "version": "0.12.1",
+      "purl": "pkg:pypi/cycler@0.12.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/filelock@4.2.4",
+      "name": "filelock",
+      "version": "4.2.4",
+      "purl": "pkg:pypi/filelock@4.2.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/flatbuffers@25.12.19",
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "purl": "pkg:pypi/flatbuffers@25.12.19",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/fonttools@4.67.0",
+      "name": "fonttools",
+      "version": "4.67.0",
+      "purl": "pkg:pypi/fonttools@4.67.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/fsspec@2026.9.0",
+      "name": "fsspec",
+      "version": "2026.9.0",
+      "purl": "pkg:pypi/fsspec@2026.9.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/h11@0.16.0",
+      "name": "h11",
+      "version": "0.16.0",
+      "purl": "pkg:pypi/h11@0.16.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/hf-xet@1.7.0",
+      "name": "hf-xet",
+      "version": "1.7.0",
+      "purl": "pkg:pypi/hf-xet@1.7.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/httpcore2@2.16.0",
+      "name": "httpcore2",
+      "version": "2.16.0",
+      "purl": "pkg:pypi/httpcore2@2.16.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/httpx2@2.16.0",
+      "name": "httpx2",
+      "version": "2.16.0",
+      "purl": "pkg:pypi/httpx2@2.16.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/huggingface-hub@2.3.0",
+      "name": "huggingface-hub",
+      "version": "2.3.0",
+      "purl": "pkg:pypi/huggingface-hub@2.3.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/idna@3.20",
+      "name": "idna",
+      "version": "3.20",
+      "purl": "pkg:pypi/idna@3.20",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/imageio@2.38.1",
+      "name": "imageio",
+      "version": "2.38.1",
+      "purl": "pkg:pypi/imageio@2.38.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/itsdangerous@2.2.0",
+      "name": "itsdangerous",
+      "version": "2.2.0",
+      "purl": "pkg:pypi/itsdangerous@2.2.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/jinja2@3.1.6",
+      "name": "jinja2",
+      "version": "3.1.6",
+      "purl": "pkg:pypi/jinja2@3.1.6",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/joblib@1.6.0",
+      "name": "joblib",
+      "version": "1.6.0",
+      "purl": "pkg:pypi/joblib@1.6.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/jsonschema@4.26.0",
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "purl": "pkg:pypi/jsonschema@4.26.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "purl": "pkg:pypi/jsonschema-specifications@2025.9.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/kiwisolver@1.5.1",
+      "name": "kiwisolver",
+      "version": "1.5.1",
+      "purl": "pkg:pypi/kiwisolver@1.5.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/lazy-loader@0.6",
+      "name": "lazy-loader",
+      "version": "0.6",
+      "purl": "pkg:pypi/lazy-loader@0.6",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/markdown-it-py@4.2.0",
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/markupsafe@3.0.4",
+      "name": "markupsafe",
+      "version": "3.0.4",
+      "purl": "pkg:pypi/markupsafe@3.0.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/matplotlib@3.11.2",
+      "name": "matplotlib",
+      "version": "3.11.2",
+      "purl": "pkg:pypi/matplotlib@3.11.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/mdurl@0.1.2",
+      "name": "mdurl",
+      "version": "0.1.2",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/ml-dtypes@0.6.0",
+      "name": "ml-dtypes",
+      "version": "0.6.0",
+      "purl": "pkg:pypi/ml-dtypes@0.6.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/mpmath@1.3.0",
+      "name": "mpmath",
+      "version": "1.3.0",
+      "purl": "pkg:pypi/mpmath@1.3.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/narwhals@2.27.1",
+      "name": "narwhals",
+      "version": "2.27.1",
+      "purl": "pkg:pypi/narwhals@2.27.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/networkx@3.7",
+      "name": "networkx",
+      "version": "3.7",
+      "purl": "pkg:pypi/networkx@3.7",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/numpy@2.5.4",
+      "name": "numpy",
+      "version": "2.5.4",
+      "purl": "pkg:pypi/numpy@2.5.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cublas-cu12@12.6.4.1",
+      "name": "nvidia-cublas-cu12",
+      "version": "12.6.4.1",
+      "purl": "pkg:pypi/nvidia-cublas-cu12@12.6.4.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cuda-cupti-cu12@12.6.80",
+      "name": "nvidia-cuda-cupti-cu12",
+      "version": "12.6.80",
+      "purl": "pkg:pypi/nvidia-cuda-cupti-cu12@12.6.80",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cuda-nvrtc-cu12@12.6.85",
+      "name": "nvidia-cuda-nvrtc-cu12",
+      "version": "12.6.85",
+      "purl": "pkg:pypi/nvidia-cuda-nvrtc-cu12@12.6.85",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cuda-runtime-cu12@12.6.77",
+      "name": "nvidia-cuda-runtime-cu12",
+      "version": "12.6.77",
+      "purl": "pkg:pypi/nvidia-cuda-runtime-cu12@12.6.77",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cudnn-cu12@9.10.2.21",
+      "name": "nvidia-cudnn-cu12",
+      "version": "9.10.2.21",
+      "purl": "pkg:pypi/nvidia-cudnn-cu12@9.10.2.21",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cufft-cu12@11.3.0.4",
+      "name": "nvidia-cufft-cu12",
+      "version": "11.3.0.4",
+      "purl": "pkg:pypi/nvidia-cufft-cu12@11.3.0.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cufile-cu12@1.11.1.6",
+      "name": "nvidia-cufile-cu12",
+      "version": "1.11.1.6",
+      "purl": "pkg:pypi/nvidia-cufile-cu12@1.11.1.6",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-curand-cu12@10.3.7.77",
+      "name": "nvidia-curand-cu12",
+      "version": "10.3.7.77",
+      "purl": "pkg:pypi/nvidia-curand-cu12@10.3.7.77",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cusolver-cu12@11.7.1.2",
+      "name": "nvidia-cusolver-cu12",
+      "version": "11.7.1.2",
+      "purl": "pkg:pypi/nvidia-cusolver-cu12@11.7.1.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cusparse-cu12@12.5.4.2",
+      "name": "nvidia-cusparse-cu12",
+      "version": "12.5.4.2",
+      "purl": "pkg:pypi/nvidia-cusparse-cu12@12.5.4.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-cusparselt-cu12@0.7.1",
+      "name": "nvidia-cusparselt-cu12",
+      "version": "0.7.1",
+      "purl": "pkg:pypi/nvidia-cusparselt-cu12@0.7.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-nccl-cu12@2.29.3",
+      "name": "nvidia-nccl-cu12",
+      "version": "2.29.3",
+      "purl": "pkg:pypi/nvidia-nccl-cu12@2.29.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-nvjitlink-cu12@12.9.86",
+      "name": "nvidia-nvjitlink-cu12",
+      "version": "12.9.86",
+      "purl": "pkg:pypi/nvidia-nvjitlink-cu12@12.9.86",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-nvshmem-cu12@3.4.5",
+      "name": "nvidia-nvshmem-cu12",
+      "version": "3.4.5",
+      "purl": "pkg:pypi/nvidia-nvshmem-cu12@3.4.5",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/nvidia-nvtx-cu12@12.6.77",
+      "name": "nvidia-nvtx-cu12",
+      "version": "12.6.77",
+      "purl": "pkg:pypi/nvidia-nvtx-cu12@12.6.77",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/onnx@1.23.2",
+      "name": "onnx",
+      "version": "1.23.2",
+      "purl": "pkg:pypi/onnx@1.23.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/onnxruntime@1.31.0",
+      "name": "onnxruntime",
+      "version": "1.31.0",
+      "purl": "pkg:pypi/onnxruntime@1.31.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/opencv-python-headless@5.0.0.93",
+      "name": "opencv-python-headless",
+      "version": "5.0.0.93",
+      "purl": "pkg:pypi/opencv-python-headless@5.0.0.93",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/packaging@26.3",
+      "name": "packaging",
+      "version": "26.3",
+      "purl": "pkg:pypi/packaging@26.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pandas@3.1.0",
+      "name": "pandas",
+      "version": "3.1.0",
+      "purl": "pkg:pypi/pandas@3.1.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pillow@13.0.0",
+      "name": "pillow",
+      "version": "13.0.0",
+      "purl": "pkg:pypi/pillow@13.0.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/plotly@7.1.0",
+      "name": "plotly",
+      "version": "7.1.0",
+      "purl": "pkg:pypi/plotly@7.1.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/protobuf@7.36.2",
+      "name": "protobuf",
+      "version": "7.36.2",
+      "purl": "pkg:pypi/protobuf@7.36.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pyarrow@26.0.0",
+      "name": "pyarrow",
+      "version": "26.0.0",
+      "purl": "pkg:pypi/pyarrow@26.0.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pycocotools@2.0.11",
+      "name": "pycocotools",
+      "version": "2.0.11",
+      "purl": "pkg:pypi/pycocotools@2.0.11",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pydantic@2.14.1",
+      "name": "pydantic",
+      "version": "2.14.1",
+      "purl": "pkg:pypi/pydantic@2.14.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pydantic-core@2.50.1",
+      "name": "pydantic-core",
+      "version": "2.50.1",
+      "purl": "pkg:pypi/pydantic-core@2.50.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pydeck@0.9.3",
+      "name": "pydeck",
+      "version": "0.9.3",
+      "purl": "pkg:pypi/pydeck@0.9.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pydicom@3.0.2",
+      "name": "pydicom",
+      "version": "3.0.2",
+      "purl": "pkg:pypi/pydicom@3.0.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pygments@2.21.0",
+      "name": "pygments",
+      "version": "2.21.0",
+      "purl": "pkg:pypi/pygments@2.21.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pyparsing@3.3.3",
+      "name": "pyparsing",
+      "version": "3.3.3",
+      "purl": "pkg:pypi/pyparsing@3.3.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/python-dateutil@3.0.0",
+      "name": "python-dateutil",
+      "version": "3.0.0",
+      "purl": "pkg:pypi/python-dateutil@3.0.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/python-multipart@0.0.32",
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "purl": "pkg:pypi/python-multipart@0.0.32",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pyyaml@6.0.3",
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/referencing@0.37.0",
+      "name": "referencing",
+      "version": "0.37.0",
+      "purl": "pkg:pypi/referencing@0.37.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/requests@2.34.2",
+      "name": "requests",
+      "version": "2.34.2",
+      "purl": "pkg:pypi/requests@2.34.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/rich@15.0.0",
+      "name": "rich",
+      "version": "15.0.0",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/rpds-py@2026.9.1",
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "purl": "pkg:pypi/rpds-py@2026.9.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/safetensors@0.8.0",
+      "name": "safetensors",
+      "version": "0.8.0",
+      "purl": "pkg:pypi/safetensors@0.8.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/scikit-image@0.26.0",
+      "name": "scikit-image",
+      "version": "0.26.0",
+      "purl": "pkg:pypi/scikit-image@0.26.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/scikit-learn@1.9.1",
+      "name": "scikit-learn",
+      "version": "1.9.1",
+      "purl": "pkg:pypi/scikit-learn@1.9.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/scipy@1.18.1",
+      "name": "scipy",
+      "version": "1.18.1",
+      "purl": "pkg:pypi/scipy@1.18.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/segmentation-models-pytorch@0.5.0",
+      "name": "segmentation-models-pytorch",
+      "version": "0.5.0",
+      "purl": "pkg:pypi/segmentation-models-pytorch@0.5.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/setuptools@84.2.1",
+      "name": "setuptools",
+      "version": "84.2.1",
+      "purl": "pkg:pypi/setuptools@84.2.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/shellingham@1.5.4",
+      "name": "shellingham",
+      "version": "1.5.4",
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/six@1.17.0",
+      "name": "six",
+      "version": "1.17.0",
+      "purl": "pkg:pypi/six@1.17.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/starlette@1.10.0",
+      "name": "starlette",
+      "version": "1.10.0",
+      "purl": "pkg:pypi/starlette@1.10.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/streamlit@1.66.1",
+      "name": "streamlit",
+      "version": "1.66.1",
+      "purl": "pkg:pypi/streamlit@1.66.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/streamlit-image-coordinates@0.4.1",
+      "name": "streamlit-image-coordinates",
+      "version": "0.4.1",
+      "purl": "pkg:pypi/streamlit-image-coordinates@0.4.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/sympy@1.14.0",
+      "name": "sympy",
+      "version": "1.14.0",
+      "purl": "pkg:pypi/sympy@1.14.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/threadpoolctl@3.7.0",
+      "name": "threadpoolctl",
+      "version": "3.7.0",
+      "purl": "pkg:pypi/threadpoolctl@3.7.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/tifffile@2026.10.15",
+      "name": "tifffile",
+      "version": "2026.10.15",
+      "purl": "pkg:pypi/tifffile@2026.10.15",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/timm@1.0.30",
+      "name": "timm",
+      "version": "1.0.30",
+      "purl": "pkg:pypi/timm@1.0.30",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/torch@2.14.1%2Bcu126?repository_url=https://download.pytorch.org/whl/cu126",
+      "name": "torch",
+      "version": "2.14.1+cu126",
+      "purl": "pkg:pypi/torch@2.14.1%2Bcu126?repository_url=https://download.pytorch.org/whl/cu126",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/torchvision@0.29.1%2Bcu126?repository_url=https://download.pytorch.org/whl/cu126",
+      "name": "torchvision",
+      "version": "0.29.1+cu126",
+      "purl": "pkg:pypi/torchvision@0.29.1%2Bcu126?repository_url=https://download.pytorch.org/whl/cu126",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/tqdm@4.70.1",
+      "name": "tqdm",
+      "version": "4.70.1",
+      "purl": "pkg:pypi/tqdm@4.70.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/triton@3.8.0",
+      "name": "triton",
+      "version": "3.8.0",
+      "purl": "pkg:pypi/triton@3.8.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/truststore@0.10.5",
+      "name": "truststore",
+      "version": "0.10.5",
+      "purl": "pkg:pypi/truststore@0.10.5",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/typer@0.27.3",
+      "name": "typer",
+      "version": "0.27.3",
+      "purl": "pkg:pypi/typer@0.27.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/typing-extensions@4.16.0",
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/typing-inspection@0.4.4",
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "purl": "pkg:pypi/typing-inspection@0.4.4",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/tzdata@2026.5",
+      "name": "tzdata",
+      "version": "2026.5",
+      "purl": "pkg:pypi/tzdata@2026.5",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/urllib3@2.8.0",
+      "name": "urllib3",
+      "version": "2.8.0",
+      "purl": "pkg:pypi/urllib3@2.8.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/uvicorn@0.54.0",
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "purl": "pkg:pypi/uvicorn@0.54.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/watchdog@6.0.0",
+      "name": "watchdog",
+      "version": "6.0.0",
+      "purl": "pkg:pypi/watchdog@6.0.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/websockets@17.3",
+      "name": "websockets",
+      "version": "17.3",
+      "purl": "pkg:pypi/websockets@17.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/iniconfig@2.3.1",
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "purl": "pkg:pypi/iniconfig@2.3.1",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pluggy@1.7.0",
+      "name": "pluggy",
+      "version": "1.7.0",
+      "purl": "pkg:pypi/pluggy@1.7.0",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/pytest@9.1.1",
+      "name": "pytest",
+      "version": "9.1.1",
+      "purl": "pkg:pypi/pytest@9.1.1",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:pypi/ruff@0.17.2",
+      "name": "ruff",
+      "version": "0.17.2",
+      "purl": "pkg:pypi/ruff@0.17.2",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "vstent:platforms",
+          "value": "linux, win32"
+        },
+        {
+          "name": "vstent:direct",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}

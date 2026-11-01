@@ -3205,11 +3205,14 @@ dependencies = [
 
 [package.optional-dependencies]
 app = [
+    { name = "pandas" },
     { name = "plotly" },
+    { name = "pyarrow" },
     { name = "streamlit" },
     { name = "streamlit-image-coordinates" },
 ]
 dev = [
+    { name = "packaging" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -3231,7 +3234,10 @@ requires-dist = [
     { name = "onnx", specifier = ">=1.16" },
     { name = "onnxruntime", specifier = ">=1.18" },
     { name = "opencv-python-headless", marker = "extra == 'imaging'", specifier = ">=4.10" },
+    { name = "packaging", marker = "extra == 'dev'", specifier = ">=24" },
+    { name = "pandas", marker = "extra == 'app'", specifier = ">=2.2" },
     { name = "plotly", marker = "extra == 'app'", specifier = ">=5.22" },
+    { name = "pyarrow", marker = "extra == 'app'", specifier = ">=16" },
     { name = "pycocotools", marker = "extra == 'imaging'", specifier = ">=2.0.8" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydicom", marker = "extra == 'imaging'", specifier = ">=2.4" },

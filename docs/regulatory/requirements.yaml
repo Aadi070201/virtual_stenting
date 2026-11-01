@@ -1,0 +1,645 @@
+# Software requirements (IEC 62304 §5.2), DRAFT for review by a qualified person.
+# Research use only: this software is not a medical device and is not for clinical use.
+#
+# Each requirement names the code that implements it (path or path::name) and how it is
+# verified: tests (tests/<file>.py::<test>), generated reports (reports/...), an inspection
+# note, or the gap that remains. `vstent regulatory` checks every reference and renders
+# REQUIREMENTS.md and TRACEABILITY.md. Hazards (hazards.yaml) list the requirements that are
+# their risk controls.
+
+requirements:
+  # --- Labelling and information for safety -------------------------------------------------
+  - id: SR-01
+    title: Research-use notice everywhere
+    kind: labelling
+    text: >-
+      The command-line help, every app screen, the case report (JSON and PNG) and every
+      generated report state that the software is for research use only, is not a medical
+      device and must not be used for decisions about real patients.
+    code:
+      - src/vstent/__init__.py::DISCLAIMER
+      - src/vstent/app/core.py::BANNER
+      - src/vstent/cli.py
+    tests:
+      - tests/test_cli.py::test_help_shows_disclaimer
+      - tests/test_app.py::test_app_synthetic_mode_end_to_end
+      - tests/test_app.py::test_overlay_and_report_without_pixels
+      - tests/test_reporting.py::test_every_report_states_research_use_only
+
+  - id: SR-02
+    title: Plain-language warnings with every result
+    kind: labelling
+    text: >-
+      Every analysis returns plain-language warnings, shown next to the result in the app, the
+      CLI and the case report, for: an assumed (uncalibrated) pixel size; more diameters from
+      the fallback measurement or capped than the set limits; inputs outside the surrogate's
+      training ranges; a surrogate FFR below the physical floor Pv/Pa; a stretch without a
+      measurable lumen; a bridged segmentation gap; side paths that were not modelled.
+    code:
+      - src/vstent/inference/pipeline.py::analyse_vessel
+      - src/vstent/inference/pipeline.py::analyse_tree
+      - src/vstent/inference/pipeline.py::lumen_warnings
+      - src/vstent/inference/pipeline.py::range_warnings
+    tests:
+      - tests/test_pipeline.py::test_analyse_vessel_solver_and_surrogate
+      - tests/test_pipeline.py::test_range_warnings
+      - tests/test_app.py::test_app_image_mode_with_example
+      - tests/test_lumen_model.py::test_occlusion_and_gap_are_reported_to_the_user
+      - tests/test_tree_surrogate.py::test_floor_warnings
+
+  - id: SR-03
+    title: Scope of the uncertainty intervals stated
+    kind: labelling
+    text: >-
+      Wherever intervals are shown, the software states what they cover: the model interval
+      covers only the surrogate's error against the reduced-order solver, the input interval
+      only the listed assumptions; neither covers the reduced-order model's own error.
+    code:
+      - src/vstent/app/core.py::UNCERTAINTY_NOTE
+      - src/vstent/app/core.py::case_report
+    reports:
+      - reports/uncertainty.md
+    inspection: >-
+      The app shows UNCERTAINTY_NOTE under the intervals (streamlit_app.py) and the case
+      report stores it with them; no test asserts the on-screen text yet.
+
+  # --- Inputs --------------------------------------------------------------------------------
+  - id: SR-04
+    title: One image loader
+    kind: input
+    text: >-
+      PNG, JPEG and single-frame DICOM images are read by one loader used by the CLI, the app
+      and the evaluations; the image is converted to 8-bit greyscale the same way everywhere
+      and its SHA-256 is recorded.
+    code:
+      - src/vstent/imaging/image_io.py::read_image
+      - src/vstent/imaging/image_io.py::ImageInput
+    tests:
+      - tests/test_app.py::test_read_image_png_jpg_dicom
+      - tests/test_pipeline.py::test_cli_and_app_give_the_segmenter_the_same_pixels
+
+  - id: SR-05
+    title: Cine runs on one intensity scale
+    kind: input
+    text: >-
+      A cine run (multi-frame DICOM or a folder of frames) is read with one intensity scale
+      for all frames (frame-wise stretching would distort the opacification) and the frame
+      time from FrameTime or CineRate when present.
+    code:
+      - src/vstent/imaging/image_io.py::read_run
+      - src/vstent/imaging/image_io.py::read_run_bytes
+      - src/vstent/imaging/image_io.py::RunInput
+    tests:
+      - tests/test_cine.py::test_read_run_from_a_folder_and_a_dicom
+
+  - id: SR-06
+    title: Analysis frame in the opacified phase
+    kind: input
+    text: >-
+      For a run, the analysis frame is the most opacified frame (peak of the smoothed vessel
+      area) and lies in the opacified window (frames above 70% of the peak). The user can
+      choose another frame; a frame outside the window is warned about.
+    code:
+      - src/vstent/imaging/cine.py::opacification
+      - src/vstent/imaging/cine.py::vessel_areas
+      - src/vstent/cli.py::_run_frame
+    tests:
+      - tests/test_cine.py::test_opacification_window_and_frames
+      - tests/test_cine.py::test_synthetic_run_analysis_frame_is_fully_opacified
+      - tests/test_pipeline.py::test_cli_analyse_cine_run
+    reports:
+      - reports/cine_frames.md
+
+  # --- Segmentation and QCA ------------------------------------------------------------------
+  - id: SR-07
+    title: Segmentation in ONNX Runtime with the training pre-processing
+    kind: imaging
+    text: >-
+      The vessel segmentation runs in ONNX Runtime with the same pre-processing function as in
+      training; the exported model agrees with the trained one to < 1e-4 in probability; a
+      model file that is not a segmentation model is refused.
+    code:
+      - src/vstent/inference/onnx_runtime.py::SegmentationRunner
+      - src/vstent/imaging/segment.py::preprocess_image
+    tests:
+      - tests/test_pipeline.py::test_export_seg_parity_and_runner
+      - tests/test_pipeline.py::test_runner_rejects_non_segmentation_model
+      - tests/test_segmentation.py::test_preprocess_image_any_size_and_dtype
+    reports:
+      - reports/seg_onnx.md
+      - reports/seg_eval.md
+
+  - id: SR-08
+    title: Points off the vessel refused
+    kind: imaging
+    text: >-
+      A start or end point that is not on (or within the snapping tolerance of) the segmented
+      vessel is refused with a message; no analysis is produced from it.
+    code:
+      - src/vstent/imaging/centerline.py::snap_point
+      - src/vstent/imaging/qca_tree.py::tree_qca
+    tests:
+      - tests/test_qca.py::test_points_off_the_vessel_are_refused
+      - tests/test_qca_tree.py::test_tree_qca_refuses_points_off_the_vessel
+
+  - id: SR-09
+    title: Pixel size and units
+    kind: imaging
+    text: >-
+      Diameters and lengths are in SI units. The pixel size comes from the user or the DICOM
+      pixel spacing; otherwise a default is assumed and flagged (SR-02). Unit conversions
+      happen only at input and output, with 1 mmHg = 133.322 Pa.
+    code:
+      - src/vstent/units.py
+      - src/vstent/imaging/qca.py::run_qca
+      - src/vstent/imaging/qca.py::DEFAULT_MM_PER_PX
+    tests:
+      - tests/test_qca.py::test_qca_units_and_calibration_flag
+      - tests/test_units.py::test_unit_conversions
+      - tests/test_physics_report.py::test_physics_yaml_matches_spec_defaults
+
+  - id: SR-10
+    title: Lumen edges from the image intensity
+    kind: imaging
+    text: >-
+      For an automatic segmentation the lumen edges come from the angiogram's intensity,
+      guided by the segmentation: one continuous contour per side, the guide's diameter at
+      side-branch openings, crossing vessels capped at 1.15 × the reference rather than read
+      as a narrowing.
+    code:
+      - src/vstent/imaging/qca.py::measure_diameters_intensity
+      - src/vstent/imaging/qca.py::track_edge
+      - src/vstent/inference/pipeline.py::AUTO_LUMEN
+    tests:
+      - tests/test_pipeline.py::test_automatic_segmentation_uses_intensity_edges
+      - tests/test_qca.py::test_edge_tracking_follows_one_contour
+      - tests/test_qca.py::test_side_branch_does_not_inflate_diameter
+      - tests/test_qca.py::test_crossing_vessel_is_capped_not_a_stenosis
+      - tests/test_public_validation.py::test_intensity_edges_recover_a_stenosis_the_segmentation_filled
+      - tests/test_public_validation.py::test_intensity_edges_off_centre_and_eccentric_lumen
+
+  - id: SR-11
+    title: QCA accuracy on rendered vessels
+    kind: imaging
+    text: >-
+      On synthetic rendered tubes: median absolute diameter error ≤ 0.7 px, MLD location
+      error ≤ 3 px, diameter-stenosis error within ±7 points (M5 targets).
+    code:
+      - src/vstent/imaging/qca.py::qca_from_centerline
+      - src/vstent/imaging/qca_validation.py
+    tests:
+      - tests/test_qca.py::test_qca_on_synthetic_stenosis_meets_targets
+    reports:
+      - reports/qca_synthetic.md
+
+  - id: SR-12
+    title: Segmentation gaps and unmeasurable lumens
+    kind: imaging
+    text: >-
+      A gap in the segmentation between aligned vessel ends is bridged and measured from the
+      image (never interpolated). A stretch without a measurable lumen is reported as
+      "critical stenosis or total occlusion" with the warning that the FFR is not valid if
+      the vessel is occluded.
+    code:
+      - src/vstent/imaging/centerline.py::bridge_gaps
+      - src/vstent/imaging/qca.py::recentre_gaps
+      - src/vstent/inference/pipeline.py::lumen_warnings
+    tests:
+      - tests/test_lumen_model.py::test_a_gap_in_the_mask_is_bridged_and_measured_from_the_image
+      - tests/test_lumen_model.py::test_gap_bridging_needs_aligned_nearby_ends
+      - tests/test_lumen_model.py::test_occlusion_and_gap_are_reported_to_the_user
+    inspection: >-
+      Verified on rendered vessels only. On real angiograms the occlusion warning did not fire
+      (CADICA, hazard H-04).
+
+  - id: SR-13
+    title: Analysed path shown on the image
+    kind: imaging
+    text: >-
+      The centreline that was analysed is drawn on the angiogram (app overlay and analysis
+      figure), so the user can see which vessel and which path were measured.
+    code:
+      - src/vstent/app/core.py::overlay_image
+      - src/vstent/inference/figures.py
+    tests:
+      - tests/test_app.py::test_overlay_and_report_without_pixels
+      - tests/test_pipeline.py::test_cli_analyse_end_to_end
+
+  # --- Physics -------------------------------------------------------------------------------
+  - id: SR-14
+    title: Reduced-order FFR model
+    kind: physics
+    text: >-
+      FFR is computed from ΔP(Q) = a·Q + b·Q² (Poiseuille viscous loss and the expansion loss
+      Kt·ρ/2·(1/A_min − 1/A_max)², Kt = 1.52) with the closed-form flow root; FFR starts at 1
+      and never increases along the vessel; the M1 sanity bands hold.
+    code:
+      - src/vstent/physics/solver.py::solve_ffr
+      - src/vstent/physics/solver.py::viscous_coefficient
+      - src/vstent/physics/solver.py::expansion_coefficient
+    tests:
+      - tests/test_physics.py::test_uniform_tube_poiseuille_fixed_flow
+      - tests/test_physics.py::test_sudden_expansion_matches_borda_carnot
+      - tests/test_physics.py::test_ffr_starts_at_one_and_never_increases
+      - tests/test_physics.py::test_sanity_bands_3mm_60mm_10mm_cosine
+      - tests/test_physics.py::test_distal_ffr_strictly_decreases_with_stenosis
+      - tests/test_physics.py::test_grid_convergence
+    reports:
+      - reports/physics_checks.md
+
+  - id: SR-15
+    title: Microvascular resistance calibration
+    kind: physics
+    text: >-
+      R_micro is calibrated so that the stenosis-free reference vessel carries the hyperemic
+      reference velocity; after a virtual stent R_micro is kept fixed, so the flow rises.
+    code:
+      - src/vstent/physics/solver.py::calibrate_microvascular_resistance
+    tests:
+      - tests/test_physics.py::test_reference_vessel_carries_reference_flow
+      - tests/test_planning.py::test_solver_fixed_r_micro_matches_calibration_and_flow_rises_after_stent
+      - tests/test_app.py::test_presets_and_fixed_r_micro_after_stent
+
+  - id: SR-16
+    title: Vessel-tree physics
+    kind: physics
+    text: >-
+      Trees with side branches conserve mass at every junction, split the healthy flow by
+      Murray's law and reduce exactly to the single-vessel model for one branch.
+    code:
+      - src/vstent/physics/tree.py::solve_tree
+      - src/vstent/physics/tree.py::murray_flows
+    tests:
+      - tests/test_tree.py::test_single_branch_reproduces_m1_exactly
+      - tests/test_tree.py::test_mass_conservation_pressure_continuity_and_outlets
+      - tests/test_tree.py::test_healthy_tree_splits_flow_by_murrays_law
+      - tests/test_tree.py::test_side_branch_raises_distal_main_ffr
+    reports:
+      - reports/tree_physics.md
+
+  - id: SR-17
+    title: Invalid geometry refused
+    kind: physics
+    text: >-
+      Profiles with non-positive radii, non-increasing positions or mismatched lengths, and
+      physically invalid parameters, are refused with an error instead of producing an FFR.
+    code:
+      - src/vstent/physics/geometry.py::VesselProfile
+      - src/vstent/physics/tree.py::VesselTree
+    tests:
+      - tests/test_geometry.py::test_profile_validation
+      - tests/test_physics.py::test_invalid_inputs_rejected
+      - tests/test_tree.py::test_tree_validation
+
+  # --- Surrogate model -------------------------------------------------------------------------
+  - id: SR-18
+    title: Surrogate parity and shared pre-processing
+    kind: surrogate
+    text: >-
+      The surrogate runs in ONNX Runtime with the training pre-processing; ONNX and the
+      trained model agree to < 1e-4; normalisation statistics that do not match the model are
+      refused.
+    code:
+      - src/vstent/inference/onnx_runtime.py::SurrogateRunner
+      - src/vstent/surrogate/features.py::prepare_inputs
+    tests:
+      - tests/test_onnx.py::test_parity_with_torch
+      - tests/test_onnx.py::test_runner_on_profile_matches_torch
+      - tests/test_onnx.py::test_runner_rejects_mismatched_stats
+      - tests/test_onnx.py::test_parallel_preprocessing_is_identical
+    reports:
+      - reports/onnx_benchmark.md
+
+  - id: SR-19
+    title: Physically shaped surrogate output
+    kind: surrogate
+    text: >-
+      The surrogate's FFR curve starts at 1 and never increases along the vessel (monotone
+      head), for single vessels and trees.
+    code:
+      - src/vstent/surrogate/model.py
+      - src/vstent/surrogate/tree_model.py
+    tests:
+      - tests/test_surrogate.py::test_head_monotone_and_starts_at_one
+      - tests/test_tree_surrogate.py::test_tree_head_is_continuous_and_monotone
+
+  - id: SR-20
+    title: Surrogate accuracy against the solver
+    kind: surrogate
+    text: >-
+      On held-out synthetic vessels the surrogate's distal-FFR MAE against the reduced-order
+      solver is ≤ 0.015 and its agreement at 0.80 ≥ 97%.
+    code:
+      - src/vstent/surrogate/evaluate.py
+    tests:
+      - tests/test_surrogate.py::test_train_and_evaluate_smoke
+    reports:
+      - reports/surrogate_eval.md
+      - reports/uncertainty.md
+
+  - id: SR-21
+    title: The solver is the reference
+    kind: surrogate
+    text: >-
+      Every analysis reports the reduced-order solver's FFR next to the surrogate's; the
+      planner re-checks surrogate-ranked plans with the solver before showing them.
+    code:
+      - src/vstent/inference/pipeline.py::analyse_vessel
+      - src/vstent/planning/optimizer.py::plan_stents
+      - src/vstent/planning/tree_planner.py::plan_tree_stents
+    tests:
+      - tests/test_pipeline.py::test_analyse_vessel_solver_and_surrogate
+      - tests/test_planning.py::test_surrogate_backend_runs_and_is_rechecked
+      - tests/test_tree_planner.py::test_surrogate_backend_with_solver_check
+
+  # --- Uncertainty and grey zone ---------------------------------------------------------------
+  - id: SR-22
+    title: Model interval (split-conformal)
+    kind: uncertainty
+    text: >-
+      A 90% split-conformal interval for distal FFR, calibrated on a split used for nothing
+      else; coverage on the test split 88–92%.
+    code:
+      - src/vstent/uncertainty/conformal.py::fit_conformal
+      - src/vstent/uncertainty/greyzone.py::model_interval
+    tests:
+      - tests/test_uncertainty.py::test_conformal_coverage_on_exchangeable_data
+      - tests/test_uncertainty.py::test_conformal_interval_capped_and_roundtrip
+    reports:
+      - reports/uncertainty.md
+
+  - id: SR-23
+    title: Input interval (Monte Carlo)
+    kind: uncertainty
+    text: >-
+      A 90% interval for distal FFR from Monte Carlo draws through the solver over the pixel
+      size (when assumed), the hyperemic velocity, Pa / Pv and the QCA diameter error.
+    code:
+      - src/vstent/uncertainty/inputs.py::InputUncertainty
+      - src/vstent/uncertainty/inputs.py::QCAErrorModel
+    tests:
+      - tests/test_uncertainty.py::test_monte_carlo_ranges_and_reproducibility
+      - tests/test_uncertainty.py::test_qca_error_model_from_report
+      - tests/test_uncertainty.py::test_post_pci_draws_use_the_plan_geometry
+
+  - id: SR-24
+    title: Grey-zone flag
+    kind: uncertainty
+    text: >-
+      A case is flagged when an interval contains 0.80 (pre-PCI), a plan when it contains the
+      planner's target (post-PCI); the flag and its reason are shown in the app, the CLI and
+      the case report.
+    code:
+      - src/vstent/uncertainty/greyzone.py::assessment
+      - src/vstent/uncertainty/greyzone.py::Assessment
+      - src/vstent/uncertainty/greyzone.py::plan_assessments
+    tests:
+      - tests/test_uncertainty.py::test_assessment_flags
+      - tests/test_app.py::test_app_shows_intervals_and_grey_zone
+      - tests/test_app.py::test_core_intervals_flags_and_report
+
+  # --- Virtual stent and planner ---------------------------------------------------------------
+  - id: SR-25
+    title: A virtual stent only widens
+    kind: planning
+    text: >-
+      A virtual stent sets r(s) = max(r(s), r_stent) over its segment and never narrows a
+      lumen.
+    code:
+      - src/vstent/planning/stent.py::apply_stents
+      - src/vstent/planning/stent.py::stented_radius
+    tests:
+      - tests/test_planning.py::test_stent_widens_inside_and_never_narrows
+      - tests/test_planning.py::test_stent_never_reduces_a_wider_lumen
+
+  - id: SR-26
+    title: Generic catalogue and sizing rule
+    kind: planning
+    text: >-
+      Plans use only the generic catalogue (nominal diameters and lengths, no products); a
+      planned stent's diameter is ≤ max_diameter_ratio × the reference diameter at its distal
+      end; a manual stent above that limit is flagged.
+    code:
+      - configs/stent_catalog.yaml
+      - src/vstent/planning/optimizer.py::StentCatalog
+      - src/vstent/planning/optimizer.py::feasible
+      - src/vstent/app/core.py::stent_warnings
+    tests:
+      - tests/test_planning.py::test_candidates_cover_an_mld_on_the_step_grid
+      - tests/test_planning.py::test_focal_lesion_shortest_plan_reaching_target
+      - tests/test_app.py::test_oversized_manual_stent_is_flagged
+    inspection: >-
+      StentCatalog accepts only diameters_mm and lengths_mm (StrictModel: other keys are
+      refused), so a product name cannot enter the catalogue.
+
+  - id: SR-27
+    title: Shortest plan reaching the target
+    kind: planning
+    text: >-
+      The planner returns the shortest total stent length that brings distal FFR to the
+      target, and says so when there is no lesion or the target cannot be reached.
+    code:
+      - src/vstent/planning/optimizer.py::plan_stents
+    tests:
+      - tests/test_planning.py::test_focal_lesion_shortest_plan_reaching_target
+      - tests/test_planning.py::test_two_stent_plan_is_shortest_with_exhaustive_pools
+      - tests/test_planning.py::test_no_lesion_and_unreachable_target
+      - tests/test_tree_planner.py::test_no_lesion_no_plan
+    reports:
+      - reports/planner_benchmark.md
+
+  - id: SR-28
+    title: Plans belong to the analysed vessel
+    kind: planning
+    text: >-
+      Plans and stents shown always belong to the current geometry and pressures; analysing
+      another vessel resets the stent controls.
+    code:
+      - src/vstent/app/streamlit_app.py
+      - src/vstent/app/core.py::CaseState
+    tests:
+      - tests/test_app.py::test_plans_and_stents_belong_to_one_geometry_and_pressure
+      - tests/test_app.py::test_new_vessel_resets_stent_controls
+
+  # --- User interface and performance ----------------------------------------------------------
+  - id: SR-29
+    title: Interactive stent updates
+    kind: interface
+    text: >-
+      Moving a stent control updates the post-PCI FFR in < 300 ms server time.
+    code:
+      - src/vstent/app/core.py::stent_update
+    tests:
+      - tests/test_app.py::test_slider_update_is_fast
+      - tests/test_app.py::test_app_synthetic_mode_end_to_end
+    reports:
+      - reports/app_latency.md
+
+  - id: SR-30
+    title: Planner speed
+    kind: interface
+    text: >-
+      Planning over 5,000 candidate stents takes < 1 s (surrogate backend, median).
+    code:
+      - src/vstent/planning/optimizer.py::plan_stents
+    tests:
+      - tests/test_planning.py::test_solver_backend_throughput_5000_candidates
+    reports:
+      - reports/planner_benchmark.md
+
+  - id: SR-31
+    title: Contrast transit is shown, never used
+    kind: interface
+    text: >-
+      The contrast-front speed of a run is shown only when the front advances (positive speed
+      with a positive lower 95% bound), otherwise "not measurable", and is never an input to
+      the FFR.
+    code:
+      - src/vstent/imaging/cine.py::contrast_transit
+      - src/vstent/imaging/cine.py::ContrastTransit
+      - src/vstent/app/core.py::transit_caption
+    tests:
+      - tests/test_cine.py::test_contrast_transit_recovers_the_front_speed
+      - tests/test_app.py::test_cine_and_transit_captions
+    inspection: >-
+      solve_ffr, analyse_vessel and the app's evaluate take no transit input; the transit is
+      computed after the analysis, for display only.
+
+  - id: SR-32
+    title: Robust console output
+    kind: interface
+    text: >-
+      The CLI never fails on a console that cannot print its characters (legacy code pages).
+    code:
+      - src/vstent/cli.py
+    tests:
+      - tests/test_cli.py::test_console_output_never_crashes_on_legacy_code_page
+
+  # --- Data protection, integrity and reproducibility ------------------------------------------
+  - id: SR-33
+    title: Patient data never in the repository
+    kind: data
+    text: >-
+      The validation tool refuses to read case data from, or write outputs to, tracked
+      locations of the repository.
+    code:
+      - src/vstent/validation/manifest.py::check_local_only
+    tests:
+      - tests/test_validation.py::test_local_only_guard
+      - tests/test_validation.py::test_run_refuses_tracked_output
+
+  - id: SR-34
+    title: App local by default
+    kind: data
+    text: >-
+      The app serves on localhost unless another address is given explicitly, with
+      Streamlit's usage statistics switched off; the analysis makes no network calls.
+    code:
+      - src/vstent/cli.py::launch_app
+    tests:
+      - tests/test_app.py::test_cli_app_launches_streamlit_on_localhost
+    inspection: >-
+      Only the dataset commands (vstent data ...) download; the analysis path has no network
+      code. There is no user login or access control: the app relies on the computer's.
+
+  - id: SR-35
+    title: Verified downloads and safe extraction
+    kind: data
+    text: >-
+      Downloaded datasets are checked against a published checksum before use (a mismatch
+      leaves no files) and archive extraction refuses paths outside the target folder.
+    code:
+      - src/vstent/data/arcade.py::fetch_arcade
+      - src/vstent/data/arcade.py::safe_extract
+      - src/vstent/data/cadica.py::fetch_cadica
+    tests:
+      - tests/test_arcade.py::test_fetch_downloads_verifies_and_extracts
+      - tests/test_arcade.py::test_checksum_mismatch_leaves_no_files
+      - tests/test_arcade.py::test_safe_extract_rejects_path_traversal
+      - tests/test_public_validation.py::test_cadica_boxes_and_fetch
+
+  - id: SR-36
+    title: Traceable case report
+    kind: data
+    text: >-
+      The case report holds no image pixels and records the input's SHA-256, the models'
+      SHA-256, the software version and commit, the assumptions and the warnings.
+    code:
+      - src/vstent/app/core.py::case_report
+    tests:
+      - tests/test_app.py::test_overlay_and_report_without_pixels
+
+  - id: SR-37
+    title: Locked predictions
+    kind: data
+    text: >-
+      In a validation study the predictions are locked (SHA-256) before the reference values
+      are opened, and any change is detected before scoring.
+    code:
+      - src/vstent/validation/run.py::run_predictions
+      - src/vstent/validation/run.py::score_predictions
+    tests:
+      - tests/test_validation.py::test_locked_predictions_detect_changes
+      - tests/test_validation.py::test_scoring_flow_and_intention_to_diagnose
+
+  - id: SR-38
+    title: Strict configuration and provenance
+    kind: data
+    text: >-
+      Configuration files with unknown keys are refused; every trained model and generated
+      report is saved with its configuration, the git commit and file hashes.
+    code:
+      - src/vstent/config.py::StrictModel
+      - src/vstent/config.py::save_run_metadata
+    tests:
+      - tests/test_config.py::test_unknown_key_rejected
+      - tests/test_config.py::test_save_run_metadata_roundtrip
+      - tests/test_onnx.py::test_export_writes_model_dir_with_provenance
+      - tests/test_reporting.py::test_mvp_provenance_has_creation_times
+
+  - id: SR-39
+    title: Declared and listed third-party software
+    kind: data
+    text: >-
+      Every third-party module the code imports is a declared dependency with an entry in the
+      SOUP list; the SOUP list and the SBOM are generated from uv.lock.
+    code:
+      - src/vstent/regulatory/soup.py::check_soup
+    tests:
+      - tests/test_regulatory.py::test_every_imported_module_is_declared_soup
+      - tests/test_regulatory.py::test_committed_documents_are_up_to_date
+
+  # --- Known gaps (requirements without an implementation yet) --------------------------------
+  - id: SR-40
+    title: Pixel size from the projection geometry
+    kind: imaging
+    text: >-
+      The pixel size at the vessel is computed from the DICOM projection geometry (imager
+      pixel spacing, source–detector and source–patient distances) instead of assumed.
+    code:
+      - src/vstent/imaging/image_io.py::ImageInput
+    gap: >-
+      Planned in P5. Today only the DICOM pixel spacing is read; magnification is not
+      corrected.
+
+  - id: SR-41
+    title: Foreshortening-free lengths
+    kind: imaging
+    text: >-
+      Lesion and stent lengths are measured free of foreshortening (two-view 3D
+      reconstruction), or the single-view length is flagged as a lower bound.
+    code:
+      - src/vstent/imaging/qca.py::run_qca
+    gap: >-
+      Planned in P5 (two-view reconstruction). No warning about foreshortening is shown yet.
+
+  - id: SR-42
+    title: Usability engineering
+    kind: interface
+    text: >-
+      The user interface is designed and validated with intended users under IEC 62366-1
+      (use specification, hazard-related use scenarios, formative and summative evaluation).
+    code:
+      - src/vstent/app/streamlit_app.py
+    gap: >-
+      Not started: needs interventional cardiologists as test users.

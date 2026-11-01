@@ -31,10 +31,13 @@ app = [
     "streamlit>=1.36",
     "plotly>=5.22",
     "streamlit-image-coordinates>=0.1.9",
+    "pandas>=2.2",   # imported by the app to pre-load Streamlit's tables (also a Streamlit dependency)
+    "pyarrow>=16",   # idem
 ]
 dev = [
     "pytest>=8.2",
     "ruff>=0.5",
+    "packaging>=24",  # environment markers of uv.lock (`vstent regulatory`, SOUP list)
 ]
 
 [project.scripts]

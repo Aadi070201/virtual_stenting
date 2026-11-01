@@ -1545,6 +1545,34 @@ APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"
 
 
 @app.command()
+def regulatory(
+    check: Annotated[
+        bool, typer.Option("--check", help="Write nothing; fail if a document is out of date.")
+    ] = False,
+) -> None:
+    """Regulatory drafts: requirements, hazards, traceability, SOUP list and SBOM →
+    docs/regulatory/ (drafts for review by a qualified person; not regulatory advice)."""
+    from vstent.regulatory.build import REG_DIR, write_all
+
+    typer.echo(DISCLAIMER)
+    try:
+        changed = write_all(check=check)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if check:
+        for path in changed:
+            typer.echo(f"Out of date: {path.as_posix()} (run `vstent regulatory`)")
+        if changed:
+            raise typer.Exit(code=1)
+        typer.echo(f"All documents in {REG_DIR.as_posix()} match their sources.")
+    else:
+        for path in changed:
+            typer.echo(f"Wrote {path.as_posix()}")
+        typer.echo(f"{len(changed)} documents changed in {REG_DIR.as_posix()}.")
+
+
+@app.command()
 def app_latency(
     n: Annotated[int, typer.Option("--n", min=1, help="Start-slider updates per mode.")] = 20,
     report_dir: Annotated[

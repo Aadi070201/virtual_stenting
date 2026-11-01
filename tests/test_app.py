@@ -250,6 +250,7 @@ def test_cli_app_launches_streamlit_on_localhost(monkeypatch):
     cmd = calls[0]
     assert cmd[1:4] == ["-m", "streamlit", "run"] and Path(cmd[4]) == APP_SCRIPT
     assert cmd[cmd.index("--server.address") + 1] == "localhost"
+    assert cmd[cmd.index("--browser.gatherUsageStats") + 1] == "false"
     assert "--server.headless" in cmd and "8600" in cmd
 
 

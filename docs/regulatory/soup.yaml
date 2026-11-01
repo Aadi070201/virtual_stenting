@@ -1,0 +1,186 @@
+# SOUP: curated facts per direct dependency (IEC 62304 §5.3.3, §7.1.2–7.1.3, §8.1.2).
+# DRAFT for review by a qualified person. Research use only.
+#
+# Versions are NOT written here: `vstent regulatory` reads them from uv.lock and checks that
+# every direct dependency has exactly one entry and that every third-party module imported
+# in src/vstent belongs to an entry. `imports`: the module names the code imports ([] if the
+# package is only installed for another one). `hazards`: hazards.yaml IDs the item can
+# contribute to through a defect.
+
+soup:
+  - name: numpy
+    imports: [numpy]
+    purpose: Arrays and numerics in every software item.
+    relied_on: Correct IEEE-754 float64 arithmetic, indexing and reductions.
+    hazards: [H-01, H-06, H-14]
+    anomalies: Not yet reviewed.
+  - name: scipy
+    imports: [scipy]
+    purpose: >-
+      Image filters and interpolation in QCA, least-squares fits (lumen model), statistics in
+      the uncertainty and validation tools.
+    relied_on: ndimage filters, interpolation, optimize.least_squares and stats as documented.
+    hazards: [H-01, H-08]
+    anomalies: Not yet reviewed.
+  - name: opencv-python-headless
+    imports: [cv2]
+    purpose: Image resizing and drawing (pre-processing, overlays, dataset masks).
+    relied_on: Deterministic resize with the documented interpolation; correct drawing.
+    hazards: [H-01, H-08]
+    anomalies: Not yet reviewed.
+  - name: scikit-image
+    imports: [skimage]
+    purpose: Skeletonisation of the vessel mask (centreline).
+    relied_on: A one-pixel-wide, topology-preserving skeleton.
+    hazards: [H-08]
+    anomalies: Not yet reviewed.
+  - name: networkx
+    imports: [networkx]
+    purpose: Graph of the vessel skeleton; shortest paths between the user's points.
+    relied_on: Correct shortest paths and connected components.
+    hazards: [H-08]
+    anomalies: Not yet reviewed.
+  - name: onnxruntime
+    imports: [onnxruntime]
+    purpose: Runs the segmentation and surrogate models (CPU) in the analysis path.
+    relied_on: >-
+      Outputs that match the exported graph (parity with the trained models < 1e-4 is tested
+      on every export).
+    hazards: [H-01, H-07, H-18]
+    anomalies: Not yet reviewed.
+  - name: pydicom
+    imports: [pydicom]
+    purpose: Reads DICOM images and cine runs (pixels, pixel spacing, frame time).
+    relied_on: >-
+      Correct pixel data, PixelSpacing / ImagerPixelSpacing, FrameTime and CineRate; frames
+      in stored order.
+    hazards: [H-03, H-11, H-13]
+    anomalies: Not yet reviewed.
+  - name: pydantic
+    imports: [pydantic]
+    purpose: Validation of every configuration file and of the regulatory sources.
+    relied_on: Unknown keys refused (extra="forbid"); type and range checks as declared.
+    hazards: [H-14]
+    anomalies: Not yet reviewed.
+  - name: pyyaml
+    imports: [yaml]
+    purpose: Reads and writes YAML configuration files (safe loader only).
+    relied_on: yaml.safe_load / safe_dump round-trip values unchanged.
+    hazards: [H-14]
+    anomalies: Not yet reviewed.
+  - name: typer
+    imports: [typer]
+    purpose: The command-line interface.
+    relied_on: Argument parsing as declared; exit codes.
+    hazards: [H-16]
+    anomalies: Not yet reviewed.
+  - name: matplotlib
+    imports: [matplotlib]
+    purpose: Analysis figure, case-report PNG and report figures.
+    relied_on: Plots drawn at the given data coordinates (Agg backend).
+    hazards: [H-19]
+    anomalies: Not yet reviewed.
+  - name: streamlit
+    imports: [streamlit]
+    purpose: The web app (served locally).
+    relied_on: >-
+      Widgets return the values the user set; the page shows what the script writes;
+      --server.address and --browser.gatherUsageStats are honoured.
+    hazards: [H-15, H-16, H-19]
+    anomalies: Not yet reviewed.
+  - name: streamlit-image-coordinates
+    imports: [streamlit_image_coordinates]
+    purpose: Click positions on the displayed angiogram (start and end points).
+    relied_on: Click coordinates in displayed-image pixels (rescaled by the app).
+    hazards: [H-08]
+    anomalies: Not yet reviewed.
+  - name: plotly
+    imports: [plotly]
+    purpose: Interactive charts in the app (diameter profile, FFR curves).
+    relied_on: Traces drawn at the given data coordinates.
+    hazards: [H-19]
+    anomalies: Not yet reviewed.
+  - name: pandas
+    imports: [pandas]
+    purpose: >-
+      Imported by the app only to pre-load Streamlit's tables and charts (update latency); no
+      data processing.
+    relied_on: Import succeeds (Streamlit's own use of it is part of the streamlit item).
+    hazards: [H-16]
+    anomalies: Not yet reviewed.
+  - name: pyarrow
+    imports: [pyarrow]
+    purpose: As pandas (pre-loaded for Streamlit's tables).
+    relied_on: Import succeeds.
+    hazards: [H-16]
+    anomalies: Not yet reviewed.
+  - name: torch
+    imports: [torch]
+    purpose: >-
+      Training, ONNX export and evaluation of the segmentation and surrogate models. The
+      analysis path (the app) runs on ONNX Runtime and does not import it.
+    relied_on: Deterministic training with fixed seeds (as far as the backend allows); export.
+    hazards: [H-07, H-18]
+    anomalies: Not yet reviewed.
+  - name: torchvision
+    imports: []
+    purpose: >-
+      Not imported; installed for segmentation-models-pytorch and pinned to the same CUDA
+      build as torch.
+    relied_on: Compatibility with the locked torch.
+    anomalies: Not yet reviewed.
+  - name: segmentation-models-pytorch
+    imports: [segmentation_models_pytorch]
+    purpose: U-Net architecture for the segmentation model (training only).
+    relied_on: The documented architecture and encoder.
+    hazards: [H-01]
+    anomalies: Not yet reviewed.
+  - name: onnx
+    imports: [onnx]
+    purpose: Writes and checks exported ONNX models (export only).
+    relied_on: A valid graph at the declared opset.
+    hazards: [H-18]
+    anomalies: Not yet reviewed.
+  - name: pycocotools
+    imports: [pycocotools]
+    purpose: ARCADE annotations to masks (training and evaluation data only).
+    relied_on: Correct polygon rasterisation.
+    anomalies: Not yet reviewed.
+  - name: scikit-learn
+    imports: [sklearn]
+    purpose: Gradient-boosting baseline for the surrogate evaluation (reports only).
+    relied_on: The documented estimator.
+    anomalies: Not yet reviewed.
+  # development and documentation tools (dev extra; not shipped)
+  - name: packaging
+    imports: [packaging]
+    purpose: Evaluates uv.lock's environment markers for the SOUP list (vstent regulatory).
+    relied_on: PEP 508 marker evaluation.
+    anomalies: Not applicable (tool).
+  - name: pytest
+    imports: []
+    purpose: Runs the verification tests.
+    relied_on: Collects and runs every test; reports failures.
+    anomalies: Not applicable (tool).
+  - name: ruff
+    imports: []
+    purpose: Lint and format checks.
+    relied_on: The configured rules.
+    anomalies: Not applicable (tool).
+
+platform:
+  - name: CPython
+    version: "3.14"
+    purpose: Interpreter for every software item.
+    notes: Pinned in .python-version; installed by uv.
+  - name: Operating system
+    version: Windows 10 / 11 (64-bit) or Linux x86-64
+    purpose: Runs the interpreter; file access.
+    notes: Development and tests on Windows 11.
+  - name: Web browser
+    version: A current Chromium-based browser or Firefox
+    purpose: Displays the app (localhost).
+    notes: Not tested across browsers.
+  - name: NVIDIA driver with CUDA 12.6
+    version: Optional
+    purpose: GPU training only; the analysis runs on the CPU.
