@@ -865,3 +865,30 @@ model's own output: CFD (P6) or wire FFR (P4).
 records: QCA gallery, stenosis grading, cine frames, validation stand-in, app latency. The
 CADICA numbers in the hazard analysis (H-02, H-04) were measured with M5. Regenerating them
 with the adopted model is a separate step.
+
+### D54 — The adopted segmenter is kept despite a worse automatic frame choice (2026-11-02)
+**Finding:** after D53 the reports that use the segmenter were regenerated. Stenosis grading
+on CADICA is unchanged within its intervals: intensity edges, test patients, weighted kappa
+0.13 vs 0.14 with M5, AUC for ≥ 70% 0.71 vs 0.72. The tree gallery finds side branches in
+16 of 20 images (14 with M5). The validation stand-in's automatic arm analyses 96 of 102
+vessels (42 with M5), but those renders are close to the new training data. **The P4d
+analysis frame got worse:** it lies within the span of the clinicians' selected frames in
+82% of CADICA test runs (88% with M5) and 81% of development runs (90%). Paired on the same
+runs, M5 was inside the span where the new model was not in 25 development runs; the
+reverse happened in 7 (exact McNemar p = 0.002). The test figures were 17 against 7
+(p = 0.06). The opacification curve is the segmented area per frame, and its peak moves
+with the segmenter: the analysis frame changed in 81% of runs (median 3 frames).
+
+**Decision:** keep the D53 segmenter and recover the frame choice in P7, whose ED-frame rule
+replaces P4d's peak rule. It is chosen on the CADICA development runs with this segmenter,
+and its pre-registered test target is set against M5's rate (≥ 83%, i.e. 88% minus 5
+points). The user can still move to any frame.
+
+**Reason:** the adoption rule was met; reverting after one unfavourable downstream result,
+without a rule for doing so, would be a post-hoc choice. The frame choice is being replaced
+anyway, and the H-11 controls (frame shown, user confirmation) are unchanged.
+
+**Alternatives:**
+- Revert to M5: loses the rendered-image robustness; not supported by any rule.
+- Keep M5 for the opacification curve only: two segmentations per frame, which doubles the
+  cine run's CPU time.

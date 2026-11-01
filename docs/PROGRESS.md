@@ -1075,3 +1075,38 @@ qualified person, not regulatory advice.
 - ARCADE's partial labels cap what its Dice can show. Real angiograms with every major vessel
   labelled would measure the difference.
 - Novelty: none claimed. Training segmentation on rendered images is established practice.
+
+## 2026-11-02 — P8: reports regenerated with the adopted segmenter
+
+**What was done**
+- Every report that uses the segmenter was regenerated from clean commits: QCA gallery
+  (single path and trees), validation stand-in, CADICA stenosis grading, CADICA cine frames,
+  app latency.
+- Report text that described the old model is now model-aware or corrected. The tree
+  gallery's "what limits it" paragraph describes the current labels. The stand-in's
+  segmenter paragraph depends on whether the model was trained with rendered images. The
+  stenosis report names its segmentation model.
+- Hazard numbers updated (H-01, H-02, H-04, H-11, H-12); D54 recorded.
+
+**Results** (with M5 in brackets)
+- CADICA stenosis grading, intensity edges, test patients:
+  - weighted kappa 0.13 (0.14);
+  - AUC ≥ 70% 0.71 (0.72);
+  - median read for 70–90% lesions 44% (44%);
+  - total occlusions measured 9 of 11 (10), none read as occluded.
+  Unchanged within the intervals.
+- QCA gallery: max-DS point inside a stenosis box 10 of 20 (10); MLD inside 4 (2). The
+  auto-selected paths changed.
+- Tree gallery: side branches in 16 of 20 images (14); implausibly low tree FFR 1 (4).
+- Validation stand-in, automatic arm: analysable 96 of 102 (42); accuracy counting the
+  failures 0.81 (0.34); tree MAE 0.083 (0.105). The renders are close to the new training
+  data, so this is not a clinical gain.
+- **CADICA cine frames, worse:** the analysis frame lies within the clinicians' span in 82%
+  of test runs (88%) and 81% of development runs (90%). McNemar development p = 0.002, test
+  p = 0.06 (D54).
+- App: stent-control updates 74 / 131 ms median (synthetic / image), max 233 ms (target
+  < 300 ms, met). The one-off image set-up is now 925 ms (236 ms in the previous
+  measurement, which was taken before the scaled-lumen fit of P5b).
+
+**Open issues**
+- Recovering the frame choice is now a P7 target (D54).

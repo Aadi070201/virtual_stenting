@@ -74,7 +74,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** The lumen edges are blurred in the angiogram, the segmentation fills a tight lesion, or the lesion is narrowed along the X-ray; QCA reads a smaller %DS than the true one.
 - **Hazardous situation:** The FFR shown is too high (above 0.80) for a haemodynamically significant lesion.
 - **Harm:** Revascularisation deferred for an ischaemic lesion: angina, myocardial infarction, urgent revascularisation.
-- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured. CADICA test patients, intensity edges (the product default): weighted kappa 0.14 against expert grades, median measured %DS 44% for lesions graded 70–90%. Rendered vessels: edges read 95% lesions as 37–59% DS.
+- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured. CADICA test patients, intensity edges (the product default) with the D53 segmenter: weighted kappa 0.13 against expert grades (0.14 with M5), median measured %DS 44% for lesions graded 70–90%. Rendered vessels: edges read 95% lesions as 37–59% DS.
 - **Controls:** SR-10 Lumen edges from the image intensity; SR-11 QCA accuracy on rendered vessels; SR-12 Segmentation gaps and unmeasurable lumens; SR-23 Input interval (Monte Carlo); SR-24 Grey-zone flag; SR-02 Plain-language warnings with every result; SR-01 Research-use notice everywhere
 - **After controls:** P5 Frequent = 20 unacceptable. Measured with the controls in place (the CADICA result is the product's own method). Intervals and warnings inform the user but do not correct the compression.
 - **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md), [lumen_synthetic.md](../../reports/lumen_synthetic.md)
@@ -85,7 +85,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** Overlapping or crossing vessels, poor filling, a foreshortened bend or the catheter in the path create a false narrowing.
 - **Hazardous situation:** The FFR shown is too low (0.80 or below) for a lesion that is not significant.
 - **Harm:** Unnecessary PCI: dissection, perforation, peri-procedural myocardial infarction, bleeding on antiplatelet therapy, later stent thrombosis or restenosis.
-- **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 223); smaller overestimates were not quantified, and nothing is measured against FFR.
+- **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 219 measured with the D53 segmenter; 0 of 223 with M5); smaller overestimates were not quantified, and nothing is measured against FFR.
 - **Controls:** SR-10 Lumen edges from the image intensity; SR-06 Analysis frame in the opacified phase; SR-13 Analysed path shown on the image; SR-24 Grey-zone flag; SR-01 Research-use notice everywhere
 - **After controls:** P4 Probable = 16 unacceptable. Not measured after the controls; unchanged.
 - **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md)
@@ -107,7 +107,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** In a single frame the segmentation bridges an occluded segment (collateral filling, overlapping vessels), and the QCA measures a lumen there.
 - **Hazardous situation:** An FFR is shown for an occluded vessel supplied by collaterals, which the flow model does not represent.
 - **Harm:** Wrong treatment decision for a chronic total occlusion; delayed treatment.
-- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA: 10 of 11 total occlusions were measured and none was read as ≥ 90% DS, so the occlusion warning never fired on a real occlusion.
+- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA: 9 of 11 total occlusions were measured with the D53 segmenter (10 with M5) and none was read as ≥ 90% DS, so the occlusion warning never fired on a real occlusion.
 - **Controls:** SR-12 Segmentation gaps and unmeasurable lumens; SR-02 Plain-language warnings with every result; SR-01 Research-use notice everywhere
 - **After controls:** P5 Frequent = 20 unacceptable. The occlusion warning works on rendered vessels only.
 - **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md)
@@ -182,7 +182,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** The chosen frame of a run is before full opacification, during washout or blurred by motion.
 - **Hazardous situation:** An under-filled vessel shows a false narrowing or hides a lesion.
 - **Harm:** As H-01 or H-02.
-- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA test patients: the analysis frame lies outside the span of the clinicians' selected frames in 22 of 177 runs (12%).
+- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA test patients: the analysis frame lies outside the span of the clinicians' selected frames in 32 of 177 runs (18%) with the D53 segmenter, against 22 (12%) with M5 (D54).
 - **Controls:** SR-05 Cine runs on one intensity scale; SR-06 Analysis frame in the opacified phase; SR-13 Analysed path shown on the image
 - **After controls:** P5 Frequent = 20 unacceptable. Measured with the controls (the CADICA result is the product's own rule).
 - **Evidence:** [cine_frames.md](../../reports/cine_frames.md)
@@ -193,7 +193,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** A user reads the displayed contrast-front speed as a measured coronary flow.
 - **Hazardous situation:** The user changes the flow assumptions or the decision on the basis of a resting, imprecise speed.
 - **Harm:** As H-01 or H-02.
-- **Before controls:** S4 Critical × P2 Remote = 8 reduce. Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and is shown only when the front advances (CADICA: 56% of runs).
+- **Before controls:** S4 Critical × P2 Remote = 8 reduce. Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and is shown only when the front advances (CADICA: 55% of runs).
 - **Controls:** SR-31 Contrast transit is shown, never used
 - **After controls:** P2 Remote = 8 reduce. Unchanged; the label is the control.
 - **Evidence:** [cine_frames.md](../../reports/cine_frames.md)

@@ -60,9 +60,10 @@ hazards:
     severity: 4
     probability: 5
     basis: >-
-      Measured. CADICA test patients, intensity edges (the product default): weighted kappa
-      0.14 against expert grades, median measured %DS 44% for lesions graded 70–90%. Rendered
-      vessels: edges read 95% lesions as 37–59% DS.
+      Measured. CADICA test patients, intensity edges (the product default) with the D53
+      segmenter: weighted kappa 0.13 against expert grades (0.14 with M5), median measured
+      %DS 44% for lesions graded 70–90%. Rendered vessels: edges read 95% lesions as 37–59%
+      DS.
     controls: [SR-10, SR-11, SR-12, SR-23, SR-24, SR-02, SR-01]
     residual_probability: 5
     residual_basis: >-
@@ -86,8 +87,9 @@ hazards:
     severity: 4
     probability: 4
     basis: >-
-      Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 223); smaller
-      overestimates were not quantified, and nothing is measured against FFR.
+      Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 219 measured
+      with the D53 segmenter; 0 of 223 with M5); smaller overestimates were not quantified,
+      and nothing is measured against FFR.
     controls: [SR-10, SR-06, SR-13, SR-24, SR-01]
     residual_probability: 4
     residual_basis: Not measured after the controls; unchanged.
@@ -136,8 +138,9 @@ hazards:
     severity: 4
     probability: 5
     basis: >-
-      Measured on CADICA: 10 of 11 total occlusions were measured and none was read as
-      ≥ 90% DS, so the occlusion warning never fired on a real occlusion.
+      Measured on CADICA: 9 of 11 total occlusions were measured with the D53 segmenter (10
+      with M5) and none was read as ≥ 90% DS, so the occlusion warning never fired on a real
+      occlusion.
     controls: [SR-12, SR-02, SR-01]
     residual_probability: 5
     residual_basis: The occlusion warning works on rendered vessels only.
@@ -282,7 +285,8 @@ hazards:
     probability: 5
     basis: >-
       Measured on CADICA test patients: the analysis frame lies outside the span of the
-      clinicians' selected frames in 22 of 177 runs (12%).
+      clinicians' selected frames in 32 of 177 runs (18%) with the D53 segmenter, against 22
+      (12%) with M5 (D54).
     controls: [SR-05, SR-06, SR-13]
     residual_probability: 5
     residual_basis: Measured with the controls (the CADICA result is the product's own rule).
@@ -298,7 +302,7 @@ hazards:
     probability: 2
     basis: >-
       Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and
-      is shown only when the front advances (CADICA: 56% of runs).
+      is shown only when the front advances (CADICA: 55% of runs).
     controls: [SR-31]
     residual_probability: 2
     residual_basis: Unchanged; the label is the control.
