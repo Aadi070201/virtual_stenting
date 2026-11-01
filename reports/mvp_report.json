@@ -180,7 +180,7 @@
       "milestone": "M7",
       "area": "App",
       "metric": "Stent-control update, server time (max over modes)",
-      "value": "159 ms",
+      "value": "233 ms",
       "target": "< 300 ms",
       "passed": true
     }
@@ -192,7 +192,7 @@
     "INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99\u00d7 \u2192 not kept.",
     "ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 10/20; 19 outside the surrogate's training range.",
     "Planner on 100 synthetic vessels: target reached 84 (solver) / 83 (surrogate); solver confirms 81/83 surrogate plans; same total length 80/83.",
-    "App update medians: synthetic 66 ms, image 113 ms.",
+    "App update medians: synthetic 74 ms, image 131 ms.",
     "Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 \u2192 0.976 (solver) with 3.25 \u00d7 12 mm at 14.5 mm + 3.25 \u00d7 12 mm at 43.0 mm; planning 0.67 s."
   ],
   "provenance": [
@@ -248,9 +248,9 @@
     {
       "report": "qca_gallery.json",
       "title": "QCA gallery",
-      "commit": "4c920e5b437be819d9e30ae800e9ae8538d6e574",
+      "commit": "576bc5fbfba4b77829b46aa1d6b3ed69e0c660af",
       "dirty": false,
-      "created": "2026-11-01T16:52:37+00:00"
+      "created": "2026-11-01T20:03:42+00:00"
     },
     {
       "report": "planner_benchmark.json",
@@ -262,9 +262,9 @@
     {
       "report": "app_latency.json",
       "title": "App latency",
-      "commit": "d69b1543d73946b138a208e46bdedc451b28a2b3",
+      "commit": "cb3f600b79b2686e503d8444b78cd20332a0ed2c",
       "dirty": false,
-      "created": "2026-10-30T19:11:52+00:00"
+      "created": "2026-11-01T23:03:06+00:00"
     },
     {
       "report": "demo/demo.json",
@@ -291,10 +291,10 @@
     "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)"
   ],
   "provenance_report": {
-    "git_commit": "1fd630eb3e5d49135d25973f66215d57a36bd537",
+    "git_commit": "dd07ea833d68431bd604d30d3640f34483fa8a3c",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-11-01T19:57:03+00:00"
+    "created_utc": "2026-11-01T23:07:19+00:00"
   },
   "all_targets_met": true
 }

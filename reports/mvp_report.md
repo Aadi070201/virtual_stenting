@@ -34,7 +34,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | M5 | QCA (synthetic tubes) | MLD location error (worst case) | 1.9 px | ≤ 3 px | yes |
 | M5 | QCA (synthetic tubes) | DS error (worst case) | 0.7 points | within ±7 points | yes |
 | M6 | Planner | 5,000 candidates, surrogate backend (median) | 0.838 s | < 1 s | yes |
-| M7 | App | Stent-control update, server time (max over modes) | 159 ms | < 300 ms | yes |
+| M7 | App | Stent-control update, server time (max over modes) | 233 ms | < 300 ms | yes |
 
 ## Further results (no target)
 
@@ -44,7 +44,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - INT8 quantisation: distal MAE 0.0026 vs 0.0013, speed-up 0.99× → not kept.
 - ARCADE gallery (qualitative): 20/20 images analysed end-to-end; point of maximum DS inside an annotated stenosis box in 10/20; 19 outside the surrogate's training range.
 - Planner on 100 synthetic vessels: target reached 84 (solver) / 83 (surrogate); solver confirms 81/83 surrogate plans; same total length 80/83.
-- App update medians: synthetic 66 ms, image 113 ms.
+- App update medians: synthetic 74 ms, image 131 ms.
 - Demo (synthetic tandem lesions, surrogate backend): distal FFR 0.705 → 0.976 (solver) with 3.25 × 12 mm at 14.5 mm + 3.25 × 12 mm at 43.0 mm; planning 0.67 s.
 
 ## Limitations
@@ -84,9 +84,9 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [Segmentation evaluation](seg_eval.md) | `e245936699` | False | 2026-10-30T15:57:00+00:00 |
 | [Segmentation ONNX](seg_onnx.md) | `20d7f6b33c` | False | 2026-10-28T14:47:02+00:00 |
 | [QCA synthetic validation](qca_synthetic.md) | `186b932015` | False | 2026-10-30T10:26:02+00:00 |
-| [QCA gallery](qca_gallery.md) | `4c920e5b43` | False | 2026-11-01T16:52:37+00:00 |
+| [QCA gallery](qca_gallery.md) | `576bc5fbfb` | False | 2026-11-01T20:03:42+00:00 |
 | [Planner benchmark](planner_benchmark.md) | `c95b317ba6` | False | 2026-10-30T19:12:07+00:00 |
-| [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
+| [App latency](app_latency.md) | `cb3f600b79` | False | 2026-11-01T23:03:06+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `1fd630eb3e5d49135d25973f66215d57a36bd537` (dirty: False), vstent 0.1.0, 2026-11-01T19:57:03+00:00.
+This summary: commit `dd07ea833d68431bd604d30d3640f34483fa8a3c` (dirty: False), vstent 0.1.0, 2026-11-01T23:07:19+00:00.
