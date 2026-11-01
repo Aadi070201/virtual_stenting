@@ -86,17 +86,31 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
 
 ### A regulatory adviser (P8; also shapes the intended use now)
 
-- **Why:** software that informs whether and how to stent is a medical device.
-  - **EU (MDR, Rule 11):** such software is at least class IIa, and possibly IIb.
-  - **US:** comparable angiography-derived FFR products have been cleared as class II devices.
-  - Confirm both with an adviser.
+- **Why:** software that informs whether and how to stent is a medical device. Preliminary
+  classes in the drafts (`docs/regulatory/INTENDED_USE.md`; confirm all with an adviser):
+  - **India (CDSCO, MDR 2017):** class C, under CDSCO's software guidance of 2026 (D with a
+    diagnosis claim). Class C and D licences come from the central authority (CDSCO).
+  - **EU (MDR, Rule 11):** likely IIb (III arguable).
+  - **US:** class II, 510(k), with cleared angiography-derived FFR products as precedents.
+- **Ready for them (P8, done 2026-11-01):** `docs/regulatory/`:
+  - intended use and classification;
+  - IEC 62304 safety class (proposed C);
+  - development plan and architecture;
+  - risk management plan;
+  - 42 requirements and 19 hazards, traced to tests;
+  - SOUP list and SBOM.
+  Start with its README. The drafts are not approval.
 - **Decide with them:**
-  - the target market (EU / US first);
-  - the intended-use statement;
-  - when to start a quality management system (ISO 13485), with IEC 62304 (software) and
-    ISO 14971 (risk).
-- **What P8 provides:** draft documents (intended use, software safety class, development plan,
-  SOUP list, hazard analysis) for them to review. Drafts are not approval.
+  - the target market (India first?) and the intended-use wording ("aid" vs "diagnose", and
+    whether the stent plan is part of it); this sets the class;
+  - when to start a quality management system (ISO 13485). CDSCO asks domestic manufacturers
+    for an undertaking of compliance with the Fifth Schedule of MDR 2017;
+  - for a study in India: ethics committee approval, a test licence (Form MD-13) and
+    permission for a clinical investigation (Form MD-23).
+- **Also needed (people, not code):**
+  - an independent reviewer of design, code and tests (class C; today there is one
+    developer);
+  - an interventional cardiologist for usability testing (IEC 62366-1).
 
 ## 3. Before P6 (3D CFD)
 

@@ -662,3 +662,39 @@ Results are reported whatever they show.
 - An image-only opacification proxy (black top-hat of each frame): it barely moved over the
   runs (background structure dominates), so the segmentation is used.
 - End-diastolic frame selection from the ECG: CADICA has no ECG; it stays in P7.
+
+### D48 — Regulatory drafts as checked, generated documents; proposed class C (2026-11-01)
+**Decision:** the regulatory groundwork (P8) lives in `docs/regulatory/`. The intended use,
+safety class, development plan, architecture and risk management plan are written by hand.
+Requirements, hazards and the SOUP list are kept as YAML sources:
+- `vstent regulatory` renders REQUIREMENTS.md, HAZARD_ANALYSIS.md, TRACEABILITY.md, SOUP.md
+  and a CycloneDX SBOM;
+- it fails on any broken reference (code `path::name`, test, report, control);
+- a test checks that the committed documents match their sources;
+- the SOUP list is generated from `uv.lock` for the release targets (CPython 3.14 on Windows
+  and Linux), and the build fails if the code imports a package that is not declared and
+  listed (this found pandas and pyarrow, imported by the app but only installed through
+  Streamlit; both are now declared).
+
+Proposed IEC 62304 class: **C**. The physician cannot recognise a wrong FFR estimate by looking
+at the angiogram, so external controls cannot be credited. Preliminary market classes:
+- India: **C** (CDSCO software guidance CDSCO/MD/GD/MDSW/01/2026, Table 2: critical
+  situation × drive clinical management);
+- EU: **IIb** (Rule 11);
+- US: **class II, 510(k)** (21 CFR 870.1415; angiography-derived FFR precedents with
+  product codes QEK and QHA).
+All are drafts for a qualified reviewer.
+
+**Reason:**
+- hand-written traceability goes stale as soon as a test or function is renamed; a
+  generated, checked trace stays true and is cheap to keep;
+- a reviewer or partner can re-run it;
+- risks are scored conservatively: unmeasured probabilities are set high and lowered only by
+  evidence cited from a generated report, so the analysis shows the real state (13 of 19
+  residual risks unacceptable for clinical use) and the evidence that would change it.
+
+**Alternatives:**
+- A requirements-management tool or spreadsheet: not linked to the code, so it is not checked.
+- Class B by crediting the physician or the pressure wire as an external control: possible
+  only with a narrower intended use (always confirm with the wire); recorded in SAFETY_CLASS.md
+  for the reviewer.

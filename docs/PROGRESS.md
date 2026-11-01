@@ -821,3 +821,72 @@ cine run, the form in which clinics record angiograms (parts of P7 moved here).
 - **Novelty:** this is established practice (invention notes, "not considered inventive"); it
   makes the product's input match the clinic's.
 - Real FFR ground truth (ICADD) still waits for the human.
+
+## 2026-11-01 — P8 (part): Regulatory groundwork drafts
+
+The founder asked for whatever makes the product robust and pitchable. A hospital or device
+company asks first for the intended use, the classification and the risk file, so the
+regulatory half of P8 came before two-view 3D (P5). Everything is a draft for review by a
+qualified person, not regulatory advice.
+
+**What was done** (`docs/regulatory/`, D48)
+- **Hand-written:**
+  - INTENDED_USE: intended use, users, exclusions, foreseeable misuse, preliminary class;
+  - SAFETY_CLASS: IEC 62304 class C and the class C gap table;
+  - DEVELOPMENT_PLAN, ARCHITECTURE (11 software items, interfaces, data flow);
+  - RISK_MANAGEMENT_PLAN (ISO 14971 policy and method).
+- **Generated and checked** (`vstent regulatory`, `src/vstent/regulatory/`):
+  - REQUIREMENTS (42), HAZARD_ANALYSIS (19 hazards), TRACEABILITY, SOUP, a CycloneDX SBOM;
+  - sources: `requirements.yaml`, `hazards.yaml`, `soup.yaml` and `uv.lock`;
+  - every code reference (`path::name`), test, report and risk control must resolve, and a
+    test checks that the committed documents match their sources;
+  - the SOUP list walks the locked dependency graph for CPython 3.14 on Windows and Linux.
+- **Sources checked** rather than recalled:
+  - the CDSCO software guidance (CDSCO/MD/GD/MDSW/01/2026, read from the PDF): Table 2
+    classes, licensing authorities, test licence and clinical-investigation forms, the
+    algorithm change protocol;
+  - FDA 510(k) entries for the angiography-FFR precedents (FFRangio K182149 / QEK; QAngio XA
+    3D K182611, CAAS vFFR K232147, QFR K243769 / QHA), found via database mirrors and marked
+    "verify".
+- **Fixes the checks found:**
+  - pandas and pyarrow were imported by the app but not declared; they are now in the `app`
+    extra, with no version change in the lock;
+  - new tests for the research-use notice on every report and regulatory page, the unit
+    conversions, and the app's usage statistics being off.
+
+**Results**
+- **Preliminary class:**
+  - India: C (critical × drive clinical management; D with a diagnosis claim);
+  - EU: IIb likely;
+  - US: class II, 510(k) under 21 CFR 870.1415;
+  - IEC 62304: C.
+- **Requirements:** 39 of 42 verified by tests or generated reports; 3 are gaps:
+  - pixel size from the projection geometry (P5);
+  - foreshortening-free lengths (P5);
+  - usability engineering.
+- **Hazards:** after today's controls, 13 of 19 residual risks are unacceptable for clinical
+  use, 2 need reduction and 4 are acceptable. The unacceptable ones rest on measured
+  weaknesses:
+  - severity compression on CADICA (kappa 0.14);
+  - no total occlusion flagged (0 of 10 measured);
+  - the physics' loss at 0.61 × measured on the FDA nozzle;
+  - 12% of analysis frames outside the clinicians' span;
+  - single-view geometry.
+  This confirms that research use only is the right status, and each hazard names the
+  evidence that would lower it.
+- **SOUP:** 108 packages shipped (22 declared directly), 4 development-only; anomaly lists
+  not yet reviewed (recorded as a gap).
+- Checks: ruff clean; 302 tests passed (3 slow deselected).
+
+**Open issues and next steps**
+- Human (HUMAN_ACTIONS.md): a regulatory adviser, an ISO 13485 quality system, an
+  independent reviewer, an interventional cardiologist for usability; ICADD or a study for
+  clinical evidence.
+- Code, before any release:
+  - package the analysis path without torch and the tools;
+  - move the training ranges into the model metadata;
+  - signed model files;
+  - an issue tracker with safety assessment;
+  - CI to run the checks.
+- Novelty: none claimed; generated, checked traceability is established practice.
+- P8's other half (sim-to-real angiograms) and P5 remain.

@@ -44,6 +44,16 @@ dataset pairs angiograms with invasive FFR:
 - the pressure-loss physics against the FDA's inter-laboratory nozzle experiment
   ([reports/physics_nozzle.md](reports/physics_nozzle.md)).
 
+P8 adds regulatory groundwork drafts for review by a qualified person
+([docs/regulatory/](docs/regulatory/README.md)):
+- intended use and preliminary classification (India, EU, US);
+- IEC 62304 safety class, development plan and architecture;
+- an ISO 14971 risk management plan and hazard analysis;
+- requirements traced to the tests;
+- the SOUP list and an SBOM.
+Requirements, hazards and the SOUP list are generated (`vstent regulatory`) and checked
+against the code by the test suite.
+
 **What the numbers mean:**
 - The surrogate's accuracy is its agreement with the reduced-order physics model on synthetic
   vessels, not agreement with invasive FFR.
@@ -129,6 +139,7 @@ Trainings can be paused and resumed exactly:
 | `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
+| `vstent regulatory [--check]` | regulatory drafts: requirements, hazards, traceability, SOUP list and SBOM → `docs/regulatory/`; fails on any broken reference (`--check`: write nothing, fail if out of date) | P8 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
 | `vstent eval-seg --run runs/<name>` | Dice on ARCADE val / test → `reports/seg_eval.md` | M5 |

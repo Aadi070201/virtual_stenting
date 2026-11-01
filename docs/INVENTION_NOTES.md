@@ -221,6 +221,9 @@ The following are recorded only so they are not mistaken for claims:
 - the cine analysis frame from the opacification curve and contrast transit along the vessel
   (P4d, D47): automated frame selection and frame-count flow are established (e.g. QFR's
   contrast-flow variant, automated TIMI frame counting);
+- regulatory documents generated from YAML and checked against the code, and the SOUP list /
+  SBOM from the lock file (P8, D48): established docs-as-code and requirements-traceability
+  practice;
 - chunked, parallel ONNX inference;
 - resumable checkpoints;
 - report provenance;

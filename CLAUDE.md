@@ -71,7 +71,10 @@ vstent/
                         # validation_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
                         # HUMAN_ACTIONS.md (what only the human can do), validation/ (P4: PROTOCOL.md,
-                        # DATA_SPEC.md, templates/)
+                        # DATA_SPEC.md, templates/), regulatory/ (P8 drafts: hand-written INTENDED_USE,
+                        # SAFETY_CLASS, DEVELOPMENT_PLAN, ARCHITECTURE, RISK_MANAGEMENT_PLAN; sources
+                        # requirements.yaml, hazards.yaml, soup.yaml → generated REQUIREMENTS,
+                        # HAZARD_ANALYSIS, TRACEABILITY, SOUP, sbom.cdx.json)
   src/vstent/
     physics/            # geometry.py, solver.py, report.py, tree.py (vessel trees, P2),
                         # tree_report.py (tree checks + throughput), nozzle.py (FDA nozzle check, P4b)
@@ -112,6 +115,8 @@ vstent/
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
+    regulatory/         # P8, torch-free: trace.py (requirements, hazards, risk policy, reference
+                        # checks), soup.py (uv.lock closure, SOUP check, CycloneDX SBOM), build.py
     checkpoints.py      # resumable training state, STOP file, listing (shared by all trainers)
     units.py            # mmHg <-> Pa, mm <-> m
     sysinfo.py          # CPU model for benchmarks
@@ -180,6 +185,8 @@ uv run vstent stenosis-grading [--edges probability,intensity,model] [--workers 
 uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccentric lumens → reports/lumen_synthetic.md
 uv run vstent cine-frames         # P4d: CADICA runs, analysis frame vs clinicians' frames → reports/cine_frames.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
+uv run vstent regulatory [--check]  # P8: docs/regulatory/ from its YAML sources + uv.lock; fails on
+                                  # broken references (edit the YAML, never the generated .md)
 ```
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)
