@@ -248,9 +248,9 @@
     {
       "report": "qca_gallery.json",
       "title": "QCA gallery",
-      "commit": "8856a9ef6d021fad94285ae8e6c9350943678bcf",
+      "commit": "4c920e5b437be819d9e30ae800e9ae8538d6e574",
       "dirty": false,
-      "created": "2026-10-31T20:36:09+00:00"
+      "created": "2026-11-01T16:52:37+00:00"
     },
     {
       "report": "planner_benchmark.json",
@@ -284,15 +284,16 @@
     "P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b) (done)",
     "P4d: Cine runs on real angiograms (added 2026-10-31, revised 2026-11-01) (done)",
     "P5: Projection geometry and two-view 3D reconstruction (done)",
+    "P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)",
     "P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)",
     "P7: Cine angiography (not started)",
     "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)"
   ],
   "provenance_report": {
-    "git_commit": "153b207ea0dfd0bc569d64d2b10c5ebb570d2464",
+    "git_commit": "e2ca69747f10d0c7dbf424a2b2aca11c813c9328",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-11-01T16:07:24+00:00"
+    "created_utc": "2026-11-01T17:03:12+00:00"
   },
   "all_targets_met": true
 }

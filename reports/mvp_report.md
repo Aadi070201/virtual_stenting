@@ -67,6 +67,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b) (done)
 - P4d: Cine runs on real angiograms (added 2026-10-31, revised 2026-11-01) (done)
 - P5: Projection geometry and two-view 3D reconstruction (done)
+- P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
 - P7: Cine angiography (not started)
 - P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)
@@ -82,9 +83,9 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [Segmentation evaluation](seg_eval.md) | `e245936699` | False | 2026-10-30T15:57:00+00:00 |
 | [Segmentation ONNX](seg_onnx.md) | `20d7f6b33c` | False | 2026-10-28T14:47:02+00:00 |
 | [QCA synthetic validation](qca_synthetic.md) | `186b932015` | False | 2026-10-30T10:26:02+00:00 |
-| [QCA gallery](qca_gallery.md) | `8856a9ef6d` | False | 2026-10-31T20:36:09+00:00 |
+| [QCA gallery](qca_gallery.md) | `4c920e5b43` | False | 2026-11-01T16:52:37+00:00 |
 | [Planner benchmark](planner_benchmark.md) | `c95b317ba6` | False | 2026-10-30T19:12:07+00:00 |
 | [App latency](app_latency.md) | `d69b1543d7` | False | 2026-10-30T19:11:52+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `153b207ea0dfd0bc569d64d2b10c5ebb570d2464` (dirty: False), vstent 0.1.0, 2026-11-01T16:07:24+00:00.
+This summary: commit `e2ca69747f10d0c7dbf424a2b2aca11c813c9328` (dirty: False), vstent 0.1.0, 2026-11-01T17:03:12+00:00.
