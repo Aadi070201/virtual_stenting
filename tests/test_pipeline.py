@@ -225,6 +225,7 @@ def test_cli_analyse_with_plan(dark_seg_dir, tiny_export, tmp_path):
     result = CliRunner().invoke(app, args)
     assert result.exit_code == 0, result.output
     assert "Stent plans (surrogate" in result.output
+    assert "foreshortening makes them shorter" in result.output  # SR-41
 
 
 def test_cli_and_app_give_the_segmenter_the_same_pixels(

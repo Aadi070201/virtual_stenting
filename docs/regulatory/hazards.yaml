@@ -109,14 +109,20 @@ hazards:
     probability: 5
     basis: >-
       Estimated from the data seen so far: the public angiograms (ARCADE, CADICA) carry no
-      pixel size, and magnification is never corrected.
-    controls: [SR-09, SR-02, SR-23, SR-26]
-    residual_probability: 5
+      pixel size. Before P5 the loader offered the DICOM detector spacing, which is magnified
+      by SID / SOD: on synthetic cases that overstated lengths by 20% (median) and changed
+      FFR by 0.023 (median; up to 0.16) from geometry alone.
+    controls: [SR-40, SR-41, SR-09, SR-02, SR-23, SR-26]
+    residual_probability: 3
     residual_basis: >-
-      The warning and the ±10% input interval show the problem but do not remove it.
+      Measured on synthetic cases: DICOM input is corrected to the isocentre (4% median error
+      at the vessel in one view, 0.008 median FFR error from geometry alone); two views use
+      the pixel size at each 3D point. Exported frames without DICOM keep the assumed default
+      with its warning and ±10% interval. Not yet verified on real C-arm data.
+    evidence: [reports/two_view_synthetic.md]
     needed: >-
-      Pixel size from the projection geometry (SR-40, P5) or catheter calibration, verified
-      on phantoms.
+      The geometry confirmed on real two-view DICOM or a phantom of known size; catheter
+      calibration for frames without DICOM.
 
   - id: H-04
     title: Total occlusion read as open
@@ -150,12 +156,18 @@ hazards:
     severity: 3
     probability: 5
     basis: >-
-      Estimated: foreshortening is inherent in a single projection; its size is not
-      measured.
-    controls: [SR-13, SR-01]
-    residual_probability: 5
-    residual_basis: No control yet removes foreshortening (SR-41 is a gap).
-    needed: Two-view 3D reconstruction (SR-41, P5) and its length error against 3D truth.
+      Measured on synthetic cases: one view read the vessel 13% short (median; 16% of views
+      within 5% of the true length).
+    controls: [SR-41, SR-13, SR-01]
+    residual_probability: 4
+    residual_basis: >-
+      Two views remove foreshortening on synthetic cases (0.6% median length error, 95% of
+      cases within 5%), but only when the user supplies a second view; single-view plans
+      state that their lengths are foreshortened. Not yet verified on real data.
+    evidence: [reports/two_view_synthetic.md]
+    needed: >-
+      Two-view lengths verified on real data (a phantom or IVUS pullback length), and two
+      views in the app.
 
   - id: H-06
     title: Reduced-order physics error
@@ -233,7 +245,11 @@ hazards:
     basis: Estimated; use-dependent and not measured.
     controls: [SR-26, SR-25, SR-27, SR-09, SR-01]
     residual_probability: 4
-    residual_basis: The sizing rule and the oversize flag limit gross errors only.
+    residual_basis: >-
+      The sizing rule and the oversize flag limit gross errors only. Measured on rendered
+      vessels: the intensity edges read the reference diameter about 15% narrow (median), so
+      a suggested diameter tends to be too small.
+    evidence: [reports/two_view_synthetic.md]
     needed: >-
       Instructions that the plan is an estimate, sizing compared with IVUS or OCT, and a
       usability check.
@@ -400,3 +416,30 @@ hazards:
     residual_probability: 5
     residual_basis: Not measured (SR-42 is a gap).
     needed: Usability engineering under IEC 62366-1 with interventional cardiologists.
+
+  - id: H-20
+    title: Wrong 3D reconstruction not noticed
+    cause: >-
+      In two views, the traced path follows a crossing vessel, the start and end points are
+      not the same landmarks in both views, the heart is in a different cardiac phase in the
+      two runs, or the projection angles are read with the wrong convention.
+    situation: >-
+      The 3D length and the diameters are wrong, so the FFR and the stent length are wrong,
+      while the result looks like a two-view measurement.
+    harm: As H-01, H-02 or H-05.
+    severity: 4
+    probability: 4
+    basis: >-
+      Measured on synthetic random views (stress test): where the vessel overlaps, the length
+      error reached 5.7% (90th percentile) and the 3D error 1.3 mm, and a wrong path that
+      fits the other view is not flagged. Phase and convention errors are not measured.
+    controls: [SR-41, SR-02, SR-01]
+    residual_probability: 3
+    residual_basis: >-
+      The ray-gap and residual check flags motion and inconsistent landmarks on synthetic
+      cases; the figure lets the user check the path in both views. Not verified on real
+      data.
+    evidence: [reports/two_view_synthetic.md]
+    needed: >-
+      Real two-view runs (or a phantom) to confirm the angle convention (D49); end-diastolic
+      frame matching (P7); overlap detection on the traced path.

@@ -780,6 +780,11 @@ def _interval_text(a) -> str:
     return f"{', '.join(parts)}; {a.threshold:.2f}: {flag}"
 
 
+SINGLE_VIEW_LENGTHS = (
+    "Lengths are measured in one view: foreshortening makes them shorter than the vessel"
+)
+
+
 def _echo_plans(planned, assessments=None) -> None:
     typer.echo(
         f"Stent plans ({planned.backend}; pre-PCI FFR {planned.pre_ffr:.3f}; "
@@ -1040,6 +1045,7 @@ def analyse(
             runner=surrogate,
         )
         _echo_plans(planned, plan_assessments(planned, mc, ucfg.level))
+        typer.echo(f"  {SINGLE_VIEW_LENGTHS} (two views: --view2).")
     surrogate.close()
     if figure is not None:
         from vstent.inference.figures import plot_analysis

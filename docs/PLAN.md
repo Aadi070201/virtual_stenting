@@ -374,9 +374,9 @@ real expert ground truth. Parts of P7 move here.
 
 ## P5: Projection geometry and two-view 3D reconstruction
 
-- [ ] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
-- [ ] Synthetic 3D trees projected into two views with known geometry, as test data.
-- [ ] Epipolar matching of two-view centrelines → 3D centreline; diameters from both views; lengths free of foreshortening.
+- [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
+- [x] Synthetic 3D trees projected into two views with known geometry, as test data.
+- [x] Epipolar matching of two-view centrelines → 3D centreline; diameters from both views; lengths free of foreshortening.
 
 **Done when:**
 - on synthetic two-view pairs, the 3D centreline error is ≤ 1 mm (median) and the length error is ≤ 5%;

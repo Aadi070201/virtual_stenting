@@ -44,6 +44,13 @@ dataset pairs angiograms with invasive FFR:
 - the pressure-loss physics against the FDA's inter-laboratory nozzle experiment
   ([reports/physics_nozzle.md](reports/physics_nozzle.md)).
 
+P5 adds the projection geometry: DICOM pixel sizes are corrected for magnification, and two
+views of a vessel (`vstent analyse --view2`) give its 3D centreline, so lengths are free of
+foreshortening and diameters use their true magnification. On synthetic two-view pairs the
+3D centreline error is 0.23 mm and the length error 0.6% (median), against 13% for one view
+([reports/two_view_synthetic.md](reports/two_view_synthetic.md)). It has not yet been tested
+on real two-view data.
+
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):
 - intended use and preliminary classification (India, EU, US);
@@ -139,6 +146,8 @@ Trainings can be paused and resumed exactly:
 | `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
+| `vstent analyse <view1> --view2 <view2> --start R C --end R C --start2 R C --end2 R C [--plan]` | two views (DICOM with geometry): 3D centreline, foreshortening-free length, FFR, figure with the 3D path projected back | P5 |
+| `vstent two-view-synthetic [--workers N]` | two-view reconstruction on synthetic C-arm pairs vs single view → `reports/two_view_synthetic.md` | P5 |
 | `vstent regulatory [--check]` | regulatory drafts: requirements, hazards, traceability, SOUP list and SBOM → `docs/regulatory/`; fails on any broken reference (`--check`: write nothing, fail if out of date) | P8 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |
@@ -186,8 +195,11 @@ red banner is permanent: **research use only**.
 - **Segmentation:** trained on one public dataset (ARCADE), whose masks cover only the annotated
   SYNTAX segments.
 - **QCA:**
-  - a single 2D projection, so overlap and foreshortening;
-  - pixel size assumed unless given;
+  - one 2D projection by default, so overlap and foreshortening; two views (`--view2`, P5)
+    reconstruct the vessel in 3D, tested on synthetic pairs only and not yet in the app;
+  - pixel size assumed unless given or read from the DICOM geometry (corrected to the
+    isocentre: exact only at the isocentre's depth in one view);
+  - intensity edges read vessel diameters about 10–15% narrow on rendered vessels;
   - crossing vessels can look like narrowings;
   - automatic paths run through branches.
 - **Stent model:** it only widens the lumen. Two-stent search is heuristic, and overlapping

@@ -68,7 +68,7 @@ vstent/
   uv.lock               # committed lock file
   configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
                         # stent_catalog, planner, uncertainty, tree_surrogate, validation,
-                        # validation_synthetic
+                        # validation_synthetic, two_view_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
                         # HUMAN_ACTIONS.md (what only the human can do), validation/ (P4: PROTOCOL.md,
                         # DATA_SPEC.md, templates/), regulatory/ (P8 drafts: hand-written INTENDED_USE,
@@ -95,7 +95,10 @@ vstent/
                         # lumen_model.py (imaging-chain lumen fit, P4c), lumen_report.py,
                         # calibration.py (frame-level imaging-chain calibration, D46),
                         # cine.py (opacification window, analysis frame, contrast transit, P4d),
-                        # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader)
+                        # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader),
+                        # projection.py (DICOM C-arm geometry, magnification, P5), twoview.py (two-view
+                        # 3D centreline + lumen profile, P5), synthetic3d.py + twoview_report.py
+                        # (synthetic two-view cases)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
                         # tree_planner.py + tree_report.py (stents on a tree path, P3)
@@ -168,6 +171,9 @@ uv run vstent qca-gallery --tree                   # P2: tree physics → report
 uv run vstent analyse <image.png> --tree [--plan | --stent START LEN DIA] [--outlet K]  # P2-P3: trees
 uv run vstent analyse <image.png> --plan           # + virtual stent plans (configs/planner.yaml)
 uv run vstent analyse <image.png> --lumen model    # P4c: imaging-chain lumen fit (default: AUTO_LUMEN)
+uv run vstent analyse <v1.dcm> --view2 <v2.dcm> --start R C --end R C --start2 R C --end2 R C
+                                                   # P5: two views (DICOM geometry) → 3D length + FFR
+uv run vstent two-view-synthetic [--workers N]    # P5: two-view vs single view → reports/two_view_synthetic.md
 uv run vstent plan-benchmark                       # → reports/planner_benchmark.md
 uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
 uv run vstent demo              # end-to-end synthetic case → reports/demo/

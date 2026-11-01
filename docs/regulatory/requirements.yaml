@@ -614,24 +614,59 @@ requirements:
     title: Pixel size from the projection geometry
     kind: imaging
     text: >-
-      The pixel size at the vessel is computed from the DICOM projection geometry (imager
-      pixel spacing, source–detector and source–patient distances) instead of assumed.
+      For DICOM input the pixel size is corrected for geometric magnification:
+      ImagerPixelSpacing × SOD / SID at the isocentre (or ÷ the
+      EstimatedRadiographicMagnificationFactor). The detector spacing without magnification
+      information is not used as a calibration. With two views, each diameter is scaled with
+      the pixel size at its reconstructed 3D point.
     code:
-      - src/vstent/imaging/image_io.py::ImageInput
-    gap: >-
-      Planned in P5. Today only the DICOM pixel spacing is read; magnification is not
-      corrected.
+      - src/vstent/imaging/projection.py::read_projection
+      - src/vstent/imaging/projection.py::ProjectionGeometry.pixel_size_at
+      - src/vstent/imaging/image_io.py::read_image
+      - src/vstent/imaging/twoview.py::two_view_profile
+    tests:
+      - tests/test_twoview.py::test_read_projection_from_dicom_tags
+      - tests/test_twoview.py::test_loader_corrects_the_magnification
+      - tests/test_twoview.py::test_rays_invert_the_projection_and_pixel_size_follows_depth
+      - tests/test_twoview.py::test_two_view_profile_uses_the_magnification_at_the_3d_point
+      - tests/test_app.py::test_read_image_png_jpg_dicom
+    reports:
+      - reports/two_view_synthetic.md
+    inspection: >-
+      Verified on synthetic geometry only. A single view's isocentre pixel size is exact only
+      at the isocentre's depth (4% median error at the vessel in the synthetic cases) and is
+      not yet varied in the input intervals.
 
   - id: SR-41
     title: Foreshortening-free lengths
     kind: imaging
     text: >-
-      Lesion and stent lengths are measured free of foreshortening (two-view 3D
-      reconstruction), or the single-view length is flagged as a lower bound.
+      With two views of a vessel (DICOM geometry, the same two landmarks in each), the vessel
+      is reconstructed in 3D and its lumen profile, lengths and FFR follow the 3D centreline.
+      Motion of the heart between the runs is estimated and removed (across the epipolar
+      lines). The reconstruction is checked: the views' separation, the mean gap between
+      paired rays and the reprojection residual give a warning when the geometry does not
+      fit, and the figure shows the 3D centreline projected back onto both views. Stent plans
+      from a single view state that their lengths are foreshortened.
     code:
-      - src/vstent/imaging/qca.py::run_qca
-    gap: >-
-      Planned in P5 (two-view reconstruction). No warning about foreshortening is shown yet.
+      - src/vstent/imaging/twoview.py::reconstruct
+      - src/vstent/imaging/twoview.py::estimate_shift
+      - src/vstent/imaging/twoview.py::Reconstruction.warnings
+      - src/vstent/inference/pipeline.py::analyse_two_views
+      - src/vstent/inference/figures.py::plot_two_view_analysis
+      - src/vstent/cli.py::SINGLE_VIEW_LENGTHS
+    tests:
+      - tests/test_twoview.py::test_reconstruction_recovers_a_projected_curve
+      - tests/test_twoview.py::test_motion_between_runs_is_corrected
+      - tests/test_twoview.py::test_analyse_two_views_on_a_synthetic_case
+      - tests/test_twoview.py::test_cli_two_views
+      - tests/test_pipeline.py::test_cli_analyse_with_plan
+    reports:
+      - reports/two_view_synthetic.md
+    inspection: >-
+      Verified on synthetic two-view pairs only (the renderer shares the projection model).
+      Not in the app yet (command line only); the angle convention (D49) is to be confirmed
+      on real two-view DICOM.
 
   - id: SR-42
     title: Usability engineering

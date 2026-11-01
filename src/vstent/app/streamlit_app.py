@@ -609,6 +609,12 @@ st.caption(
     f"diameter ≤ {planner_cfg.max_diameter_ratio} × distal reference, landing zones DS < "
     f"{planner_cfg.landing_max_ds_pct:g}%, up to {planner_cfg.max_stents} stents. "
     f"Grey zone: an interval of the plan's post-PCI FFR contains {planner_cfg.target_ffr:.2f}."
+    + (
+        " Lengths are measured in one view: foreshortening makes them shorter than the vessel "
+        "(two views: `vstent analyse --view2`)."
+        if image_input is not None
+        else ""
+    )
 )
 if st.button("Suggest plan", key="suggest"):
     backend = "surrogate" if models.surrogate is not None else "solver"

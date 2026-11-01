@@ -890,3 +890,69 @@ qualified person, not regulatory advice.
   - CI to run the checks.
 - Novelty: none claimed; generated, checked traceability is established practice.
 - P8's other half (sim-to-real angiograms) and P5 remain.
+
+## 2026-11-01 — P5: Projection geometry and two-view 3D reconstruction (done on synthetic data)
+
+**What was done** (D49)
+- `imaging/projection.py`: C-arm geometry from the DICOM positioner angles, SID, SOD and
+  ImagerPixelSpacing; projection, back-projection rays, pixel size at any 3D point.
+- **Magnification fix.** The loader used to offer the DICOM detector spacing as the pixel
+  size, which overstates every size by SID / SOD. It now corrects it to the isocentre;
+  `vstent analyse` uses it automatically and the app offers it first.
+- `imaging/twoview.py`:
+  - ray-distance DP pairing of the two centrelines;
+  - triangulation and a weighted spline;
+  - motion correction between the runs;
+  - reprojection and ray-gap checks;
+  - the lumen profile from both views at each point's true magnification.
+- `vstent analyse VIEW1 --view2 VIEW2 --start --end --start2 --end2`: 3D length, two-view FFR
+  (solver and surrogate), intervals, plans, and a figure with the 3D centreline projected back
+  onto both views. Single-view stent plans now state that their lengths are foreshortened.
+- `imaging/synthetic3d.py`: P2 trees on a heart-sized sphere, rendered in two C-arm views with
+  the ARCADE-fitted imaging chain.
+- `vstent two-view-synthetic` → `reports/two_view_synthetic.md`. The scenarios:
+  - 100 static cases, with views chosen without overlap;
+  - the same cases with motion between the runs;
+  - 50 random-view stress cases.
+- Regulatory: SR-40 and SR-41 implemented and traced; H-03, H-05 and H-09 updated with
+  measured evidence; new hazard H-20 (wrong 3D reconstruction not noticed).
+
+**Results** (report seeds; method fixed beforehand on development seeds)
+- **Targets met:** 3D centreline error 0.23 mm (median over cases; target ≤ 1 mm); length
+  error 0.6% (median abs.; target ≤ 5%), 90th percentile 2.0%, 95% of cases within 5%.
+- **Single view vs two views, length:**
+  - single view at the isocentre pixel size: 13.0% short (median), 16% of views within 5%;
+  - uncorrected detector spacing: 20.3% off (median abs.);
+  - the isocentre pixel size itself is 4.0% off at the vessel (median; 90th percentile
+    6.7%).
+- **FFR error from geometry alone** (true lumen, each method's length and pixel size):
+  - single view: 0.008 median, 0.030 at the 90th percentile, max 0.088;
+  - uncorrected detector spacing: 0.023 median, max 0.163;
+  - two views: 0.000 median, max 0.027.
+- **End to end** (product lumen measurement), FFR error median 0.07–0.08 for all three
+  methods: the lumen measurement dominates, so two views do not yet improve the end-to-end
+  FFR.
+- **Motion** (median 3.1 mm between the runs):
+  - uncorrected: length error 8.5% median, 27.8% at the 90th percentile;
+  - corrected: 0.7% and 2.6%.
+- **Stress test** (random views): 37 of 50 cases overlap. Their two-view length error is 1.1%
+  median, 5.7% at the 90th percentile, and their 3D error 1.3 mm at the 90th percentile; a
+  wrong path through a crossing that still fits the other view is not flagged.
+- Checks: ruff clean; fast suite passed (see the commit).
+
+**Open issues and next steps**
+- **New finding: absolute diameter bias of intensity edges.** On these renders, intensity
+  edges read healthy vessels 10–12% narrow (checked in pixels against the rendered width; the
+  mask edges are exact), and the reference diameter about 15% narrow. The %DS-based lumen
+  reports could not show this, since %DS cancels a uniform scale. It biases stent diameters
+  small (H-09). The imaging-chain model lumen fits the blur and is the candidate fix, to be
+  checked on development data first.
+- The angle convention (D49) and real C-arm distances are unverified: real two-view DICOM (a
+  phantom or de-identified runs) is needed (HUMAN_ACTIONS).
+- Two views are in the CLI only; the app and `vstent validate` take one view.
+- The single-view isocentre pixel size is not yet varied in the input intervals (4% median
+  error at the vessel).
+- Not modelled: different cardiac phases in the two runs (P7: end-diastolic frames), image
+  distortion, overlap detection on the traced path.
+- Novelty: none claimed. Two-view reconstruction with epipolar DP matching is established
+  (QAngio XA 3D, CAAS, QFR).

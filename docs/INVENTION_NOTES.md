@@ -224,6 +224,10 @@ The following are recorded only so they are not mistaken for claims:
 - regulatory documents generated from YAML and checked against the code, and the SOUP list /
   SBOM from the lock file (P8, D48): established docs-as-code and requirements-traceability
   practice;
+- two-view 3D reconstruction (P5, D49): DICOM projection geometry, epipolar pairing by dynamic
+  programming, triangulation, motion (shift) correction from the vessel itself, and
+  ellipse-equivalent diameters are established in 3D QCA and angiography-derived FFR (e.g.
+  QAngio XA 3D, CAAS, QFR); the magnification correction is textbook;
 - chunked, parallel ONNX inference;
 - resumable checkpoints;
 - report provenance;

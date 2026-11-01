@@ -30,9 +30,9 @@ never loaded; the models run in ONNX Runtime).
 
 | ID | Item | Modules (`src/vstent/`) | Responsibility | SOUP |
 |---|---|---|---|---|
-| SI-01 | Input | `imaging/image_io.py` | Read images and cine runs (one intensity scale per run), pixel spacing, frame time, SHA-256 | pydicom, numpy, opencv |
+| SI-01 | Input | `imaging/image_io.py`, `imaging/projection.py` | Read images and cine runs (one intensity scale per run), projection geometry and the magnification-corrected pixel size (P5), frame time, SHA-256 | pydicom, numpy, opencv |
 | SI-02 | Segmentation | `imaging/segment.py` (pre-processing), `inference/onnx_runtime.py` (`SegmentationRunner`), `inference/models.py` | Vessel probability map from an image | onnxruntime, numpy, opencv |
-| SI-03 | Centreline and QCA | `imaging/centerline.py`, `imaging/qca.py`, `imaging/qca_tree.py`, `imaging/lumen_model.py` | Skeleton graph, path between the user's points, gap bridging, diameters from intensity edges (or the lumen model), reference, %DS, warnings | scikit-image, networkx, scipy, numpy |
+| SI-03 | Centreline and QCA | `imaging/centerline.py`, `imaging/qca.py`, `imaging/qca_tree.py`, `imaging/lumen_model.py`, `imaging/twoview.py` | Skeleton graph, path between the user's points, gap bridging, diameters from intensity edges (or the lumen model), reference, %DS, warnings; two-view 3D centreline and lumen profile (P5, command line) | scikit-image, networkx, scipy, numpy |
 | SI-04 | Cine | `imaging/cine.py` | Opacification curve, analysis frame, contrast transit (display only) | numpy, scipy |
 | SI-05 | Physics | `physics/geometry.py`, `physics/solver.py`, `physics/tree.py` | Vessel profile, reduced-order FFR, R_micro calibration, tree solver | numpy |
 | SI-06 | Surrogate | `surrogate/features.py`, `surrogate/tree_features.py`, `inference/onnx_runtime.py` (`SurrogateRunner`), `inference/tree_runtime.py` | Shared pre-processing; ONNX surrogate FFR with ensemble spread | onnxruntime, numpy |
@@ -50,8 +50,8 @@ calibration, D46).
 | Tools | Modules | Produce |
 |---|---|---|
 | Training and export | `surrogate/` (all but the two feature modules), `imaging/seg_train.py`, `seg_eval.py`, `seg_export.py`, `checkpoints.py` | The released model files and their evaluation reports |
-| Data | `data/` (all but `synth.py`, `synth_tree.py` at run time), `imaging/synthetic.py` | Synthetic datasets, public-dataset downloads |
-| Evidence | `validation/`, `physics/report.py`, `physics/tree_report.py`, `physics/nozzle.py`, `imaging/qca_validation.py`, `imaging/lumen_report.py`, `inference/benchmark.py`, `inference/gallery.py`, `planning/report.py`, `uncertainty/report.py`, `app/latency.py`, `reporting/` | Reports in `reports/` |
+| Data | `data/` (all but `synth.py`, `synth_tree.py` at run time), `imaging/synthetic.py`, `imaging/synthetic3d.py` | Synthetic datasets, public-dataset downloads |
+| Evidence | `validation/`, `physics/report.py`, `physics/tree_report.py`, `physics/nozzle.py`, `imaging/qca_validation.py`, `imaging/lumen_report.py`, `imaging/twoview_report.py`, `inference/benchmark.py`, `inference/gallery.py`, `planning/report.py`, `uncertainty/report.py`, `app/latency.py`, `reporting/` | Reports in `reports/` |
 | Documentation | `regulatory/` | This folder's generated documents |
 
 They run the same code as the analysis path where they measure it (one source of truth for

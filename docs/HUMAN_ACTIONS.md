@@ -97,7 +97,7 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
   - IEC 62304 safety class (proposed C);
   - development plan and architecture;
   - risk management plan;
-  - 42 requirements and 19 hazards, traced to tests;
+  - 42 requirements and 20 hazards, traced to tests;
   - SOUP list and SBOM.
   Start with its README. The drafts are not approval.
 - **Decide with them:**
@@ -122,8 +122,12 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
   pilot; a few hundred to a few thousand runs need a workstation or cloud CPUs. I will estimate
   the cost from a pilot before you commit money.
 
-## 4. Before P7 (cine angiography)
+## 4. Real angiography runs (to confirm P5; before P7)
 
+- **Two-view DICOM (confirms P5):** two runs of the same vessel from different angles (≥ 30°
+  apart), with the positioner angles and distances in the DICOM header. The best option is a
+  phantom of known size; otherwise a few de-identified runs from a partner. Only real data can
+  confirm the angle convention and the C-arm distances (D49); the synthetic test cannot.
 - **Cine examples:** a handful of de-identified, licensed cine DICOM runs (ideally with ECG),
   for example from the clinical partner under the same agreement. Without them, P7 is built and
   tested on synthetic sequences only.
@@ -150,5 +154,5 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
 
 ## What does *not* need you
 
-P5 (projection geometry on synthetic data), P7's synthetic part and the technical parts of P8
+P5 is done on synthetic data (real two-view DICOM is still needed to confirm it). P7's synthetic part and the technical parts of P8
 run on this laptop. P3 and P4's technical parts are done. I check in after each milestone.

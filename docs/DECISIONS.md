@@ -698,3 +698,56 @@ All are drafts for a qualified reviewer.
 - Class B by crediting the physician or the pressure wire as an external control: possible
   only with a narrower intended use (always confirm with the wire); recorded in SAFETY_CLASS.md
   for the reviewer.
+
+### D49 — Projection geometry and two-view 3D reconstruction (2026-11-01)
+**Decision:**
+- **Geometry convention.** DICOM PS3.3 C.8.7.5 defines the positioner angles as the image
+  detector's position (primary in the transaxial plane, + LAO; secondary in the sagittal
+  plane, + cranial) but gives no rotation order. vstent uses the detector direction
+  u = (sin α cos β, −cos α cos β, sin β) in the patient system (primary, then secondary about
+  the rotated horizontal axis). Image columns run towards the patient's left and rows towards
+  the feet at AP.
+- **Pixel size.** For DICOM input, ImagerPixelSpacing × SOD / SID (the isocentre), or ÷ the
+  EstimatedRadiographicMagnificationFactor. `vstent analyse` uses it automatically, and the
+  app offers it first. Detector spacing without magnification information is no longer
+  offered as a calibration. Before P5 the loader passed the detector spacing on, which
+  overstates sizes by SID / SOD.
+- **Two views.** The two centrelines are paired by dynamic programming over the distance
+  between their rays (a symmetric epipolar cost in mm), with a weak equal-progress term
+  (0.5 mm per unit of fractional position). The pairs are triangulated as ray midpoints and
+  fitted with a weighted least-squares cubic spline (one knot per 4 mm). Each pair is
+  weighted by the sine of the angle between the vessel and the epipolar line, with a floor
+  of 0.05. A shift of view 2 across its epipolar lines (motion between the runs) is
+  estimated by a grid and a bounded search over ±10 mm, and is on by default.
+- **Diameters and checks.** Diameters come from each view's QCA at the pixel size of the 3D
+  point, combined as sqrt(d1 · d2). The mean ray gap (> 0.5 mm), the reprojection residual
+  (> 2 px), view separation (< 30°) and depth fixed mostly by interpolation give warnings.
+- **Synthetic test.** P2 trees laid on a heart-sized sphere and rendered in two views of one
+  C-arm. Views are chosen as QCA practice asks (the analysed vessel overlaps nothing), with
+  random views as a separate stress test. Method settings (knot spacing, correction on) were
+  chosen on development seeds (0–7, 900000+), then fixed before the report seeds (5001+,
+  105001+) were run. Targets: the median over cases of the per-case mean 3D distance
+  ≤ 1 mm, and the median |length error| ≤ 5%.
+
+**Reason:**
+- The isocentre correction is free wherever DICOM is available, and it removes a 20%
+  (median) length and diameter error from geometry alone.
+- The DP pairing is simple, deterministic and fast (tens of ms), and its weak-conditioning
+  handling and spline give sub-millimetre centrelines on synthetic pairs.
+- Motion between two monoplane runs is common (breathing, table), and on synthetic cases it
+  made the length 8.5% wrong (median) without correction; the vessel itself calibrates the
+  detectable component.
+- The ellipse-equivalent diameter is the usual two-view QCA assumption.
+
+**Alternatives:**
+- Point-wise epipolar line intersections without global ordering: fail where the vessel runs
+  along the epipolar lines.
+- A deformable 3D curve fitted to both images (snake / bundle adjustment): more accurate on
+  real data with distortion, but much more code; possible later on real data.
+- Calibration from a catheter of known size: single view only, user-dependent; possible
+  addition.
+- Rotational angiography or CT for 3D: other data, other workflow.
+
+The angle convention and the real C-arm's distances must be confirmed on real two-view DICOM
+(a phantom or de-identified runs): the renderer shares the projection model, so the
+synthetic test cannot reveal a convention error.

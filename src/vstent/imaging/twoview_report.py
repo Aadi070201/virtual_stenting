@@ -298,6 +298,18 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
             ),
         },
         "warned": int(sum(bool(r["two_view"]["warnings"]) for r in ok)),
+        "large": [
+            {
+                "seed": r["seed"],
+                "length_err": r["two_view"]["length_err"],
+                "err3d_mm": r["two_view"]["err3d_mm"],
+                "separation_deg": r["separation_deg"],
+                "single_length_err": [s["length_err"] for s in r["single"]],
+                "flagged": bool(r["two_view"]["warnings"]),
+            }
+            for r in ok
+            if abs(r["two_view"]["length_err"]) > TARGET_LENGTH
+        ],
         "single": {
             "n": len(singles),
             "length_bias": _stats([s["length_err"] for s in singles], scale=100),
@@ -607,6 +619,17 @@ def write_two_view_report(
         f"| Two views | {_fmt(s['length_abs'])} | {_fmt(s['length_abs'], 1, 'p90')} | "
         f"{_fmt(s['length_bias'])} | {_pct(s['within_5pct'])} |",
         "",
+        f"{len(s['large'])} of {len(ok)} cases were off by more than 5%; the check flagged "
+        f"{sum(c['flagged'] for c in s['large'])} of them" + (":" if s["large"] else "."),
+        "",
+        *(
+            f"- seed {c['seed']}: {100 * c['length_err']:+.1f}% ({c['err3d_mm']:.1f} mm 3D error), "
+            f"views {c['separation_deg']:.0f}° apart, single views "
+            + ", ".join(f"{100 * x:+.0f}%" for x in c["single_length_err"])
+            + ("; flagged" if c["flagged"] else "; not flagged")
+            for c in sorted(s["large"], key=lambda c: -abs(c["length_err"]))
+        ),
+        *([""] if s["large"] else []),
         "## FFR error from the geometry alone",
         "",
         "The true lumen seen through each method's geometry with a perfect measurement in "

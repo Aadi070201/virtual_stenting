@@ -17,7 +17,7 @@ for first, written for the intended use of a future product and kept true to the
 | [ARCHITECTURE.md](ARCHITECTURE.md): software items, interfaces, data flow | IEC 62304 §5.3 | written |
 | [RISK_MANAGEMENT_PLAN.md](RISK_MANAGEMENT_PLAN.md): scope, policy, method | ISO 14971 §4.4 | written |
 | [REQUIREMENTS.md](REQUIREMENTS.md): 42 software requirements with code and verification | IEC 62304 §5.2 | generated |
-| [HAZARD_ANALYSIS.md](HAZARD_ANALYSIS.md): 19 hazards, risk before and after the controls | ISO 14971 §5–§7 | generated |
+| [HAZARD_ANALYSIS.md](HAZARD_ANALYSIS.md): 20 hazards, risk before and after the controls | ISO 14971 §5–§7 | generated |
 | [TRACEABILITY.md](TRACEABILITY.md): hazard → control → test; requirement → code → test | ISO 14971 §7.2; IEC 62304 §7.3 | generated |
 | [SOUP.md](SOUP.md) and [sbom.cdx.json](sbom.cdx.json): third-party software, CycloneDX SBOM | IEC 62304 §5.3.3, §8.1.2 | generated |
 
@@ -45,13 +45,13 @@ So the trace cannot silently go out of date. To change them, edit the YAML and r
 3. **IEC 62304 class C:** a wrong estimate can contribute to serious injury, and the
    physician cannot detect it by looking at the angiogram.
 4. **Residual risk:**
-   - after today's controls, 13 of 19 hazards are still unacceptable for clinical use;
+   - after today's controls, 14 of 20 hazards are still unacceptable for clinical use;
    - most are set by measured weaknesses: severity compression on real angiograms, the
      occlusion flag on real occlusions, a single projection, the physics' own error;
    - this is why the software is research use only, and each hazard names the evidence that
      would lower it.
 5. **Strengths a reviewer will look for:**
-   - 39 of 42 requirements verified by tests or generated reports;
+   - 41 of 42 requirements verified by tests or generated reports;
    - every number reproducible from code;
    - pre-registered methods on held-out public data;
    - an SBOM from the lock file;
