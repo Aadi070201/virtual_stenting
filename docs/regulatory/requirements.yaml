@@ -192,6 +192,33 @@ requirements:
     reports:
       - reports/qca_synthetic.md
 
+  - id: SR-43
+    title: Absolute lumen size
+    kind: imaging
+    text: >-
+      For an automatic segmentation the lumen's shape (%DS) comes from the intensity edges and
+      its absolute size from the imaging chain fitted on healthy stretches of the vessel: one
+      factor per vessel, which side branches inherit. A failed fit or an implausible factor
+      keeps the edges' size and shows a warning.
+    code:
+      - src/vstent/imaging/qca.py::size_factor_from_image
+      - src/vstent/imaging/qca.py::healthy_windows
+      - src/vstent/imaging/lumen_model.py::fit_windows
+      - src/vstent/imaging/qca_tree.py::tree_qca
+      - src/vstent/inference/pipeline.py::AUTO_LUMEN
+      - src/vstent/inference/pipeline.py::lumen_warnings
+    tests:
+      - tests/test_lumen_model.py::test_scaled_lumen_recovers_the_size_and_keeps_the_shape
+      - tests/test_lumen_model.py::test_healthy_windows_and_refused_factor
+      - tests/test_pipeline.py::test_automatic_segmentation_uses_intensity_edges
+    reports:
+      - reports/two_view_synthetic.md
+    inspection: >-
+      Verified on rendered vessels only (held-out renders, D50: median size error 0.0%, 97% of
+      views within ±15%; intensity edges alone −13%). On real ARCADE frames only consistency
+      with the renders was checked (factor accepted on 18 of 20 frames, median 1.15); no
+      absolute size ground truth exists for real angiograms.
+
   - id: SR-12
     title: Segmentation gaps and unmeasurable lumens
     kind: imaging
@@ -646,18 +673,22 @@ requirements:
       Motion of the heart between the runs is estimated and removed (across the epipolar
       lines). The reconstruction is checked: the views' separation, the mean gap between
       paired rays and the reprojection residual give a warning when the geometry does not
-      fit, and the figure shows the 3D centreline projected back onto both views. Stent plans
-      from a single view state that their lengths are foreshortened.
+      fit, and the figure shows the 3D centreline projected back onto both views. A
+      reliability check refits the curve with smoother settings and warns when the length
+      depends on them or the 3D path departs from a traced path. Stent plans from a single
+      view state that their lengths are foreshortened.
     code:
       - src/vstent/imaging/twoview.py::reconstruct
       - src/vstent/imaging/twoview.py::estimate_shift
       - src/vstent/imaging/twoview.py::Reconstruction.warnings
+      - src/vstent/imaging/twoview.py::Reconstruction.reliable
       - src/vstent/inference/pipeline.py::analyse_two_views
       - src/vstent/inference/figures.py::plot_two_view_analysis
       - src/vstent/cli.py::SINGLE_VIEW_LENGTHS
     tests:
       - tests/test_twoview.py::test_reconstruction_recovers_a_projected_curve
       - tests/test_twoview.py::test_motion_between_runs_is_corrected
+      - tests/test_twoview.py::test_reliability_check_warns_when_the_length_depends_on_the_smoothing
       - tests/test_twoview.py::test_analyse_two_views_on_a_synthetic_case
       - tests/test_twoview.py::test_cli_two_views
       - tests/test_pipeline.py::test_cli_analyse_with_plan

@@ -101,6 +101,11 @@ def tree_qca(
     )  # fmt: skip
     accepted: list[dict[str, Any]] = [{"qca": main, "depth": 0, "parent": -1, "attach": 0,
                                        "junction": None}]  # fmt: skip
+    # side branches take the main vessel's absolute size factor (same frame, same chain)
+    branch_lumen = (
+        {"lumen": "edges", "size_factor": main.size_factor} if lumen == "scaled" else
+        {"lumen": lumen}
+    )  # fmt: skip
     owner = {node: 0 for node in paths[b]}
     dropped = []
     ends = [n for n, d in component.degree() if d == 1 and n not in owner]
@@ -127,7 +132,7 @@ def tree_qca(
             continue
         qca = qca_from_centerline(
             prob, smooth_and_resample(pts, bridged=flags), mm_per_px=mm_per_px, level=level,
-            trim_start_diameters=0.0, image=image, lumen=lumen,
+            trim_start_diameters=0.0, image=image, **branch_lumen,
         )  # fmt: skip
         ratio = float(np.median(qca.diameters.diameter_px)) / (2.0 * half_width[junction])
         if ratio < min_branch_ratio:

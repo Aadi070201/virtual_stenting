@@ -356,6 +356,34 @@ def fit_lumen(
     )
 
 
+def fit_windows(
+    image: np.ndarray,
+    centerline: Centerline,
+    edge_diameter_px: np.ndarray,
+    edge_offset_px: np.ndarray,
+    reference_px: np.ndarray,
+    windows: list[slice],
+    *,
+    max_nfev: int = MAX_NFEV,
+) -> list[np.ndarray] | None:
+    """Fit the imaging chain jointly on short ``windows`` of one vessel (shared blur and edge
+    enhancement, attenuation per window): the same model as :func:`fit_lumen` at a fraction of
+    its cost. Returns the fitted lumen diameter (px) of each window, or ``None`` if no window
+    has ``MIN_POINTS`` points. Arrays as in :func:`fit_lumen`."""
+    img = _as_unit(image)
+    segments = []
+    for w in windows:
+        pts, s = centerline.points[w], centerline.s[w]
+        piece = Centerline(points=pts, s=s - s[0])
+        seg = _prepare(img, piece, edge_diameter_px[w], edge_offset_px[w], reference_px[w])
+        if seg is not None:
+            segments.append(seg)
+    if not segments:
+        return None
+    sol, unpack = _solve(segments, None, max_nfev)
+    return [2.0 * np.asarray(r) for _, r, _ in unpack(sol.x)]
+
+
 def calibrate_chain(
     image: np.ndarray,
     vessels: list[tuple[Centerline, np.ndarray, np.ndarray, np.ndarray]],

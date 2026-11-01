@@ -18,6 +18,13 @@ mask, not lumen narrowing). Pixels are converted to millimetres with a calibrati
 **Without a calibration from the image (e.g. DICOM pixel spacing or a catheter of known size)
 the default 0.30 mm/px is an assumption**, and every result records whether it was assumed.
 
+**Absolute size** (P5b, ``lumen="scaled"``): intensity edges sit inside the blurred,
+edge-enhanced vessel wall, so on rendered vessels they read healthy lumens about 14% narrow.
+The scaled lumen keeps the edges' shape (%DS unchanged) and takes the absolute size from the
+imaging-chain fit (:mod:`vstent.imaging.lumen_model`) on the healthy part: one factor per
+vessel, the median of fit / edge diameters there. An implausible factor or a failed fit keeps
+the edges' size, with a note.
+
 The reference diameter is a two-sided robust line fit (:func:`robust_reference`); diameters
 above 1.15 × reference (branches, overlaps) are capped before the profile, in SI units with
 that explicit reference, goes to the M1 functions (%DS, lesions, MLD) and the physics.
@@ -30,7 +37,7 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinat
 from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
-from vstent.imaging.lumen_model import ChainCalibration, LumenFit, fit_lumen
+from vstent.imaging.lumen_model import ChainCalibration, LumenFit, fit_lumen, fit_windows
 from vstent.physics.geometry import Lesion, VesselProfile
 from vstent.units import m_to_mm, mm_to_m
 
@@ -58,8 +65,15 @@ LUMEN_METHOD_LABELS = {  # for reports
     "intensity": "image intensity edges, guided by the automatic segmentation (D43)",
     "probability": "outline of the vessel mask",
     "model": "imaging-chain model fitted to the image (blur, edge enhancement; P4c)",
+    "scaled": "image intensity edges, absolute size from the imaging-chain fit (P5b)",
 }
-LUMEN_OPTIONS = ("edges", "model")
+LUMEN_OPTIONS = ("edges", "model", "scaled")
+# Scaled lumen (P5b): the size factor is accepted within SIZE_FACTOR_RANGE, from at least
+# SIZE_MIN_POINTS healthy points (set on development renders, D50)
+SIZE_FACTOR_RANGE = (1.0, 1.4)
+SIZE_MIN_POINTS = 10
+SIZE_WINDOW_POINTS = 30  # the fit runs on up to SIZE_MAX_WINDOWS healthy windows of this length
+SIZE_MAX_WINDOWS = 4
 
 
 @dataclass(frozen=True, eq=False)
@@ -268,6 +282,8 @@ class QCAResult:
     capped: np.ndarray
     lumen_method: str = "probability"  # "intensity" (D43), "model" (P4c): LUMEN_METHOD_LABELS
     lumen_fit: LumenFit | None = None  # the imaging-chain fit, for lumen_method "model"
+    size_factor: float = 1.0  # absolute size × this (scaled lumen, P5b); px diameters unscaled
+    size_note: str = ""  # why a requested size factor was not applied
 
     @property
     def s_mm(self) -> np.ndarray:
@@ -282,7 +298,7 @@ class QCAResult:
     @property
     def measured_diameter_mm(self) -> np.ndarray:
         """Raw measured diameter (mm), before capping."""
-        return self.diameters.diameter_px * self.mm_per_px
+        return self.diameters.diameter_px * self.mm_per_px * self.size_factor
 
     @property
     def reference_diameter_mm(self) -> np.ndarray:
@@ -464,6 +480,7 @@ def qca_from_centerline(
     image: np.ndarray | None = None,
     lumen: str = "edges",
     chain: ChainCalibration | None = None,
+    size_factor: float | None = None,
 ) -> QCAResult:
     """QCA along a given centreline. ``mm_per_px=None`` uses the assumed default 0.30 mm/px.
     With ``image`` (the greyscale angiogram) the lumen edges come from its intensity
@@ -477,11 +494,15 @@ def qca_from_centerline(
     runs into the end of the mask (a vessel tip, an ostium, a cut-off branch) the measured
     width falls off for geometric reasons that are not lumen narrowing. ``trim_start_diameters``
     overrides the start (0 for a side branch that already starts at its parent's wall).
+
+    ``lumen="scaled"`` (needs ``image``): edges, with the absolute size from the imaging-chain
+    fit (:func:`size_factor_from_fit`). ``size_factor``: a known factor instead of the fit (a
+    side branch takes its main vessel's).
     """
     if lumen not in LUMEN_OPTIONS:
         raise ValueError(f"lumen must be one of {LUMEN_OPTIONS}, not {lumen!r}")
-    if lumen == "model" and image is None:
-        raise ValueError("the model-based lumen needs the image")
+    if lumen in ("model", "scaled") and image is None and size_factor is None:
+        raise ValueError(f"the {lumen} lumen needs the image")
     assumed = mm_per_px is None
     scale = DEFAULT_MM_PER_PX if assumed else float(mm_per_px)
     diameters = measure_diameters(prob, centerline, level=level)
@@ -501,6 +522,10 @@ def qca_from_centerline(
         )
     method = "probability" if image is None else "intensity"
     fit = None
+    factor, note = 1.0, ""
+    if lumen == "scaled" and size_factor is None:
+        factor, note = size_factor_from_image(image, centerline, diameters)
+        method = "scaled" if not note else method
     if lumen == "model":
         edge_ref = robust_reference(centerline.s, diameters.diameter_px)
         offset = (diameters.right_px + diameters.left_px) / 2.0
@@ -519,12 +544,58 @@ def qca_from_centerline(
     d_ref = robust_reference(centerline.s, d)
     capped = d > REF_UPPER * d_ref
     d_used = np.where(capped, REF_UPPER * d_ref, d)
+    if size_factor is not None:
+        factor = float(size_factor)
+        method = "scaled" if factor != 1.0 else method
     profile = VesselProfile(
         s=mm_to_m(centerline.s * scale),
-        r=mm_to_m(d_used * scale) / 2.0,
-        r_ref=mm_to_m(d_ref * scale) / 2.0,
+        r=mm_to_m(d_used * scale * factor) / 2.0,
+        r_ref=mm_to_m(d_ref * scale * factor) / 2.0,
     )
-    return QCAResult(centerline, diameters, scale, assumed, profile, capped, method, fit)
+    return QCAResult(centerline, diameters, scale, assumed, profile, capped, method, fit, factor,
+                     note)  # fmt: skip
+
+
+def healthy_windows(healthy: np.ndarray, length: int, max_windows: int) -> list[slice]:
+    """Up to ``max_windows`` non-overlapping windows of ``length`` consecutive healthy points,
+    spread along the vessel."""
+    ok = np.convolve(healthy.astype(int), np.ones(length, int), mode="valid") == length
+    starts = np.flatnonzero(ok)
+    chosen: list[int] = []
+    for q in np.linspace(0.0, 1.0, max_windows + 2)[1:-1] if starts.size else []:
+        free = [i for i in starts if all(abs(i - c) >= length for c in chosen)]
+        if free:
+            target = starts[0] + q * (starts[-1] - starts[0])
+            chosen.append(min(free, key=lambda i: abs(i - target)))
+    return [slice(int(i), int(i) + length) for i in sorted(chosen)]
+
+
+def size_factor_from_image(
+    image: np.ndarray, centerline: Centerline, diameters: DiameterProfile
+) -> tuple[float, str]:
+    """Absolute size factor of the scaled lumen (P5b): the imaging chain fitted jointly on up
+    to ``SIZE_MAX_WINDOWS`` healthy windows (edges within [REF_LOWER, REF_UPPER] × their
+    reference, no fallback, no side branch), and the median of fit / edge diameters there.
+    Returns (factor, note): (1, reason) when no window fits, too few points were fitted, or
+    the factor lies outside ``SIZE_FACTOR_RANGE``."""
+    d = diameters.diameter_px
+    edge_ref = robust_reference(centerline.s, d)
+    healthy = ((d >= REF_LOWER * edge_ref) & (d <= REF_UPPER * edge_ref) & ~diameters.fallback
+               & ~diameters.branch)  # fmt: skip
+    windows = healthy_windows(healthy, SIZE_WINDOW_POINTS, SIZE_MAX_WINDOWS)
+    offset = (diameters.right_px + diameters.left_px) / 2.0
+    fitted = fit_windows(image, centerline, d, offset, edge_ref, windows) if windows else None
+    if fitted is None:
+        return 1.0, "no healthy stretch to fit the imaging chain on"
+    ratio = np.concatenate([f / d[w] for f, w in zip(fitted, windows, strict=True)])
+    ratio = ratio[np.isfinite(ratio) & (ratio > 0)]
+    if ratio.size < SIZE_MIN_POINTS:
+        return 1.0, "too few healthy points for the imaging-chain fit"
+    factor = float(np.median(ratio))
+    lo, hi = SIZE_FACTOR_RANGE
+    if not lo <= factor <= hi:
+        return 1.0, f"implausible size factor {factor:.2f} (accepted {lo:g}–{hi:g})"
+    return factor, ""
 
 
 def run_qca(

@@ -113,7 +113,8 @@ def test_analyse_image_uses_segmenter():
 
 def test_automatic_segmentation_uses_intensity_edges():
     """D43: with the angiogram given, a narrowing the segmentation smoothed over is measured
-    from the image; an analyst's mask (no image) keeps its own edges."""
+    from the image; an analyst's mask (no image) keeps its own edges. P5b (D50): the default
+    takes the absolute size from the imaging-chain fit, the shape (%DS) from the edges."""
     pts, s = sine_centerline((120.0, 30.0), 340.0, amplitude_px=15.0)
     d = stenosis_diameter(s, 12.0, 0.5, s[-1] / 2, 30.0)
     img = render_projection((240, 400), [(pts, d / 2)], mm_per_px=0.25, mu_per_mm=0.06,
@@ -128,12 +129,14 @@ def test_automatic_segmentation_uses_intensity_edges():
             return smoothed
 
     auto = analyse_image(img8, pts[0], pts[-1], segmenter=Smoothing(), params=PARAMS)
-    assert auto.qca.lumen_method == "intensity"
+    assert auto.qca.lumen_method == "scaled" and auto.qca.size_factor > 1.0
     assert auto.qca.max_percent_stenosis == pytest.approx(50.0, abs=8.0)
+    true_ref_mm = 12.0 * 0.30  # the assumed default pixel size
+    assert np.median(auto.qca.reference_diameter_mm) == pytest.approx(true_ref_mm, rel=0.05)
     mask = analyse_vessel(smoothed, pts[0], pts[-1], params=PARAMS)
     assert mask.qca.lumen_method == "probability" and mask.qca.max_percent_stenosis < 10
     tree = analyse_tree(smoothed, pts[0], pts[-1], params=PARAMS, image=img8)
-    assert tree.qca.branches[0].lumen_method == "intensity"
+    assert tree.qca.branches[0].lumen_method == "scaled"
     assert tree.qca.branches[0].max_percent_stenosis == pytest.approx(50.0, abs=8.0)
 
 

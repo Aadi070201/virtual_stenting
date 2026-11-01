@@ -51,7 +51,7 @@ So the trace cannot silently go out of date. To change them, edit the YAML and r
    - this is why the software is research use only, and each hazard names the evidence that
      would lower it.
 5. **Strengths a reviewer will look for:**
-   - 41 of 42 requirements verified by tests or generated reports;
+   - 42 of 43 requirements verified by tests or generated reports;
    - every number reproducible from code;
    - pre-registered methods on held-out public data;
    - an SBOM from the lock file;

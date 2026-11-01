@@ -54,7 +54,11 @@ from vstent.uncertainty.inputs import SOURCE_LABELS, Measurement  # noqa: E402
 from vstent.units import m_to_mm, mm_to_m, mmhg_to_pa, pa_to_mmhg  # noqa: E402
 
 DISPLAY_WIDTH = 512
-LUMEN_LABELS = {"edges": "Intensity edges", "model": "Imaging-chain model"}
+LUMEN_LABELS = {
+    "scaled": "Intensity edges, size from the imaging chain",
+    "edges": "Intensity edges",
+    "model": "Imaging-chain model",
+}
 LUMEN_CHOICES = {LUMEN_LABELS[k]: k for k in sorted(LUMEN_LABELS, key=lambda k: k != AUTO_LUMEN)}
 DICOM_CALIBRATION = "DICOM geometry (at the isocentre)"
 
@@ -227,9 +231,11 @@ else:
         )  # fmt: skip
         lumen = LUMEN_CHOICES[st.selectbox(
             "Lumen measurement", list(LUMEN_CHOICES), key="lumen",
-            help="Intensity edges: where the image brightness changes fastest. Imaging-chain "
-            "model: blur and the X-ray system's edge enhancement fitted to the image (resolves "
-            "tight lesions; about 1 s per vessel).",
+            help="Intensity edges: where the image brightness changes fastest (they sit inside "
+            "the blurred wall, so they read vessels narrow). Size from the imaging chain: the "
+            "edges' shape, with the absolute size from the blur and edge enhancement fitted on "
+            "healthy stretches (about 1 s). Imaging-chain model: the whole lumen fitted (resolves "
+            "tight lesions; several seconds on long vessels).",
         )]  # fmt: skip
     if image_input is None:
         st.info("Upload an angiogram (or pick an ARCADE example) to start.")

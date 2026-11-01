@@ -40,6 +40,7 @@ from vstent.imaging.synthetic3d import (
     sample_case,
 )
 from vstent.imaging.twoview import Reconstruction, reconstruct, two_view_profile
+from vstent.inference.pipeline import AUTO_LUMEN
 from vstent.physics.geometry import VesselProfile
 from vstent.physics.solver import PhysicsParams, solve_ffr
 
@@ -49,6 +50,8 @@ REPORT = "two_view_synthetic"
 STRESS_SEED_OFFSET = 100_000
 TARGET_ERROR_MM = 1.0  # median over static cases of the per-case mean 3D distance
 TARGET_LENGTH = 0.05  # median over static cases of |length error|
+TARGET_SENSITIVITY = 0.80  # P5b: the check flags this share of |length error| > 5% ...
+TARGET_FLAG_RATE = 0.10  # ... while flagging at most this share of all cases
 
 
 def _trace(view, *, trimmed: bool):
@@ -59,6 +62,7 @@ def _trace(view, *, trimmed: bool):
         cl,
         mm_per_px=view.geometry.iso_pixel_m * 1e3,
         image=view.image,
+        lumen=AUTO_LUMEN,
         **({} if trimmed else {"trim_diameters": 0}),
     )
     return cl, q
@@ -106,9 +110,11 @@ def _two_view(case, rec: Reconstruction, traced, kd, params) -> dict[str, Any]:
         "weak_fraction": rec.weak_fraction,
         "shift_px": rec.shift_px.tolist(),
         "warnings": rec.warnings(),
+        "reliable": rec.reliable,
+        "smoothing_change": rec.smoothing_change,
     }
     prof = two_view_profile(
-        rec, (q1.diameters.diameter_px, q2.diameters.diameter_px), (cl1.s, cl2.s)
+        rec, tuple(q.diameters.diameter_px * q.size_factor for q in (q1, q2)), (cl1.s, cl2.s)
     )
     s3 = prof.profile.s + prof.offset_m
     pts = np.stack([np.interp(s3, rec.s, rec.points[:, k]) for k in range(3)], axis=1)
@@ -168,6 +174,9 @@ def _single(case, k: int, view, traced, params) -> dict[str, Any]:
         "ffr": float(solve_ffr(q.profile, params).ffr[-1]),
         "ffr_detector": float(solve_ffr(_scaled(q.profile, magnification), params).ffr[-1]),
         "ffr_geom": _geometry_ffr(case, g, g.iso_pixel_m, params),
+        "size_factor": q.size_factor,
+        "ref_err_edges": float((1.0 + iso["ref_err"]) / q.size_factor - 1.0),
+        "ffr_edges": float(solve_ffr(_scaled(q.profile, 1.0 / q.size_factor), params).ffr[-1]),
         "pixel_err": float(np.median(g.iso_pixel_m / g.pixel_size_at(case.curves[0])) - 1.0),
         "ffr_geom_detector": _geometry_ffr(case, g, float(np.mean(g.pixel_m)), params),
     }
@@ -290,6 +299,15 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "ffr_geom_abs": _stats(geom_err(static, "two_view")),
         "ref_abs": _stats(_get(static, "two_view", "ref_err"), absolute=True, scale=100),
         "ref_bias": _stats(_get(ok, "two_view", "ref_err"), scale=100),
+        "single_ref_bias": _stats([s["ref_err"] for r in ok for s in r["single"]], scale=100),
+        "single_ref_bias_edges": _stats(
+            [s["ref_err_edges"] for r in ok for s in r["single"]], scale=100
+        ),
+        "single_ffr_abs_edges": _stats(
+            [abs(s["ffr_edges"] - r["true_ffr"]) for r in ok for s in r["single"]]
+        ),
+        "size_factor": _stats([s["size_factor"] for r in ok for s in r["single"]]),
+        "size_refused": int(sum(s["size_factor"] == 1.0 for r in ok for s in r["single"])),
         "d_mae_mm": _stats(_get(static, "two_view", "d_mae_mm")),
         "no_correction": {
             "err3d_mm": _stats(_get(static, "two_view_no_correction", "err3d_mm")),
@@ -374,6 +392,12 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         },
     }
     err, length = summary["err3d_mm"]["median"], summary["length_abs"]["median"]
+    large = summary["large"]
+    flagged = sum(c["flagged"] for c in large)
+    sens = flagged / len(large) if large else None
+    rate = summary["warned"] / len(ok) if ok else None
+    summary["check"] = {"n_large": len(large), "flagged_large": flagged, "sensitivity": sens,
+                        "flag_rate": rate}  # fmt: skip
     summary["targets"] = [
         {
             "metric": "3D centreline error, median over cases of the per-case mean (mm)",
@@ -386,6 +410,18 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "value": "–" if length is None else f"{length:.1f}",
             "target": f"≤ {TARGET_LENGTH:.0%}",
             "passed": length is not None and length <= TARGET_LENGTH * 100,
+        },
+        {
+            "metric": "Check: share of |length error| > 5% flagged (P5b)",
+            "value": "–" if sens is None else f"{sens:.0%} ({flagged} of {len(large)})",
+            "target": f"≥ {TARGET_SENSITIVITY:.0%}",
+            "passed": sens is not None and sens >= TARGET_SENSITIVITY,
+        },
+        {
+            "metric": "Check: share of all cases flagged (P5b)",
+            "value": "–" if rate is None else f"{rate:.0%}",
+            "target": f"≤ {TARGET_FLAG_RATE:.0%}",
+            "passed": rate is not None and rate <= TARGET_FLAG_RATE,
         },
     ]
     summary["targets_met"] = all(t["passed"] for t in summary["targets"])
@@ -665,13 +701,17 @@ def write_two_view_report(
         f"| Two views | {_fmt(s['ref_abs'])} | {_fmt(s['d_mae_mm'], 2)} | "
         f"{_fmt(s['ffr_abs'], 3)} | {_fmt(s['ffr_abs'], 3, 'p90')} |",
         "",
-        f"Here the lumen measurement, which both methods share, dominates: intensity edges "
-        f"read the reference diameter {_fmt(s['ref_bias'])}% off (two views, median signed) on "
-        "these renders, because the brightness changes fastest inside the blurred, "
-        "edge-enhanced vessel wall, and tight lesions read milder than they are (P4c; the "
-        "imaging-chain model lumen resolves them better). Same solver and physics throughout; "
-        "the true lumen is not trimmed at its ends, the QCA profiles are (one diameter at each "
-        "end, where the synthetic vessels have no lesion).",
+        f"The lumen is the product default ({AUTO_LUMEN}: intensity edges for the shape, the "
+        "imaging-chain fit for the absolute size, P5b). Intensity edges alone sit inside the "
+        "blurred, edge-enhanced wall: in one view they read the reference diameter "
+        f"{_fmt(s['single_ref_bias_edges'])}% off (median signed), the scaled lumen "
+        f"{_fmt(s['single_ref_bias'])}% (size factor median {_fmt(s['size_factor'], 3)}; "
+        f"refused in {s['size_refused']} of {2 * len(ok)} views). End-to-end FFR error in one "
+        f"view: {_fmt(s['single_ffr_abs_edges'], 3)} with edges alone, "
+        f"{_fmt(single['ffr_abs'], 3)} scaled (median). The remaining FFR error comes mainly "
+        "from tight lesions, which edges read milder than they are (P4c). Same solver and "
+        "physics throughout; the true lumen is not trimmed at its ends, the QCA profiles are "
+        "(one diameter at each end, where the synthetic vessels have no lesion).",
         "",
         "![First case](figures/two_view_example.png)",
         "",

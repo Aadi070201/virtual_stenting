@@ -54,7 +54,7 @@ A: acceptable, R: reduce, U: unacceptable.
 | H-06 | Reduced-order physics error | 4 | 5 | 20 unacceptable | SR-14, SR-15, SR-16, SR-23, SR-03, SR-01 | 5 | 20 unacceptable |
 | H-07 | Surrogate error or extrapolation | 4 | 4 | 16 unacceptable | SR-18, SR-19, SR-20, SR-21, SR-22, SR-02 | 2 | 8 reduce |
 | H-08 | Wrong vessel or path analysed | 4 | 4 | 16 unacceptable | SR-08, SR-13, SR-10, SR-02 | 4 | 16 unacceptable |
-| H-09 | Plan used as a sizing instruction | 4 | 4 | 16 unacceptable | SR-26, SR-25, SR-27, SR-09, SR-01 | 4 | 16 unacceptable |
+| H-09 | Plan used as a sizing instruction | 4 | 4 | 16 unacceptable | SR-43, SR-26, SR-25, SR-27, SR-09, SR-01 | 4 | 16 unacceptable |
 | H-10 | Post-PCI FFR overestimated | 3 | 5 | 15 unacceptable | SR-15, SR-24, SR-03, SR-01 | 5 | 15 unacceptable |
 | H-11 | Wrong analysis frame | 4 | 5 | 20 unacceptable | SR-05, SR-06, SR-13 | 5 | 20 unacceptable |
 | H-12 | Contrast transit read as flow | 4 | 2 | 8 reduce | SR-31 | 2 | 8 reduce |
@@ -162,8 +162,8 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Hazardous situation:** A stent sized from 2D QCA (with H-01, H-03, H-05 errors) is chosen without intravascular imaging or the operator's own sizing.
 - **Harm:** Oversizing: dissection, perforation. Undersizing: malapposition, thrombosis, restenosis.
 - **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Estimated; use-dependent and not measured.
-- **Controls:** SR-26 Generic catalogue and sizing rule; SR-25 A virtual stent only widens; SR-27 Shortest plan reaching the target; SR-09 Pixel size and units; SR-01 Research-use notice everywhere
-- **After controls:** P4 Probable = 16 unacceptable. The sizing rule and the oversize flag limit gross errors only. Measured on rendered vessels: the intensity edges read the reference diameter about 15% narrow (median), so a suggested diameter tends to be too small.
+- **Controls:** SR-43 Absolute lumen size; SR-26 Generic catalogue and sizing rule; SR-25 A virtual stent only widens; SR-27 Shortest plan reaching the target; SR-09 Pixel size and units; SR-01 Research-use notice everywhere
+- **After controls:** P4 Probable = 16 unacceptable. The sizing rule and the oversize flag limit gross errors only. Measured on rendered vessels: intensity edges alone read the reference diameter about 13–15% narrow; the scaled lumen (SR-43, the default since P5b) removes this on renders, but its absolute accuracy on real angiograms is unknown, so a suggested diameter can be too small or too large.
 - **Evidence:** [two_view_synthetic.md](../../reports/two_view_synthetic.md)
 - **Needed:** Instructions that the plan is an estimate, sizing compared with IVUS or OCT, and a usability check.
 

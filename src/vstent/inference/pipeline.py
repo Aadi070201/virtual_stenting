@@ -42,9 +42,10 @@ from vstent.physics.tree import TreeFFRResult, solve_tree
 from vstent.uncertainty.greyzone import Interval, model_interval
 from vstent.units import m_to_mm, pa_to_mmhg
 
-# Lumen measurement when the angiogram is given (an automatic segmentation): "edges" (D43) or
-# "model" (the imaging-chain fit); chosen by the pre-registered rule D44.
-AUTO_LUMEN = "edges"
+# Lumen measurement when the angiogram is given (an automatic segmentation): "edges" (D43; the
+# shape, chosen by the pre-registered rule D44) with the absolute size from the imaging-chain fit
+# ("scaled", P5b; chosen by the pre-registered rule in docs/PLAN.md, D50). "model" is an option.
+AUTO_LUMEN = "scaled"
 MAX_FALLBACK_FRACTION = 0.10
 MAX_CAPPED_FRACTION = 0.10
 
@@ -104,6 +105,11 @@ def lumen_warnings(qca: QCAResult, name: str = "") -> list[str]:
     ``name`` prefixes the messages (a tree branch)."""
     out = []
     prefix = f"{name}: " if name else ""
+    if qca.size_note:
+        out.append(
+            f"{prefix}absolute size from the intensity edges only ({qca.size_note}); on rendered "
+            "vessels the edges read healthy lumens about 14% narrow"
+        )
     if qca.bridged_mm > 0:
         out.append(
             f"{prefix}the segmentation missed {qca.bridged_mm:.1f} mm of the vessel (a gap "
@@ -275,7 +281,7 @@ def analyse_two_views(
                       correct_shift=correct_shift)  # fmt: skip
     prof = two_view_profile(
         rec,
-        (qcas[0].diameters.diameter_px, qcas[1].diameters.diameter_px),
+        tuple(q.diameters.diameter_px * q.size_factor for q in qcas),
         (qcas[0].centerline.s, qcas[1].centerline.s),
     )
     solver = solve_ffr(prof.profile, params)

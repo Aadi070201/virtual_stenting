@@ -14,6 +14,8 @@ from vstent.imaging.centerline import (
 )
 from vstent.imaging.lumen_model import calibrate_chain, cell_chord, fit_lumen, forward, jacobian
 from vstent.imaging.qca import (
+    SIZE_FACTOR_RANGE,
+    healthy_windows,
     measure_diameters,
     measure_diameters_intensity,
     qca_from_centerline,
@@ -24,6 +26,7 @@ from vstent.imaging.synthetic import (
     sine_centerline,
     stenosis_diameter,
 )
+from vstent.inference.pipeline import lumen_warnings
 
 
 def _vessel(ref_px, severity, kind="circular", seed=0):
@@ -220,3 +223,35 @@ def test_frame_calibration_recovers_the_imaging_chain():
     assert fit.blur_px == cal.blur_px  # held fixed
     ds = 100 * (1 - fit.diameter_px.min() / np.median(fit.diameter_px))
     assert ds == pytest.approx(50.0, abs=6.0)
+
+
+def test_scaled_lumen_recovers_the_size_and_keeps_the_shape():
+    """P5b: edges read the rendered vessel narrow; the scaled lumen takes its size from the
+    imaging-chain fit on healthy windows and keeps the edges' %DS exactly."""
+    img, filled, cl, _ = _vessel(12.0, 0.5)
+    edges = qca_from_centerline(filled, cl, image=img, mm_per_px=0.25)
+    scaled = qca_from_centerline(filled, cl, image=img, mm_per_px=0.25, lumen="scaled")
+    assert scaled.lumen_method == "scaled" and scaled.size_note == ""
+    lo, hi = SIZE_FACTOR_RANGE
+    assert lo <= scaled.size_factor <= hi
+    true_mm = 12.0 * 0.25
+    assert np.median(edges.reference_diameter_mm) < 0.92 * true_mm  # edges sit inside the wall
+    assert np.median(scaled.reference_diameter_mm) == pytest.approx(true_mm, rel=0.05)
+    assert np.allclose(scaled.percent_stenosis, edges.percent_stenosis)
+    assert np.allclose(scaled.measured_diameter_mm, edges.measured_diameter_mm * scaled.size_factor)
+    known = qca_from_centerline(filled, cl, image=img, mm_per_px=0.25, size_factor=1.2)
+    assert known.size_factor == 1.2 and known.lumen_method == "scaled"
+
+
+def test_healthy_windows_and_refused_factor():
+    healthy = np.ones(200, bool)
+    healthy[90:110] = False  # a lesion
+    windows = healthy_windows(healthy, 30, 4)
+    assert len(windows) == 4 and all(healthy[w].all() for w in windows)
+    assert all(a.stop <= b.start for a, b in zip(windows, windows[1:], strict=False))
+    assert healthy_windows(np.ones(20, bool), 30, 4) == []
+    img, filled, cl, _ = _vessel(12.0, 0.0)
+    short = smooth_and_resample(cl.points[:25])  # too short for a healthy window
+    q = qca_from_centerline(filled, short, image=img, lumen="scaled", trim_diameters=0)
+    assert q.size_factor == 1.0 and "healthy" in q.size_note
+    assert any("absolute size from the intensity edges only" in w for w in lumen_warnings(q))

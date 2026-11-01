@@ -1,10 +1,11 @@
 # Synthetic two-view cases (docs/PLAN.md, P5). NOT clinical data.
 # `vstent two-view-synthetic` renders these cases and writes reports/two_view_synthetic.md.
 # Ranges are [low, high], sampled uniformly. All values are sampling choices (they may be tuned);
-# the physics comes from configs/physics.yaml. Method choices (D49) were made on other seeds.
+# the physics comes from configs/physics.yaml. Method choices (D49, D50) were made on other seeds
+# (0-7, 900000+, 910000+); seeds 5001-5100 / 105001-105050 were the P5 report's (now seen).
 name: two_view_synthetic
-seed: 5001                 # static case i: seed 5001 + i; stress cases: seed 105001 + i
-n_cases: 100
+seed: 7001                 # static case i: seed 7001 + i; stress cases: seed 107001 + i
+n_cases: 200
 n_stress: 50               # random views, overlap allowed
 
 # lumen profiles: the P2 tree sampler with these overrides (the validation stand-in's segment)

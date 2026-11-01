@@ -97,7 +97,7 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
   - IEC 62304 safety class (proposed C);
   - development plan and architecture;
   - risk management plan;
-  - 42 requirements and 20 hazards, traced to tests;
+  - 43 requirements and 20 hazards, traced to tests;
   - SOUP list and SBOM.
   Start with its README. The drafts are not approval.
 - **Decide with them:**

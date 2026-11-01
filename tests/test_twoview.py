@@ -1,5 +1,6 @@
 """P5: projection geometry, DICOM geometry, two-view reconstruction, synthetic two-view cases."""
 
+import dataclasses
 import io
 
 import numpy as np
@@ -176,12 +177,23 @@ def test_reconstruction_recovers_a_projected_curve():
         assert rec.length == pytest.approx(_arc(curve), rel=0.005)
         assert truth.query(rec.points)[0].max() < 0.2e-3
         assert rec.gap_m < 0.1e-3 and np.all(rec.residual_px < 0.5) and rec.warnings() == []
+        assert rec.reliable and abs(rec.smoothing_change) < 0.01
         # a single view is shorter (foreshortening)
         assert c1.length * g1.iso_pixel_m < 0.97 * rec.length
     close = _geometry(10, 35), _geometry(30, 30)
     rec = reconstruct(close[0], *_views_of(curve, *close)[:1], close[1],
                       _views_of(curve, *close)[1], correct_shift=False)  # fmt: skip
     assert any("apart" in w for w in rec.warnings())
+
+
+def test_reliability_check_warns_when_the_length_depends_on_the_smoothing():
+    curve = _curve()
+    g1, g2 = _geometry(-30, 20), _geometry(45, 25)
+    rec = reconstruct(g1, *_views_of(curve, g1, g2)[:1], g2, _views_of(curve, g1, g2)[1])
+    shaky = dataclasses.replace(rec, smoothing_change=0.04)
+    assert not shaky.reliable and any("poorly determined" in w for w in shaky.warnings())
+    off = dataclasses.replace(rec, residual_px=np.array([0.1, 0.5]))
+    assert not off.reliable
 
 
 def test_motion_between_runs_is_corrected():
@@ -294,7 +306,8 @@ def test_report_on_one_case(tmp_path):
     assert len(rows[0]["single"]) == 2 and isinstance(rows[1]["overlap"], bool)
     summary = summarise(rows)
     assert summary["n_static"] == 1 and summary["stress"]["n"] == 1
-    assert [t["passed"] for t in summary["targets"]] == [True, True]
+    assert [t["passed"] for t in summary["targets"][:2]] == [True, True]
+    assert summary["check"]["flag_rate"] is not None
 
 
 @pytest.mark.slow

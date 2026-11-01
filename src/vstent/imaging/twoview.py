@@ -18,6 +18,10 @@ landmarks (the user's start and end points in each view).
 4. **Check.** The 3D centreline is projected back into both views; its distance from the 2D
    centrelines (the reprojection residual) and the mean gap between paired rays show a
    geometry that does not fit (motion between the runs, wrong angles or distances).
+   **Reliability** (P5b, D50): where depth is poorly determined the result depends on the
+   smoothing, so the curve is refitted with twice the knot spacing; a length change above
+   ``MAX_SMOOTHING_CHANGE`` or a residual above ``MAX_FIT_RESIDUAL_PX`` gives a warning that
+   the length may be wrong.
 
 **Motion between the runs.** The two runs are acquired one after the other, so the heart may
 have moved (breathing, table). A shift of view 2 across its epipolar lines breaks the pairing;
@@ -49,7 +53,7 @@ from vstent.physics.geometry import VesselProfile
 
 MIN_SEPARATION_DEG = 30.0  # views closer than this give poorly conditioned depth (warning)
 SPEED_WEIGHT_M = 0.5e-3  # DP cost (m) of pairing points whose fractional positions differ by 1
-KNOT_SPACING_M = 4e-3  # spline: one interior knot per this much vessel
+KNOT_SPACING_M = 8e-3  # spline: one interior knot per this much vessel (D50)
 MIN_WEIGHT = 0.05  # floor of the conditioning weight of a pair
 WEAK_SINE = 0.26  # a pair is poorly conditioned below sin 15° between vessel and epipolar line
 EPIPOLAR_STEP_M = 1e-3  # step along the baseline used to find the local epipolar direction
@@ -58,6 +62,9 @@ SHIFT_RANGE_M = 10e-3  # motion search: ± this at the isocentre, across the epi
 SHIFT_STEPS = 41
 MAX_GAP_M = 0.5e-3  # check: mean ray gap above this → the two views do not fit (warning)
 MAX_RESIDUAL_PX = 2.0  # check: median reprojection residual above this (warning)
+# reliability check (D50, set on development seeds; favours catching errors over few alarms)
+MAX_SMOOTHING_CHANGE = 0.025  # |length change| when the knot spacing is doubled
+MAX_FIT_RESIDUAL_PX = 0.30  # median reprojection residual in either view
 
 
 def ray_gaps(g1: ProjectionGeometry, p1, g2: ProjectionGeometry, p2) -> np.ndarray:
@@ -177,6 +184,8 @@ class Reconstruction:
         weak_fraction: share of pairs whose depth is poorly conditioned (vessel within 15° of
             the epipolar line in either view).
         shift_px: estimated shift of view 2 (row, col) (px).
+        smoothing_change: relative length change when the curve is refitted with twice the
+            knot spacing (sensitivity to the smoothing).
     """
 
     points: np.ndarray
@@ -187,6 +196,14 @@ class Reconstruction:
     residual_px: np.ndarray
     weak_fraction: float
     shift_px: np.ndarray = field(default_factory=lambda: np.zeros(2))
+    smoothing_change: float = 0.0
+
+    @property
+    def reliable(self) -> bool:
+        """The reliability check (D50): the length barely depends on the smoothing and the 3D
+        path follows both traced paths closely."""
+        return (abs(self.smoothing_change) <= MAX_SMOOTHING_CHANGE
+                and float(np.max(self.residual_px)) <= MAX_FIT_RESIDUAL_PX)  # fmt: skip
 
     @property
     def length(self) -> float:
@@ -216,6 +233,14 @@ class Reconstruction:
                 f"{self.weak_fraction:.0%} of the vessel runs along the epipolar lines: "
                 "its 3D course there is interpolated"
             )
+        if not self.reliable:
+            out.append(
+                f"The 3D course is poorly determined (the length changes by "
+                f"{100 * abs(self.smoothing_change):.1f}% with smoother fitting; the 3D path "
+                f"deviates {np.max(self.residual_px):.2f} px from a traced path): the length may "
+                "be wrong by more than 5%. Check that both paths follow the same vessel, or use "
+                "views further apart with less foreshortening"
+            )
         return out
 
 
@@ -244,15 +269,8 @@ def reconstruct(
 
     tau = c1.s[i] + c2.s[j]  # strictly increasing along the path
     est_len = max(c1.s[-1] * g1.iso_pixel_m, c2.s[-1] * g2.iso_pixel_m)
-    n_inner = max(0, int(round(est_len / KNOT_SPACING_M)) - 1)
-    n_inner = min(n_inner, max(0, len(tau) // 4 - 4))
-    inner = np.linspace(tau[0], tau[-1], n_inner + 2)[1:-1]
-    knots = np.concatenate([[tau[0]] * 4, inner, [tau[-1]] * 4])
-    spline = make_lsq_spline(tau, mid, knots, k=3, w=weight)
-
-    dense = np.linspace(tau[0], tau[-1], max(20 * len(tau), 200))
-    curve = spline(dense)
-    arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(curve, axis=0), axis=1))])
+    spline, dense, arc = _fit_curve(tau, mid, weight, est_len, KNOT_SPACING_M)
+    smoother = _fit_curve(tau, mid, weight, est_len, 2.0 * KNOT_SPACING_M)[2]
     s = np.linspace(0.0, arc[-1], max(2, int(round(arc[-1] / STEP_M)) + 1))
     t_s = np.interp(s, arc, dense)
     points = spline(t_s)
@@ -273,7 +291,23 @@ def reconstruct(
         np.asarray(residual),
         float(np.mean(sines < WEAK_SINE)),
         shift,
+        float(smoother[-1] / arc[-1] - 1.0),
     )
+
+
+def _fit_curve(tau, mid, weight, est_len: float, spacing: float):
+    """Weighted least-squares cubic spline through the triangulated points, one interior knot
+    per ``spacing`` (m) of the estimated length. Returns the spline, a dense parameter grid and
+    the arc length (m) along it."""
+    n_inner = max(0, int(round(est_len / spacing)) - 1)
+    n_inner = min(n_inner, max(0, len(tau) // 4 - 4))
+    inner = np.linspace(tau[0], tau[-1], n_inner + 2)[1:-1]
+    knots = np.concatenate([[tau[0]] * 4, inner, [tau[-1]] * 4])
+    spline = make_lsq_spline(tau, mid, knots, k=3, w=weight)
+    dense = np.linspace(tau[0], tau[-1], max(20 * len(tau), 200))
+    curve = spline(dense)
+    arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(curve, axis=0), axis=1))])
+    return spline, dense, arc
 
 
 @dataclass(frozen=True, eq=False)

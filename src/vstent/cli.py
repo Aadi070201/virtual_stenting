@@ -862,7 +862,9 @@ def analyse(
     ] = 0,
     lumen: Annotated[
         str | None,
-        typer.Option("--lumen", help="Lumen measurement: edges or model (default: the product's)."),
+        typer.Option(
+            "--lumen", help="Lumen measurement: scaled, edges or model (default: the product's)."
+        ),
     ] = None,
     frame: Annotated[
         int | None,
@@ -962,8 +964,8 @@ def analyse(
     if stent is not None and not tree:
         typer.echo("--stent needs --tree (single paths: use --plan or the app).", err=True)
         raise typer.Exit(code=2)
-    if lumen not in (None, "edges", "model"):
-        typer.echo("--lumen: use edges or model.", err=True)
+    if lumen not in (None, "scaled", "edges", "model"):
+        typer.echo("--lumen: use scaled, edges or model.", err=True)
         raise typer.Exit(code=2)
     sur_dir = (
         None if tree else surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)

@@ -23,7 +23,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-02 | SR-24 | Grey-zone flag | 3 tests | verified |
 | H-02 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 | H-03 | SR-40 | Pixel size from the projection geometry | 5 tests, 1 reports, inspection | verified |
-| H-03 | SR-41 | Foreshortening-free lengths | 5 tests, 1 reports, inspection | verified |
+| H-03 | SR-41 | Foreshortening-free lengths | 6 tests, 1 reports, inspection | verified |
 | H-03 | SR-09 | Pixel size and units | 3 tests | verified |
 | H-03 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
 | H-03 | SR-23 | Input interval (Monte Carlo) | 3 tests | verified |
@@ -31,7 +31,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-04 | SR-12 | Segmentation gaps and unmeasurable lumens | 3 tests, inspection | verified |
 | H-04 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
 | H-04 | SR-01 | Research-use notice everywhere | 4 tests | verified |
-| H-05 | SR-41 | Foreshortening-free lengths | 5 tests, 1 reports, inspection | verified |
+| H-05 | SR-41 | Foreshortening-free lengths | 6 tests, 1 reports, inspection | verified |
 | H-05 | SR-13 | Analysed path shown on the image | 2 tests | verified |
 | H-05 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 | H-06 | SR-14 | Reduced-order FFR model | 6 tests, 1 reports | verified |
@@ -50,6 +50,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-08 | SR-13 | Analysed path shown on the image | 2 tests | verified |
 | H-08 | SR-10 | Lumen edges from the image intensity | 6 tests | verified |
 | H-08 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
+| H-09 | SR-43 | Absolute lumen size | 3 tests, 1 reports, inspection | verified |
 | H-09 | SR-26 | Generic catalogue and sizing rule | 3 tests, inspection | verified |
 | H-09 | SR-25 | A virtual stent only widens | 2 tests | verified |
 | H-09 | SR-27 | Shortest plan reaching the target | 4 tests, 1 reports | verified |
@@ -86,7 +87,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-19 | SR-03 | Scope of the uncertainty intervals stated | 1 reports, inspection | verified |
 | H-19 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
 | H-19 | SR-01 | Research-use notice everywhere | 4 tests | verified |
-| H-20 | SR-41 | Foreshortening-free lengths | 5 tests, 1 reports, inspection | verified |
+| H-20 | SR-41 | Foreshortening-free lengths | 6 tests, 1 reports, inspection | verified |
 | H-20 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
 | H-20 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 
@@ -105,6 +106,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | SR-09 | `src/vstent/units.py`, `src/vstent/imaging/qca.py::run_qca`, `src/vstent/imaging/qca.py::DEFAULT_MM_PER_PX` | [`test_qca_units_and_calibration_flag`](../../tests/test_qca.py), [`test_unit_conversions`](../../tests/test_units.py), [`test_physics_yaml_matches_spec_defaults`](../../tests/test_physics_report.py) | – |
 | SR-10 | `src/vstent/imaging/qca.py::measure_diameters_intensity`, `src/vstent/imaging/qca.py::track_edge`, `src/vstent/inference/pipeline.py::AUTO_LUMEN` | [`test_automatic_segmentation_uses_intensity_edges`](../../tests/test_pipeline.py), [`test_edge_tracking_follows_one_contour`](../../tests/test_qca.py), [`test_side_branch_does_not_inflate_diameter`](../../tests/test_qca.py), [`test_crossing_vessel_is_capped_not_a_stenosis`](../../tests/test_qca.py), [`test_intensity_edges_recover_a_stenosis_the_segmentation_filled`](../../tests/test_public_validation.py), [`test_intensity_edges_off_centre_and_eccentric_lumen`](../../tests/test_public_validation.py) | – |
 | SR-11 | `src/vstent/imaging/qca.py::qca_from_centerline`, `src/vstent/imaging/qca_validation.py` | [`test_qca_on_synthetic_stenosis_meets_targets`](../../tests/test_qca.py) | [qca_synthetic.md](../../reports/qca_synthetic.md) |
+| SR-43 | `src/vstent/imaging/qca.py::size_factor_from_image`, `src/vstent/imaging/qca.py::healthy_windows`, `src/vstent/imaging/lumen_model.py::fit_windows`, `src/vstent/imaging/qca_tree.py::tree_qca`, `src/vstent/inference/pipeline.py::AUTO_LUMEN`, `src/vstent/inference/pipeline.py::lumen_warnings` | [`test_scaled_lumen_recovers_the_size_and_keeps_the_shape`](../../tests/test_lumen_model.py), [`test_healthy_windows_and_refused_factor`](../../tests/test_lumen_model.py), [`test_automatic_segmentation_uses_intensity_edges`](../../tests/test_pipeline.py) | [two_view_synthetic.md](../../reports/two_view_synthetic.md) |
 | SR-12 | `src/vstent/imaging/centerline.py::bridge_gaps`, `src/vstent/imaging/qca.py::recentre_gaps`, `src/vstent/inference/pipeline.py::lumen_warnings` | [`test_a_gap_in_the_mask_is_bridged_and_measured_from_the_image`](../../tests/test_lumen_model.py), [`test_gap_bridging_needs_aligned_nearby_ends`](../../tests/test_lumen_model.py), [`test_occlusion_and_gap_are_reported_to_the_user`](../../tests/test_lumen_model.py) | – |
 | SR-13 | `src/vstent/app/core.py::overlay_image`, `src/vstent/inference/figures.py` | [`test_overlay_and_report_without_pixels`](../../tests/test_app.py), [`test_cli_analyse_end_to_end`](../../tests/test_pipeline.py) | – |
 | SR-14 | `src/vstent/physics/solver.py::solve_ffr`, `src/vstent/physics/solver.py::viscous_coefficient`, `src/vstent/physics/solver.py::expansion_coefficient` | [`test_uniform_tube_poiseuille_fixed_flow`](../../tests/test_physics.py), [`test_sudden_expansion_matches_borda_carnot`](../../tests/test_physics.py), [`test_ffr_starts_at_one_and_never_increases`](../../tests/test_physics.py), [`test_sanity_bands_3mm_60mm_10mm_cosine`](../../tests/test_physics.py), [`test_distal_ffr_strictly_decreases_with_stenosis`](../../tests/test_physics.py), [`test_grid_convergence`](../../tests/test_physics.py) | [physics_checks.md](../../reports/physics_checks.md) |
@@ -134,7 +136,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | SR-38 | `src/vstent/config.py::StrictModel`, `src/vstent/config.py::save_run_metadata` | [`test_unknown_key_rejected`](../../tests/test_config.py), [`test_save_run_metadata_roundtrip`](../../tests/test_config.py), [`test_export_writes_model_dir_with_provenance`](../../tests/test_onnx.py), [`test_mvp_provenance_has_creation_times`](../../tests/test_reporting.py) | – |
 | SR-39 | `src/vstent/regulatory/soup.py::check_soup` | [`test_every_imported_module_is_declared_soup`](../../tests/test_regulatory.py), [`test_committed_documents_are_up_to_date`](../../tests/test_regulatory.py) | – |
 | SR-40 | `src/vstent/imaging/projection.py::read_projection`, `src/vstent/imaging/projection.py::ProjectionGeometry.pixel_size_at`, `src/vstent/imaging/image_io.py::read_image`, `src/vstent/imaging/twoview.py::two_view_profile` | [`test_read_projection_from_dicom_tags`](../../tests/test_twoview.py), [`test_loader_corrects_the_magnification`](../../tests/test_twoview.py), [`test_rays_invert_the_projection_and_pixel_size_follows_depth`](../../tests/test_twoview.py), [`test_two_view_profile_uses_the_magnification_at_the_3d_point`](../../tests/test_twoview.py), [`test_read_image_png_jpg_dicom`](../../tests/test_app.py) | [two_view_synthetic.md](../../reports/two_view_synthetic.md) |
-| SR-41 | `src/vstent/imaging/twoview.py::reconstruct`, `src/vstent/imaging/twoview.py::estimate_shift`, `src/vstent/imaging/twoview.py::Reconstruction.warnings`, `src/vstent/inference/pipeline.py::analyse_two_views`, `src/vstent/inference/figures.py::plot_two_view_analysis`, `src/vstent/cli.py::SINGLE_VIEW_LENGTHS` | [`test_reconstruction_recovers_a_projected_curve`](../../tests/test_twoview.py), [`test_motion_between_runs_is_corrected`](../../tests/test_twoview.py), [`test_analyse_two_views_on_a_synthetic_case`](../../tests/test_twoview.py), [`test_cli_two_views`](../../tests/test_twoview.py), [`test_cli_analyse_with_plan`](../../tests/test_pipeline.py) | [two_view_synthetic.md](../../reports/two_view_synthetic.md) |
+| SR-41 | `src/vstent/imaging/twoview.py::reconstruct`, `src/vstent/imaging/twoview.py::estimate_shift`, `src/vstent/imaging/twoview.py::Reconstruction.warnings`, `src/vstent/imaging/twoview.py::Reconstruction.reliable`, `src/vstent/inference/pipeline.py::analyse_two_views`, `src/vstent/inference/figures.py::plot_two_view_analysis`, `src/vstent/cli.py::SINGLE_VIEW_LENGTHS` | [`test_reconstruction_recovers_a_projected_curve`](../../tests/test_twoview.py), [`test_motion_between_runs_is_corrected`](../../tests/test_twoview.py), [`test_reliability_check_warns_when_the_length_depends_on_the_smoothing`](../../tests/test_twoview.py), [`test_analyse_two_views_on_a_synthetic_case`](../../tests/test_twoview.py), [`test_cli_two_views`](../../tests/test_twoview.py), [`test_cli_analyse_with_plan`](../../tests/test_pipeline.py) | [two_view_synthetic.md](../../reports/two_view_synthetic.md) |
 | SR-42 | `src/vstent/app/streamlit_app.py` | – | – |
 
 ## Open gaps

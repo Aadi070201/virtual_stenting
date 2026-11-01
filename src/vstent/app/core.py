@@ -590,6 +590,7 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
         report["assumptions"]["calibration_mm_per_px"] = state.qca.mm_per_px
         report["assumptions"]["calibration_assumed"] = state.qca.calibration_assumed
         report["assumptions"]["lumen_edges"] = LUMEN_METHOD_LABELS[state.qca.lumen_method]
+        report["assumptions"]["lumen_size_factor"] = state.qca.size_factor  # P5b
     if state.plans is not None:
         pr = state.plans
         report["plans"] = {
