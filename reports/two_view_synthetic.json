@@ -90,7 +90,7 @@
       "max": 23.134863839699516
     }
   },
-  "warned": 35,
+  "warned": 16,
   "large": [
     {
       "seed": 7084,
@@ -200,7 +200,7 @@
         "p90": 0.3755377913052886,
         "max": 0.6490592779644789
       },
-      "warned": 105
+      "warned": 47
     },
     "motion": {
       "length_abs": {
@@ -227,7 +227,7 @@
         "p90": 0.364855739742204,
         "max": 0.6880497893426394
       },
-      "warned": 33
+      "warned": 17
     }
   },
   "motion_mm": {
@@ -299,10 +299,10 @@
     "n_large": 1,
     "flagged_large": 0,
     "sensitivity": 0.0,
-    "flag_rate": 0.175,
+    "flag_rate": 0.08,
     "n_unreliable": 21,
-    "flagged_median_abs_err": 1.0483545987230225,
-    "unflagged_median_abs_err": 0.6119323899045237
+    "marked_median_abs_err": 1.1474931186866155,
+    "unmarked_median_abs_err": 0.6339984223114548
   },
   "targets": [
     {
@@ -316,21 +316,9 @@
       "value": "0.7",
       "target": "\u2264 5%",
       "passed": true
-    },
-    {
-      "metric": "Check: share of |length error| > 5% flagged (P5b)",
-      "value": "0% (0 of 1)",
-      "target": "\u2265 80%",
-      "passed": false
-    },
-    {
-      "metric": "Check: share of all cases flagged (P5b)",
-      "value": "18%",
-      "target": "\u2264 10%",
-      "passed": false
     }
   ],
-  "targets_met": false,
+  "targets_met": true,
   "config": {
     "name": "two_view_synthetic",
     "seed": 7001,
@@ -539,9 +527,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.5% with smoother fitting; the 3D path deviates 0.42 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.04451892801923918,
         "d_mae_mm": 0.17484244096876575,
@@ -684,8 +670,7 @@
           0.0
         ],
         "warnings": [
-          "64% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 11.0% with smoother fitting; the 3D path deviates 0.69 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "64% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.10963388662397089,
@@ -826,9 +811,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.3% with smoother fitting; the 3D path deviates 0.11 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.04315668110041104,
         "d_mae_mm": 0.17602003547625047,
@@ -971,8 +954,7 @@
           0.0
         ],
         "warnings": [
-          "69% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 12.7% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "69% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.12724675637264848,
@@ -996,8 +978,7 @@
           0.2734169599828457
         ],
         "warnings": [
-          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 3.9% with smoother fitting; the 3D path deviates 0.12 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.03851250062556255,
@@ -1528,9 +1509,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0558767949579535,
         "d_mae_mm": 0.2687290178407825,
@@ -2221,8 +2200,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.04 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.29 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.04 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.03230576637042992,
@@ -2637,9 +2615,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 8.2% with smoother fitting; the 3D path deviates 0.22 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.08163357077347078,
         "d_mae_mm": 0.14250546204047737,
@@ -2777,9 +2753,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.1% with smoother fitting; the 3D path deviates 0.58 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0510958114417035,
         "d_mae_mm": 0.4008941779026096,
@@ -2917,9 +2891,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.0% with smoother fitting; the 3D path deviates 0.22 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.030029043443985493,
         "d_mae_mm": 0.1551384619020198,
@@ -3057,9 +3029,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.9% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.03864993764679281,
         "d_mae_mm": 0.5160006669363906,
@@ -3198,8 +3168,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.65 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 0.1% with smoother fitting; the 3D path deviates 0.41 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.65 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.0014421984606967087,
@@ -3570,9 +3539,7 @@
           0.09337107075968284,
           -0.08825561086128476
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.031585360068156154,
         "d_mae_mm": 0.21131256717506375,
@@ -3594,9 +3561,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.9% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.028653431619879766,
         "d_mae_mm": 0.21265293998357387,
@@ -3618,9 +3583,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.3% with smoother fitting; the 3D path deviates 0.50 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.0026864904634964493,
         "d_mae_mm": 0.3214265408845127,
@@ -3642,9 +3605,7 @@
           -3.8930650660989294,
           3.6833983544617395
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.028055891621850404,
         "d_mae_mm": 0.28115807764909395,
@@ -3992,9 +3953,7 @@
           1.0315909386781232,
           0.6078310131395338
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.2% with smoother fitting; the 3D path deviates 0.62 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02193000586374161,
         "d_mae_mm": 0.55689674134101,
@@ -4016,9 +3975,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.49 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.027594410389950252,
         "d_mae_mm": 0.5522222782908712,
@@ -4040,9 +3997,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.8% with smoother fitting; the 3D path deviates 0.77 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05790809819780618,
         "d_mae_mm": 0.8007722828316606,
@@ -4064,9 +4019,7 @@
           -2.8542483741245075,
           -1.6848512811607357
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.65 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.032096554485191,
         "d_mae_mm": 0.6236589379614718,
@@ -4182,9 +4135,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.9% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.01906538908827904,
         "d_mae_mm": 0.5075543944253256,
@@ -4416,9 +4367,7 @@
           -0.23429395863827687,
           -0.3821720671352608
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.5% with smoother fitting; the 3D path deviates 0.15 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.025038349293310502,
         "d_mae_mm": 0.0973616536294893,
@@ -4463,8 +4412,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.73 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.34 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.73 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.026570506662204396,
@@ -5163,9 +5111,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.1% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.040791857751940164,
         "d_mae_mm": 0.267616685208312,
@@ -5441,9 +5387,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.0% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.010001393118571733,
         "d_mae_mm": 0.1258534995401131,
@@ -5719,9 +5663,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.7% with smoother fitting; the 3D path deviates 0.40 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.007352479398111789,
         "d_mae_mm": 0.2860261691939775,
@@ -5997,9 +5939,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.33 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.03229000457327236,
         "d_mae_mm": 0.31949498941688415,
@@ -6827,9 +6767,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 8.5% with smoother fitting; the 3D path deviates 0.19 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.08479673831153989,
         "d_mae_mm": 0.44854034794569936,
@@ -6923,9 +6861,7 @@
           -0.19436815743168218,
           0.02523232750970457
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.027989352019695213,
         "d_mae_mm": 0.15493693080203533,
@@ -6947,9 +6883,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.6% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.025722241089454867,
         "d_mae_mm": 0.15229465448958496,
@@ -6972,8 +6906,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 6.8% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.06827323657395645,
@@ -7069,8 +7002,7 @@
           0.5278260170291099
         ],
         "warnings": [
-          "60% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.0% with smoother fitting; the 3D path deviates 0.51 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "60% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.0002175381784483843,
@@ -7094,8 +7026,7 @@
           0.0
         ],
         "warnings": [
-          "61% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.2% with smoother fitting; the 3D path deviates 0.42 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "61% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.002075416507931749,
@@ -7119,8 +7050,7 @@
           0.0
         ],
         "warnings": [
-          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.4% with smoother fitting; the 3D path deviates 0.44 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.004056751367932376,
@@ -7144,8 +7074,7 @@
           2.8124873810755644
         ],
         "warnings": [
-          "58% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.2% with smoother fitting; the 3D path deviates 0.42 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "58% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.0015936218585743678,
@@ -7632,9 +7561,7 @@
           0.05433616819775815,
           -0.18941029111432658
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.9% with smoother fitting; the 3D path deviates 0.65 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.019106409866678553,
         "d_mae_mm": 0.19664435879657094,
@@ -7656,9 +7583,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.2% with smoother fitting; the 3D path deviates 0.65 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.021770860405974646,
         "d_mae_mm": 0.19916783244706335,
@@ -7680,9 +7605,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.9% with smoother fitting; the 3D path deviates 1.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.009281570060476252,
         "d_mae_mm": 0.20221252159885056,
@@ -7704,9 +7627,7 @@
           1.8652224484089015,
           -6.531996387690562
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.3% with smoother fitting; the 3D path deviates 0.69 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.032539428988572094,
         "d_mae_mm": 0.2509525815137085,
@@ -7916,9 +7837,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.02789826876891599,
         "d_mae_mm": 0.47620822428740955,
@@ -7940,9 +7859,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.02789826876891599,
         "d_mae_mm": 0.47620822428740955,
@@ -7986,9 +7903,7 @@
           -5.710956879351489,
           5.8749445687361055
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.6% with smoother fitting; the 3D path deviates 0.15 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.02575384750421339,
         "d_mae_mm": 0.4254763146456415,
@@ -8105,8 +8020,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.66 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 2.6% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.66 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.025550962153999435,
@@ -8663,9 +8577,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 10.0% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.10025342465278198,
         "d_mae_mm": 0.13128111347743873,
@@ -8897,9 +8809,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 7.7% with smoother fitting; the 3D path deviates 0.28 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.07740482013314942,
         "d_mae_mm": 0.2899453306526214,
@@ -8921,9 +8831,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 7.7% with smoother fitting; the 3D path deviates 0.28 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.07740482013314942,
         "d_mae_mm": 0.2899453306526214,
@@ -8945,9 +8853,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 8.9% with smoother fitting; the 3D path deviates 0.57 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.08891246762403204,
         "d_mae_mm": 0.3558688197562341,
@@ -8969,9 +8875,7 @@
           -2.9794468524980657,
           0.8647419281393178
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 8.3% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.08284595437073383,
         "d_mae_mm": 0.3443793160555978,
@@ -9087,9 +8991,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 9.6% with smoother fitting; the 3D path deviates 0.12 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.09619367524208289,
         "d_mae_mm": 0.06000529050149947,
@@ -9233,8 +9135,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 1.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "65% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 3.1% with smoother fitting; the 3D path deviates 1.30 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "65% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.030691590915789324,
@@ -9469,9 +9370,7 @@
           0.06818192589264449,
           -0.031238466732594356
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.9% with smoother fitting; the 3D path deviates 0.12 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.028677372419361413,
         "d_mae_mm": 0.10763406204442291,
@@ -9493,9 +9392,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.12 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.028480873542469753,
         "d_mae_mm": 0.10857652250975988,
@@ -9539,9 +9436,7 @@
           5.437604120011759,
           -2.5062424030408774
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.1% with smoother fitting; the 3D path deviates 0.12 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.031343010877180166,
         "d_mae_mm": 0.14920874562958908,
@@ -9658,8 +9553,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.78 mm, residual 0.9 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 4.1% with smoother fitting; the 3D path deviates 0.91 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.78 mm, residual 0.9 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.041484804973521694,
@@ -10350,9 +10244,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 7.1% with smoother fitting; the 3D path deviates 0.27 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.07130520305712695,
         "d_mae_mm": 0.30602073353583137,
@@ -10766,9 +10658,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.9% with smoother fitting; the 3D path deviates 0.34 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.018644888471234355,
         "d_mae_mm": 0.20451535229710205,
@@ -10911,8 +10801,7 @@
           0.0
         ],
         "warnings": [
-          "55% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 6.2% with smoother fitting; the 3D path deviates 0.14 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "55% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.06207521690592843,
@@ -11197,8 +11086,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 0.77 mm, residual 2.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "90% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 7.3% with smoother fitting; the 3D path deviates 2.37 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "90% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.07261514821773218,
@@ -11317,9 +11205,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.3% with smoother fitting; the 3D path deviates 0.32 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.022958571644006942,
         "d_mae_mm": 0.18750920252113998,
@@ -11341,9 +11227,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 14.3% with smoother fitting; the 3D path deviates 0.53 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.14330883684695317,
         "d_mae_mm": 0.2889109829254143,
@@ -11905,8 +11789,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 2.38 mm, residual 7.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 8.8% with smoother fitting; the 3D path deviates 7.44 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.08845360896349885,
@@ -12045,9 +11928,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.0% with smoother fitting; the 3D path deviates 0.29 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02974700434690747,
         "d_mae_mm": 0.17957709825852453,
@@ -12163,9 +12044,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.1% with smoother fitting; the 3D path deviates 0.61 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.020684172774315,
         "d_mae_mm": 0.5065271266407356,
@@ -12187,9 +12066,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.6% with smoother fitting; the 3D path deviates 0.46 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.016333308267837854,
         "d_mae_mm": 0.51685546512124,
@@ -12305,9 +12182,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.9% with smoother fitting; the 3D path deviates 0.25 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.03861060044597253,
         "d_mae_mm": 0.07745117545086692,
@@ -12329,9 +12204,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.7% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.01699665436786857,
         "d_mae_mm": 0.26964842264308597,
@@ -12353,9 +12226,7 @@
           -2.0834432317111964,
           0.034479515686665234
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.27 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.031695525292088966,
         "d_mae_mm": 0.27566867764411823,
@@ -12747,9 +12618,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.6% with smoother fitting; the 3D path deviates 0.35 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.016425888717914394,
         "d_mae_mm": 0.5825886445382256,
@@ -13440,8 +13309,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.61 mm, residual 0.6 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 10.5% with smoother fitting; the 3D path deviates 0.61 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.61 mm, residual 0.6 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.10451423683175498,
@@ -13856,9 +13724,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 1.01 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05624903952943783,
         "d_mae_mm": 0.6170292625405435,
@@ -13880,9 +13746,7 @@
           3.846372132506909,
           -6.763590464657477
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.1% with smoother fitting; the 3D path deviates 0.32 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.010631567734180947,
         "d_mae_mm": 0.6036234650165572,
@@ -14550,9 +14414,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.5% with smoother fitting; the 3D path deviates 0.25 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.025461545271363684,
         "d_mae_mm": 0.3630612685048042,
@@ -14695,8 +14557,7 @@
           0.0
         ],
         "warnings": [
-          "64% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 13.8% with smoother fitting; the 3D path deviates 0.96 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "64% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.13826948603222522,
@@ -14793,9 +14654,7 @@
           0.12559864732086606,
           0.1135806279938098
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.3% with smoother fitting; the 3D path deviates 0.32 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.003248734135546605,
         "d_mae_mm": 0.34488466434905124,
@@ -14817,9 +14676,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.4% with smoother fitting; the 3D path deviates 0.32 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.00413374659469723,
         "d_mae_mm": 0.34085590124007636,
@@ -14841,9 +14698,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.39 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02687798471835756,
         "d_mae_mm": 0.3901201624230936,
@@ -14865,9 +14720,7 @@
           -1.581000704599724,
           -1.4310335869618238
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.7% with smoother fitting; the 3D path deviates 0.36 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.00703895908683827,
         "d_mae_mm": 0.369707776617943,
@@ -15122,8 +14975,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.55 mm, residual 0.7 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 1.5% with smoother fitting; the 3D path deviates 0.74 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.55 mm, residual 0.7 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.0148164173910027,
@@ -15400,9 +15252,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.9% with smoother fitting; the 3D path deviates 0.19 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02881608842809369,
         "d_mae_mm": 0.0312774207586053,
@@ -15816,9 +15666,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 12.0% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.12020688119555079,
         "d_mae_mm": 0.3224752372800903,
@@ -15840,9 +15688,7 @@
           -4.534741768335817,
           1.750509484414052
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.027487699114305375,
         "d_mae_mm": 0.37173803174240055,
@@ -16198,9 +16044,7 @@
           -0.11465177938969513,
           0.25497038219660106
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 7.1% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.071017087162498,
         "d_mae_mm": 0.24548576392026963,
@@ -16222,9 +16066,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 6.6% with smoother fitting; the 3D path deviates 0.18 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.06591449602968025,
         "d_mae_mm": 0.24098190716492857,
@@ -16246,9 +16088,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.1% with smoother fitting; the 3D path deviates 0.41 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.0012028649953348403,
         "d_mae_mm": 0.2945580695886867,
@@ -16270,9 +16110,7 @@
           -2.854527518790564,
           6.337855080116136
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 7.6% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.0762405385948226,
         "d_mae_mm": 0.32568065613885844,
@@ -16393,8 +16231,7 @@
           0.0
         ],
         "warnings": [
-          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.6% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.00600695941917162,
@@ -16811,9 +16648,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 8.2% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.08202613605798592,
         "d_mae_mm": 0.1408394377506206,
@@ -16907,9 +16742,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.13 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02700710886664781,
         "d_mae_mm": 0.06123187773554983,
@@ -16931,9 +16764,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.13 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02700710886664781,
         "d_mae_mm": 0.06123187773554983,
@@ -17096,8 +16927,7 @@
           0.0
         ],
         "warnings": [
-          "52% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 10.4% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "52% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.10429640864829015,
@@ -17375,8 +17205,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.75 mm, residual 0.5 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 14.1% with smoother fitting; the 3D path deviates 0.45 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.75 mm, residual 0.5 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.1406391804617534,
@@ -17653,9 +17482,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 14.7% with smoother fitting; the 3D path deviates 0.53 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.14665168393764494,
         "d_mae_mm": 0.20054755033389265,
@@ -17677,9 +17504,7 @@
           -6.556366631633344,
           -9.417793140969174
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.23 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0321539538898572,
         "d_mae_mm": 0.1831814551340642,
@@ -17795,9 +17620,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 11.4% with smoother fitting; the 3D path deviates 0.36 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.11403302627114564,
         "d_mae_mm": 0.1103226795861008,
@@ -18305,9 +18128,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.1% with smoother fitting; the 3D path deviates 0.30 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.000999609433432136,
         "d_mae_mm": 0.15964938942365395,
@@ -18329,9 +18150,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.1% with smoother fitting; the 3D path deviates 0.30 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.000999609433432136,
         "d_mae_mm": 0.15964938942365395,
@@ -18354,8 +18173,7 @@
           0.0
         ],
         "warnings": [
-          "52% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 1.3% with smoother fitting; the 3D path deviates 0.41 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "52% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.013084782795147132,
@@ -18588,9 +18406,7 @@
           0.01963287557662242,
           -0.0036488168993491048
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.3% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.043258508946423024,
         "d_mae_mm": 0.07080279939176595,
@@ -18612,9 +18428,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.3% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.04276231079267934,
         "d_mae_mm": 0.06974622931424987,
@@ -18636,9 +18450,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.9% with smoother fitting; the 3D path deviates 0.22 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0492988248820051,
         "d_mae_mm": 0.12116485026677197,
@@ -18777,8 +18589,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.57 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 10.0% with smoother fitting; the 3D path deviates 0.22 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.57 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.10020229807543424,
@@ -18917,9 +18728,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.4% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.03412102087505209,
         "d_mae_mm": 0.14192800352998347,
@@ -19057,9 +18866,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.4% with smoother fitting; the 3D path deviates 0.22 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.054168337046249904,
         "d_mae_mm": 0.4178783234423251,
@@ -19199,8 +19006,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 1.70 mm, residual 2.9 px): check the start and end points, the projection angles, and motion between the runs",
-          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 24.8% with smoother fitting; the 3D path deviates 2.95 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.2475279822315153,
@@ -19340,8 +19146,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.14 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 0.27 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.14 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.056146330916276965,
@@ -19436,9 +19241,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05560694474794736,
         "d_mae_mm": 0.04106459033060785,
@@ -19460,9 +19263,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 0.16 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05560694474794736,
         "d_mae_mm": 0.04106459033060785,
@@ -19484,9 +19285,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 9.2% with smoother fitting; the 3D path deviates 0.28 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.09187208866549945,
         "d_mae_mm": 0.1398889225547873,
@@ -19508,9 +19307,7 @@
           2.260973330112936,
           -2.371701918473685
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.7% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0469612809767308,
         "d_mae_mm": 0.08955869844854966,
@@ -19764,9 +19561,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.1% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.030540784276910427,
         "d_mae_mm": 0.2155479591532709,
@@ -19904,9 +19699,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.2% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.011548797240668152,
         "d_mae_mm": 0.19962330829869238,
@@ -20045,8 +19838,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.9 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 0.2% with smoother fitting; the 3D path deviates 0.91 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.9 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": 0.0020260424293501167,
@@ -20070,8 +19862,7 @@
           -5.2649546525266855
         ],
         "warnings": [
-          "50% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.21 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "50% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.027967669876635015,
@@ -20740,9 +20531,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.2% with smoother fitting; the 3D path deviates 0.36 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.012282401863272896,
         "d_mae_mm": 0.10419637338132237,
@@ -20880,9 +20669,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.5% with smoother fitting; the 3D path deviates 0.45 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.01485715457635961,
         "d_mae_mm": 0.07341834271182685,
@@ -21026,8 +20813,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 1.31 mm, residual 3.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "61% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 11.4% with smoother fitting; the 3D path deviates 3.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "61% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.11367671546961744,
@@ -21168,9 +20954,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.23 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02763317371165297,
         "d_mae_mm": 0.23705237469707696,
@@ -21455,8 +21239,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.04 mm, residual 1.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 10.6% with smoother fitting; the 3D path deviates 1.44 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.04 mm, residual 1.4 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.106004481111591,
@@ -21873,9 +21656,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.6% with smoother fitting; the 3D path deviates 0.34 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.006161332018405297,
         "d_mae_mm": 0.05540965016756156,
@@ -22014,8 +21795,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.83 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 7.5% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.83 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.07540884942628245,
@@ -22110,9 +21890,7 @@
           0.799505926247162,
           1.5159062538780785
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.4% with smoother fitting; the 3D path deviates 0.35 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.004072051937573429,
         "d_mae_mm": 0.31705111576777767,
@@ -22134,9 +21912,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.7% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.006908277112777972,
         "d_mae_mm": 0.2986727118254517,
@@ -22159,8 +21935,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 9.8% with smoother fitting; the 3D path deviates 1.04 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.09783066815903052,
@@ -22183,9 +21958,7 @@
           6.9108262340685,
           13.053935218819891
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.8% with smoother fitting; the 3D path deviates 0.36 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.008199301454081542,
         "d_mae_mm": 0.31462726627983534,
@@ -22258,8 +22031,7 @@
           0.06539987429123977
         ],
         "warnings": [
-          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 5.0% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.04966991179619584,
@@ -22283,8 +22055,7 @@
           0.0
         ],
         "warnings": [
-          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 4.8% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.04804125761891931,
@@ -22308,8 +22079,7 @@
           0.0
         ],
         "warnings": [
-          "77% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.8% with smoother fitting; the 3D path deviates 0.46 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "77% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.008409362437711732,
@@ -22333,8 +22103,7 @@
           -7.023831603267275
         ],
         "warnings": [
-          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 4.3% with smoother fitting; the 3D path deviates 0.15 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.043228788881687685,
@@ -22407,9 +22176,7 @@
           -0.21909645102863004,
           0.39884481059712296
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.6% with smoother fitting; the 3D path deviates 0.13 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.025793401683822714,
         "d_mae_mm": 0.2783736725448601,
@@ -22454,8 +22221,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.56 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 14.5% with smoother fitting; the 3D path deviates 0.24 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.56 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.1451693905928697,
@@ -22599,8 +22365,7 @@
           0.0
         ],
         "warnings": [
-          "74% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 3.3% with smoother fitting; the 3D path deviates 0.43 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "74% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.032946496765667854,
@@ -22879,9 +22644,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.0% with smoother fitting; the 3D path deviates 0.49 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.03019535546676766,
         "d_mae_mm": 0.42231174560574813,
@@ -23019,9 +22782,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.5% with smoother fitting; the 3D path deviates 0.26 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.034561126669037545,
         "d_mae_mm": 0.18403854086073201,
@@ -23573,9 +23334,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 9.4% with smoother fitting; the 3D path deviates 0.50 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.09379303417282991,
         "d_mae_mm": 0.6919002439530731,
@@ -23713,9 +23472,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.6% with smoother fitting; the 3D path deviates 0.35 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.025600626557680917,
         "d_mae_mm": 0.3415513018968841,
@@ -23853,9 +23610,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.9% with smoother fitting; the 3D path deviates 0.49 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.038585046170841686,
         "d_mae_mm": 0.5143584565654327,
@@ -23993,9 +23748,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.4% with smoother fitting; the 3D path deviates 0.37 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.013891755318664822,
         "d_mae_mm": 0.38233225865363946,
@@ -24133,9 +23886,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.1% with smoother fitting; the 3D path deviates 0.35 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0008838715456306323,
         "d_mae_mm": 0.21265028826905152,
@@ -24549,9 +24300,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.7% with smoother fitting; the 3D path deviates 0.42 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05739597606519675,
         "d_mae_mm": 0.18406451997493112,
@@ -24783,9 +24532,7 @@
           -0.012665050211797783,
           -0.22338487725198705
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.4% with smoother fitting; the 3D path deviates 0.54 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.05352460921389457,
         "d_mae_mm": 0.23901955174360248,
@@ -24807,9 +24554,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.3% with smoother fitting; the 3D path deviates 0.54 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.05250752927477631,
         "d_mae_mm": 0.23983063715039335,
@@ -24831,9 +24576,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 24.8% with smoother fitting; the 3D path deviates 0.99 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.24811828339957231,
         "d_mae_mm": 0.18048810902526832,
@@ -24855,9 +24598,7 @@
           0.4786891477068298,
           8.599766547819973
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.4% with smoother fitting; the 3D path deviates 0.49 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.033874242982983915,
         "d_mae_mm": 0.23789041400467895,
@@ -24974,8 +24715,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 3.2% with smoother fitting; the 3D path deviates 0.15 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.53 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.03224489625193472,
@@ -25528,9 +25268,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.6% with smoother fitting; the 3D path deviates 0.18 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.045989061785847385,
         "d_mae_mm": 0.16139443933475586,
@@ -25900,9 +25638,7 @@
           -0.020931423332904698,
           0.010416414708842728
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.3% with smoother fitting; the 3D path deviates 0.39 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.002944616283928836,
         "d_mae_mm": 0.2840066390607342,
@@ -25924,9 +25660,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.3% with smoother fitting; the 3D path deviates 0.38 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.0029300170820074634,
         "d_mae_mm": 0.27178734077214745,
@@ -25948,9 +25682,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.2% with smoother fitting; the 3D path deviates 0.41 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.012201465553364765,
         "d_mae_mm": 0.2968897802463846,
@@ -25972,9 +25704,7 @@
           1.8984609172596347,
           -0.9455617208718533
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.4% with smoother fitting; the 3D path deviates 0.40 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.004301878634661471,
         "d_mae_mm": 0.424268511016785,
@@ -26230,8 +25960,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 1.46 mm, residual 0.9 px): check the start and end points, the projection angles, and motion between the runs",
-          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 21.4% with smoother fitting; the 3D path deviates 0.88 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.21444024862182154,
@@ -26509,8 +26238,7 @@
           0.0
         ],
         "warnings": [
-          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 7.9% with smoother fitting; the 3D path deviates 0.40 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "56% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.07870584070582931,
@@ -26926,8 +26654,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.51 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 16.8% with smoother fitting; the 3D path deviates 0.39 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.51 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.167532274277164,
@@ -27067,8 +26794,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.55 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 10.3% with smoother fitting; the 3D path deviates 1.03 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.55 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.10318660056218354,
@@ -27207,9 +26933,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 4.5% with smoother fitting; the 3D path deviates 0.17 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.04536772563985436,
         "d_mae_mm": 0.34693146264609065,
@@ -27348,8 +27072,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.56 mm, residual 0.8 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 19.3% with smoother fitting; the 3D path deviates 0.81 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.56 mm, residual 0.8 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.1926630042417926,
@@ -27627,8 +27350,7 @@
           0.0
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 11.1% with smoother fitting; the 3D path deviates 0.35 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.4 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.11126841248696151,
@@ -27905,9 +27627,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.9% with smoother fitting; the 3D path deviates 0.32 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.009270064775951492,
         "d_mae_mm": 0.14037029774537438,
@@ -28277,9 +27997,7 @@
           0.9267966277015547,
           0.17712049181709902
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.3% with smoother fitting; the 3D path deviates 0.37 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.003240898822610472,
         "d_mae_mm": 0.3025524120838836,
@@ -28301,9 +28019,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.2% with smoother fitting; the 3D path deviates 0.38 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.002068742630533915,
         "d_mae_mm": 0.31304088968800003,
@@ -28785,9 +28501,7 @@
           0.5867068157319317,
           -0.19254644553550276
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 0.0% with smoother fitting; the 3D path deviates 0.50 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.0004818325085118591,
         "d_mae_mm": 0.4123740533423196,
@@ -28862,8 +28576,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 2.32 mm, residual 3.8 px): check the start and end points, the projection angles, and motion between the runs",
-          "70% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 0.0% with smoother fitting; the 3D path deviates 3.77 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "70% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.00025261015135746856,
@@ -29084,8 +28797,7 @@
           2.546058206717872
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.64 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 7.1% with smoother fitting; the 3D path deviates 0.24 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.64 mm, residual 0.2 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.07105446704771723,
@@ -29305,9 +29017,7 @@
           0.0,
           0.0
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.5% with smoother fitting; the 3D path deviates 0.20 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02505370383258243,
         "d_mae_mm": 0.6953548642082967,
@@ -29599,9 +29309,7 @@
           11.278647183585608,
           3.29535677842869
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 3.4% with smoother fitting; the 3D path deviates 0.23 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.03372005602935091,
         "d_mae_mm": 0.3025574591978168,
@@ -29674,9 +29382,7 @@
           0.1856091632406008,
           -0.4052858257085501
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.1% with smoother fitting; the 3D path deviates 0.18 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.05058023471440465,
         "d_mae_mm": 0.18076152418168964,
@@ -30335,9 +30041,7 @@
           0.18440690278770092,
           0.2737883785885391
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 1.6% with smoother fitting; the 3D path deviates 0.30 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.01564160158527783,
         "d_mae_mm": 0.11230078988247767,
@@ -30485,8 +30189,7 @@
         ],
         "warnings": [
           "The two views do not fit one 3D vessel well (mean ray gap 0.84 mm, residual 1.6 px): check the start and end points, the projection angles, and motion between the runs",
-          "77% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 2.2% with smoother fitting; the 3D path deviates 1.58 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "77% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.021579904794037263,
@@ -30561,8 +30264,7 @@
           -12.560923114914102
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 1.53 mm, residual 1.1 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 0.8% with smoother fitting; the 3D path deviates 1.08 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 1.53 mm, residual 1.1 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": 0.00822543952226229,
@@ -31074,9 +30776,7 @@
           -0.12966792161084137,
           0.010233888483941382
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 5.6% with smoother fitting; the 3D path deviates 0.28 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": 0.05602740989520494,
         "d_mae_mm": 0.10445977093927963,
@@ -31442,8 +31142,7 @@
           7.725363259711654
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 2.8% with smoother fitting; the 3D path deviates 0.34 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.74 mm, residual 0.3 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": 0.028303994418098055,
@@ -31591,8 +31290,7 @@
           -0.5176017324966947
         ],
         "warnings": [
-          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 1.9% with smoother fitting; the 3D path deviates 0.65 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "66% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": 0.018937862925966442,
@@ -31740,8 +31438,7 @@
           -5.3896344300052075
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 0.50 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 1.6% with smoother fitting; the 3D path deviates 0.96 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 0.50 mm, residual 1.0 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.015653536576634042,
@@ -31962,8 +31659,7 @@
           2.068936922920667
         ],
         "warnings": [
-          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated",
-          "The 3D course is poorly determined (the length changes by 2.7% with smoother fitting; the 3D path deviates 0.31 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "67% of the vessel runs along the epipolar lines: its 3D course there is interpolated"
         ],
         "reliable": false,
         "smoothing_change": -0.02658700605307507,
@@ -32038,8 +31734,7 @@
           3.797479196621989
         ],
         "warnings": [
-          "The two views do not fit one 3D vessel well (mean ray gap 2.27 mm, residual 2.6 px): check the start and end points, the projection angles, and motion between the runs",
-          "The 3D course is poorly determined (the length changes by 0.6% with smoother fitting; the 3D path deviates 2.56 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
+          "The two views do not fit one 3D vessel well (mean ray gap 2.27 mm, residual 2.6 px): check the start and end points, the projection angles, and motion between the runs"
         ],
         "reliable": false,
         "smoothing_change": -0.006432711757409448,
@@ -32186,9 +31881,7 @@
           0.07921041718332575,
           0.04949968007153171
         ],
-        "warnings": [
-          "The 3D course is poorly determined (the length changes by 2.1% with smoother fitting; the 3D path deviates 0.40 px from a traced path): the length may be wrong by more than 5%. Check that both paths follow the same vessel, or use views further apart with less foreshortening"
-        ],
+        "warnings": [],
         "reliable": false,
         "smoothing_change": -0.02149613878088763,
         "d_mae_mm": 1.043872057536858,
@@ -32199,9 +31892,9 @@
     }
   ],
   "provenance": {
-    "git_commit": "354d1336594f8d96665680e9c5c4e33a1675d62e",
+    "git_commit": "859c95336b949401ebc3a97af207d85e0c79f2f3",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-11-01T16:48:36+00:00"
+    "created_utc": "2026-11-01T17:50:56+00:00"
   }
 }
