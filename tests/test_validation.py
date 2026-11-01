@@ -389,3 +389,14 @@ def test_synthetic_validation_end_to_end(dark_seg_dir, tiny_ensemble_export, tmp
                  "## With the automatic segmenter", "Against the known truth"):  # fmt: skip
         assert text in md
     assert set(out["predictions"]) == {"masks", "segmenter"}
+    assert "domain gap between rendered and clinical images" in md  # dark_seg_dir: no renders
+
+
+def test_trained_on_rendered_reads_the_export_config(tmp_path):
+    from vstent.validation.synthetic_report import trained_on_rendered
+
+    assert not trained_on_rendered(tmp_path)
+    (tmp_path / "config.yaml").write_text("synthetic: null\n", encoding="utf-8")
+    assert not trained_on_rendered(tmp_path)
+    (tmp_path / "config.yaml").write_text("synthetic: {dir: d, n_train: 5}\n", encoding="utf-8")
+    assert trained_on_rendered(tmp_path)

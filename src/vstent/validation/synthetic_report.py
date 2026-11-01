@@ -3,7 +3,7 @@ cases → ``reports/validation_synthetic.md``. Not clinical data, not a clinical
 
 The stand-in study (:mod:`vstent.validation.synthetic`) is generated into ``data/`` (git-ignored),
 then predicted twice: with the true lumen masks of the manifest (the main analysis: QCA, physics
-and the statistics, without the segmenter's domain gap on rendered images), and with the
+and the statistics, free of segmentation errors), and with the
 automatic segmenter (feasibility and accuracy when segmentation is part of the index test).
 Because the truth is known, the report adds what a real study cannot measure: QCA length and
 MLD errors, side branches found, and the side-branch effect inside the reference itself.
@@ -16,9 +16,10 @@ from typing import Any
 
 import cv2
 import numpy as np
+import yaml
 from scipy import stats
 
-from vstent.config import git_info
+from vstent.config import CONFIG_FILENAME, git_info
 from vstent.inference.onnx_runtime import (
     ONNX_FILE,
     SEG_ONNX_FILE,
@@ -216,19 +217,44 @@ def _largest_errors(details: list[dict[str, Any]], k: int = 6) -> list[str]:
     return [*lines, ""]
 
 
-def _segmenter_section(rows, meta, refs, cfg: ValidationConfig) -> list[str]:
+def trained_on_rendered(seg_dir: str | Path) -> bool:
+    """Whether an exported segmenter's training config added rendered angiograms (P8)."""
+    cfg_file = Path(seg_dir) / CONFIG_FILENAME
+    if not cfg_file.exists():
+        return False
+    return bool((yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}).get("synthetic"))
+
+
+def _segmenter_section(
+    rows, meta, refs, cfg: ValidationConfig, *, rendered_training: bool
+) -> list[str]:
     s = score_predictions(rows, refs, cfg, meta.get("index_tests"))
     ffr = s["index_tests"].get("FFR", {})
+    scene = (
+        "The rendered images match ARCADE's vessel contrast and noise (D39), but not its "
+        "anatomy: one vessel tree on a smooth background, without the catheter, the other "
+        "coronary vessels, ribs or the diaphragm."
+    )
+    if rendered_training:
+        about = (
+            "The same cases, with the vessel segmented by the product's segmenter instead of "
+            f"taken from the true mask. {scene} This segmenter was trained on ARCADE plus "
+            "rendered angiograms from the same imaging chain (P8, D53), so these images are "
+            "close to its training data. The numbers below show the index test on rendered "
+            "images, not the segmenter's accuracy on clinical angiograms "
+            "(`reports/sim_to_real.md`)."
+        )
+    else:
+        about = (
+            "The same cases, with the vessel segmented by the ARCADE-trained model instead of "
+            f"taken from the true mask. {scene} The segmenter misses many of these vessels, so "
+            "the numbers below show a domain gap between rendered and clinical images, not the "
+            "segmenter's accuracy on clinical angiograms (`reports/seg_eval.md`)."
+        )
     lines = [
         "## With the automatic segmenter",
         "",
-        "The same cases, with the vessel segmented by the ARCADE-trained model instead of taken "
-        "from the true mask. The rendered images match ARCADE's vessel contrast and noise "
-        "(D39), but not its anatomy: one vessel tree on a smooth background, without the "
-        "catheter, the other coronary vessels, ribs or the diaphragm. The segmenter misses many "
-        "of these vessels, so the numbers below show a domain gap between rendered and clinical "
-        "images (to be closed by P8's rendered angiograms), not the segmenter's accuracy on "
-        "clinical angiograms (`reports/seg_eval.md`).",
+        about,
         "",
         "| Index test | Analysable / eligible | AUC | Accuracy | Accuracy, ITD | MAE |",
         "|---|---:|---:|---:|---:|---:|",
@@ -298,7 +324,8 @@ def run_synthetic_validation(
     extra = _truth_section(rows, truth, cfg) + _error_budget(data, rows, truth, physics, cfg)
     if "segmenter" in paths:
         seg_rows, seg_meta = read_predictions(paths["segmenter"])
-        extra += _segmenter_section(seg_rows, seg_meta, refs, cfg)
+        extra += _segmenter_section(seg_rows, seg_meta, refs, cfg,
+                                    rendered_training=trained_on_rendered(seg_dir))  # fmt: skip
     else:
         extra += ["## With the automatic segmenter", "",
                   "Not run: no exported segmentation model (`models/seg/`).", ""]  # fmt: skip

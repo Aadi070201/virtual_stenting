@@ -17,9 +17,10 @@ plus the effect of what it assumes (fixed velocity and Pv, an assumed pixel size
 nothing about agreement with real wire FFR.
 
 Each case also gets its true lumen mask (``masks/``, the ``mask`` column), standing in for an
-analyst-corrected contour: the automatic segmenter, trained on clinical angiograms, misses many
-of these rendered vessels (docs/DECISIONS.md, D39), so a run with the masks exercises the rest
-of the pipeline and the statistics without that domain gap.
+analyst-corrected contour, so a run with the masks exercises the rest of the pipeline and the
+statistics free of segmentation errors. (The M5 segmenter, trained on clinical angiograms only,
+missed many of these rendered vessels, D39; the P8 segmenter also learned from rendered ones,
+D53.)
 
 Writes ``<out_dir>/{images/, masks/, cases.csv, reference.csv, truth.csv, config.yaml,
 meta.yaml}``.
