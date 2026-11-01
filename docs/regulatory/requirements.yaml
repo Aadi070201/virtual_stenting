@@ -128,6 +128,9 @@ requirements:
     reports:
       - reports/seg_onnx.md
       - reports/seg_eval.md
+      - reports/seg_synth/seg_onnx.md
+      - reports/seg_synth/seg_eval.md
+      - reports/sim_to_real.md
 
   - id: SR-08
     title: Points off the vessel refused

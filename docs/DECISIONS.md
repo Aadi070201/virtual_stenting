@@ -827,3 +827,41 @@ testable without patient data.
 **Alternatives:** finding the view-2 points automatically on the epipolar lines (ambiguous
 where the line crosses several vessels; possible later); tree mode in two views (needs 3D
 side branches).
+
+### D53 — Segmenter trained with rendered angiograms adopted; angiogram → FFR deferred (2026-11-01)
+**Decision:** the product's segmenter is now `seg_unet_r34_synth`. It uses M5's configuration
+(seed, schedule, early stopping on ARCADE val), trained on ARCADE's 1,000 syntax images plus
+1,000 rendered angiograms (`vstent synth-angio`). It was adopted by the rule pre-registered in
+docs/PLAN.md (commit 9537e4e) before any rendered data existed: a higher mean ARCADE test Dice
+(0.7947 vs 0.7925) and a lower bound of the paired 95% interval above −0.01 (−0.0052).
+
+**What the result means** (`reports/sim_to_real.md`):
+- On real images the two models are statistically indistinguishable. The paired difference is
+  +0.0022 on ARCADE test (95% interval −0.0052 to +0.0095) and −0.0047 on ARCADE val (−0.0105
+  to +0.0012). The rule tests non-inferiority with a higher mean; it does not show that rendered
+  data helps on real angiograms.
+- On the rendered test split the new model scores 0.907 against 0.600 (10th percentile 0.828
+  vs 0.303). The split comes from the generator the new model trained on, so this shows that
+  the domain gap D52 met is closed for rendered images, not a real-world gain.
+- ARCADE annotates SYNTAX segments, not every major vessel in view, so ARCADE Dice cannot
+  reward a model that finds more of the major vessels.
+
+**Reason:** a pre-registered rule is only worth something if it is followed. The new model is
+no worse on real images and much better on rendered ones, which the validation stand-in and
+the synthetic examples use.
+
+**Deferred:** angiogram → FFR models trained on rendered images, the other half of the P8
+backlog item. The product keeps the explainable chain (segmentation → QCA → physics). A
+learned image → FFR model can only add something with labels better than the reduced-order
+model's own output: CFD (P6) or wire FFR (P4).
+
+**Alternatives:**
+- Keep M5: the rule said adopt.
+- More rendered images, another mix, or rendered pre-training then ARCADE fine-tuning: not
+  pre-registered. ARCADE test has now been used for this comparison, so judging another
+  variant would need fresh real test data.
+
+**Downstream:** reports produced with M5 record the model they used and stay valid as
+records: QCA gallery, stenosis grading, cine frames, validation stand-in, app latency. The
+CADICA numbers in the hazard analysis (H-02, H-04) were measured with M5. Regenerating them
+with the adopted model is a separate step.

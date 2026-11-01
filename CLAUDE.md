@@ -66,7 +66,8 @@ vstent/
   pyproject.toml        # deps, extras, ruff, pytest; torch from the CUDA 12.6 index via uv
   .python-version       # Python pinned for uv (3.14)
   uv.lock               # committed lock file
-  configs/              # YAML configs: physics, synth_v1, synth_tree_v1, surrogate, ensemble, seg,
+  configs/              # YAML configs: physics, synth_v1, synth_tree_v1, synth_angio_v1, surrogate,
+                        # ensemble, seg, seg_synth,
                         # stent_catalog, planner, uncertainty, tree_surrogate, validation,
                         # validation_synthetic, two_view_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
@@ -80,7 +81,8 @@ vstent/
                         # tree_report.py (tree checks + throughput), nozzle.py (FDA nozzle check, P4b)
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py,
                         # synth_tree.py + tree_card.py (synthetic vessel trees, P2), cadica.py and
-                        # fda_nozzle.py (public validation data, P4b)
+                        # fda_nozzle.py (public validation data, P4b), synth_angio.py (rendered
+                        # angiograms with vessel labels for segmentation, P8)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
                         # ensemble.py (5-seed ensemble trainer, resumable),
@@ -98,7 +100,7 @@ vstent/
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader),
                         # projection.py (DICOM C-arm geometry, magnification, P5), twoview.py (two-view
                         # 3D centreline + lumen profile, P5), synthetic3d.py + twoview_report.py
-                        # (synthetic two-view cases)
+                        # (synthetic two-view cases), sim_to_real.py (segmenter comparison, P8)
     planning/           # stent.py (virtual stent), optimizer.py (candidates, constraints,
                         # ranking, pairs, Pareto; surrogate or solver), report.py (benchmark),
                         # tree_planner.py + tree_report.py (stents on a tree path, P3)
@@ -191,6 +193,9 @@ uv run vstent stenosis-grading [--edges probability,intensity,model] [--workers 
 uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccentric lumens → reports/lumen_synthetic.md
 uv run vstent cine-frames         # P4d: CADICA runs, analysis frame vs clinicians' frames → reports/cine_frames.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
+uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
+uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms
+uv run vstent sim-to-real-report --base runs/<M5> --new runs/<new>   # → reports/sim_to_real.md
 uv run vstent regulatory [--check]  # P8: docs/regulatory/ from its YAML sources + uv.lock; fails on
                                   # broken references (edit the YAML, never the generated .md)
 ```

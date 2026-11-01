@@ -69,6 +69,13 @@ P8 adds regulatory groundwork drafts for review by a qualified person
 Requirements, hazards and the SOUP list are generated (`vstent regulatory`) and checked
 against the code by the test suite.
 
+P8 also renders synthetic angiograms from 3D vessel trees, with exact vessel labels, to train
+the segmenter (`vstent synth-angio`). Adding 1,000 of them to ARCADE's 1,000 training images
+made no measurable difference on real angiograms (ARCADE test Dice 0.7947 vs 0.7925, paired
+difference +0.002, 95% interval −0.005 to +0.010). On rendered angiograms it raised the Dice
+from 0.60 to 0.91. The model met the adoption rule set before training and is now the default
+segmenter ([reports/sim_to_real.md](reports/sim_to_real.md)).
+
 **What the numbers mean:**
 - The surrogate's accuracy is its agreement with the reduced-order physics model on synthetic
   vessels, not agreement with invasive FFR.
@@ -156,6 +163,9 @@ Trainings can be paused and resumed exactly:
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |
 | `vstent analyse <view1> --view2 <view2> --start R C --end R C --start2 R C --end2 R C [--plan]` | two views (DICOM with geometry): 3D centreline, foreshortening-free length, FFR, figure with the 3D path projected back | P5 |
 | `vstent two-view-synthetic [--workers N]` | two-view reconstruction on synthetic C-arm pairs vs single view → `reports/two_view_synthetic.md` | P5 |
+| `vstent synth-angio [--config configs/synth_angio_v1.yaml]` | render synthetic angiograms with vessel labels for segmentation training → `data/synth_angio/v1/` + `reports/synth_angio_card.md` | P8 |
+| `vstent train-seg --config configs/seg_synth.yaml` | train the segmenter with rendered angiograms added to ARCADE (`--resume <run-name>`) | P8 |
+| `vstent sim-to-real-report --base runs/<M5> --new runs/<new>` | both segmenters on ARCADE val / test and rendered test, paired differences, the adoption rule → `reports/sim_to_real.md` | P8 |
 | `vstent regulatory [--check]` | regulatory drafts: requirements, hazards, traceability, SOUP list and SBOM → `docs/regulatory/`; fails on any broken reference (`--check`: write nothing, fail if out of date) | P8 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |

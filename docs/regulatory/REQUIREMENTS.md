@@ -88,7 +88,7 @@ The vessel segmentation runs in ONNX Runtime with the same pre-processing functi
 
 - **Code:** `src/vstent/inference/onnx_runtime.py::SegmentationRunner`, `src/vstent/imaging/segment.py::preprocess_image`
 - **Verified by** tests: [`test_export_seg_parity_and_runner`](../../tests/test_pipeline.py), [`test_runner_rejects_non_segmentation_model`](../../tests/test_pipeline.py), [`test_preprocess_image_any_size_and_dtype`](../../tests/test_segmentation.py)
-- **Verified by** reports: [seg_onnx.md](../../reports/seg_onnx.md), [seg_eval.md](../../reports/seg_eval.md)
+- **Verified by** reports: [seg_onnx.md](../../reports/seg_onnx.md), [seg_eval.md](../../reports/seg_eval.md), [seg_onnx.md](../../reports/seg_synth/seg_onnx.md), [seg_eval.md](../../reports/seg_synth/seg_eval.md), [sim_to_real.md](../../reports/sim_to_real.md)
 - **Risk control for:** H-18
 - **Status:** verified
 

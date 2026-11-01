@@ -103,6 +103,11 @@ generated reports in `reports/`.
     reduced-order labels for pre-training and the CFD labels for fine-tuning (multi-fidelity).
   - Keep the same feature pipeline and ONNX deployment path that this MVP validates.
 - **Status:** an idea only; record its date, and do not describe it publicly before advice.
+- **Update 2026-11-01 (P8):** the segmentation part is implemented (commits 7c7b74f, dd76215,
+  7bd8ede–cae089c; `reports/sim_to_real.md`). On real angiograms it made no measurable
+  difference; it was adopted under a pre-registered non-inferiority rule (D53). **No novelty
+  is claimed for it:** rendering vessel trees to train segmentation is established practice.
+  Angiogram → FFR is deferred until there are CFD or wire-FFR labels (D53).
 - **Prior art to check:** synthetic angiogram rendering, domain randomisation and sim-to-real
   in medical imaging; multi-fidelity surrogate modelling for CFD.
 

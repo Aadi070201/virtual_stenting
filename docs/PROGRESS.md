@@ -1034,3 +1034,44 @@ qualified person, not regulatory advice.
 **Open issues**
 - Real two-view DICOM is still needed to confirm the geometry (HUMAN_ACTIONS).
 - Two-view cases are single path only: tree mode stays single-view.
+
+## 2026-11-01 — P8: Sim-to-real angiograms for segmentation (done; angiogram → FFR deferred)
+
+**What was done**
+- Plan and adoption rule pre-registered before any rendered data or training (commit
+  9537e4e).
+- `vstent synth-angio` (`data/synth_angio.py`) renders angiograms from the P5 3D trees:
+  - one or two trees from one ostium, random clinical views, the ARCADE-fitted imaging chain
+    (D39);
+  - unlabelled distractors: a catheter, shadows, rib-like bands, 12–30 small branches;
+  - labels: every vessel with a reference diameter ≥ 1.5 mm;
+  - 2,400 images (train 2,000, val 200, test 200). Appearance was tuned by eye against
+    ARCADE val frames only. Card: `reports/synth_angio_card.md`.
+- Training (`configs/seg_synth.yaml`): the M5 configuration with 1,000 rendered images added
+  to ARCADE's 1,000. RTX 3060 Laptop GPU, 57 epochs in 79 min (early stop; best ARCADE val at
+  epoch 42).
+- `vstent sim-to-real-report` (`imaging/sim_to_real.py`) evaluates both models on ARCADE val /
+  test and the rendered test split, with paired per-image Dice differences, 95% bootstrap
+  intervals and the adoption rule.
+- The adopted model is exported to `models/seg/seg_unet_r34_synth-20261101-182811` (parity
+  1.7e-05). It is the newest model, so the app and the CLI use it (D53).
+
+**Results** (`reports/sim_to_real.md`, `reports/seg_synth/`)
+- ARCADE test (n 300): mean Dice 0.7925 → 0.7947, difference +0.0022 (95% interval −0.0052
+  to +0.0095). **Adoption rule met.**
+- ARCADE val (n 200; it chose both models' epochs): 0.8325 → 0.8278, −0.0047 (−0.0105 to
+  +0.0012).
+- Rendered test (n 200): 0.600 → 0.907; 10th percentile 0.303 → 0.828.
+- Reading: no measurable change on real angiograms, and the gap on rendered angiograms is
+  closed. This is not evidence of a real-world gain.
+- ONNX CPU latency: median 134 ms per image (M5's export: 101 ms). The architecture is the
+  same, so the difference is the machine's load at the time.
+
+**Open issues**
+- Reports produced with M5 are not yet regenerated with the adopted model: QCA gallery,
+  stenosis grading, cine frames, validation stand-in, app latency. Stenosis grading would use
+  the CADICA test half a fourth time, for reporting only.
+- Angiogram → FFR models on rendered images: deferred (D53).
+- ARCADE's partial labels cap what its Dice can show. Real angiograms with every major vessel
+  labelled would measure the difference.
+- Novelty: none claimed. Training segmentation on rendered images is established practice.

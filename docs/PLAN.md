@@ -452,7 +452,9 @@ lies on its epipolar guide, and the checks pass.
 
 ## P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review]
 
-- [ ] Render synthetic angiograms from 3D trees (projection, contrast, noise, overlap) to train and test segmentation and angiogram → FFR models. (Lesion insertion into real angiograms was tried in P4d and dropped, D46.)
+- [x] Render synthetic angiograms from 3D trees (projection, contrast, noise, overlap) to train and test segmentation (sim-to-real plan below; D53). (Lesion insertion into real angiograms was tried in P4d and dropped, D46.)
+- [ ] Angiogram → FFR models trained on rendered angiograms: deferred until there are labels
+  better than the reduced-order model's own output (CFD, P6, or wire FFR, P4); D53.
 - [x] Regulatory groundwork drafts (not regulatory advice; `docs/regulatory/`, D48):
   - intended-use statement;
   - IEC 62304 software safety class rationale;
@@ -468,18 +470,21 @@ lies on its epipolar guide, and the checks pass.
 - the regulatory drafts exist and are marked for review by a qualified person.
 
 **Sim-to-real plan (pre-registered 2026-11-01, before any rendered data or training):**
-- [ ] `vstent synth-angio`: rendered angiograms from the P5 3D trees (one or two trees from one
+- [x] `vstent synth-angio`: rendered angiograms from the P5 3D trees (one or two trees from one
   ostium, random clinical views, the ARCADE-fitted imaging chain of D39). Distractors are
   drawn but not labelled: a contrast-filled catheter, smooth anatomy-like shadows, rib-like
   bands, and small branches. Labels follow ARCADE's annotation of the major (SYNTAX)
   segments: the lumen of every vessel whose reference diameter is ≥ 1.5 mm. Splits: train
-  2,000, val 200, test 200; dataset card.
-- [ ] Training `configs/seg_synth.yaml`: the M5 configuration (same seed, schedule, early
+  2,000, val 200, test 200; dataset card. Done: `reports/synth_angio_card.md`.
+- [x] Training `configs/seg_synth.yaml`: the M5 configuration (same seed, schedule, early
   stopping) with 1,000 rendered images added to ARCADE's 1,000 training images. The epoch is
-  chosen on ARCADE val, as in M5.
-- [ ] Evaluation: the new run on ARCADE val and test (`reports/seg_synth/`); both models on
+  chosen on ARCADE val, as in M5. Done: 57 epochs, best ARCADE val Dice 0.8278 at epoch 42.
+- [x] Evaluation: the new run on ARCADE val and test (`reports/seg_synth/`); both models on
   the rendered test split; `reports/sim_to_real.md` with the paired per-image Dice
-  difference on ARCADE test and its 95% bootstrap interval.
-- [ ] **Adoption rule:** the new model replaces the product's segmenter only if its mean
+  difference on ARCADE test and its 95% bootstrap interval. Done: ARCADE test +0.0022
+  (−0.0052 to +0.0095).
+- [x] **Adoption rule:** the new model replaces the product's segmenter only if its mean
   ARCADE test Dice is higher than the M5 model's and the lower bound of the paired
   difference's 95% interval is above −0.01. Otherwise M5 stays and the result is reported.
+  Outcome: met (0.7947 vs 0.7925; lower bound −0.0052), so the new model is exported and is
+  the product's segmenter (D53).

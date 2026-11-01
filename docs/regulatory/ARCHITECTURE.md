@@ -50,8 +50,8 @@ calibration, D46).
 | Tools | Modules | Produce |
 |---|---|---|
 | Training and export | `surrogate/` (all but the two feature modules), `imaging/seg_train.py`, `seg_eval.py`, `seg_export.py`, `checkpoints.py` | The released model files and their evaluation reports |
-| Data | `data/` (all but `synth.py`, `synth_tree.py` at run time), `imaging/synthetic.py`, `imaging/synthetic3d.py` | Synthetic datasets, public-dataset downloads |
-| Evidence | `validation/`, `physics/report.py`, `physics/tree_report.py`, `physics/nozzle.py`, `imaging/qca_validation.py`, `imaging/lumen_report.py`, `imaging/twoview_report.py`, `inference/benchmark.py`, `inference/gallery.py`, `planning/report.py`, `uncertainty/report.py`, `app/latency.py`, `reporting/` | Reports in `reports/` |
+| Data | `data/` (all but `synth.py`, `synth_tree.py` at run time; includes the rendered angiograms of `synth_angio.py`), `imaging/synthetic.py`, `imaging/synthetic3d.py` | Synthetic datasets, public-dataset downloads |
+| Evidence | `validation/`, `physics/report.py`, `physics/tree_report.py`, `physics/nozzle.py`, `imaging/qca_validation.py`, `imaging/lumen_report.py`, `imaging/twoview_report.py`, `imaging/sim_to_real.py`, `inference/benchmark.py`, `inference/gallery.py`, `planning/report.py`, `uncertainty/report.py`, `app/latency.py`, `reporting/` | Reports in `reports/` |
 | Documentation | `regulatory/` | This folder's generated documents |
 
 They run the same code as the analysis path where they measure it (one source of truth for
