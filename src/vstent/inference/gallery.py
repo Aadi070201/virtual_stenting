@@ -292,14 +292,15 @@ def _tree_markdown(report: dict[str, Any], split: str) -> str:
         "0.30 mm/px assumed. There is no ground truth: this checks that the side-branch effect "
         "behaves plausibly. It is not a validation.",
         "",
-        "**What limits it.** The segmentation model was trained on ARCADE's SYNTAX-segment "
-        "masks, which leave smaller side branches unannotated. It therefore rarely segments "
-        "them, so most trees have few side branches and their flow stays in the main path. "
-        "Lowering the probability threshold does not help: on the first 10 images the skeleton "
-        "had the same junctions at 0.5, 0.3 and 0.1. The automatic start point (the wider "
-        "end of the longest path) is not always the ostium. When it is not, the vessel leading "
-        'to the true inlet becomes a "side branch" and the flow direction is wrong (e.g. '
-        "val_107). In the app and `vstent analyse` the user sets the start point.",
+        "**What limits it.** The segmentation labels mark the major vessels only: ARCADE's "
+        "SYNTAX segments and, in the rendered angiograms added in P8, vessels of at least "
+        "1.5 mm. Smaller side branches are unlabelled, so the segmenter rarely finds them and "
+        "their flow stays in the main path. With the ARCADE-only M5 model, lowering the "
+        "probability threshold did not help: on the first 10 images the skeleton had the same "
+        "junctions at 0.5, 0.3 and 0.1. The automatic start point (the wider end of the "
+        "longest path) is not always the ostium. When it is not, the vessel leading to the "
+        'true inlet becomes a "side branch" and the flow direction is wrong (seen on val_107 '
+        "with the M5 model). In the app and `vstent analyse` the user sets the start point.",
         "",
         f"- Analysed: {s['n_analysed']} of {s['n_images']}; with at least one side branch: "
         f"{s['n_with_side_branches']} ({s['n_side_branches']} side branches; {s['n_dropped']} "
