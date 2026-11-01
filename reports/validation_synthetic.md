@@ -10,9 +10,9 @@ What it measures: the pipeline's image → geometry → FFR error under its own 
 
 ## Run
 
-- Predictions locked 2026-11-01T16:58:21+00:00: `predictions_masks.csv`, SHA-256 `92bef98311144fe8…` (verified unchanged before scoring).
-- Software: vstent 0.1.0, commit `cb6f8fbfa77c25644ac8866af7eebd0da93430c7` (dirty: False). Manifest SHA-256 `f60e58f85e6a9e15…`.
-- Models: segmentation: `models/seg/seg_unet_r34-20261028-141743` (SHA-256 d4fe13dcb979…); surrogate: `models/surrogate/unet1d_ens5-20261030-113237` (SHA-256 780064ab4ece…). Vessel masks from the manifest used: True.
+- Predictions locked 2026-11-01T20:12:25+00:00: `predictions_masks.csv`, SHA-256 `15af40afa21839db…` (verified unchanged before scoring).
+- Software: vstent 0.1.0, commit `0ebf28825b733d9a6f6ef7d6558a00b9cdfe7261` (dirty: False). Manifest SHA-256 `f60e58f85e6a9e15…`.
+- Models: segmentation: `models/seg/seg_unet_r34_synth-20261101-182811` (SHA-256 4b0641b5786a…); surrogate: `models/surrogate/unet1d_ens5-20261030-113237` (SHA-256 780064ab4ece…). Vessel masks from the manifest used: True.
 
 ## Flow of vessels
 
@@ -122,17 +122,16 @@ Measurement error only: the inlet reference diameter sets the flow (Q = v_hyp ·
 
 ## With the automatic segmenter
 
-The same cases, with the vessel segmented by the ARCADE-trained model instead of taken from the true mask. The rendered images match ARCADE's vessel contrast and noise (D39), but not its anatomy: one vessel tree on a smooth background, without the catheter, the other coronary vessels, ribs or the diaphragm. The segmenter misses many of these vessels, so the numbers below show a domain gap between rendered and clinical images (to be closed by P8's rendered angiograms), not the segmenter's accuracy on clinical angiograms (`reports/seg_eval.md`).
+The same cases, with the vessel segmented by the product's segmenter instead of taken from the true mask. The rendered images match ARCADE's vessel contrast and noise (D39), but not its anatomy: one vessel tree on a smooth background, without the catheter, the other coronary vessels, ribs or the diaphragm. This segmenter was trained on ARCADE plus rendered angiograms from the same imaging chain (P8, D53), so these images are close to its training data. The numbers below show the index test on rendered images, not the segmenter's accuracy on clinical angiograms (`reports/sim_to_real.md`).
 
 | Index test | Analysable / eligible | AUC | Accuracy | Accuracy, ITD | MAE |
 |---|---:|---:|---:|---:|---:|
-| single path, reduced-order solver | 42 / 102 (41%) | 0.923 (0.805–0.972) | 0.833 | 0.343 | 0.106 |
-| single path, surrogate (ensemble mean) | 42 / 102 (41%) | 0.912 (0.788–0.966) | 0.786 | 0.324 | 0.098 |
-| tree with side branches, reduced-order solver | 42 / 102 (41%) | 0.923 (0.805–0.972) | 0.833 | 0.343 | 0.105 |
+| single path, reduced-order solver | 96 / 102 (94%) | 0.916 (0.836–0.959) | 0.865 | 0.814 | 0.099 |
+| single path, surrogate (ensemble mean) | 96 / 102 (94%) | 0.912 (0.825–0.958) | 0.833 | 0.784 | 0.098 |
+| tree with side branches, reduced-order solver | 96 / 102 (94%) | 0.938 (0.865–0.973) | 0.865 | 0.814 | 0.083 |
 
 Why single-path analysis failed:
 
-- 44 × ValueError: point off the segmented vessel
-- 11 × ValueError: no vessel found
-- 5 × ValueError: no path between the points
+- 4 × ValueError: point off the segmented vessel
+- 2 × ValueError: no path between the points
 
