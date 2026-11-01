@@ -5,7 +5,7 @@
     "n_with_side_branches": 14,
     "n_side_branches": 24,
     "n_dropped": 13,
-    "median_change_with_side": 0.13006901336134835,
+    "median_change_with_side": 0.13382810952751123,
     "n_extreme_single": 5,
     "n_extreme_tree": 4
   },
@@ -17,8 +17,8 @@
       "n_side": 0,
       "n_dropped": 0,
       "side_mm": [],
-      "ffr_single": 0.1710862166209024,
-      "ffr_tree": 0.17108621662090245,
+      "ffr_single": 0.1897516499595463,
+      "ffr_tree": 0.18975164995954633,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": false,
@@ -51,11 +51,11 @@
       "side_mm": [
         57.08689840982711
       ],
-      "ffr_single": 0.5885609145262551,
-      "ffr_tree": 0.6715165947345799,
-      "main_outlet_share": 0.599578694317818,
+      "ffr_single": 0.6172810607111074,
+      "ffr_tree": 0.6945800496306891,
+      "main_outlet_share": 0.5980322595067648,
       "side_outlet_ffr": [
-        0.5760420028070616
+        0.6124248544406404
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -63,12 +63,12 @@
     {
       "image": "val_101",
       "path_mm": 125.34348006616175,
-      "max_ds_pct": 59.492978683359034,
+      "max_ds_pct": 59.49297868335902,
       "n_side": 0,
       "n_dropped": 1,
       "side_mm": [],
-      "ffr_single": 0.3753597896179779,
-      "ffr_tree": 0.37535978961797795,
+      "ffr_single": 0.42276449701762775,
+      "ffr_tree": 0.4227644970176279,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": false,
@@ -77,17 +77,17 @@
     {
       "image": "val_102",
       "path_mm": 243.20804887312002,
-      "max_ds_pct": 55.847248395701264,
+      "max_ds_pct": 55.84724839570126,
       "n_side": 1,
       "n_dropped": 0,
       "side_mm": [
         55.79438765754558
       ],
-      "ffr_single": 0.565039829670293,
-      "ffr_tree": 0.5652770125240586,
-      "main_outlet_share": 0.9972729154301718,
+      "ffr_single": 0.6117949824001389,
+      "ffr_tree": 0.6120251794000999,
+      "main_outlet_share": 0.9974016293428983,
       "side_outlet_ffr": [
-        0.743685582644427
+        0.7727284309869701
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -99,8 +99,8 @@
       "n_side": 0,
       "n_dropped": 0,
       "side_mm": [],
-      "ffr_single": 0.2594655522344784,
-      "ffr_tree": 0.25946555223447854,
+      "ffr_single": 0.293523758478327,
+      "ffr_tree": 0.29352375847832696,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": true,
@@ -109,7 +109,7 @@
     {
       "image": "val_104",
       "path_mm": 265.4975940191684,
-      "max_ds_pct": 52.46214126860846,
+      "max_ds_pct": 52.462141268608455,
       "n_side": 3,
       "n_dropped": 1,
       "side_mm": [
@@ -117,13 +117,13 @@
         62.71869956949523,
         31.017790721670366
       ],
-      "ffr_single": 0.7597272166988179,
-      "ffr_tree": 0.9629097775069296,
-      "main_outlet_share": 0.01622850315451128,
+      "ffr_single": 0.7817395525511946,
+      "ffr_tree": 0.9708199068492517,
+      "main_outlet_share": 0.016180283411369505,
       "side_outlet_ffr": [
-        0.9639478722906772,
-        0.8849235534138339,
-        0.9632318797670086
+        0.971607709205507,
+        0.9060967842277917,
+        0.9709630613673461
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -131,12 +131,12 @@
     {
       "image": "val_105",
       "path_mm": 177.11672462673403,
-      "max_ds_pct": 58.14908620766327,
+      "max_ds_pct": 58.14908620766328,
       "n_side": 0,
       "n_dropped": 0,
       "side_mm": [],
-      "ffr_single": 0.6852748626562509,
-      "ffr_tree": 0.6852748626562509,
+      "ffr_single": 0.7164031063275412,
+      "ffr_tree": 0.7164031063275412,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": false,
@@ -189,11 +189,11 @@
       "side_mm": [
         60.013619703755545
       ],
-      "ffr_single": 0.26276097800861387,
-      "ffr_tree": 0.4314383951367131,
-      "main_outlet_share": 0.3285659100308401,
+      "ffr_single": 0.27467710903621634,
+      "ffr_tree": 0.4468813048013837,
+      "main_outlet_share": 0.3320314062929251,
       "side_outlet_ffr": [
-        0.8402297273087745
+        0.856003908805619
       ],
       "extreme_single": true,
       "extreme_tree": false
@@ -208,12 +208,12 @@
         74.6439913769582,
         5.700911509664894
       ],
-      "ffr_single": 0.6610725980669624,
-      "ffr_tree": 0.9340971428000875,
-      "main_outlet_share": 0.17122085092979,
+      "ffr_single": 0.6888027680304307,
+      "ffr_tree": 0.9421430080946477,
+      "main_outlet_share": 0.17142696882299996,
       "side_outlet_ffr": [
-        0.8791083206191556,
-        0.9905713160627779
+        0.8931475399709222,
+        0.9914971708213081
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -228,12 +228,12 @@
         45.769911153568195,
         30.235448087795604
       ],
-      "ffr_single": 0.5104234139671804,
-      "ffr_tree": 0.8187316745657499,
-      "main_outlet_share": 0.3340139932192215,
+      "ffr_single": 0.5107137985462975,
+      "ffr_tree": 0.8188806047219082,
+      "main_outlet_share": 0.3340083275623948,
       "side_outlet_ffr": [
-        0.6643439849914384,
-        0.8254744201611022
+        0.664574486838397,
+        0.8256338157317141
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -241,12 +241,12 @@
     {
       "image": "val_110",
       "path_mm": 68.3543977838015,
-      "max_ds_pct": 56.327323794996964,
+      "max_ds_pct": 56.32732379499695,
       "n_side": 0,
       "n_dropped": 2,
       "side_mm": [],
-      "ffr_single": 0.7145072262354909,
-      "ffr_tree": 0.7145072262354909,
+      "ffr_single": 0.7348449275781015,
+      "ffr_tree": 0.7348449275781014,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": false,
@@ -262,12 +262,12 @@
         5.59171279203468,
         84.77896643925172
       ],
-      "ffr_single": 0.18391666936007345,
-      "ffr_tree": 0.2753772789546709,
-      "main_outlet_share": 0.2795541307064716,
+      "ffr_single": 0.1958140352103115,
+      "ffr_tree": 0.29126605850016657,
+      "main_outlet_share": 0.2872029464563951,
       "side_outlet_ffr": [
-        0.43597833894715843,
-        0.548437231220257
+        0.4449762919854767,
+        0.5736826711687668
       ],
       "extreme_single": true,
       "extreme_tree": true
@@ -281,11 +281,11 @@
       "side_mm": [
         56.94536060931522
       ],
-      "ffr_single": 0.4936154769556287,
-      "ffr_tree": 0.5524693937727384,
-      "main_outlet_share": 0.646468686028651,
+      "ffr_single": 0.5212875360416624,
+      "ffr_tree": 0.5777374698037526,
+      "main_outlet_share": 0.6473278966768002,
       "side_outlet_ffr": [
-        0.6895679111041232
+        0.7072698241989398
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -293,19 +293,19 @@
     {
       "image": "val_113",
       "path_mm": 158.81553197266393,
-      "max_ds_pct": 67.42729216312617,
+      "max_ds_pct": 67.42729216312615,
       "n_side": 2,
       "n_dropped": 0,
       "side_mm": [
         55.63586032053351,
         9.81095528157673
       ],
-      "ffr_single": 0.3626936269233205,
-      "ffr_tree": 0.5411850353907716,
-      "main_outlet_share": 0.2622636043512441,
+      "ffr_single": 0.4012943177248819,
+      "ffr_tree": 0.5745370922977128,
+      "main_outlet_share": 0.2683105796235866,
       "side_outlet_ffr": [
-        0.6124251341278645,
-        0.6883503396075383
+        0.6402606972408804,
+        0.6995688264477916
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -317,8 +317,8 @@
       "n_side": 0,
       "n_dropped": 0,
       "side_mm": [],
-      "ffr_single": 0.05907525289520399,
-      "ffr_tree": 0.059075252895204024,
+      "ffr_single": 0.06029666405770684,
+      "ffr_tree": 0.060296664057706686,
       "main_outlet_share": 1.0,
       "side_outlet_ffr": [],
       "extreme_single": true,
@@ -333,11 +333,11 @@
       "side_mm": [
         26.72637300868841
       ],
-      "ffr_single": 0.32439492399627645,
-      "ffr_tree": 0.36840070594847185,
-      "main_outlet_share": 0.6098016460174573,
+      "ffr_single": 0.35054409845083856,
+      "ffr_tree": 0.38931153893268544,
+      "main_outlet_share": 0.6129408635654129,
       "side_outlet_ffr": [
-        0.5110133999175949
+        0.5186515954956578
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -345,7 +345,7 @@
     {
       "image": "val_116",
       "path_mm": 229.2565257602487,
-      "max_ds_pct": 49.967485572222856,
+      "max_ds_pct": 49.96748557222285,
       "n_side": 4,
       "n_dropped": 0,
       "side_mm": [
@@ -354,14 +354,14 @@
         6.803678030440152,
         34.705501119947954
       ],
-      "ffr_single": 0.5721602204398423,
-      "ffr_tree": 0.8432188858968257,
-      "main_outlet_share": 0.00206168722443165,
+      "ffr_single": 0.6147060209222706,
+      "ffr_tree": 0.8604866878235837,
+      "main_outlet_share": 0.0020580157644735954,
       "side_outlet_ffr": [
-        0.8168628343813427,
-        0.8435038273775084,
-        0.8436692328993449,
-        0.8416645845487257
+        0.8375640451850302,
+        0.8607190925333346,
+        0.8608544349373748,
+        0.8596345793773236
       ],
       "extreme_single": false,
       "extreme_tree": false
@@ -372,10 +372,10 @@
     "severe_ds_pct": 70.0
   },
   "provenance": {
-    "git_commit": "cf0f038bdc64b763ba7c7ac51d56ef1b1fd4df5b",
+    "git_commit": "6e7da69cf224e1fe2806b5e78714c0cfe491f105",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-10-31T20:37:21+00:00"
+    "created_utc": "2026-11-01T16:56:14+00:00"
   },
   "seg_model": "models/seg/seg_unet_r34-20261028-141743"
 }

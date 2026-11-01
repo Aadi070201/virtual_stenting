@@ -9,40 +9,40 @@ The images and auto-selected paths of `reports/qca_gallery.md`. The side branche
 **What limits it.** The segmentation model was trained on ARCADE's SYNTAX-segment masks, which leave smaller side branches unannotated. It therefore rarely segments them, so most trees have few side branches and their flow stays in the main path. Lowering the probability threshold does not help: on the first 10 images the skeleton had the same junctions at 0.5, 0.3 and 0.1. The automatic start point (the wider end of the longest path) is not always the ostium. When it is not, the vessel leading to the true inlet becomes a "side branch" and the flow direction is wrong (e.g. val_107). In the app and `vstent analyse` the user sets the start point.
 
 - Analysed: 20 of 20; with at least one side branch: 14 (24 side branches; 13 further side paths too short, too thin or too deep to model).
-- Median change of main-path distal FFR where side branches were found: +0.130.
+- Median change of main-path distal FFR where side branches were found: +0.134.
 - Implausibly low main-path FFR (< 0.30 without a lesion of ≥ 70% DS): 5 as single paths, 4 as trees.
 
 | Image | Main path (mm) | Max DS (%) | Side branches | FFR single path | FFR tree | Change | Inflow reaching the main outlet | Side outlet FFR |
 |---|---|---|---|---|---|---|---|---|
-| [val_1](figures/qca_tree_examples/val_1.png) | 161 | 77 | 0 | 0.17 | 0.17 | +0.00 | 100% | — |
+| [val_1](figures/qca_tree_examples/val_1.png) | 161 | 77 | 0 | 0.19 | 0.19 | +0.00 | 100% | — |
 | [val_10](figures/qca_tree_examples/val_10.png) | 110 | 32 | 1 | 0.06 ⚠ | 0.06 | +0.00 | 62% | 0.46 |
-| [val_100](figures/qca_tree_examples/val_100.png) | 199 | 59 | 1 | 0.59 | 0.67 | +0.08 | 60% | 0.58 |
-| [val_101](figures/qca_tree_examples/val_101.png) | 125 | 59 | 0 | 0.38 | 0.38 | +0.00 | 100% | — |
-| [val_102](figures/qca_tree_examples/val_102.png) | 243 | 56 | 1 | 0.57 | 0.57 | +0.00 | 100% | 0.74 |
-| [val_103](figures/qca_tree_examples/val_103.png) | 162 | 58 | 0 | 0.26 ⚠ | 0.26 | +0.00 | 100% | — |
-| [val_104](figures/qca_tree_examples/val_104.png) | 265 | 52 | 3 | 0.76 | 0.96 | +0.20 | 2% | 0.96, 0.88, 0.96 |
-| [val_105](figures/qca_tree_examples/val_105.png) | 177 | 58 | 0 | 0.69 | 0.69 | +0.00 | 100% | — |
+| [val_100](figures/qca_tree_examples/val_100.png) | 199 | 59 | 1 | 0.62 | 0.69 | +0.08 | 60% | 0.61 |
+| [val_101](figures/qca_tree_examples/val_101.png) | 125 | 59 | 0 | 0.42 | 0.42 | +0.00 | 100% | — |
+| [val_102](figures/qca_tree_examples/val_102.png) | 243 | 56 | 1 | 0.61 | 0.61 | +0.00 | 100% | 0.77 |
+| [val_103](figures/qca_tree_examples/val_103.png) | 162 | 58 | 0 | 0.29 ⚠ | 0.29 | -0.00 | 100% | — |
+| [val_104](figures/qca_tree_examples/val_104.png) | 265 | 52 | 3 | 0.78 | 0.97 | +0.19 | 2% | 0.97, 0.91, 0.97 |
+| [val_105](figures/qca_tree_examples/val_105.png) | 177 | 58 | 0 | 0.72 | 0.72 | +0.00 | 100% | — |
 | [val_106](figures/qca_tree_examples/val_106.png) | 148 | 78 | 1 | 0.24 | 0.33 | +0.08 | 18% | 0.41 |
 | [val_107](figures/qca_tree_examples/val_107.png) | 138 | 85 | 2 | 0.19 | 0.68 | +0.49 | 5% | 0.74, 0.74 |
-| [val_108](figures/qca_tree_examples/val_108.png) | 198 | 67 | 1 | 0.26 ⚠ | 0.43 | +0.17 | 33% | 0.84 |
-| [val_109](figures/qca_tree_examples/val_109.png) | 179 | 50 | 2 | 0.66 | 0.93 | +0.27 | 17% | 0.88, 0.99 |
+| [val_108](figures/qca_tree_examples/val_108.png) | 198 | 67 | 1 | 0.27 ⚠ | 0.45 | +0.17 | 33% | 0.86 |
+| [val_109](figures/qca_tree_examples/val_109.png) | 179 | 50 | 2 | 0.69 | 0.94 | +0.25 | 17% | 0.89, 0.99 |
 | [val_11](figures/qca_tree_examples/val_11.png) | 152 | 39 | 2 | 0.51 | 0.82 | +0.31 | 33% | 0.66, 0.83 |
-| [val_110](figures/qca_tree_examples/val_110.png) | 68 | 56 | 0 | 0.71 | 0.71 | +0.00 | 100% | — |
-| [val_111](figures/qca_tree_examples/val_111.png) | 242 | 70 | 2 | 0.18 ⚠ | 0.28 | +0.09 | 28% | 0.44, 0.55 |
-| [val_112](figures/qca_tree_examples/val_112.png) | 143 | 58 | 1 | 0.49 | 0.55 | +0.06 | 65% | 0.69 |
-| [val_113](figures/qca_tree_examples/val_113.png) | 159 | 67 | 2 | 0.36 | 0.54 | +0.18 | 26% | 0.61, 0.69 |
-| [val_114](figures/qca_tree_examples/val_114.png) | 151 | 42 | 0 | 0.06 ⚠ | 0.06 | +0.00 | 100% | — |
-| [val_115](figures/qca_tree_examples/val_115.png) | 174 | 67 | 1 | 0.32 | 0.37 | +0.04 | 61% | 0.51 |
-| [val_116](figures/qca_tree_examples/val_116.png) | 229 | 50 | 4 | 0.57 | 0.84 | +0.27 | 0% | 0.82, 0.84, 0.84, 0.84 |
+| [val_110](figures/qca_tree_examples/val_110.png) | 68 | 56 | 0 | 0.73 | 0.73 | -0.00 | 100% | — |
+| [val_111](figures/qca_tree_examples/val_111.png) | 242 | 70 | 2 | 0.20 ⚠ | 0.29 | +0.10 | 29% | 0.44, 0.57 |
+| [val_112](figures/qca_tree_examples/val_112.png) | 143 | 58 | 1 | 0.52 | 0.58 | +0.06 | 65% | 0.71 |
+| [val_113](figures/qca_tree_examples/val_113.png) | 159 | 67 | 2 | 0.40 | 0.57 | +0.17 | 27% | 0.64, 0.70 |
+| [val_114](figures/qca_tree_examples/val_114.png) | 151 | 42 | 0 | 0.06 ⚠ | 0.06 | -0.00 | 100% | — |
+| [val_115](figures/qca_tree_examples/val_115.png) | 174 | 67 | 1 | 0.35 | 0.39 | +0.04 | 61% | 0.52 |
+| [val_116](figures/qca_tree_examples/val_116.png) | 229 | 50 | 4 | 0.61 | 0.86 | +0.25 | 0% | 0.84, 0.86, 0.86, 0.86 |
 
 ## Implausibly low single-path FFR, before and after
 
 - val_10: 0.06 → 0.06 with 1 side branch(es); main path 110 mm, max DS 32%.
-- val_103: 0.26 → 0.26 with 0 side branch(es); main path 162 mm, max DS 58%. No side branch was segmented, so the tree cannot change it: the long path tapering into thin distal vessels still carries the full inflow.
-- val_108: 0.26 → 0.43 with 1 side branch(es); main path 198 mm, max DS 67%.
-- val_111: 0.18 → 0.28 with 2 side branch(es); main path 242 mm, max DS 70%.
+- val_103: 0.29 → 0.29 with 0 side branch(es); main path 162 mm, max DS 58%. No side branch was segmented, so the tree cannot change it: the long path tapering into thin distal vessels still carries the full inflow.
+- val_108: 0.27 → 0.45 with 1 side branch(es); main path 198 mm, max DS 67%.
+- val_111: 0.20 → 0.29 with 2 side branch(es); main path 242 mm, max DS 70%.
 - val_114: 0.06 → 0.06 with 0 side branch(es); main path 151 mm, max DS 42%. No side branch was segmented, so the tree cannot change it: the long path tapering into thin distal vessels still carries the full inflow.
 
 ⚠ = implausibly low as a single path. Figures: dotted lines would show a virtual stent (none here); the dashed orange line is the main path as a single vessel.
 
-Segmentation model `models/seg/seg_unet_r34-20261028-141743`. Commit `cf0f038bdc64b763ba7c7ac51d56ef1b1fd4df5b` (dirty: False), 2026-10-31T20:37:21+00:00.
+Segmentation model `models/seg/seg_unet_r34-20261028-141743`. Commit `6e7da69cf224e1fe2806b5e78714c0cfe491f105` (dirty: False), 2026-11-01T16:56:14+00:00.
