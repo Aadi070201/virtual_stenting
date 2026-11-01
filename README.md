@@ -51,6 +51,12 @@ foreshortening and diameters use their true magnification. On synthetic two-view
 ([reports/two_view_synthetic.md](reports/two_view_synthetic.md)). It has not yet been tested
 on real two-view data.
 
+P5b corrects the lumen's absolute size. Intensity edges read rendered vessels about 14%
+narrow, so the default lumen now keeps the edges' shape (%DS unchanged) and takes the size from
+the imaging-chain fit on healthy stretches: 0.0% median error on held-out renders. On real
+frames its absolute accuracy is unverified; it was checked only for consistency with the
+renders. Two-view lengths are now off by more than 5% in 1 of 200 synthetic cases.
+
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):
 - intended use and preliminary classification (India, EU, US);
@@ -199,7 +205,8 @@ red banner is permanent: **research use only**.
     reconstruct the vessel in 3D, tested on synthetic pairs only and not yet in the app;
   - pixel size assumed unless given or read from the DICOM geometry (corrected to the
     isocentre: exact only at the isocentre's depth in one view);
-  - intensity edges read vessel diameters about 10–15% narrow on rendered vessels;
+  - the absolute lumen size comes from an imaging-chain fit (P5b), verified on rendered
+    vessels only; intensity edges alone read them about 14% narrow;
   - crossing vessels can look like narrowings;
   - automatic paths run through branches.
 - **Stent model:** it only widens the lumen. Two-stent search is heuristic, and overlapping

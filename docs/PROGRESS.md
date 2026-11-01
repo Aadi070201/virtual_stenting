@@ -961,3 +961,50 @@ qualified person, not regulatory advice.
   distortion, overlap detection on the traced path.
 - Novelty: none claimed. Two-view reconstruction with epipolar DP matching is established
   (QAngio XA 3D, CAAS, QFR).
+
+## 2026-11-01 — P5b: Absolute lumen size and two-view reliability (done; the check missed its target)
+
+**What was done** (D50; plan and default rule committed first, 7437238)
+- **Scaled lumen** (`lumen="scaled"`, now the product default). Intensity edges give the
+  shape (%DS unchanged, so the CADICA grading is unaffected), and the imaging chain fitted on
+  up to four healthy windows gives the absolute size. Side branches inherit the factor, both
+  views of a two-view analysis use it, and the case report stores it. A failed fit or a factor
+  outside 1.0–1.4 keeps the edges' size with a warning. It takes about 1 s per vessel; the
+  whole-vessel fit took 6–16 s.
+- **Two views:** knot spacing 4 → 8 mm (chosen on 199 development cases), and a reliability
+  check (length sensitivity to doubled smoothing > 2.5%, or residual > 0.30 px).
+- Regulatory: new requirement SR-43 (absolute lumen size); SR-41 and H-09 updated.
+
+**Results**
+- **Default rule met** (pre-registered), so `AUTO_LUMEN` is now `scaled`:
+  - held-out renders: median size error 0.0%, 97% of views within ±15%; intensity edges alone
+    −13%;
+  - real ARCADE frames (no ground truth, consistency only): factor accepted on 18 of 20,
+    median 1.148, inside the development range 1.120–1.209.
+  - The whole-vessel variant also met the rule (held-out −0.7%; ARCADE 85%, median 1.133)
+    but was too slow.
+- **Two-view report, fresh seeds** (200 static + 50 stress cases):
+  - 3D error 0.20 mm and length error 0.7% (median);
+  - only 1 of 200 cases is off by more than 5%, against 5 of 100 with 4 mm knots;
+  - single-view reference diameter −3.4% (median) with the scaled lumen, −15.8% with edges
+    alone;
+  - FFR error from geometry alone is unchanged in size: single view 0.008, two views 0.000.
+- **Reliability check: targets not met.** Warnings fired on 35 of 200 cases (18%; target
+  ≤ 10%): 21 from the new check, the others from P5's "along the epipolar lines" warning. The
+  one large error (+17%) was not flagged (target ≥ 80% flagged; with one such case, its
+  sensitivity cannot be estimated). Flagged cases do have larger errors (median 1.0% vs
+  0.6%). Not retuned on the held-out data.
+- **Other reports regenerated:**
+  - QCA galleries: MLDs about ×1.1–1.3, FFR about +0.02–0.04;
+  - validation stand-in, automatic-segmentation arm: accuracy 0.76 → 0.83, FFR MAE
+    0.113 → 0.106. The mask arm is unchanged.
+
+**Open issues and next steps**
+- The absolute size on real angiograms is unverified. If real edges were unbiased, the
+  scaled lumen would oversize by about 15% (H-09). A phantom or IVUS / OCT reference
+  diameters are needed.
+- The reliability check: decide whether to keep it (more alarms than targeted, no measured
+  catch) or drop it now that 8 mm knots make large errors rare (0.5%). Evaluating it would need
+  far more large-error cases.
+- Two views in the app, which is still single view (the next product step).
+- Novelty: none claimed. Model-based edge and size estimation in QCA is established.

@@ -228,6 +228,9 @@ The following are recorded only so they are not mistaken for claims:
   programming, triangulation, motion (shift) correction from the vessel itself, and
   ellipse-equivalent diameters are established in 3D QCA and angiography-derived FFR (e.g.
   QAngio XA 3D, CAAS, QFR); the magnification correction is textbook;
+- the scaled lumen (P5b, D50): an imaging-chain fit on healthy windows sets the absolute
+  size of an edge-measured profile; model-based QCA (fitting blurred vessel profiles) and
+  calibration of edge bias are established;
 - chunked, parallel ONNX inference;
 - resumable checkpoints;
 - report provenance;

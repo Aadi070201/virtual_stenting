@@ -127,7 +127,9 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
 - **Two-view DICOM (confirms P5):** two runs of the same vessel from different angles (≥ 30°
   apart), with the positioner angles and distances in the DICOM header. The best option is a
   phantom of known size; otherwise a few de-identified runs from a partner. Only real data can
-  confirm the angle convention and the C-arm distances (D49); the synthetic test cannot.
+  confirm the angle convention and the C-arm distances (D49); the synthetic test cannot. A
+  phantom of known lumen sizes (or IVUS / OCT reference diameters from a partner) would also
+  verify the absolute lumen size (P5b), which today is checked on rendered vessels only.
 - **Cine examples:** a handful of de-identified, licensed cine DICOM runs (ideally with ECG),
   for example from the clinical partner under the same agreement. Without them, P7 is built and
   tested on synthetic sequences only.

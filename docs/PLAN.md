@@ -394,21 +394,21 @@ Method choices are made on fresh development seeds (910000+). They are reported 
 seeds (920000+ for the lumen, 7001+ for the two-view report) and, for the lumen, on real
 ARCADE frames without ground truth.
 
-- [ ] **Scaled lumen:** intensity edges keep the lumen's shape (%DS unchanged by
+- [x] **Scaled lumen:** intensity edges keep the lumen's shape (%DS unchanged by
   construction, so the CADICA grading is unaffected); the imaging-chain fit on the healthy
   part sets the absolute size (one factor per vessel; fallback to edges with a warning when
   the fit fails or the factor is implausible). Used in single view, trees, two views and the
   planner's sizing.
-- [ ] **Default rule (pre-registered).** `AUTO_LUMEN` becomes the scaled lumen only if both
+- [x] **Default rule (pre-registered).** `AUTO_LUMEN` becomes the scaled lumen only if both
   hold, otherwise edges stay the default and the scaled lumen is an option:
   1. on held-out renders, its median healthy-diameter error is within ±5% and 90% of views
      are within ±15%;
   2. on the 20 ARCADE gallery frames, the size factor is accepted on ≥ 80% of paths, and its
      median lies within the central 80% of the factors on development renders (real frames
      behave like the renders).
-- [ ] **Two-view reliability check** that catches poorly conditioned reconstructions,
+- [x] **Two-view reliability check** that catches poorly conditioned reconstructions,
   designed on development seeds.
-- [ ] Reports regenerated: the two-view report on fresh seeds with the check's sensitivity
+- [x] Reports regenerated: the two-view report on fresh seeds with the check's sensitivity
   and false-alarm rate; the lumen report with absolute size; the image-based reports whose
   default changes.
 
