@@ -1,0 +1,42 @@
+{
+  "run": "runs/seg_unet_r34_synth-20261101-182811",
+  "run_git_commit": "dd76215ce00276ecd686a4f2f7e8e5463fab26d7",
+  "run_git_dirty": false,
+  "export": {
+    "git_commit": "de879cc84d39bef6df60ac4f62e67081e380ab82",
+    "git_dirty": false,
+    "vstent_version": "0.1.0",
+    "created_utc": "2026-11-01T19:50:22+00:00"
+  },
+  "onnx_file": "seg.onnx",
+  "onnx_sha256": "4b0641b5786a02a91bb15ffd26d32bb9f1327cb238369276049a0afeab0470b4",
+  "onnx_bytes": 97723399,
+  "opset": 17,
+  "metadata": {
+    "task": "vessel_segmentation",
+    "vstent_version": "0.1.0",
+    "run": "seg_unet_r34_synth-20261101-182811",
+    "image_size": "512",
+    "encoder": "resnet34",
+    "output": "vessel probability in [0, 1] (sigmoid applied)",
+    "disclaimer": "Research use only \u2014 not for clinical decisions."
+  },
+  "parity": {
+    "n": 16,
+    "max_abs_diff": 1.749396324157715e-05,
+    "tolerance": 0.0001,
+    "min_mask_dice_torch_vs_onnx": 0.9999999999869145,
+    "passed": true
+  },
+  "latency": {
+    "median_ms": 134.22839999839198,
+    "p95_ms": 215.32514499122058,
+    "runs": 20,
+    "cpu": "AMD Ryzen 7 6800H with Radeon Graphics",
+    "onnxruntime": "1.31.0"
+  },
+  "versions": {
+    "torch": "2.14.1+cu126",
+    "onnx": "1.23.2"
+  }
+}
