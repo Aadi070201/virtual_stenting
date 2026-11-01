@@ -1,0 +1,130 @@
+{
+  "targets": [
+    {
+      "metric": "Mean val Dice (plan target; val also chose the model)",
+      "value": "0.8278",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true,
+      "stretch_passed": true
+    },
+    {
+      "metric": "Mean test Dice (held out)",
+      "value": "0.7947",
+      "target": "\u2265 0.75 (stretch 0.8)",
+      "passed": true,
+      "stretch_passed": false
+    }
+  ],
+  "targets_met": true,
+  "splits": {
+    "val": {
+      "n": 200,
+      "dice_mean": 0.8278474499464097,
+      "dice_median": 0.8422779383788476,
+      "dice_p10": 0.7238131279691398,
+      "dice_min": 0.6035276073573349,
+      "precision": 0.8514618371542262,
+      "recall": 0.8082154186731177,
+      "pooled_dice": 0.8292751892376051
+    },
+    "test": {
+      "n": 300,
+      "dice_mean": 0.7947061318850269,
+      "dice_median": 0.819873330999809,
+      "dice_p10": 0.671584863010463,
+      "dice_min": 0.27322296024315235,
+      "precision": 0.8476040590415226,
+      "recall": 0.7664614576313775,
+      "pooled_dice": 0.8049931503727109
+    }
+  },
+  "training": {
+    "best_epoch": 42,
+    "best_val_dice": 0.8278440939920767,
+    "epochs_run": 57,
+    "train_seconds": 4734.8933747000265,
+    "resumes": [],
+    "n_parameters": 24430097,
+    "n_train": 2000,
+    "n_val": 200,
+    "image_size": 512,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "amp": true,
+    "torch": "2.14.1+cu126",
+    "smp": "0.5.0"
+  },
+  "config": {
+    "name": "seg_unet_r34_synth",
+    "raw_dir": "data/raw/arcade",
+    "runs_dir": "runs",
+    "seed": 0,
+    "model": {
+      "encoder": "resnet34",
+      "encoder_weights": "imagenet",
+      "image_size": 512
+    },
+    "train": {
+      "epochs": 60,
+      "batch_size": 8,
+      "lr": 0.0003,
+      "weight_decay": 0.0001,
+      "dice_weight": 1.0,
+      "patience": 15,
+      "grad_clip": 1.0,
+      "amp": true,
+      "device": "auto",
+      "workers": 2,
+      "eval_batch_size": 16,
+      "max_train_images": null,
+      "max_val_images": null
+    },
+    "augment": {
+      "rotation_deg": 15.0,
+      "scale": [
+        0.9,
+        1.1
+      ],
+      "brightness": 0.1,
+      "contrast": [
+        0.8,
+        1.2
+      ],
+      "gamma": [
+        0.8,
+        1.25
+      ],
+      "noise_std": [
+        0.0,
+        0.03
+      ],
+      "p_noise": 0.5,
+      "p_clahe": 0.3,
+      "clahe_clip": 2.0
+    },
+    "synthetic": {
+      "dir": "data/synth_angio/v1",
+      "n_train": 1000
+    }
+  },
+  "provenance": {
+    "run": "runs/seg_unet_r34_synth-20261101-182811",
+    "run_meta": {
+      "git_commit": "dd76215ce00276ecd686a4f2f7e8e5463fab26d7",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-11-01T18:28:11+00:00",
+      "python": "3.14.5",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "config_class": "SegConfig"
+    },
+    "eval": {
+      "git_commit": "dd76215ce00276ecd686a4f2f7e8e5463fab26d7",
+      "git_dirty": false,
+      "vstent_version": "0.1.0",
+      "created_utc": "2026-11-01T19:48:18+00:00"
+    },
+    "device": "cuda",
+    "torch": "2.14.1+cu126"
+  }
+}
