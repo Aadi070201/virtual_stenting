@@ -38,6 +38,7 @@ from vstent.imaging.segment import THRESHOLD  # noqa: E402
 from vstent.inference.pipeline import (  # noqa: E402
     AUTO_LUMEN,
     analyse_tree,
+    analyse_two_views,  # noqa: E402
     analyse_vessel,
     range_warnings,
 )
@@ -61,6 +62,7 @@ LUMEN_LABELS = {
 }
 LUMEN_CHOICES = {LUMEN_LABELS[k]: k for k in sorted(LUMEN_LABELS, key=lambda k: k != AUTO_LUMEN)}
 DICOM_CALIBRATION = "DICOM geometry (at the isocentre)"
+TWO_VIEW_SOURCE = "Two-view example (synthetic)"
 
 st.set_page_config(page_title="vstent research prototype", layout="wide")
 st.error(core.BANNER, icon="⚠️")
@@ -100,6 +102,44 @@ def analyse(sha: str, start, end, mm_per_px, pa, pv, lumen, _prob, _image):
         _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px,
         image=_image, lumen=lumen,
     )  # fmt: skip
+
+
+@st.cache_resource(show_spinner="Rendering the synthetic two-view example…")
+def get_two_view_example() -> core.TwoViewExample:
+    return core.two_view_example()
+
+
+@st.cache_resource(max_entries=16, show_spinner="Reconstructing the vessel in 3D (two views)…")
+def analyse_two(key: str, starts, ends, pa, pv, lumen, _probs, _images, _geometries):
+    pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
+    params = get_settings()[0].model_copy(update=pressures)
+    return analyse_two_views(
+        _probs, starts, ends, _geometries, params=params, surrogate=get_models().surrogate,
+        images=_images, lumen=lumen,
+    )  # fmt: skip
+
+
+def _click_points(overlay, shape, key: str, names: tuple[str, str], last: str) -> None:
+    """Show ``overlay``; a click sets the first point, then the second (``names`` in the
+    session state), and starts again after both."""
+    try:
+        from streamlit_image_coordinates import streamlit_image_coordinates
+
+        click = streamlit_image_coordinates(overlay, width=DISPLAY_WIDTH, key=key)
+    except Exception:  # component unavailable (e.g. in tests): static image
+        st.image(overlay, width=DISPLAY_WIDTH)
+        click = None
+    if click and click != st.session_state.get(last):
+        st.session_state[last] = click
+        h, w = shape
+        pt = (int(round(click["y"] * h / click["height"])),
+              int(round(click["x"] * w / click["width"])))  # fmt: skip
+        first, second = names
+        if st.session_state.get(first) is None or st.session_state.get(second) is not None:
+            st.session_state.update({first: pt, second: None})
+        else:
+            st.session_state[second] = pt
+        st.rerun()
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the vessel tree…")
@@ -159,7 +199,9 @@ with st.sidebar:
 
 state: core.CaseState | None = None
 image_input: ImageInput | None = None
-prob = qca = None
+image_input2: ImageInput | None = None  # P5c: second view
+example: core.TwoViewExample | None = None
+prob = prob2 = qca = two = None
 tree_mode = False
 tree_res = tree_post = tree_plans = None
 tree_stents: list[Stent] = []
@@ -188,7 +230,7 @@ if mode == "Synthetic vessel":
 else:
     run = None
     with st.sidebar:
-        sources = ["Upload"] + (["ARCADE example"] if examples else [])
+        sources = ["Upload"] + (["ARCADE example"] if examples else []) + [TWO_VIEW_SOURCE]
         source = st.radio("Image source", sources, key="source")
         if source == "Upload":
             up = st.file_uploader("PNG, JPG or DICOM (single frame or cine run)",
@@ -206,29 +248,66 @@ else:
                     image_input = run.frame(int(t))
                 else:
                     image_input = read_image(data, up.name)
+        elif source == TWO_VIEW_SOURCE:
+            example = get_two_view_example()
+            image_input, image_input2 = example.views
+            st.caption("A synthetic coronary tree rendered in two C-arm views with known "
+                       "geometry (not clinical data). Its rendered vessel masks replace the "
+                       "segmentation.")  # fmt: skip
         else:
             choice = st.selectbox(
                 "ARCADE stenosis/val image (CC0)", [p.name for p in examples], key="example"
             )
             path = next(p for p in examples if p.name == choice)
             image_input = read_image(path.read_bytes(), f"ARCADE stenosis/val {path.name}")
-        st.subheader("Calibration")
-        options = ["Assume 0.30 mm/px", "Enter pixel size"]
-        if image_input is not None and image_input.pixel_spacing_mm:
-            options.insert(0, DICOM_CALIBRATION)  # magnification-corrected (P5)
-        calib = st.radio("Pixel size", options, key="calib")
-        mm_per_px = None
-        if calib == "Enter pixel size":
-            mm_per_px = st.number_input("mm per pixel", 0.05, 1.0, 0.30, 0.01, key="mm_px")
-        elif calib == DICOM_CALIBRATION:
-            mm_per_px = image_input.pixel_spacing_mm
-            st.caption(image_input.note)
-        elif image_input is not None and image_input.detector_spacing_mm:
-            st.caption(image_input.note)
-        tree_mode = st.toggle(
-            "Side branches (tree model)", key="tree_mode",
-            help="Measure the side branches leaving the path and compute FFR on the whole tree.",
+        has_geometry = image_input is not None and image_input.geometry is not None
+        second = source == "Upload" and has_geometry and st.toggle(
+            "Second view (3D)", key="two_view",
+            help="A second DICOM run of the same vessel from another angle (≥ 30° apart): the "
+            "vessel is reconstructed in 3D, so lengths are free of foreshortening and diameters "
+            "use their true magnification.",
         )  # fmt: skip
+        if second:
+            up2 = st.file_uploader("Second view: DICOM with projection geometry", type=["dcm"],
+                                   key="upload2")  # fmt: skip
+            if up2 is not None:
+                data2 = up2.getvalue()
+                if is_multiframe_dicom(data2, up2.name) and models.segmentation is not None:
+                    run2 = read_run_bytes(data2, up2.name)
+                    frame2 = run_opacification(run2.sha256, run2.frames).analysis_frame
+                    image_input2 = run2.frame(frame2)
+                else:
+                    image_input2 = read_image(data2, up2.name)
+                if image_input2.geometry is None:
+                    st.warning(
+                        f"{image_input2.name} has no complete projection geometry; two "
+                        "views need DICOM with the positioner angles and distances."
+                    )
+                    image_input2 = None
+        st.subheader("Calibration")
+        if image_input2 is not None:
+            st.caption("Two views: each diameter is converted at the pixel size of its 3D "
+                       "point, from both views' projection geometry.")  # fmt: skip
+            mm_per_px = None
+        else:
+            options = ["Assume 0.30 mm/px", "Enter pixel size"]
+            if image_input is not None and image_input.pixel_spacing_mm:
+                options.insert(0, DICOM_CALIBRATION)  # magnification-corrected (P5)
+            calib = st.radio("Pixel size", options, key="calib")
+            mm_per_px = None
+            if calib == "Enter pixel size":
+                mm_per_px = st.number_input("mm per pixel", 0.05, 1.0, 0.30, 0.01, key="mm_px")
+            elif calib == DICOM_CALIBRATION:
+                mm_per_px = image_input.pixel_spacing_mm
+                st.caption(image_input.note)
+            elif image_input is not None and image_input.detector_spacing_mm:
+                st.caption(image_input.note)
+        if image_input2 is None:
+            tree_mode = st.toggle(
+                "Side branches (tree model)", key="tree_mode",
+                help="Measure the side branches leaving the path and compute FFR on the whole "
+                "tree.",
+            )  # fmt: skip
         lumen = LUMEN_CHOICES[st.selectbox(
             "Lumen measurement", list(LUMEN_CHOICES), key="lumen",
             help="Intensity edges: where the image brightness changes fastest (they sit inside "
@@ -240,12 +319,20 @@ else:
     if image_input is None:
         st.info("Upload an angiogram (or pick an ARCADE example) to start.")
         st.stop()
-    if models.segmentation is None:
+    if models.segmentation is None and example is None:
         st.error("No exported segmentation model found (run `vstent export-seg`).")
         st.stop()
     if st.session_state.get("image_sha") != image_input.sha256:
         st.session_state.update(image_sha=image_input.sha256, start=None, end=None, last_click=None)
-    prob = segment(image_input.sha256, image_input.image)
+    sha2 = None if image_input2 is None else image_input2.sha256
+    if st.session_state.get("image2_sha") != sha2:
+        st.session_state.update(image2_sha=sha2, start2=None, end2=None, last_click2=None)
+    if example is not None:
+        prob, prob2 = example.probs
+    else:
+        prob = segment(image_input.sha256, image_input.image)
+        if image_input2 is not None:
+            prob2 = segment(image_input2.sha256, image_input2.image)
 
 # --- stent selection (read before drawing so the image overlay can show it) ------------------
 lengths, diameters = catalog.lengths_mm, catalog.diameters_mm
@@ -273,8 +360,52 @@ if mode == "Angiogram image":
             ec = c4.number_input("end col", 0, w - 1, (st.session_state.end or (0, w // 2))[1])
             if st.form_submit_button("Set points"):
                 st.session_state.update(start=(int(sr), int(sc)), end=(int(er), int(ec)))
+        if image_input2 is not None:
+            st.caption(
+                "View 2: click the same two landmarks on the second image. The grey lines show "
+                "where they must lie (the epipolar lines of the view-1 points)."
+            )
+            if example is not None and st.button("Use the example's landmarks", key="marks"):
+                (a1, b1), (a2, b2) = example.landmarks
+                st.session_state.update(start=a1, end=b1, start2=a2, end2=b2)
+            with st.form("manual_points2"):
+                h2, w2 = image_input2.image.shape
+                d1, d2, d3, d4 = st.columns(4)
+                s2 = st.session_state.get("start2") or (h2 // 2, 0)
+                e2 = st.session_state.get("end2") or (h2 // 2, 0)
+                sr2 = d1.number_input("start row 2", 0, h2 - 1, s2[0])
+                sc2 = d2.number_input("start col 2", 0, w2 - 1, s2[1])
+                er2 = d3.number_input("end row 2", 0, h2 - 1, e2[0])
+                ec2 = d4.number_input("end col 2", 0, w2 - 1, e2[1])
+                if st.form_submit_button("Set view-2 points"):
+                    st.session_state.update(start2=(int(sr2), int(sc2)), end2=(int(er2), int(ec2)))
     start, end = st.session_state.get("start"), st.session_state.get("end")
-    if start and end and tree_mode:
+    start2, end2 = st.session_state.get("start2"), st.session_state.get("end2")
+    if image_input2 is not None:
+        if start and end and start2 and end2:
+            names = (image_input.name, image_input2.name)
+            two_key = (f"two:{image_input.sha256}:{image_input2.sha256}:{start}:{end}:{start2}:"
+                       f"{end2}:{pa:.1f}:{pv:.1f}:{lumen}")  # fmt: skip
+            try:
+                two = analyse_two(
+                    two_key, (start, start2), (end, end2), pa, pv, lumen, (prob, prob2),
+                    (image_input.image, image_input2.image),
+                    (image_input.geometry, image_input2.geometry),
+                )  # fmt: skip
+            except ValueError as exc:
+                st.error(f"Could not reconstruct the vessel from the two views: {exc}")
+            if two is not None:
+                pre = baseline(two_key, two.profile, pa, pv, params.v_hyp)
+                state = core.CaseState(
+                    "image", params, pa, pv, two.profile, pre, image=image_input,
+                    points=[start, end], description=" + ".join(names),
+                    warnings=list(two.warnings), two_view=two, image2=image_input2,
+                    points2=[start2, end2],
+                )  # fmt: skip
+                iso_mm = image_input.geometry.iso_pixel_m * 1e3
+                state.uncertainty = input_mc(two_key, two.profile, pa, pv, params.v_hyp, iso_mm,
+                                             False)  # fmt: skip
+    elif start and end and tree_mode:
         try:
             tree_res = analyse_tree_cached(
                 image_input.sha256, start, end, mm_per_px, pa, pv, lumen, prob, image_input.image
@@ -442,35 +573,33 @@ if mode == "Angiogram image":
             overlay = tree_view.tree_overlay(
                 image_input.image, prob, tree_res.qca, tree_outlet, tree_stents, points
             )
+        elif image_input2 is not None:
+            overlay = core.two_view_overlay(image_input.image, prob, 0, two, stents, points)
         else:
             overlay = core.overlay_image(image_input.image, prob, qca, stents, points)
-        try:
-            from streamlit_image_coordinates import streamlit_image_coordinates
-
-            click = streamlit_image_coordinates(
-                overlay, width=DISPLAY_WIDTH, key=f"click_{image_input.sha256[:12]}"
-            )
-        except Exception:  # component unavailable (e.g. in tests): static image
-            st.image(overlay, width=DISPLAY_WIDTH)
-            click = None
-        if click and click != st.session_state.get("last_click"):
-            st.session_state.last_click = click
-            h, w = image_input.image.shape
-            pt = (
-                int(round(click["y"] * h / click["height"])),
-                int(round(click["x"] * w / click["width"])),
-            )
-            if st.session_state.get("start") is None or st.session_state.get("end") is not None:
-                st.session_state.update(start=pt, end=None)
-            else:
-                st.session_state.end = pt
-            st.rerun()
+        _click_points(overlay, image_input.image.shape, f"click_{image_input.sha256[:12]}",
+                      ("start", "end"), "last_click")  # fmt: skip
         st.caption(
             f"{image_input.name}: blue = segmented vessel (p ≥ {THRESHOLD}), yellow = "
             "centreline, green dot = start, orange = end / stent."
         )
+        if image_input2 is not None:
+            g1, g2 = image_input.geometry, image_input2.geometry
+            guides = [core.epipolar_guide(g1, p, g2) for p in points]
+            points2 = [p for p in (start2, end2) if p]
+            overlay2 = core.two_view_overlay(image_input2.image, prob2, 1, two, stents, points2,
+                                             guides)  # fmt: skip
+            _click_points(overlay2, image_input2.image.shape, f"click2_{image_input2.sha256[:12]}",
+                          ("start2", "end2"), "last_click2")  # fmt: skip
+            st.caption(
+                f"{image_input2.name}: the same landmarks; grey = epipolar lines of the view-1 "
+                "points, yellow = the 3D centreline projected back into each view."
+            )
     if tree_mode and tree_res is None:
         st.info("Set a start and an end point to analyse the vessel tree.")
+        st.stop()
+    elif image_input2 is not None and state is None:
+        st.info("Set the start and end points in both views to reconstruct the vessel in 3D.")
         st.stop()
     elif not tree_mode and state is None:
         st.info("Set a start and an end point to analyse the vessel.")
@@ -547,7 +676,10 @@ if tree_res is not None:
 p, pre, post = state.profile, state.pre, state.post
 st.subheader("Results")
 m = st.columns(5)
-m[0].metric("Path length", f"{m_to_mm(p.length):.1f} mm")
+length_label = "3D path length" if state.two_view else "Path length"
+m[0].metric(length_label, f"{m_to_mm(p.length):.1f} mm")
+if state.two_view is not None:
+    st.caption(core.two_view_caption(state.two_view))
 m[1].metric("MLD", f"{m_to_mm(p.mld()[0]):.2f} mm")
 m[2].metric("Max DS", f"{p.percent_stenosis().max():.0f}%")
 m[3].metric(
@@ -618,7 +750,7 @@ st.caption(
     + (
         " Lengths are measured in one view: foreshortening makes them shorter than the vessel "
         "(two views: `vstent analyse --view2`)."
-        if image_input is not None
+        if image_input is not None and image_input2 is None
         else ""
     )
 )

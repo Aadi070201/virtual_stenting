@@ -1008,3 +1008,29 @@ qualified person, not regulatory advice.
   far more large-error cases.
 - Two views in the app, which is still single view (the next product step).
 - Novelty: none claimed. Model-based edge and size estimation in QCA is established.
+
+## 2026-11-01 — P5c: Two views in the app (done) and the smoothing check made information
+
+**What was done**
+- D51 (the founder's choice): the P5b reliability check no longer warns. Its number is
+  printed by `vstent analyse --view2` and stored in the case report.
+- App (D52):
+  - a second DICOM view (a toggle when the first image has projection geometry) and a
+    synthetic two-view example;
+  - view-2 points clicked on the second image, with epipolar guide lines;
+  - both views show the 3D centreline projected back and the stents along it;
+  - results ("3D path length"), stents, planner, intervals and the case report use the 3D
+    profile, and the case report stores the two-view details. Single-view foreshortening
+    notes are not shown for two-view cases.
+- Regulatory: SR-41 now covers the app; D51 and D52 recorded.
+
+**Results**
+- The synthetic example runs end to end in the app (AppTest): two views, 3D length 78.6 mm
+  (single views 65.0 and 74.9 mm), a stent drawn in both views, plans, the case report.
+- The view-2 landmarks lie on their epipolar guides (< 1.5 px).
+- Checks: ruff clean, fast suite passed. App latency not re-measured (the stent controls are
+  unchanged; it needs an idle PC).
+
+**Open issues**
+- Real two-view DICOM is still needed to confirm the geometry (HUMAN_ACTIONS).
+- Two-view cases are single path only: tree mode stays single-view.

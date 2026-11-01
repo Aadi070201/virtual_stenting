@@ -430,3 +430,50 @@ def test_cine_and_transit_captions():
     backwards = ContrastTransit(np.arange(3.0), np.arange(3.0), 0.0, -6.0, (-8.0, -5.0), 30)
     assert not backwards.plausible and tr.plausible
     assert "not measurable" in core.transit_caption(backwards, 100.0, 0.3)
+
+
+def test_app_two_view_example(app_env):
+    """P5c: the synthetic two-view example end to end: both views, the 3D centreline, FFR on
+    the 3D length, a stent drawn in both views, plans and the case report."""
+    at = AppTest.from_file(str(APP_SCRIPT), default_timeout=300).run()
+    at.radio(key="mode").set_value("Angiogram image").run()
+    at.radio(key="source").set_value("Two-view example (synthetic)").run()
+    assert not at.exception and any("both views" in i.value for i in at.info)
+    at.button(key="marks").click().run()
+    assert not at.exception
+    assert any(m.label == "3D path length" for m in at.metric)
+    assert any(c.value.startswith("Two views:") for c in at.caption)
+    assert not any("one view" in c.value for c in at.caption)  # lengths are 3D
+    at.toggle(key="place").set_value(True).run()
+    assert not at.exception
+    at.button(key="suggest").click().run()
+    assert not at.exception and at.dataframe
+
+
+def test_two_view_overlay_and_report_fields():
+    example = core.two_view_example()
+    (a1, b1), (a2, b2) = example.landmarks
+    g1, g2 = (v.geometry for v in example.views)
+    for point, truth in ((a1, a2), (b1, b2)):  # the true view-2 landmark lies on the guide
+        (r0, c0), (r1, c1) = core.epipolar_guide(g1, point, g2)
+        dist = abs((r1 - r0) * (truth[1] - c0) - (c1 - c0) * (truth[0] - r0)) / np.hypot(
+            r1 - r0, c1 - c0
+        )
+        assert dist < 1.5
+    from vstent.inference.pipeline import analyse_two_views
+
+    two = analyse_two_views(example.probs, (a1, a2), (b1, b2), (g1, g2), params=PARAMS,
+                            images=tuple(v.image for v in example.views))  # fmt: skip
+    img = core.two_view_overlay(example.views[1].image, example.probs[1], 1, two,
+                                [Stent(0.01, 0.012, 3e-3)], [a2, b2],
+                                [core.epipolar_guide(g1, a1, g2)])  # fmt: skip
+    assert img.shape == (*example.views[1].image.shape, 3)
+    pa, pv = two.solver.pa, two.solver.pv
+    pre = core.evaluate(two.profile, PARAMS, pa, pv)
+    state = core.CaseState("image", PARAMS, pa, pv, two.profile, pre,
+                           image=example.views[0], points=[a1, b1], two_view=two,
+                           image2=example.views[1], points2=[a2, b2])  # fmt: skip
+    report = core.case_report(state, core.Models(None, None, None, None))
+    assert report["two_view"]["length_3d_mm"] > max(report["two_view"]["single_view_lengths_mm"])
+    assert report["input"]["image2"]["sha256"] == example.views[1].sha256
+    assert "pixels" not in json.dumps(report)

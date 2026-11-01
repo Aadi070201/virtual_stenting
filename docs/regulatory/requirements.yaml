@@ -683,6 +683,8 @@ requirements:
       - src/vstent/imaging/twoview.py::Reconstruction.reliable
       - src/vstent/inference/pipeline.py::analyse_two_views
       - src/vstent/inference/figures.py::plot_two_view_analysis
+      - src/vstent/app/core.py::two_view_overlay
+      - src/vstent/app/core.py::epipolar_guide
       - src/vstent/cli.py::SINGLE_VIEW_LENGTHS
     tests:
       - tests/test_twoview.py::test_reconstruction_recovers_a_projected_curve
@@ -690,13 +692,15 @@ requirements:
       - tests/test_twoview.py::test_smoothing_sensitivity_is_reported_not_warned
       - tests/test_twoview.py::test_analyse_two_views_on_a_synthetic_case
       - tests/test_twoview.py::test_cli_two_views
+      - tests/test_app.py::test_app_two_view_example
+      - tests/test_app.py::test_two_view_overlay_and_report_fields
       - tests/test_pipeline.py::test_cli_analyse_with_plan
     reports:
       - reports/two_view_synthetic.md
     inspection: >-
       Verified on synthetic two-view pairs only (the renderer shares the projection model).
-      Not in the app yet (command line only); the angle convention (D49) is to be confirmed
-      on real two-view DICOM.
+      In the CLI and the app (P5c); the angle convention (D49) is to be confirmed on real
+      two-view DICOM.
 
   - id: SR-42
     title: Usability engineering

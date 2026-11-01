@@ -46,7 +46,9 @@ dataset pairs angiograms with invasive FFR:
 
 P5 adds the projection geometry: DICOM pixel sizes are corrected for magnification, and two
 views of a vessel (`vstent analyse --view2`) give its 3D centreline, so lengths are free of
-foreshortening and diameters use their true magnification. On synthetic two-view pairs the
+foreshortening and diameters use their true magnification. The app shows both views with
+the 3D path projected back, guides the second view's clicks with epipolar lines, and includes
+a synthetic two-view example (P5c). On synthetic two-view pairs the
 3D centreline error is 0.23 mm and the length error 0.6% (median), against 13% for one view
 ([reports/two_view_synthetic.md](reports/two_view_synthetic.md)). It has not yet been tested
 on real two-view data.
@@ -179,7 +181,12 @@ red banner is permanent: **research use only**.
      segmented automatically.
      - Click the start (proximal) and end points on the image, or use *Auto path* or the
        manual row/col form.
-     - Set the pixel size; otherwise 0.30 mm/px is assumed and flagged.
+     - Set the pixel size: DICOM with geometry is corrected to the isocentre automatically;
+       otherwise 0.30 mm/px is assumed and flagged.
+   - **Two views (3D):** with a DICOM that has projection geometry, switch on *Second view
+     (3D)* and upload the second run; or pick *Two-view example (synthetic)*. Click the same
+     two landmarks in view 2; the grey lines show where they must lie. Lengths and FFR then
+     follow the 3D centreline, drawn back into both views.
 2. **Read the results:** the diameter profile (reference, lesions, MLD) and the FFR pullback
    from the solver and the surrogate, with their difference.
 3. **Virtual stent** (sidebar): switch on *Place a stent*, choose a catalogue length and
@@ -201,8 +208,8 @@ red banner is permanent: **research use only**.
 - **Segmentation:** trained on one public dataset (ARCADE), whose masks cover only the annotated
   SYNTAX segments.
 - **QCA:**
-  - one 2D projection by default, so overlap and foreshortening; two views (`--view2`, P5)
-    reconstruct the vessel in 3D, tested on synthetic pairs only and not yet in the app;
+  - one 2D projection by default, so overlap and foreshortening; two views (`--view2` or
+    the app, P5) reconstruct the vessel in 3D, tested on synthetic pairs only;
   - pixel size assumed unless given or read from the DICOM geometry (corrected to the
     isocentre: exact only at the isocentre's depth in one view);
   - the absolute lumen size comes from an imaging-chain fit (P5b), verified on rendered

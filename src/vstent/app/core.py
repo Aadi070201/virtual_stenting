@@ -4,6 +4,7 @@ Everything here is plain Python so it can be unit-tested and timed; ``streamlit_
 wires widgets to these functions. Units: SI internally, mm / mmHg for display.
 """
 
+import hashlib
 import io
 import json
 import os
@@ -21,6 +22,7 @@ from vstent import DISCLAIMER, __version__
 from vstent.config import git_info, load_config
 from vstent.data.synth import SamplingConfig, sample_vessel
 from vstent.imaging.image_io import ImageInput
+from vstent.imaging.projection import ProjectionGeometry
 from vstent.imaging.qca import LUMEN_METHOD_LABELS, QCAResult
 from vstent.imaging.segment import THRESHOLD
 from vstent.inference.models import SEG_MODELS, SURROGATE_MODELS, latest_model_dir
@@ -30,6 +32,7 @@ from vstent.inference.onnx_runtime import (
     SegmentationRunner,
     SurrogateRunner,
 )
+from vstent.inference.pipeline import TwoViewAnalysis
 from vstent.physics.geometry import VesselProfile, cosine_narrowing
 from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 from vstent.planning.optimizer import PlannerConfig, PlanResult, StentCatalog
@@ -486,6 +489,102 @@ def overlay_image(
     return out
 
 
+# --- two views (P5c) --------------------------------------------------------------------------
+
+TWO_VIEW_CONFIG = Path("configs/two_view_synthetic.yaml")
+TWO_VIEW_SEED = 7001  # the first case of reports/two_view_synthetic.md
+GUIDE_DEPTH_M = 0.12  # epipolar guide: the ray from SOD − this to SOD + this
+GUIDE = (240, 239, 236)  # light, visible on the grey angiogram
+PATH = (255, 214, 10)
+STENT = (235, 104, 52)
+START = (27, 175, 122)
+
+
+@dataclass(frozen=True, eq=False)
+class TwoViewExample:
+    """A synthetic two-view case for the app (not clinical data): both views as image inputs
+    with their projection geometry, the rendered vessel masks (used instead of the
+    segmentation, which was trained on clinical angiograms) and the true landmarks."""
+
+    views: tuple[ImageInput, ImageInput]
+    probs: tuple[np.ndarray, np.ndarray]
+    landmarks: tuple[tuple[tuple[int, int], tuple[int, int]], ...]
+
+
+def two_view_example(seed: int = TWO_VIEW_SEED, config: Path = TWO_VIEW_CONFIG) -> TwoViewExample:
+    """Render the synthetic two-view example (``vstent.imaging.synthetic3d``)."""
+    from vstent.imaging.synthetic3d import TwoViewSynthConfig, render_view, sample_case
+
+    cfg = load_config(config, TwoViewSynthConfig)
+    case = sample_case(seed, cfg)
+    views, probs, marks = [], [], []
+    for k in range(2):
+        v = render_view(case, k, cfg)
+        g = v.geometry
+        note = (f"Synthetic example (not clinical data): {g.label()}, SID {g.sid_m * 1e3:.0f} mm, "
+                f"SOD {g.sod_m * 1e3:.0f} mm, pixel size {g.iso_pixel_m * 1e3:.4f} mm at the "
+                "isocentre.")  # fmt: skip
+        sha = hashlib.sha256(v.image.tobytes()).hexdigest()
+        detector_mm = float(np.mean(g.pixel_m)) * 1e3
+        views.append(ImageInput(v.image, f"Synthetic two-view example, view {k + 1}", sha,
+                                g.iso_pixel_m * 1e3, note, detector_mm, g))  # fmt: skip
+        probs.append(v.prob)
+        ends = np.round(g.project(case.curves[0][[0, -1]])).astype(int)
+        marks.append(((int(ends[0, 0]), int(ends[0, 1])), (int(ends[1, 0]), int(ends[1, 1]))))
+    return TwoViewExample(tuple(views), tuple(probs), tuple(marks))
+
+
+def epipolar_guide(g1: ProjectionGeometry, point, g2: ProjectionGeometry) -> np.ndarray:
+    """(2, 2) end points (row, col) in view 2 of the epipolar line of ``point`` (row, col) of
+    view 1: where the same landmark must lie in view 2."""
+    ray = g1.rays([point])[0]
+    depths = np.array([g1.sod_m - GUIDE_DEPTH_M, g1.sod_m + GUIDE_DEPTH_M])
+    return g2.project(g1.source + depths[:, None] * ray)
+
+
+def two_view_overlay(
+    image: np.ndarray,
+    prob: np.ndarray | None,
+    k: int,
+    analysis: TwoViewAnalysis | None = None,
+    stents: list[Stent] | None = None,
+    points: list[tuple[int, int]] | None = None,
+    guides: list[np.ndarray] | None = None,
+) -> np.ndarray:
+    """View ``k`` (0 or 1) of a two-view case: the vessel mask, the 3D centreline projected
+    back into this view (stents along it in orange), epipolar guide lines and the points."""
+    out = overlay_image(image, prob)
+    for seg in guides or []:
+        (r0, c0), (r1, c1) = seg
+        cv2.line(out, (int(c0), int(r0)), (int(c1), int(r1)), GUIDE, 1, cv2.LINE_AA)
+    if analysis is not None:
+        rec = analysis.reconstruction
+        pts = np.round(rec.geometries[k].project(rec.points)[:, ::-1]).astype(np.int32)
+        cv2.polylines(out, [pts], False, PATH, 1, cv2.LINE_AA)
+        s_mm = m_to_mm(rec.s - analysis.lumen.offset_m)  # profile coordinates
+        for st in stents or []:
+            sel = (s_mm >= m_to_mm(st.s_start)) & (s_mm <= m_to_mm(st.s_end))
+            if sel.sum() >= 2:
+                cv2.polylines(out, [pts[sel]], False, STENT, 3, cv2.LINE_AA)
+    for j, (r, c) in enumerate(points or []):
+        cv2.circle(out, (int(c), int(r)), 5, START if j == 0 else STENT, -1)
+    return out
+
+
+def two_view_caption(analysis: TwoViewAnalysis) -> str:
+    """One-line summary of a two-view reconstruction for the app."""
+    rec = analysis.reconstruction
+    single = analysis.single_view_lengths_mm
+    return (
+        f"Two views: {rec.geometries[0].label()} and {rec.geometries[1].label()}, "
+        f"{rec.separation_deg:.0f}° apart. 3D path {m_to_mm(rec.length):.1f} mm (single views "
+        f"{single[0]:.1f} and {single[1]:.1f} mm: foreshortened). Mean ray gap "
+        f"{rec.gap_m * 1e3:.2f} mm, residual {rec.residual_px.max():.2f} px, view 2 shifted "
+        f"{np.hypot(*rec.shift_px):.1f} px (motion between the runs); length change with "
+        f"smoother fitting {100 * rec.smoothing_change:+.1f}%."
+    )
+
+
 # --- report ----------------------------------------------------------------------------------
 
 
@@ -512,6 +611,9 @@ class CaseState:
     post_assessment: Assessment | None = None
     plan_assessments: list[Assessment] = field(default_factory=list)
     edge: float = DEFAULT_EDGE  # stent edge blending (m), the planner's edge_mm
+    two_view: TwoViewAnalysis | None = None  # P5c: the 3D analysis (profile = its lumen)
+    image2: ImageInput | None = None
+    points2: list[tuple[int, int]] | None = None
 
 
 def _stent_dict(st: Stent) -> dict[str, float]:
@@ -591,6 +693,30 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
         report["assumptions"]["calibration_assumed"] = state.qca.calibration_assumed
         report["assumptions"]["lumen_edges"] = LUMEN_METHOD_LABELS[state.qca.lumen_method]
         report["assumptions"]["lumen_size_factor"] = state.qca.size_factor  # P5b
+    if state.two_view is not None:
+        tv = state.two_view
+        rec = tv.reconstruction
+        report["assumptions"]["calibration"] = "projection geometry of both views (P5)"
+        report["assumptions"]["lumen_edges"] = LUMEN_METHOD_LABELS[tv.qca[0].lumen_method]
+        report["two_view"] = {
+            "views": [g.label() for g in rec.geometries],
+            "separation_deg": round(rec.separation_deg, 1),
+            "length_3d_mm": round(m_to_mm(rec.length), 2),
+            "single_view_lengths_mm": [round(x, 2) for x in tv.single_view_lengths_mm],
+            "mean_ray_gap_mm": round(rec.gap_m * 1e3, 3),
+            "residual_px": [round(float(x), 3) for x in rec.residual_px],
+            "view2_shift_px": [round(float(x), 2) for x in rec.shift_px],
+            "smoothing_change": round(rec.smoothing_change, 4),
+            "size_factors": [round(q.size_factor, 3) for q in tv.qca],
+        }
+        if state.image2 is not None:
+            report["input"]["image2"] = {
+                "name": state.image2.name,
+                "sha256": state.image2.sha256,
+                "shape": list(state.image2.image.shape),
+                "note": state.image2.note,
+            }
+            report["input"]["points2_row_col"] = [list(map(int, p)) for p in state.points2 or []]
     if state.plans is not None:
         pr = state.plans
         report["plans"] = {

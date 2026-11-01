@@ -812,3 +812,18 @@ after the 8 mm knots. Frequent alarms without a measured benefit invite alarm fa
 
 **Alternatives:** keep it as a warning; redesign it on a much larger synthetic set.
 
+### D52 — Two views in the app (2026-11-01)
+**Decision:** the app takes a second view in two ways: a toggle with a second uploader, shown
+only when the first image has DICOM projection geometry, or the built-in synthetic two-view
+example (the first case of the two-view report). The example uses its rendered vessel masks
+instead of the segmentation, because the ARCADE-trained segmenter misses many synthetic
+vessels (the domain gap in reports/validation_synthetic.md). The second view's points are
+clicked on its image, with the epipolar lines of the view-1 points drawn as guides. Stents
+are drawn in both views by projecting the 3D centreline back. Tree mode stays single-view.
+
+**Reason:** the analysis matches the command line, and the example makes the feature demonstrable and
+testable without patient data.
+
+**Alternatives:** finding the view-2 points automatically on the epipolar lines (ambiguous
+where the line crosses several vessels; possible later); tree mode in two views (needs 3D
+side branches).

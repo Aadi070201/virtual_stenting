@@ -417,6 +417,20 @@ ARCADE frames without ground truth.
 - on fresh two-view seeds, the check flags ≥ 80% of reconstructions with |length error|
   > 5% while flagging ≤ 10% of all cases; or the real result is reported.
 
+## P5c: Two views in the app (added 2026-11-01)
+
+- [x] The app accepts a second DICOM view (when the first has projection geometry) and offers
+  a synthetic two-view example (rendered masks, true landmarks), so the feature can be shown
+  without patient data.
+- [x] View-2 points are clicked on the second image, guided by the epipolar lines of the view-1
+  points. Both views show the 3D centreline projected back and the stents along it.
+- [x] Results, stent controls, planner, intervals and the case report use the 3D profile; the
+  report stores both views, the 3D and single-view lengths, the ray gap, the residual, the
+  shift and the smoothing sensitivity.
+
+**Done when:** the synthetic example runs end to end in the app (AppTest), the same landmark
+lies on its epipolar guide, and the checks pass.
+
 ## P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute]
 
 - [ ] Coronary trees from ImageCAS and / or ASOCA (registration and licence acceptance by the human).
