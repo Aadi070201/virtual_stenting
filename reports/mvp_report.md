@@ -69,6 +69,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P4e: Real coronary physiology (added 2026-11-02; pre-registered before the data were downloaded) (done)
 - P4f: Repeatability on real angiograms (added 2026-11-02; pre-registered before any measurement) (done)
 - P4g: Multi-frame consensus (added 2026-11-02; pre-registered before any consensus was computed) (done)
+- P4h: Densitometric lumen at lesions (added 2026-11-02; pre-registered before any measurement with it) (done)
 - P5: Projection geometry and two-view 3D reconstruction (done)
 - P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)
 - P5c: Two views in the app (added 2026-11-01) (done)
@@ -92,4 +93,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `cb3f600b79` | False | 2026-11-01T23:03:06+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `3c3206b8fa5b5320a16350592375ed032c101725` (dirty: False), vstent 0.1.0, 2026-11-02T11:56:11+00:00.
+This summary: commit `0c1b589852b60f226df677311f3315e536760f8b` (dirty: False), vstent 0.1.0, 2026-11-02T14:38:03+00:00.
