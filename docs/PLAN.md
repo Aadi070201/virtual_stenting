@@ -1063,6 +1063,24 @@ ground truth and a method that need no ECG (`docs/INVENTION_NOTES.md` §8).
 - M3: M2 fine-tuned on real runs (CADICA development patients, AngioCAD) with the
   reproducibility and two-clock signals.
 
+**M2 in detail** (fixed 2026-11-02, before any data or training):
+- **Data:**
+  - synthetic beating-heart cases (`synthetic_cine`) with 7.5, 10, 15 and 30 fps drawn
+    equally; both runs of every case;
+  - seeds: train 20000–20249, validation 20250–20299, test 20300–20359 (new);
+  - frames through the shared pre-processing at 128 px, saved with the true ED frames (the
+    frame nearest each R wave) and the frame rate.
+- **Model:**
+  - MobileNetV3-Small per frame (ImageNet start, one input channel), 64 features;
+  - with the frame time, three dilated temporal convolutions (kernel 5; dilation 1, 2, 4),
+    then a per-frame logit;
+  - BCE (positive weight 5); AdamW, lr 1e-3, 30 epochs, batch 4 runs, seed 0; resumable;
+  - the epoch with the best validation ±1-frame accuracy is kept.
+- **ED frames:** per-frame probability peaks ≥ 0.5, at least 0.6 × the median gap between
+  peaks apart.
+- **Scored as P7:** true ED beats in the well-opacified frames found within ±1 frame, per
+  frame rate.
+
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
   whose real development reproducibility is no worse than M0's. Both are measured on
