@@ -764,12 +764,22 @@ path, K = 5 consensus, pixel size assumed):
    proximal end through the box (`guided.box_path`; median over the lesion's boxes). The share
    with FFR ≤ 0.80 per grade. Anchor: FAME, visual 50–70% / 70–90% / 90–99% → 35% / 80% /
    96% with FFR ≤ 0.80.
-- [ ] **Adopt** `murray` only if both hold:
+- [x] **Adopt** `murray` only if both hold:
   - the lesion-free share moves closer to 13%;
   - the mean absolute difference from FAME's three shares does not grow by more than
     10 points.
 
   Test patients reported. If adopted, the planner and the app use it.
+
+  **Result: not adopted** (D66; `reports/p4k_physics_dev.md`).
+  - Lesion-free vessels read FFR ≤ 0.80: 52% now, 6% with `murray` (anchor 13%).
+  - FFR ≤ 0.80 by grade (50–70 / 70–90 / 90–98%): 88 / 78 / 81% now; 0 / 14 / 19% with
+    `murray` (FAME 35 / 80 / 96%). The FAME distance grows by 36 points (limit 10).
+
+  **Amendment 1** (2026-11-02, after this result, before any result of A or E): if A or E is
+  adopted, this development check is run again with the adopted lesion reading, same rule.
+  Reason: the lesions' own pressure loss depends on their measured depth, which the edges
+  under-read (D63).
 
 ### D. Display like a clinical QFR tool (no measurement change)
 - The lumen contours along the whole path.

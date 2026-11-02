@@ -1311,3 +1311,34 @@ on it.
 **Alternatives:** asking the user to click the ostium every time was rejected (the guided app
 must work automatically). A catheter segmented as vessel could still win; the user can move the
 start.
+
+### D66 — Side-branch outflow: realistic for lesion-free vessels, but lesions then read too mild; not adopted (2026-11-02)
+**Finding** (`reports/p4k_physics_dev.md`; pre-registered in docs/PLAN.md, P4k-C, commits
+aa14e80 and 9de7e2b; CADICA development patients, product steps, pixel size assumed):
+
+| | No outflow (product) | Murray outflow | Anchor |
+|---|---:|---:|---:|
+| Lesion-free vessels: FFR ≤ 0.80 | 52% | 6% | ≈ 13% (De Bruyne 2001) |
+| Lesion-free vessels: median FFR | 0.73 | 0.95 | 0.89 |
+| Lesions 50–70 / 70–90 / 90–98%: FFR ≤ 0.80 | 88 / 78 / 81% | 0 / 14 / 19% | 35 / 80 / 96% (FAME) |
+
+**What it shows:**
+- **The product's physics:** it calls half of the lesion-free vessels significant. Its high
+  shares for graded lesions come largely from the same diffuse loss along long, thin paths:
+  even 50–70% lesions read ≤ 0.80 in 88%, far above FAME's 35%.
+- **The outflow model:** lesion-free vessels become realistic, but the lesions' own losses
+  are then too small, because their depth is under-read (D63: 90–98% lesions measure about
+  40% by edges).
+- **The bottleneck:** lesion measurement, not the flow model. Neither physics can be right
+  while severe lesions measure mild.
+
+**Decision:**
+- Not adopted, by the pre-registered rule. The product keeps `outflow: none`.
+- The product's virtual FFR has poor specificity on real angiograms (52% of lesion-free
+  vessels ≤ 0.80). This belongs in every limitations section until it is fixed.
+- Amendment 1: the check is run again if a lesion reading (A or E) is adopted.
+
+**Alternatives:**
+- Adopting `murray` for its lesion-free result alone: rejected by the rule.
+- A partial outflow exponent tuned to the anchors: rejected (tuning physics constants to
+  data).
