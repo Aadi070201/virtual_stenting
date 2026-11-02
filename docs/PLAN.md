@@ -836,6 +836,11 @@ tuned to the anchors.
   best C3 combination.
 - Test patients once, for an adopted arm.
 
+**Result** (`reports/artery_velocity.md`; DEFINE-FLOW, 447 lesions):
+- pooled median 0.333 m/s; left coronary (LAD + LCx) 0.335 m/s (+0.6%); RCA 0.303 m/s (−9.1%).
+- The 10% rule did not fire: one velocity (0.35 m/s) stays, and the arm is not run.
+- RCA is close to the limit. Recorded, not acted on.
+
 ### D. Display like a clinical QFR tool (no measurement change)
 - The lumen contours along the whole path.
 - Lesions as shaded segments labelled A, B…
