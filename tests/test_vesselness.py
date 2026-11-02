@@ -38,3 +38,14 @@ def test_coverage_rule():
     assert c["threshold"] == 0.1 and c["eligible"] == [0.1, 0.15, 0.2] and c["adopted"]
     arc["0.1"]["recall"] = arc["0.15"]["recall"] = arc["0.2"]["recall"] = 0.7
     assert vc.choose(boxes, arc, vs.THRESHOLDS)["threshold"] is None
+
+
+def test_box_coverage_in_process():
+    img, prob = _scene()
+
+    class Seg:
+        def predict_model(self, image):
+            return prob
+
+    out = vc.box_coverage([(img, [(150, 70, 20, 20)])], Seg(), (0.1,), 1)
+    assert out == {"n_boxes": 1, "model": 0.0, "0.1": 1.0}

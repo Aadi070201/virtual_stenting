@@ -124,7 +124,8 @@ def kemerovo_boxes(raw_dir="data/raw/kemerovo") -> list[tuple[Path, list]]:
 
 
 def box_coverage(frames, segmenter, thresholds, workers, progress=None) -> dict[str, Any]:
-    rows = [r for out in _parallel(frames, _box_task, segmenter, workers, progress) or []
+    items = [(path, boxes, tuple(thresholds)) for path, boxes in frames]
+    rows = [r for out in _parallel(items, _box_task, segmenter, workers, progress) or []
             for r in out]  # fmt: skip
     keys = ["model", *(f"{t:g}" for t in thresholds)]
     return {"n_boxes": len(rows), **{k: float(np.mean([r[k] for r in rows])) if rows else None
@@ -136,7 +137,8 @@ def arcade_coverage(split: str, segmenter, thresholds, workers, progress=None,
     from vstent.data.arcade import load_split
 
     data = load_split(raw_dir, "syntax", split)
-    items = [(img, m.astype(bool)) for img, m in zip(data.images, data.masks, strict=True)]
+    items = [(img, m.astype(bool), tuple(thresholds))
+             for img, m in zip(data.images, data.masks, strict=True)]  # fmt: skip
     outs = _parallel(items, _arcade_task, segmenter, workers, progress)
     out = {}
     for k in outs[0]:
