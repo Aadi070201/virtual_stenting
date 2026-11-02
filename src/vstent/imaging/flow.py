@@ -48,8 +48,8 @@ SINGLE_VIEW_UPPER = 1.37
 # Split-conformal 90% quantiles of |ln(true / measured)| on the P7 calibration seeds
 # 9164–9199 (not used to choose the method): accepted runs on the 3D path, and the mean of both
 # runs (`vstent cine-synthetic --calibrate`, reports/cine_calibration.md).
-VELOCITY_LOG_HALF_WIDTH = 0.38
-VELOCITY_LOG_HALF_WIDTH_TWO_RUNS = 0.34
+VELOCITY_LOG_HALF_WIDTH = 0.52  # 0.518 on 61 runs
+VELOCITY_LOG_HALF_WIDTH_TWO_RUNS = 0.21  # 0.204 on 23 cases
 MAX_RUN_RATIO = 1.5  # two runs of one vessel farther apart than this: one transit failed
 LEVEL = 0.90
 

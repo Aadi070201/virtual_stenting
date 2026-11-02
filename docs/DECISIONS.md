@@ -892,3 +892,61 @@ anyway, and the H-11 controls (frame shown, user confirmation) are unchanged.
 - Revert to M5: loses the rendered-image robustness; not supported by any rule.
 - Keep M5 for the opacification curve only: two segmentations per frame, which doubles the
   cine run's CPU time.
+
+### D55 — P7 methods: ED frames, motion, phasic flow time, intervals, run curves (2026-11-02)
+Every choice below was made on development data only, before the held-out synthetic seeds
+(9200+) and the CADICA test patients were used for P7:
+- synthetic seeds 9100–9123 for the methods;
+- seeds 9124–9163, then 9164–9199, for the intervals;
+- the CADICA development patients for the run curves.
+
+**Decisions:**
+- **ED frames:** from the R-wave pointer, else the ECG's R peaks, else the vessel tree's
+  spread in the images. The analysis frame is the ED frame in the opacified window with the
+  most vessel; with none there, P4d's peak frame.
+- **Heart motion:** the vessel-probability maps are registered (affine, ECC) to the analysis
+  frame on the opacification plateau only: the frames from the first to the last at ≥ 90% of
+  the peak area. Filling and washout frames take the transform of the same heart phase a
+  whole number of beats away, or the nearest plateau frame.
+  - Registering every frame slid partly filled vessels along themselves: a motionless test
+    vessel read 26% fast.
+  - On the development cases it gave a velocity bias of +3.8% (mean), against −1.6% for
+    plateau tracking.
+- **Phasic flow:** arrival times are mapped to flow time, with systole 0.31 s after each R
+  wave and a diastolic / systolic ratio of 2.0 (a prior). On the development cases (3D path,
+  image-based ED) the median error fell from 19.9% (plain time) to 9.7%. Fitting the ratio
+  per run gave 16.1%.
+- **Intervals:** split-conformal 90% quantiles of |ln(true / measured)|. The two-run mean is
+  used only when the runs agree within ×1.5 (`reports/cine_calibration.md`). One view: upper
+  end × 1.37 (P5 foreshortening, 95th percentile).
+  - The Theil–Sen interval covered the truth in only 10–29% of runs: phasic flow, not
+    scatter, dominates.
+  - A first calibration on seeds 9124–9163 used |true − measured| / measured. It gave 0.42
+    per run and 0.47 for the two-run mean. That score penalises underestimates more, and its
+    tail came from cases whose two runs disagreed fivefold.
+  - The score and the agreement guard were therefore chosen on the method seeds (consistent
+    pairs agreed within ×1.24; the three outliers were ×1.48–2.22, each with one run off by
+    more than 25%). The intervals were then recalibrated on fresh seeds 9164–9199: × / ÷
+    1.68 for one run (0.518, 61 runs) and × / ÷ 1.23 for the mean of two agreeing runs
+    (0.204, 23 of 36 cases). A single run's velocity is therefore barely more informative than
+    the fixed velocity (0.25–0.45 m/s); two agreeing runs narrow it.
+- **Run curves at probability ≥ 0.9** (QCA keeps 0.5). On the CADICA development runs the ED
+  rule put the analysis frame inside the clinicians' span in 171 of 205 runs (163 at 0.5),
+  P4d's peak rule in 175 (166). On the synthetic development cases, 0.9 left the velocity
+  unchanged (two-view median error 6.8% vs 6.3%).
+
+**Not chosen:**
+- The M5 segmenter for the run curves. On development runs it put the frame inside the span
+  in 183 of 205, but it means a second segmentation of every frame, a second model in the
+  product, and M5 misses many rendered vessels (D52). It is kept as an option for the
+  founder.
+- On CADICA the ED rule does not beat the peak rule (171 vs 175 at 0.9). The clinicians'
+  frames are lesion keyframes, not ED frames. ED is kept for physiology: the QCA convention,
+  and two views at the same phase.
+
+**Risks:**
+- The flow-time correction assumes the flow-profile family that the generator draws from;
+  its real benefit needs a phantom or a Doppler wire.
+- The FAVOR Pilot conversion and frame-count velocity are the subject of QFR patents
+  (freedom to operate, INVENTION_NOTES §7).
+- The fixed velocity stays the default.
