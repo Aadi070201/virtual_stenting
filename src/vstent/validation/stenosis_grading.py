@@ -93,12 +93,15 @@ def patient_split(patients: list[str], seed: int = SPLIT_SEED) -> dict[str, str]
     return {order[i]: ("dev" if k < n_dev else "test") for k, i in enumerate(perm)}
 
 
-def path_through_box(graph: nx.Graph, box: tuple[float, float, float, float]) -> np.ndarray | None:
+def path_through_box(
+    graph: nx.Graph, box: tuple[float, float, float, float], margin: float | None = None
+) -> np.ndarray | None:
     """Skeleton path (n, 2) as (row, col) that crosses ``box`` (x, y, w, h): between two exits of
-    the region that extends the box by max(w, h) on every side, the pair whose path has the
-    most nodes inside the box (then the longest). ``None`` if no skeleton crosses the box."""
+    the region that extends the box by ``margin`` px (default max(w, h)) on every side, the
+    pair whose path has the most nodes inside the box (then the longest). ``None`` if no
+    skeleton crosses the box."""
     x, y, w, h = box
-    m = max(w, h)
+    m = max(w, h) if margin is None else float(margin)
     r0, r1, c0, c1 = y - m, y + h + m, x - m, x + w + m
 
     def in_region(n) -> bool:

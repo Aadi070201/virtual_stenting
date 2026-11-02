@@ -1554,6 +1554,52 @@ def physiology_real(
 
 
 @app.command()
+def repeatability(
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
+        "data/raw/cadica"
+    ),
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    workers: Annotated[
+        int, typer.Option("--workers", min=1, help="Processes for the measurements.")
+    ] = 1,
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write repeatability.md.")
+    ] = Path("reports"),
+) -> None:
+    """Frame-to-frame and operator-to-operator repeatability of %DS and FFR on CADICA's real
+    angiograms → reports/repeatability.md (P4f)."""
+    from vstent.config import git_info, load_config
+    from vstent.data.cadica import SOURCE_FILE, fetch_cadica, load_lesion_boxes
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+    from vstent.physics.solver import PhysicsParams
+    from vstent.validation import repeatability as rp
+    from vstent.validation.stenosis_grading import lesion_tracks
+
+    typer.echo(DISCLAIMER)
+    git = git_info()  # before anything is written
+    if not (raw_dir / SOURCE_FILE).exists():
+        fetch_cadica(raw_dir, log=typer.echo)
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    seg = SegmentationRunner.from_dir(seg_dir)
+    tracks = lesion_tracks(load_lesion_boxes(raw_dir))
+
+    def progress(k, n):
+        if k % 500 == 0 or k == n:
+            typer.echo(f"  {k} / {n} frames")
+
+    params = load_config(Path("configs/physics.yaml"), PhysicsParams)
+    rows = rp.measure(tracks, seg, params, workers=workers, progress=progress)
+    s = rp.summarise(rows)
+    rp.write_report(s, git, Path(seg_dir).as_posix(), report_dir)
+    for t in s["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']} "
+                   f"(target {t['target']})")  # fmt: skip
+    typer.echo(f"Wrote {report_dir / 'repeatability.md'}")
+
+
+@app.command()
 def mvp_report(
     report_dir: Annotated[
         Path, typer.Option("--report-dir", help="Folder with the generated reports.")
