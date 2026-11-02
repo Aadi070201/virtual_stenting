@@ -186,10 +186,17 @@ def test_cine_report_end_to_end(tmp_path, dark_seg_dir):
                for r, r_ in zip(runs, rows, strict=True)]  # fmt: skip
     assert all(t.get("px_per_frame", 0) == pytest.approx(10.0, rel=0.3) for t in transit)
     git = {"git_commit": "abc", "git_dirty": False}
+    stats = cf.run_stats(runs, seg.predict, tmp_path / "stats.json", level=0.9)
+    assert set(stats["p1_v1"]) == {"area", "spread"} and len(stats["p1_v1"]["spread"]) == 24
+    ed_rows = [{**cf.score_run(r, stats[cf.run_key(r)]["area"],
+                               analysis_frame=cf.ed_frame(stats[cf.run_key(r)]["area"],
+                                                          stats[cf.run_key(r)]["spread"])),
+                "split": sp} for r, sp in zip(runs, ("dev", "test"), strict=True)]  # fmt: skip
     cf.write_report(rows, transit, areas, tmp_path / "rep" / "cine.md", fraction=0.8,
                     arteries=load_artery_groups(tmp_path / "raw"), model="m", git=git,
-                    n_boot=50)  # fmt: skip
+                    n_boot=50, ed_rows=ed_rows, ed_level=0.9)  # fmt: skip
     md = (tmp_path / "rep" / "cine.md").read_text(encoding="utf-8")
+    assert "End-diastolic rule (P7)" in md and "Pre-registered target" in md
     assert "clinicians" in md and "Plausible in 2 of 2 runs" in md and "left coronary" in md
     assert (tmp_path / "rep" / "figures" / "cine_frames.png").exists()
     assert (tmp_path / "rep" / "cine.json").exists()

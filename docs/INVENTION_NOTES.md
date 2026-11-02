@@ -214,6 +214,46 @@ generated reports in `reports/`.
   through the occlusion, so there is no gap to bridge. It works on rendered gaps only, so
   occlusion detection needs a different signal (e.g. contrast washout over the cine frames).
 
+## 7. Phase-corrected contrast flow velocity with a calibrated interval (P7)
+
+- **First implemented:** 2026-11-02 (`src/vstent/imaging/flow.py`: `flow_time`,
+  `phasic_slope`, `flow_velocity`, `combine_runs`; `src/vstent/imaging/motion.py`; decision
+  D55); evidence `reports/cine_synthetic.md` (synthetic only).
+- **The problem it addresses:** coronary flow is phasic (faster in diastole). A contrast front
+  timed over part of a heart beat, as in frame-count velocity methods, gives the systolic or
+  the diastolic speed depending on when the contrast was injected. On the P7 development
+  cases the plain front speed was off by about 20% (median, 3D path).
+- **The idea:**
+  1. The ED frames come from the R-wave pointer, the ECG, or the images (vessel-tree
+     spread).
+  2. They give each frame's heart phase. Arrival times along the path are mapped to "flow
+     time", which runs at the systolic speed for a fixed systole after each R wave and at a
+     population diastolic / systolic ratio for the rest of the beat; one beat of flow time
+     per beat.
+  3. The cycle-average velocity is the robust slope of distance on flow time, with the
+     points followed through the beat by registering only the fully opacified frames.
+     Filling and washout frames take the transform of the same heart phase one or more beats
+     away.
+  4. A split-conformal interval, calibrated on separate cases, is widened for a single
+     view's foreshortening, and the velocity is used only when guards pass.
+  On the development cases the median error went from about 20% to about 6–10%.
+- **Status:** a candidate for discussion only. **Prior art exists for the general idea:**
+  Tar et al. (Cardiol J 2021;28:163–165) note that the frame count could in theory be
+  corrected to the average flow over the heart cycle, and leave it as future work. Phasic
+  coronary flow and ECG-gated frame selection are textbook. Any claim would have to rest on
+  the specific combination (flow-time mapping from image- or ECG-derived phase, phase-locked
+  motion transforms for partially filled frames, calibrated interval with foreshortening
+  widening) and its technical effect.
+- **Prior art to check:** US 11,308,621 ("Method and apparatus for acquiring blood flow volume
+  and blood flow velocity of coronary artery"); the QFR patents of Pulse Medical / Medis
+  (contrast frame count, FAVOR conversion; also a **freedom-to-operate** question for using
+  the FAVOR Pilot relation in a product); automated TIMI frame counting; ECG-free cardiac
+  phase detection (e.g. Ciusdel et al., Comput Med Imaging Graph 2020).
+- **India:** s.3(k) excludes computer programs per se and mathematical methods; a claim would
+  need to be framed around the imaging system and its measured technical effect.
+- **Weakness:** the synthetic test draws its flow profiles from the same family the
+  correction assumes; real benefit needs a phantom or Doppler-wire data.
+
 ---
 
 ## Not considered inventive (engineering choices)
@@ -233,6 +273,11 @@ The following are recorded only so they are not mistaken for claims:
   programming, triangulation, motion (shift) correction from the vessel itself, and
   ellipse-equivalent diameters are established in 3D QCA and angiography-derived FFR (e.g.
   QAngio XA 3D, CAAS, QFR); the magnification correction is textbook;
+- end-diastolic frames from the DICOM R-wave pointer or ECG, and from the vessel tree's
+  size in the images (P7): ECG gating and image-based cardiac-phase detection are established;
+- affine registration of the vessel tree across a run (P7): standard image registration;
+- the FAVOR Pilot conversion of resting to hyperemic velocity (P7): published by its authors
+  (and a freedom-to-operate question, see 7);
 - the scaled lumen (P5b, D50): an imaging-chain fit on healthy windows sets the absolute
   size of an edge-measured profile; model-based QCA (fitting blurred vessel profiles) and
   calibration of edge bias are established;

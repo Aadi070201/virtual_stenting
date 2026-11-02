@@ -15,11 +15,16 @@ import numpy as np
 
 from vstent.imaging.cardiac import EndDiastole, ed_analysis_frame, end_diastole, tree_spread
 from vstent.imaging.centerline import Centerline
-from vstent.imaging.cine import LEVEL, ContrastTransit, Opacification, contrast_transit
+from vstent.imaging.cine import ContrastTransit, Opacification, contrast_transit
 from vstent.imaging.cine import opacification as opacification_curve
 from vstent.imaging.flow import FlowVelocity, flow_velocity
 from vstent.imaging.image_io import RunInput
 from vstent.imaging.motion import plateau, small_map, track_affine_maps
+
+# Vessel pixels counted for the run's curves (opacification, tree spread): confident ones only.
+# On the CADICA development runs, 0.9 put the analysis frame inside the clinicians' selected
+# span more often than the segmentation threshold of 0.5 (D55); QCA keeps 0.5.
+RUN_LEVEL = 0.9
 
 
 @dataclass(eq=False)
@@ -92,7 +97,7 @@ def analyse_frames(run: RunInput, segment: Callable[[np.ndarray], np.ndarray]) -
     area, spread, small = [], [], []
     for f in run.frames:
         prob = segment(f)
-        mask = prob >= LEVEL
+        mask = prob >= RUN_LEVEL
         area.append(int(mask.sum()))
         spread.append(tree_spread(mask))
         small.append(small_map(prob))

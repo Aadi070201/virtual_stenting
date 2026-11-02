@@ -1851,6 +1851,17 @@ def cine_frames(
     areas = cf.run_areas(runs, seg.predict, cf.AREAS_DIR / f"areas_{model_dir.name}.json",
                          progress)  # fmt: skip
     rows = [{**cf.score_run(r, areas[cf.run_key(r)]), "split": split[r.patient]} for r in runs]
+    from vstent.imaging.run_analysis import RUN_LEVEL
+
+    typer.echo(f"End-diastolic rule (curves at probability ≥ {RUN_LEVEL:g}) …")
+    stats_file = cf.AREAS_DIR / f"stats_{model_dir.name}_{RUN_LEVEL:g}.json"
+    run_stats = cf.run_stats(runs, seg.predict, stats_file, progress, level=RUN_LEVEL)
+    ed_rows = []
+    for r in runs:
+        st = run_stats[cf.run_key(r)]
+        frame_ed = cf.ed_frame(st["area"], st["spread"])
+        ed_rows.append({**cf.score_run(r, st["area"], analysis_frame=frame_ed),
+                        "split": split[r.patient]})  # fmt: skip
     typer.echo("Contrast transit …")
     transit = []
     for k, r in enumerate(runs, 1):
@@ -1860,6 +1871,7 @@ def cine_frames(
     stats = cf.write_report(
         rows, transit, areas, Path("reports/cine_frames.md"), fraction=OPACIFIED_FRACTION,
         arteries=load_artery_groups(raw_dir), model=model_dir.as_posix(), git=git, n_boot=n_boot,
+        ed_rows=ed_rows, ed_level=RUN_LEVEL,
     )  # fmt: skip
     for sp, st in stats.items():
         typer.echo(f"{sp}: analysis frame among the selected frames {st['hit']['k']}/"

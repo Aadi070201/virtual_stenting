@@ -63,16 +63,17 @@ def run_stats(
     segment: Callable[[np.ndarray], np.ndarray],
     cache_file: str | Path,
     progress: Callable[[int, int], None] | None = None,
+    level: float = LEVEL,
 ) -> dict[str, dict[str, list]]:
     """Vessel pixels and vessel-tree spread (px; ``None`` where too few vessel pixels) per
-    frame of every run, cached like :func:`run_areas` (P7)."""
+    frame of every run, at probability ≥ ``level``, cached like :func:`run_areas` (P7)."""
     cache_file = Path(cache_file)
     cache = json.loads(cache_file.read_text(encoding="utf-8")) if cache_file.exists() else {}
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     for k, run in enumerate(runs, 1):
         key = run_key(run)
         if key not in cache:
-            area, spread = vessel_stats(read_run(run.frames_dir).frames, segment)
+            area, spread = vessel_stats(read_run(run.frames_dir).frames, segment, level)
             cache[key] = {
                 "area": area.tolist(),
                 "spread": [None if not np.isfinite(x) else float(x) for x in spread],
@@ -191,6 +192,39 @@ def _example_figure(rows: list[dict], areas: dict[str, list[int]], path: Path) -
     save_figure(fig, path)
 
 
+ED_TARGET = 0.83  # pre-registered (docs/PLAN.md, P7): within the span on the test runs
+
+
+def _ed_section(ed_stats, level, line, head) -> list[str]:
+    """The P7 end-diastolic rule against the same reference (empty without it)."""
+    if not ed_stats:
+        return []
+    t = ed_stats["test"]
+    rate = t["in_span"]["rate"] if t.get("n_runs") else None
+    met = rate is not None and rate >= ED_TARGET
+    return [
+        "## End-diastolic rule (P7)",
+        "",
+        "The product's rule since P7: image-based end-diastolic frames (the vessel tree's "
+        "spread, largest at end-diastole; CADICA gives no ECG or frame time), and the analysis "
+        "frame is the end-diastolic frame in the opacified window with the most vessel. The "
+        f"run's curves count pixels at probability ≥ {level:g}, a setting chosen on the "
+        "development runs (D55). The clinicians' frames are lesion keyframes, not "
+        "end-diastolic frames, so this checks that the rule picks a usable, well-opacified "
+        "frame; it cannot show that the frame is end-diastolic. This is the first use of the "
+        "test patients for this rule.",
+        "",
+        *head,
+        line("test patients", t),
+        line("development patients", ed_stats["dev"]),
+        "",
+        f"**Pre-registered target** (docs/PLAN.md): the analysis frame within the span in "
+        f"≥ {ED_TARGET:.0%} of the test runs. **{'Met' if met else 'Not met'}: "
+        f"{_pct(t['in_span']) if rate is not None else '–'}.**",
+        "",
+    ]
+
+
 def _quartiles(v: np.ndarray) -> str:
     if not v.size:
         return "–"
@@ -208,11 +242,17 @@ def write_report(
     model: str,
     git: dict,
     n_boot: int = 2000,
+    ed_rows: list[dict] | None = None,
+    ed_level: float | None = None,
 ) -> dict[str, Any]:
     """``reports/cine_frames.{md,json}`` and the example figure (``rows``: :func:`score_run`
-    rows with a ``split``; ``transit``: :func:`transit_for_run` rows). Returns the summaries."""
+    rows with a ``split``; ``transit``: :func:`transit_for_run` rows; ``ed_rows``: the same
+    with the P7 end-diastolic rule, curves at probability ≥ ``ed_level``). Returns the
+    summaries."""
     out_md = Path(out_md)
     stats = {sp: summarise([r for r in rows if r["split"] == sp], n_boot) for sp in ("dev", "test")}
+    ed_stats = ({sp: summarise([r for r in ed_rows if r["split"] == sp], n_boot)
+                 for sp in ("dev", "test")} if ed_rows else None)  # fmt: skip
     test = [r for r in rows if r["split"] == "test"]
     by_kind = {
         "lesion runs": summarise([r for r in test if r["lesion"]], n_boot),
@@ -281,6 +321,7 @@ def write_report(
         "",
         "![Opacification curves](figures/cine_frames.png)",
         "",
+        *_ed_section(ed_stats, ed_level, line, head),
         "## Contrast transit (feasibility; no reference)",
         "",
         "Along the longest vessel path of each run's analysis frame: the frame in which the "
@@ -307,7 +348,8 @@ def write_report(
     out_md.parent.mkdir(parents=True, exist_ok=True)
     out_md.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     payload = {"fraction": fraction, "stats": stats, "by_kind": by_kind, "runs": rows,
-               "transit": transit, "model": model, **git}  # fmt: skip
+               "transit": transit, "model": model, "ed_stats": ed_stats, "ed_level": ed_level,
+               "ed_runs": ed_rows, **git}  # fmt: skip
     out_md.with_suffix(".json").write_text(json.dumps(payload, indent=1, default=float),
                                            encoding="utf-8", newline="\n")  # fmt: skip
     return stats

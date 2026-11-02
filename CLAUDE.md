@@ -69,7 +69,7 @@ vstent/
   configs/              # YAML configs: physics, synth_v1, synth_tree_v1, synth_angio_v1, surrogate,
                         # ensemble, seg, seg_synth,
                         # stent_catalog, planner, uncertainty, tree_surrogate, validation,
-                        # validation_synthetic, two_view_synthetic
+                        # validation_synthetic, two_view_synthetic, cine_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
                         # HUMAN_ACTIONS.md (what only the human can do), validation/ (P4: PROTOCOL.md,
                         # DATA_SPEC.md, templates/), regulatory/ (P8 drafts: hand-written INTENDED_USE,
@@ -97,6 +97,11 @@ vstent/
                         # lumen_model.py (imaging-chain lumen fit, P4c), lumen_report.py,
                         # calibration.py (frame-level imaging-chain calibration, D46),
                         # cine.py (opacification window, analysis frame, contrast transit, P4d),
+                        # cardiac.py (ED frames: R-wave pointer, ECG, images, P7), motion.py
+                        # (heart motion across a run, P7), flow.py (contrast flow velocity,
+                        # phasic flow time, FAVOR Pilot conversion, P7), run_analysis.py (one
+                        # pass over a run's frames: the product's cine steps, P7),
+                        # synthetic_cine.py + cine_report.py (beating-heart synthetic runs, P7),
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader),
                         # projection.py (DICOM C-arm geometry, magnification, P5), twoview.py (two-view
                         # 3D centreline + lumen profile, P5), synthetic3d.py + twoview_report.py
@@ -192,6 +197,10 @@ uv run vstent stenosis-grading [--edges probability,intensity,model] [--workers 
                                   # P4b-P4c: QCA %DS vs CADICA expert grades → reports/stenosis_grading.md
 uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccentric lumens → reports/lumen_synthetic.md
 uv run vstent cine-frames         # P4d: CADICA runs, analysis frame vs clinicians' frames → reports/cine_frames.md
+uv run vstent cine-synthetic [--workers N] [--calibrate]
+                                  # P7: ED frames + flow velocity on beating-heart runs → reports/cine_synthetic.md
+uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]
+                                  # P7: cine run on its ED frame; measured flow velocity (default: fixed)
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
 uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms
