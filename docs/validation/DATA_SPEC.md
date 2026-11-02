@@ -23,7 +23,7 @@
 
 | Item | Required | Notes |
 |---|---|---|
-| Cine angiogram (DICOM) showing the vessel | yes | The analysed frame is chosen by the analyst (end-diastole, least foreshortening and overlap). A second projection ≥ 30° apart is wanted for P5 (two-view 3D). |
+| Cine angiogram (DICOM) showing the vessel | yes | The **whole run** as exported by the X-ray system (multi-frame DICOM, not screenshots or video files), with its ECG if the system records one (P7: end-diastolic frames, flow velocity). The analysed frame is chosen by the software (end-diastole) or the analyst. A second projection ≥ 30° apart is wanted for P5 (two-view 3D). |
 | Pressure-sensor position | yes | Marked on the analysed frame as pixel coordinates (the end point). If only a distance from the ostium was recorded, note it in `calibration` and mark the point by that distance. |
 | Wire FFR at the sensor, at maximal hyperemia | yes (or iFR) | The value on the recording; hyperemia agent and route recorded in the study database. |
 | iFR | optional | Analysed as classification only (FFR and iFR are different quantities). |
@@ -47,12 +47,15 @@ numbers were checked against pydicom's DICOM data dictionary.
 | Distance Source to Patient | (0018,1111) | P5: magnification correction |
 | Estimated Radiographic Magnification Factor | (0018,1114) | P5: cross-check |
 | Positioner Primary Angle / Secondary Angle | (0018,1510) / (0018,1511) | P5: projection geometry |
+| Frame Delay / Frame Time Vector | (0018,1066) / (0018,1065) | P7: frame times |
+| R Wave Pointer | (0028,6040) | P7: end-diastolic frames (written by the X-ray system from its ECG) |
+| Waveform Sequence (ECG) | (5400,0100) | P7: end-diastolic frames from the ECG; a heart signal without identifiers, keep it |
 
 Pixel size: `ImagerPixelSpacing` is measured at the detector. The vessel is magnified by about
 `DistanceSourceToDetector / DistanceSourceToPatient` (isocentre approximation), so the pixel
-size at the vessel is smaller. `vstent validate` does **not** use `ImagerPixelSpacing`
-automatically. Put the calibrated value in `mm_per_px` and the method in `calibration`
-(e.g. `catheter 6F`, `isocentre`). P5 adds the magnification correction from the geometry tags.
+size at the vessel is smaller. Since P5 the loader corrects it to the isocentre when SID and SOD
+are present; without them the detector spacing is not used. A calibrated value in `mm_per_px`
+(with the method in `calibration`, e.g. `catheter 6F`) takes precedence.
 
 ## De-identification checklist
 
@@ -70,7 +73,9 @@ own de-identification tool and data-protection officer decide.
       (0008,1070), Station Name (0008,1010), Device Serial Number (0018,1000).
 - [ ] Dates and times: remove, or shift consistently per patient as the site decides
       (Study Date (0008,0020), Study Time (0008,0030), Content Date (0008,0023)).
-- [ ] Remove private tags and curves / overlays that may carry identifiers.
+- [ ] Remove private tags and curves / overlays that may carry identifiers. Keep the ECG in
+      the Waveform Sequence and the R Wave Pointer: they carry no identifiers and P7 uses
+      them.
 - [ ] **Burned-in text:** check Burned In Annotation (0028,0301) and look at the pixels. Names,
       dates or IDs written into the image corners must be masked or cropped (cropping changes
       the coordinates; mark points after cropping).
