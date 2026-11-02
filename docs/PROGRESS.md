@@ -1293,3 +1293,19 @@ qualified person, not regulatory advice.
 - The automatic path may pick the wrong vessel on real angiograms.
 - Without an ECG, tracking between heartbeats often fails on real runs.
 - The image-based end-diastolic frames on CADICA are unevenly spaced; to be investigated.
+
+## 2026-11-02 — Guided app, second version (D60)
+
+**What was done**
+- Case library in the sidebar: 10 synthetic beating hearts and CADICA's 382 real runs (most
+  severe lesions first); *Random*, *New study*, upload.
+- A frame scroller (★ recommended, ◆ expert box) that measures nothing until *Analyse this
+  frame*.
+- Lesion close-ups with the measured edges; experts' boxes; *Through the expert box*; plain
+  angiogram on request.
+- A permanent FFR guide: > 0.80 no stent; 0.76–0.80 grey zone; ≤ 0.75 significant; ≥ 0.90
+  after a stent.
+- Much less text.
+
+**Seen:** expert 90–98% lesions read 32–35% DS. The close-ups show density loss without a
+resolvable width change: densitometry is the candidate fix.

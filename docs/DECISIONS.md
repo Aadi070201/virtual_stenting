@@ -1111,3 +1111,38 @@ Choices:
 - The automatic path can still pick the wrong vessel; the user is asked to check it.
 - Without an ECG, the motion tracking between heartbeats often fails on real runs (CADICA:
   the moved points landed 86 px away). The result then rests on one heartbeat and says so.
+
+### D60 — Guided app, second version: case library, frame scroller, lesion close-ups, FFR guide (2026-11-02)
+**Decision** (after the user tried D59's version):
+- **Case library** (`guided.case_library`): 10 synthetic beating hearts (seeds 9500–9509, with
+  ECG and C-arm geometry), then CADICA's 382 selected runs if downloaded. They are ordered
+  90–98%, 99%, 70–90%, 50–70%, 20–50%, 0–20%, then occlusions (no valid FFR) and runs
+  without a marked lesion. *Random* and *New study* reset the study; uploading stays
+  possible.
+- **Frame scroller:** a slider over the end-diastolic frames (★ recommended, ◆ expert box,
+  "faint" outside the opacification plateau; every frame on request). It runs in a fragment:
+  scrolling measures nothing; *Analyse this frame* commits.
+- **Lesions by eye:**
+  - a close-up of each lesion with the measured lumen edges (`guided.lesion_zoom`), and the
+    plain angiogram on request;
+  - on CADICA keyframes, the experts' boxes, and *Through the expert box*: a path through
+    the most severe box (`guided.box_path`, the P4b path).
+- **FFR guide and reading by fixed bands** (`guided.FFR_GUIDE`, `guided.verdict`), replacing
+  D59's grey-zone-flag reading so that the label and the guide agree:
+  - above 0.80: not significant, no stent needed;
+  - 0.76–0.80: grey zone, significant;
+  - 0.75 or below: significant;
+  - after a stent, 0.90 or more is a good result.
+
+  The bands come from the wire-FFR literature (FAME; ESC 2019). The likely range is shown
+  beside the value. Above 0.80 the stent step says no stent is needed, and still allows one.
+- **Less text:** short labels; explanations in tooltips.
+
+**Seen with it:** on CADICA runs graded 90–98% (p11 run 16, p12 run 1), the path through the
+expert box gives 32–35% DS and FFR above 0.9. The close-ups show why:
+- the lesion is visible mainly as fading of the contrast column (lower density), not as a
+  measurable narrowing of its width;
+- in vessels of 7–16 px, the edges of a tight lesion lie inside the blur.
+
+Measuring density (densitometry) is the candidate fix; D44 dropped a simple version because
+it overestimated severity on rendered vessels. Not done here.

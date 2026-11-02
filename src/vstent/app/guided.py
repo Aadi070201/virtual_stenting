@@ -1,18 +1,21 @@
 """The guided workflow of the app (no Streamlit): one cine run, step by step.
 
-1. Load a cine run (upload, or a demo run).
-2. Choose the frame: the end-diastolic (ED) frames in the opacified window, the recommended one
-   first (:func:`frame_choices`).
-3. Vessel and lesions: an automatic path (:func:`auto_path`) the user can change; lesions
-   numbered on the image (:func:`lesion_marks`).
-4. Virtual FFR: the median over the run's ED frames (P4g), in plain words (:func:`verdict`,
-   :func:`stability`).
-5. Stent: the planner's suggestion, adjustable, before and after.
-6. Report.
+0. A case: from the library (:func:`case_library`: synthetic beating hearts, CADICA's real
+   runs if downloaded) or an uploaded run.
+1. Frame: scroll the end-diastolic (ED) frames, the recommended one marked
+   (:func:`frame_label`).
+2. Vessel and lesions: an automatic path (:func:`auto_path`) the user can change; lesions
+   numbered on the image (:func:`lesion_marks`) and shown enlarged with the measured edges
+   (:func:`lesion_zoom`); the experts' boxes on CADICA's keyframes.
+3. Virtual FFR: the median over the run's ED frames (P4g), read against the FFR guide
+   (:data:`FFR_GUIDE`, :func:`verdict`).
+4. Stent: the planner's suggestion, adjustable, before and after.
+5. Report.
 
 Research use only. Units: SI inside, mm and mmHg on screen.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -28,13 +31,22 @@ from vstent.inference.consensus import opacified_frames
 from vstent.planning.stent import Stent
 from vstent.units import m_to_mm
 
-DEMO_SEED = 9500  # a synthetic beating-heart case outside every report's seeds
-CADICA_EXAMPLE = Path("data/raw/cadica/CADICA/selectedVideos/p24/v15/input")
-DEMOS = {
-    "synthetic": "Demo: synthetic beating heart (with ECG)",
-    "cadica": "Demo: real angiogram (CADICA patient 24, CC BY 4.0)",
-}
+DEMO_SEED = 9500  # synthetic library seeds start here, outside every report's seeds
+N_SYNTHETIC = 10
 CUTOFF = 0.80
+GREY_LOW = 0.75  # the grey zone of wire FFR: 0.76–0.80
+POST_TARGET = 0.90  # after a stent: a good result (and the planner's default target)
+# The guide shown in the app (wire-FFR literature: FAME, ESC 2019 chronic coronary syndromes).
+FFR_GUIDE = (
+    ("green", "above 0.80", "Not significant: no stent needed"),
+    ("orange", "0.76–0.80", "Grey zone: significant, stent usually advised"),
+    ("red", "0.75 or below", "Significant: stent advised"),
+    ("blue", "0.90 or above after a stent", "Good stent result"),
+)
+HEX = {"green": "#1baf7a", "orange": "#e08a00", "red": "#dc2626", "blue": "#2a78d6"}
+# CADICA runs in the library: severe lesions first; occlusions (no valid FFR) and runs without a
+# marked lesion last
+LIBRARY_ORDER = ("p90_98", "p99", "p70_90", "p50_70", "p20_50", "p0_20", "p100", None)
 AUTO_PATH_MM = 100.0  # an automatic path stops here: coronary arteries are rarely longer in 2D
 MARK_MIN_DS = 50.0  # narrowings marked on the image (milder ones are counted, not marked)
 
@@ -44,28 +56,87 @@ PATH = (255, 214, 10)
 STENT = (235, 104, 52)
 START = (27, 175, 122)
 LESION = (220, 38, 38)
+EXPERT = (34, 211, 238)
 
 
-def demo_run(kind: str) -> RunInput:
-    """A demo cine run: ``synthetic`` (rendered beating heart with ECG and C-arm geometry) or
-    ``cadica`` (a real run from CADICA, if the dataset is present; no ECG, no pixel size)."""
-    if kind == "cadica":
-        if not CADICA_EXAMPLE.exists():
-            raise ValueError("CADICA is not downloaded (run `vstent data cadica`)")
-        return replace(read_run(CADICA_EXAMPLE), name="CADICA patient 24, run 15")
+@dataclass(frozen=True)
+class Case:
+    """A cine run of the library. ``boxes``: the experts' lesion boxes (CADICA) as
+    (frame index, x, y, w, h, grade) in px, (x, y) the top-left corner."""
+
+    key: str
+    label: str
+    kind: str  # "synthetic" or "cadica"
+    path: Path | None = None
+    seed: int | None = None
+    boxes: tuple[tuple[int, float, float, float, float, str], ...] = ()
+
+
+def _grade(category: str) -> str:
+    from vstent.data.cadica import CATEGORIES
+
+    lo, hi = CATEGORIES[category]
+    return f"{lo:g}%" if lo == hi else f"{lo:g}–{hi:g}%"
+
+
+def case_library(raw_dir: str | Path | None = None, n_synthetic: int = N_SYNTHETIC) -> list[Case]:
+    """Synthetic beating hearts (with ECG and C-arm geometry), then CADICA's selected runs if the
+    dataset is present (CC BY 4.0; no ECG, no pixel size), the most severe lesions first."""
+    from vstent.data import cadica
+
+    cases = [Case(f"synthetic:{DEMO_SEED + k}", f"Synthetic {k + 1} · beating heart with ECG",
+                  "synthetic", seed=DEMO_SEED + k) for k in range(n_synthetic)]  # fmt: skip
+    raw = Path(raw_dir) if raw_dir is not None else cadica.RAW_DIR
+    if not (raw / cadica.ROOT / "selectedVideos").is_dir():
+        return cases
+    rank = list(cadica.CATEGORIES)  # the worst lesion of a run by this order
+    boxes = defaultdict(list)
+    for b in cadica.load_lesion_boxes(raw):
+        boxes[(b.patient, b.video)].append(b)
+    try:
+        sides = cadica.load_artery_groups(raw)
+    except (OSError, ValueError):
+        sides = {}
+    real = []
+    for r in cadica.load_selected_runs(raw):
+        names = sorted(p.name for p in r.frames_dir.iterdir())
+        index = {n: k for k, n in enumerate(names)}
+        bs = [b for b in boxes.get((r.patient, r.video), []) if b.image.name in index]
+        worst = max(bs, key=lambda b: rank.index(b.category)) if bs else None
+        side = {"left": "left coronary", "right": "right coronary"}.get(
+            sides.get(f"{r.patient}_{r.video}", ""), ""
+        )
+        if worst is None:
+            text = "no lesion marked"
+        elif worst.category == "p100":
+            text = "total occlusion"
+        else:
+            text = f"worst lesion {_grade(worst.category)}"
+        label = " · ".join(x for x in (f"CADICA {r.patient} run {r.video[1:]}", side, text) if x)
+        real.append((LIBRARY_ORDER.index(worst.category if worst else None), int(r.patient[1:]),
+                     Case(f"cadica:{r.patient}_{r.video}", label, "cadica", path=r.frames_dir,
+                          boxes=tuple((index[b.image.name], b.x, b.y, b.w, b.h,
+                                       _grade(b.category)) for b in bs))))  # fmt: skip
+    return cases + [c for *_, c in sorted(real, key=lambda x: x[:2])]
+
+
+def load_case(case: Case) -> RunInput:
+    """The case's run: a rendered synthetic beating heart, or CADICA's frames."""
+    if case.kind == "cadica":
+        return replace(read_run(case.path), name=case.label)
     from vstent.imaging.synthetic_cine import render_run, run_dicom
 
-    cc, cfg = demo_case()
+    cc, cfg = synthetic_case(case.seed)
     data = run_dicom(cc, 0, render_run(cc, 0, probs=False).frames, cfg)
-    return read_run_bytes(data, "synthetic beating heart")
+    return read_run_bytes(data, case.label)
 
 
-def demo_case():
-    """The synthetic demo's beating-heart case and its sampling config."""
+def synthetic_case(seed: int = DEMO_SEED):
+    """A synthetic library case (beating heart, ECG) and its sampling config."""
     from vstent.imaging.synthetic_cine import CineSynthConfig, sample_cine_case
 
     cfg = CineSynthConfig(fps_choices=(15.0,), ecg_prob=1.0, plateau_beats=(2.5, 3.0))
-    return sample_cine_case(DEMO_SEED, cfg), cfg
+    return sample_cine_case(seed, cfg), cfg
 
 
 def run_summary(run: RunInput, rf) -> list[str]:
@@ -84,19 +155,41 @@ def run_summary(run: RunInput, rf) -> list[str]:
     return out
 
 
-def frame_choices(rf, limit: int = 6) -> list[int]:
-    """ED frames on which the vessels are fully opacified (the frames the multi-frame median
-    can use, :func:`~vstent.inference.consensus.opacified_frames`), in time order, at most
-    ``limit`` around the recommended one (:attr:`RunFrames.analysis_frame`), always included."""
+def frame_label(f: int, rf, all_frames: bool = False, expert: frozenset = frozenset()) -> str:
+    """A frame on the scroll bar: its number, ★ for the recommended one, ◆ where experts marked a
+    lesion, ED (when every frame is shown) and faint marks."""
     lo, hi = opacified_frames(rf, None)
-    frames = [f for f in rf.ed.frames if lo <= f <= hi] if rf.ed.found else []
-    rec = rf.analysis_frame
-    if rec not in frames:
-        frames.append(rec)
-    frames = sorted(set(frames))
-    while len(frames) > limit:  # drop the frame farthest from the recommended one
-        frames.remove(max(frames, key=lambda f: (abs(f - rec), f)))
-    return frames
+    tags = ["★"] if f == rf.analysis_frame else []
+    if f in expert:
+        tags.append("◆")
+    if all_frames and rf.ed.found and f in rf.ed.frames:
+        tags.append("ED")
+    if not lo <= f <= hi:
+        tags.append("faint")
+    return " ".join([str(f), *tags])
+
+
+def severity(grade: str) -> float:
+    """The lower end of an expert grade such as "70–90%" or "99%" (for ordering boxes)."""
+    return float(grade.split("–")[0].rstrip("%"))
+
+
+def box_path(prob: np.ndarray, box: tuple[float, float, float, float]):
+    """(start, end) of the vessel path through an expert box (x, y, w, h), extended by the box
+    size on every side (:func:`~vstent.validation.stenosis_grading.path_through_box`), proximal
+    (wider) end first; ``None`` if no segmented vessel crosses the box."""
+    from scipy.ndimage import distance_transform_edt
+
+    from vstent.imaging.centerline import vessel_graph
+    from vstent.validation.stenosis_grading import path_through_box
+
+    mask = prob >= THRESHOLD
+    path = path_through_box(vessel_graph(mask), box)
+    if path is None or len(path) < 5:
+        return None
+    a, b = tuple(map(int, path[0])), tuple(map(int, path[-1]))
+    width = distance_transform_edt(mask)
+    return (a, b) if width[a] >= width[b] else (b, a)
 
 
 def thumbnail(image: np.ndarray, width: int = 160) -> np.ndarray:
@@ -161,20 +254,14 @@ class Verdict:
     sentence: str
 
 
-def verdict(ffr: float, borderline: bool) -> Verdict:
-    """What the virtual FFR means, in plain words. ``borderline``: its uncertainty interval
-    contains the 0.80 cut-off (the grey-zone flag)."""
-    if borderline:
-        return Verdict("Borderline", "orange",
-                       f"Close to the {CUTOFF:.2f} cut-off: the true value could lie on either "
-                       "side. A pressure-wire measurement would decide.")  # fmt: skip
-    if ffr <= CUTOFF:
-        return Verdict("Significant", "red",
-                       f"Below the {CUTOFF:.2f} cut-off: the narrowing probably limits blood "
-                       "flow.")  # fmt: skip
-    return Verdict("Not significant", "green",
-                   f"Above the {CUTOFF:.2f} cut-off: the narrowing probably does not limit "
-                   "blood flow.")  # fmt: skip
+def verdict(ffr: float) -> Verdict:
+    """The FFR guide's band of a (virtual) FFR value (:data:`FFR_GUIDE`)."""
+    ffr = round(float(ffr), 2)  # as shown
+    if ffr > CUTOFF:
+        return Verdict("Not significant", "green", "No stent needed")
+    if ffr > GREY_LOW:
+        return Verdict("Grey zone", "orange", "Significant; stent usually advised")
+    return Verdict("Significant", "red", "Stent advised")
 
 
 def mild_count(qca: QCAResult, min_ds: float = MARK_MIN_DS) -> int:
@@ -210,15 +297,22 @@ def overlay(
     lesions: list[LesionMark] | None = None,
     stents: list[Stent] | None = None,
     points: list[tuple[int, int]] | None = None,
+    boxes: list[tuple[float, float, float, float, str]] | None = None,
 ) -> np.ndarray:
     """RGB angiogram: vessels tinted blue, the path yellow, stents orange, lesions as numbered
-    red circles, the start (green) and end (orange) points."""
+    red circles, the start (green) and end (orange) points, experts' boxes (x, y, w, h, grade)
+    in cyan."""
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
     if prob is not None:
         mask = prob >= THRESHOLD
         rgb[mask] = 0.65 * rgb[mask] + 0.35 * VESSEL
     out = rgb.astype(np.uint8)
     scale = max(1, round(max(image.shape) / 512))
+    for x, y, w, h, grade in boxes or []:
+        p0, p1 = (int(x), int(y)), (int(x + w), int(y + h))
+        cv2.rectangle(out, p0, p1, EXPERT, scale, cv2.LINE_AA)
+        cv2.putText(out, f"expert {grade}", (p0[0], max(10, p0[1] - 4)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4 * scale, EXPERT, scale, cv2.LINE_AA)  # fmt: skip
     if qca is not None:
         pts = np.round(qca.centerline.points[:, ::-1]).astype(np.int32)
         cv2.polylines(out, [pts], False, PATH, scale, cv2.LINE_AA)
@@ -265,3 +359,33 @@ def ffr_chart(pre, post=None, lesions: list[LesionMark] | None = None) -> go.Fig
                       xaxis_title="Distance along the path (mm)", yaxis_title="Virtual FFR",
                       yaxis_range=[max(low, 0.0), 1.02])  # fmt: skip
     return fig
+
+
+def edge_lines(qca: QCAResult) -> tuple[np.ndarray, np.ndarray]:
+    """The measured lumen edges (n, 2) (row, col) px on each side of the centreline; where an
+    edge was not found, half the measured diameter."""
+    pts, nrm, d = qca.centerline.points, qca.centerline.normals, qca.diameters
+    left = np.where(np.isnan(d.left_px), -d.diameter_px / 2, d.left_px)
+    right = np.where(np.isnan(d.right_px), d.diameter_px / 2, d.right_px)
+    return pts + nrm * left[:, None], pts + nrm * right[:, None]
+
+
+def lesion_zoom(
+    image: np.ndarray, qca: QCAResult | None, mark: LesionMark, *, edges: bool = True,
+    zoom: int = 4, half_px: int | None = None,
+) -> np.ndarray:  # fmt: skip
+    """An enlarged RGB view around a lesion's narrowest point: the angiogram, and if ``edges``
+    the measured lumen edges (yellow) with the narrowest point marked (red)."""
+    half = half_px or max(24, round(0.07 * max(image.shape)))
+    pad = np.pad(image, half, mode="edge")
+    r, c = mark.row + half, mark.col + half
+    crop = pad[r - half : r + half, c - half : c + half]
+    big = cv2.resize(crop, None, fx=zoom, fy=zoom, interpolation=cv2.INTER_CUBIC)
+    out = cv2.cvtColor(big, cv2.COLOR_GRAY2RGB)
+    if edges and qca is not None:
+        origin = np.array([mark.row - half, mark.col - half], float)
+        for line in edge_lines(qca):
+            xy = np.round((line - origin) * zoom)[:, ::-1].astype(np.int32)
+            cv2.polylines(out, [xy], False, PATH, 1, cv2.LINE_AA)
+        cv2.circle(out, (half * zoom, half * zoom), 3 * zoom, LESION, 1, cv2.LINE_AA)
+    return out

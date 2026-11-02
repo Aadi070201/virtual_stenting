@@ -404,10 +404,10 @@ The contrast flow velocity of a run is shown with its interval, its source (rest
 
 ### SR-48: Guided cine workflow
 
-The default app guides one cine run in six steps: load; choose an end-diastolic frame (recommended one marked, any frame selectable); an automatic path along the main vessel the user can replace with two clicks, with narrowings of 50% or more numbered; the multi-frame virtual FFR with a plain-language reading, its likely range and whether the heartbeats agreed; a suggested stent with the FFR before and after, adjustable by hand (only lengths that fit the path); and the report. Every screen carries the research-use notice.
+The default app guides one cine run: a case from the library (synthetic beating hearts, CADICA runs) or an upload; a frame scrolled among the end-diastolic frames (the recommended one marked, any frame selectable), measured only when the user commits it; an automatic path along the main vessel the user can replace with two clicks, with narrowings of 50% or more numbered and shown enlarged with the measured edges (and the experts' boxes on CADICA keyframes); the multi-frame virtual FFR read against an FFR guide (above 0.80, 0.76–0.80, 0.75 or below; 0.90 after a stent), its likely range and whether the heartbeats agreed; a suggested stent with the FFR before and after, adjustable by hand (only lengths that fit the path); and the report. Every screen carries the research-use notice.
 
-- **Code:** `src/vstent/app/guided.py::frame_choices`, `src/vstent/app/guided.py::auto_path`, `src/vstent/app/guided.py::lesion_marks`, `src/vstent/app/guided.py::verdict`, `src/vstent/app/guided.py::stability`, `src/vstent/imaging/centerline.py::main_trunk_endpoints`
-- **Verified by** tests: [`test_guided_app_whole_flow`](../../tests/test_guided.py), [`test_plain_language_helpers`](../../tests/test_guided.py), [`test_main_trunk_takes_the_wider_branch_and_stops`](../../tests/test_guided.py)
+- **Code:** `src/vstent/app/guided.py::case_library`, `src/vstent/app/guided.py::frame_label`, `src/vstent/app/guided.py::lesion_zoom`, `src/vstent/app/guided.py::auto_path`, `src/vstent/app/guided.py::lesion_marks`, `src/vstent/app/guided.py::verdict`, `src/vstent/app/guided.py::stability`, `src/vstent/imaging/centerline.py::main_trunk_endpoints`
+- **Verified by** tests: [`test_guided_app_whole_flow`](../../tests/test_guided.py), [`test_plain_language_helpers`](../../tests/test_guided.py), [`test_main_trunk_takes_the_wider_branch_and_stops`](../../tests/test_guided.py), [`test_case_library_on_cadica`](../../tests/test_guided.py)
 - **Status:** verified
 
 ### SR-32: Robust console output

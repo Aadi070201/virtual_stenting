@@ -1,4 +1,5 @@
-"""The guided app (``vstent app``): main-trunk path, plain-language helpers, the whole flow."""
+"""The guided app (``vstent app``): case library, main-trunk path, plain-language helpers, the
+whole flow."""
 
 from types import SimpleNamespace
 
@@ -8,6 +9,7 @@ from streamlit.testing.v1 import AppTest
 
 from vstent.app import core, guided
 from vstent.cli import GUIDED_SCRIPT
+from vstent.data import cadica
 from vstent.imaging.centerline import main_trunk_endpoints
 from vstent.inference import consensus as pc
 from vstent.planning.stent import Stent
@@ -33,9 +35,11 @@ def _cons(ffrs, errors=()):
 
 
 def test_plain_language_helpers():
-    assert guided.verdict(0.72, False).label == "Significant"
-    assert guided.verdict(0.86, False).label == "Not significant"
-    assert guided.verdict(0.79, True).label == "Borderline"
+    assert guided.verdict(0.72).label == "Significant"
+    assert guided.verdict(0.78).label == "Grey zone"
+    assert guided.verdict(0.80).label == "Grey zone"  # 0.80 is significant (≤ 0.80)
+    assert guided.verdict(0.86).label == "Not significant"
+    assert [g[1] for g in guided.FFR_GUIDE][:3] == ["above 0.80", "0.76–0.80", "0.75 or below"]
     ok, text = guided.stability(_cons([0.71, 0.74, 0.73]))
     assert ok and "3 heartbeats" in text and "Consistent" in text
     bad, text = guided.stability(_cons([0.76, 0.84], errors=["the path was lost"]))
@@ -50,48 +54,73 @@ def test_plain_language_helpers():
     rf = SimpleNamespace(opacification=SimpleNamespace(smoothed=smoothed, window=(8, 52)),
                          ed=SimpleNamespace(found=True, frames=(3, 14, 25, 36, 47, 58)),
                          analysis_frame=25)  # fmt: skip
-    assert guided.frame_choices(rf) == [14, 25, 36, 47]
-    assert guided.frame_choices(rf, limit=2) == [14, 25]
+    assert guided.frame_label(25, rf) == "25 ★" and guided.frame_label(3, rf) == "3 faint"
+    assert guided.frame_label(14, rf, all_frames=True) == "14 ED"
+    assert guided.frame_label(25, rf, expert=frozenset({25})) == "25 ★ ◆"
+    assert guided.severity("70–90%") == 70.0 and guided.severity("99%") == 99.0
+    prob = np.zeros((100, 200))
+    prob[45:56, 5:195] = 1.0  # a vessel, wider at the left end
+    prob[42:59, 5:30] = 1.0
+    start, end = guided.box_path(prob, (90, 40, 20, 20))
+    assert start[1] < end[1] and 60 <= end[1] - start[1] <= 70  # the box ± its size
+    assert guided.box_path(prob, (90, 75, 10, 10)) is None  # no vessel in that box
     img = np.full((64, 80), 128, np.uint8)
-    out = guided.overlay(img, np.zeros((64, 80)), points=[(10, 10), (50, 70)])
+    out = guided.overlay(img, np.zeros((64, 80)), points=[(10, 10), (50, 70)],
+                         boxes=[(5, 5, 20, 20, "70–90%")])  # fmt: skip
     assert out.shape == (64, 80, 3) and out.dtype == np.uint8
+    mark = guided.LesionMark(1, 3, 3, 60.0, 5.0, 1.2, 10.0, 8.0, 12.0)  # near the corner
+    zoom = guided.lesion_zoom(img, None, mark, zoom=3, half_px=10)
+    assert zoom.shape == (60, 60, 3)
+
+
+def test_case_library_on_cadica(tmp_path):
+    from tests.test_public_validation import _fake_cadica
+
+    raw = _fake_cadica(tmp_path / "raw")
+    for p in ("p1", "p2"):  # the selected frames file makes a run part of the library
+        (raw / "CADICA" / "selectedVideos" / p / "v1" / f"{p}_v1_selectedFrames.txt").write_text(
+            f"{p}_v1_00003\n", encoding="utf-8")  # fmt: skip
+    lib = guided.case_library(raw, n_synthetic=2)
+    assert [c.kind for c in lib] == ["synthetic", "synthetic", "cadica", "cadica"]
+    real = lib[2]
+    assert real.label == "CADICA p1 run 1 · worst lesion 50–70%"
+    assert real.boxes == ((0, 113.0, 113.0, 30.0, 30.0, "50–70%"),)  # frame 00003 is index 0
+    run = guided.load_case(real)
+    assert len(run) == 1 and run.name == real.label
+    assert [c.kind for c in guided.case_library(tmp_path / "none", n_synthetic=1)] == ["synthetic"]
 
 
 @pytest.fixture
-def guided_env(monkeypatch, tiny_export, dark_seg_dir):
+def guided_env(monkeypatch, tiny_export, dark_seg_dir, tmp_path):
     monkeypatch.setenv(core.ENV_SURROGATE, tiny_export["out_dir"])
     monkeypatch.setenv(core.ENV_SEG, str(dark_seg_dir))
-    monkeypatch.setattr(guided, "CADICA_EXAMPLE", guided.Path("no/such/folder"))
+    monkeypatch.setattr(cadica, "RAW_DIR", tmp_path / "no_cadica")  # synthetic cases only
 
 
 def test_guided_app_whole_flow(guided_env):
-    """Demo run → frame → automatic path → virtual FFR over the heartbeats → suggested stent →
-    report, with the stand-in models."""
+    """Library case → frame → automatic path → virtual FFR over the heartbeats → stent → report,
+    with the stand-in models."""
     at = AppTest.from_file(str(GUIDED_SCRIPT), default_timeout=300).run()
-    assert not at.exception and "Research use only" in at.caption[0].value
-    at.radio(key="source").set_value(guided.DEMOS["synthetic"]).run()
     assert not at.exception, [e.value for e in at.exception]
-    assert "ECG markers" in at.success[0].value
-    headers = [m.value for m in at.markdown if m.value.startswith("### ")]
-    assert headers[:3] == ["### 1 · Load a cine angiogram", "### 2 · Choose the frame",
-                           "### 3 · Vessel and lesions"]  # fmt: skip
-    frame_radio = next(r for r in at.radio if r.label == "Frame")
-    assert any("★" in str(frame_radio.format_func(o)) for o in frame_radio.options)
-    labels = [m.label for m in at.metric]
-    assert "Virtual FFR at the end of the path" in labels
-    assert any("heartbeat" in i.value for i in [*at.info, *at.warning])
-    at.button(key="suggest").click().run()  # stand-in models: maybe no lesion to plan for
-    assert not at.exception, [e.value for e in at.exception]
-    # the path through the stand-in's mask: the demo's main vessel on the shown frame
-    cc, _ = guided.demo_case()
+    assert "Research use only" in at.caption[0].value
+    assert at.selectbox(key="case").value.startswith("Synthetic 1")
+    text = " ".join(m.value for m in at.markdown)
+    for step in ("1 · Frame", "2 · Vessel and lesions", "3 · Virtual FFR", "0.76–0.80"):
+        assert step in text
+    assert "Virtual FFR (end of the path)" in text
+    assert any("heartbeat" in c.value for c in at.caption)
+    # the path through the stand-in's mask: the case's main vessel on the analysed frame
+    cc, _ = guided.synthetic_case(guided.DEMO_SEED)
     main = cc.case.curves[0]
     inner = main[[len(main) // 10, (7 * len(main)) // 10]]
-    t_s = frame_radio.value / cc.runs[0].fps
-    a, b = np.round(cc.case.views[0].project(cc.position(0, t_s, inner))).astype(int)
+    frame = next(s for s in at.select_slider).value
+    a, b = np.round(cc.case.views[0].project(cc.position(0, frame / cc.runs[0].fps, inner)))
     at.session_state["start"], at.session_state["end"] = tuple(map(int, a)), tuple(map(int, b))
     at.run()
+    at.button(key="suggest").click().run()  # stand-in models: maybe no lesion to plan for
+    assert not at.exception, [e.value for e in at.exception]
     own = next(t.key for t in at.toggle if t.key and t.key.startswith("own_"))
     at.toggle(key=own).set_value(True).run()
     assert not at.exception, [e.value for e in at.exception]
-    assert "Virtual FFR after the stent" in [m.label for m in at.metric]
+    assert "After the stent" in " ".join(m.value for m in at.markdown)
     assert len(at.get("download_button")) == 2

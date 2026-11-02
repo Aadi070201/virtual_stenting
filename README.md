@@ -218,22 +218,24 @@ Trainings can be paused and resumed exactly:
 ## Using the app
 
 `uv run vstent app` opens the **guided app** in your browser. It listens on this computer
-only, and every screen says **research use only**. One cine run, six steps:
+only, and every screen says **research use only**.
 
-1. **Load** a cine run (multi-frame DICOM), or a demo: a synthetic beating heart with ECG, or
-   a real CADICA run if the dataset is downloaded.
-2. **Frame:** the end-diastolic frames with the vessels full of contrast, as thumbnails; ★ is
-   recommended. Any other frame can be chosen.
-3. **Vessel and lesions:** vessels in blue, an automatic path in yellow (from the widest end
-   along the main vessel, at most 100 mm), narrowings of 50% or more numbered in red.
-   *Change path* takes two clicks (start, end); *Reverse* swaps them.
-4. **Virtual FFR:** the median over the run's end-diastolic frames (P4g) in large type, what
-   it means (significant, not significant, borderline), its likely range, whether the
-   heartbeats agreed, and the FFR curve along the path.
-5. **Stent:** *Suggest a stent* gives the shortest plans reaching the target; the stent is
-   drawn on the vessel with the FFR before and after. Diameter, length and position can be
-   changed by hand.
-6. **Report:** JSON and PNG downloads.
+- **Study** (sidebar): a case from the library: 10 synthetic beating hearts with ECG, and, if
+  CADICA is downloaded, its 382 real runs (most severe lesions first; type to search). Or upload
+  a cine run (multi-frame DICOM). *Random* and *New study* start over. The **FFR guide** is
+  always shown: above 0.80 no stent needed; 0.76–0.80 grey zone; 0.75 or below significant;
+  0.90 or more after a stent is a good result.
+1. **Frame:** scroll the end-diastolic frames (★ recommended, ◆ an expert's lesion box, *All
+   frames* for every frame). Nothing is measured while scrolling; *Analyse this frame* commits.
+2. **Vessel and lesions:** vessels in blue, an automatic path in yellow (the main vessel, at
+   most 100 mm), narrowings of 50% or more numbered in red, the experts' boxes in cyan. Each
+   lesion is shown enlarged with the measured edges. *Change path* (two clicks), *Auto*, ⇄,
+   *Through the expert box*; *Overlays* off shows the plain angiogram.
+3. **Virtual FFR:** the median over the run's end-diastolic frames (P4g), coloured by the
+   guide, with its likely range, the number of heartbeats and the curve along the path.
+4. **Stent:** *Suggest a stent* (shortest plans reaching the target) or *Adjust it myself*;
+   the stent drawn on the vessel, the FFR before and after.
+5. **Report:** JSON and PNG downloads.
 
 The full research view, with synthetic vessels, single images, two views, vessel trees and
 every interval, is `uv run vstent app --advanced`:
