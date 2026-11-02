@@ -416,20 +416,33 @@ def test_tree_view_pieces():
     assert rep["input"]["lumen_edges"] == "outline of the vessel mask"
 
 
-def test_cine_and_transit_captions():
+def test_cine_and_flow_captions():
+    from vstent.imaging.cardiac import EndDiastole
     from vstent.imaging.cine import ContrastTransit, opacification
+    from vstent.imaging.flow import FlowVelocity
+    from vstent.imaging.image_io import RunInput
+    from vstent.imaging.run_analysis import RunFrames
 
-    op = opacification(np.array([0, 0, 10, 60, 90, 100, 95, 85, 40, 5], float))
-    text = core.cine_caption(10, op)
-    assert "Cine run of 10 frames" in text and f"({op.analysis_frame}, 0-based)" in text
+    area = np.array([0, 0, 10, 60, 90, 100, 95, 85, 40, 5], float)
+    op = opacification(area)
+    ed = EndDiastole((5,), "images", None, "Image-based: frames [5].")
+    run = RunInput(np.zeros((10, 4, 4), np.uint8), "run", "x")
+    rf = RunFrames(run, area, area, [], op, ed, 5, "End-diastolic frame (images) in the window.")
+    text = core.cine_caption(10, rf)
+    assert "Cine run of 10 frames" in text and "Frame 5 (0-based) is analysed" in text
+    assert "Image-based" in text
+    nan = float("nan")
+    unmeasured = FlowVelocity(nan, (nan, nan), False, True, ("no frame time in the run",))
     tr = ContrastTransit(np.arange(3.0), np.arange(3.0), 0.0, 20.0, (18.0, 22.0), 30)
-    assert "20.0 px/frame (95%: 18.0–22.0)" in core.transit_caption(tr, None, None)
-    with_units = core.transit_caption(tr, 100.0, 0.3)  # 20 px × 0.3 mm / 0.1 s
-    assert "60 mm/s" in with_units and "not used for FFR" in with_units
-    assert "no arrival" in core.transit_caption(None, None, None)
-    backwards = ContrastTransit(np.arange(3.0), np.arange(3.0), 0.0, -6.0, (-8.0, -5.0), 30)
-    assert not backwards.plausible and tr.plausible
-    assert "not measurable" in core.transit_caption(backwards, 100.0, 0.3)
+    cap = core.flow_caption(unmeasured, tr)
+    assert "20.0 px/frame (95%: 18.0–22.0)" in cap and "no frame time" in cap
+    fv = FlowVelocity(0.2, (0.124, 0.38), False, True, ())
+    cap = core.flow_caption(fv)
+    assert "0.20 m/s" in cap and "FAVOR" in cap and "fixed velocity stays the default" in cap
+    d = core.flow_dict(fv, used=False, ed=ed)
+    assert d["accepted"] and not d["used_for_ffr"] and d["end_diastole"]["source"] == "images"
+    assert d["hyperemic_velocity_m_s"] == pytest.approx(0.10 + 1.55 * 0.2 - 0.93 * 0.04, abs=1e-4)
+    assert core.flow_dict(unmeasured, used=False)["contrast_flow_velocity_m_s"] is None
 
 
 def test_app_two_view_example(app_env):

@@ -27,13 +27,14 @@ import streamlit as st  # noqa: E402
 
 from vstent.app import core, tree_view  # noqa: E402
 from vstent.imaging.centerline import longest_path_endpoints  # noqa: E402
-from vstent.imaging.cine import contrast_transit, opacification, vessel_areas  # noqa: E402
+from vstent.imaging.flow import combine_runs  # noqa: E402
 from vstent.imaging.image_io import (  # noqa: E402
     ImageInput,
     is_multiframe_dicom,
     read_image,
     read_run_bytes,
 )
+from vstent.imaging.run_analysis import analyse_frames, pixel_distance  # noqa: E402
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
 from vstent.inference.pipeline import (  # noqa: E402
     AUTO_LUMEN,
@@ -83,21 +84,28 @@ def segment(sha: str, _image: np.ndarray) -> np.ndarray:
     return get_models().segmentation.predict(_image)
 
 
-@st.cache_resource(max_entries=4, show_spinner="Finding the most opacified frame of the run…")
-def run_opacification(sha: str, _frames: np.ndarray):
-    return opacification(vessel_areas(_frames, get_models().segmentation.predict))
+@st.cache_resource(max_entries=4, show_spinner="Segmenting every frame of the run…")
+def run_analysis(sha: str, _run):
+    return analyse_frames(_run, get_models().segmentation.predict)
 
 
-@st.cache_resource(max_entries=16, show_spinner="Measuring the contrast transit…")
-def run_transit(key: str, _frames: np.ndarray, _centerline):
-    return contrast_transit(_frames, _centerline)
+@st.cache_resource(max_entries=16, show_spinner="Measuring the flow velocity…")
+def run_velocity(key: str, _rf, _centerline, frame: int, mm_per_px, hyperemic: bool,
+                 _view_s=None, _s=None):  # fmt: skip
+    """One run's flow velocity along the centreline: in one view (``mm_per_px``; ``None``: not
+    calibrated) or along the 3D path (``_view_s`` → ``_s``)."""
+    if _view_s is None:
+        return _rf.velocity(_centerline, frame, pixel_distance(mm_per_px), single_view=True,
+                            hyperemic_run=hyperemic)  # fmt: skip
+    return _rf.velocity(_centerline, frame, lambda s: np.interp(s, _view_s, _s),
+                        single_view=False, hyperemic_run=hyperemic)  # fmt: skip
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
-def analyse(sha: str, start, end, mm_per_px, pa, pv, lumen, _prob, _image):
+def analyse(sha: str, start, end, mm_per_px, pa, pv, lumen, _prob, _image, v_hyp=None):
     # the user's pressures, so the solver, R_micro and the range warnings all use them
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
-    params = get_settings()[0].model_copy(update=pressures)
+    params = get_settings()[0].model_copy(update=pressures | ({"v_hyp": v_hyp} if v_hyp else {}))
     return analyse_vessel(
         _prob, start, end, params=params, surrogate=get_models().surrogate, mm_per_px=mm_per_px,
         image=_image, lumen=lumen,
@@ -110,9 +118,10 @@ def get_two_view_example() -> core.TwoViewExample:
 
 
 @st.cache_resource(max_entries=16, show_spinner="Reconstructing the vessel in 3D (two views)…")
-def analyse_two(key: str, starts, ends, pa, pv, lumen, _probs, _images, _geometries):
+def analyse_two(key: str, starts, ends, pa, pv, lumen, _probs, _images, _geometries,
+                v_hyp=None):  # fmt: skip
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
-    params = get_settings()[0].model_copy(update=pressures)
+    params = get_settings()[0].model_copy(update=pressures | ({"v_hyp": v_hyp} if v_hyp else {}))
     return analyse_two_views(
         _probs, starts, ends, _geometries, params=params, surrogate=get_models().surrogate,
         images=_images, lumen=lumen,
@@ -169,10 +178,12 @@ def baseline(key: str, _profile, pa: float, pv: float, v_hyp: float):
 
 
 @st.cache_resource(max_entries=32)
-def input_mc(key: str, _profile, pa: float, pv: float, v_hyp: float, mm_per_px, assumed: bool):
+def input_mc(key: str, _profile, pa: float, pv: float, v_hyp: float, mm_per_px, assumed: bool,
+             v_range=None):  # fmt: skip
     params = get_settings()[0].model_copy(update={"v_hyp": v_hyp})
     measurement = Measurement(mm_per_px, assumed)
-    return core.input_uncertainty(_profile, params, pa, pv, measurement, get_uncertainty())
+    return core.input_uncertainty(_profile, params, pa, pv, measurement, get_uncertainty(),
+                                  v_range)  # fmt: skip
 
 
 models = get_models()
@@ -202,6 +213,9 @@ image_input: ImageInput | None = None
 image_input2: ImageInput | None = None  # P5c: second view
 example: core.TwoViewExample | None = None
 prob = prob2 = qca = two = None
+rf = rf2 = None  # P7: the cine runs' analyses
+run_t = run2_t = 0
+hyperemic = use_measured = False
 tree_mode = False
 tree_res = tree_post = tree_plans = None
 tree_stents: list[Stent] = []
@@ -239,13 +253,13 @@ else:
                 data = up.getvalue()
                 if is_multiframe_dicom(data, up.name) and models.segmentation is not None:
                     run = read_run_bytes(data, up.name)
-                    op = run_opacification(run.sha256, run.frames)
-                    t = st.number_input(
-                        "Frame of the run (0-based)", 0, len(run) - 1, op.analysis_frame,
+                    rf = run_analysis(run.sha256, run)
+                    run_t = int(st.number_input(
+                        "Frame of the run (0-based)", 0, len(run) - 1, rf.analysis_frame,
                         key=f"cine_{run.sha256[:12]}",
-                    )  # fmt: skip
-                    st.caption(core.cine_caption(len(run), op))
-                    image_input = run.frame(int(t))
+                    ))  # fmt: skip
+                    st.caption(core.cine_caption(len(run), rf))
+                    image_input = run.frame(run_t)
                 else:
                     image_input = read_image(data, up.name)
         elif source == TWO_VIEW_SOURCE:
@@ -274,8 +288,9 @@ else:
                 data2 = up2.getvalue()
                 if is_multiframe_dicom(data2, up2.name) and models.segmentation is not None:
                     run2 = read_run_bytes(data2, up2.name)
-                    frame2 = run_opacification(run2.sha256, run2.frames).analysis_frame
-                    image_input2 = run2.frame(frame2)
+                    rf2 = run_analysis(run2.sha256, run2)
+                    run2_t = rf2.analysis_frame
+                    image_input2 = run2.frame(run2_t)
                 else:
                     image_input2 = read_image(data2, up2.name)
                 if image_input2.geometry is None:
@@ -316,6 +331,18 @@ else:
             "healthy stretches (about 1 s). Imaging-chain model: the whole lumen fitted (resolves "
             "tight lesions; several seconds on long vessels).",
         )]  # fmt: skip
+        if rf is not None:
+            st.subheader("Flow (cine run)")
+            hyperemic = st.checkbox(
+                "Recorded under hyperemia (adenosine)", key="hyperemic",
+                help="DICOM does not record it. A resting run's contrast velocity is converted "
+                "with the FAVOR Pilot relation.",
+            )  # fmt: skip
+            use_measured = st.toggle(
+                "Use the measured flow velocity", key="use_measured",
+                help="Replace the fixed hyperemic velocity with the one measured from the "
+                "contrast's transit (P7). Not yet validated against real flow.",
+            )  # fmt: skip
     if image_input is None:
         st.info("Upload an angiogram (or pick an ARCADE example) to start.")
         st.stop()
@@ -394,17 +421,37 @@ if mode == "Angiogram image":
                 )  # fmt: skip
             except ValueError as exc:
                 st.error(f"Could not reconstruct the vessel from the two views: {exc}")
+            fv = None
+            if two is not None and rf is not None and rf2 is not None:
+                rec = two.reconstruction
+                fv = combine_runs([
+                    run_velocity(f"{two_key}:{k}:{hyperemic}", r, two.qca[k].centerline, ft,
+                                 None, hyperemic, rec.view_s[:, k], rec.s)[0]
+                    for k, (r, ft) in enumerate(((rf, run_t), (rf2, run2_t)))
+                ])  # fmt: skip
+                st.sidebar.caption("Both runs, 3D path: " + core.flow_caption(fv))
+                if use_measured and fv.accepted:
+                    two = analyse_two(
+                        two_key, (start, start2), (end, end2), pa, pv, lumen, (prob, prob2),
+                        (image_input.image, image_input2.image),
+                        (image_input.geometry, image_input2.geometry), v_hyp=fv.v_hyp,
+                    )  # fmt: skip
             if two is not None:
-                pre = baseline(two_key, two.profile, pa, pv, params.v_hyp)
+                used = fv is not None and use_measured and fv.accepted
+                case_params = params.model_copy(update={"v_hyp": fv.v_hyp}) if used else params
+                v_range = fv.v_hyp_interval if used else None
+                pre = baseline(two_key, two.profile, pa, pv, case_params.v_hyp)
                 state = core.CaseState(
-                    "image", params, pa, pv, two.profile, pre, image=image_input,
+                    "image", case_params, pa, pv, two.profile, pre, image=image_input,
                     points=[start, end], description=" + ".join(names),
                     warnings=list(two.warnings), two_view=two, image2=image_input2,
                     points2=[start2, end2],
                 )  # fmt: skip
+                if fv is not None:
+                    state.flow = core.flow_dict(fv, used, rf.ed)
                 iso_mm = image_input.geometry.iso_pixel_m * 1e3
-                state.uncertainty = input_mc(two_key, two.profile, pa, pv, params.v_hyp, iso_mm,
-                                             False)  # fmt: skip
+                state.uncertainty = input_mc(two_key, two.profile, pa, pv, case_params.v_hyp,
+                                             iso_mm, False, v_range)  # fmt: skip
     elif start and end and tree_mode:
         try:
             tree_res = analyse_tree_cached(
@@ -420,13 +467,26 @@ if mode == "Angiogram image":
         except ValueError as exc:
             st.error(f"Could not trace the vessel: {exc}")
             result = None
+        fv = None
+        if result is not None and rf is not None:
+            q0 = result.qca
+            fv_key = f"flow:{image_input.sha256}:{start}:{end}:{mm_per_px}:{run_t}:{hyperemic}"
+            calibrated = None if q0.calibration_assumed else q0.mm_per_px
+            fv, tr = run_velocity(fv_key, rf, q0.centerline, run_t, calibrated, hyperemic)
+            st.sidebar.caption(core.flow_caption(fv, tr))
+            if use_measured and fv.accepted:
+                result = analyse(image_input.sha256, start, end, mm_per_px, pa, pv, lumen, prob,
+                                 image_input.image, v_hyp=fv.v_hyp)  # fmt: skip
         if result is not None:
             qca = result.qca
-            img_key = f"img:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}"
-            pre = baseline(img_key, qca.profile, pa, pv, params.v_hyp)
+            used = fv is not None and use_measured and fv.accepted
+            case_params = params.model_copy(update={"v_hyp": fv.v_hyp}) if used else params
+            img_key = (f"img:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}:"
+                       f"{case_params.v_hyp:.4f}")  # fmt: skip
+            pre = baseline(img_key, qca.profile, pa, pv, case_params.v_hyp)
             state = core.CaseState(
                 "image",
-                params,
+                case_params,
                 pa,
                 pv,
                 qca.profile,
@@ -437,12 +497,12 @@ if mode == "Angiogram image":
                 description=image_input.name,
                 warnings=list(result.warnings),
             )
+            if fv is not None:
+                state.flow = core.flow_dict(fv, used, rf.ed)
             state.uncertainty = input_mc(
-                img_key, qca.profile, pa, pv, params.v_hyp, qca.mm_per_px, qca.calibration_assumed
-            )
-            if run is not None:
-                tr = run_transit(img_key, run.frames, qca.centerline)
-                st.sidebar.caption(core.transit_caption(tr, run.frame_time_ms, mm_per_px))
+                img_key, qca.profile, pa, pv, case_params.v_hyp, qca.mm_per_px,
+                qca.calibration_assumed, fv.v_hyp_interval if used else None,
+            )  # fmt: skip
 
 # --- stents: manual controls or a selected plan ---------------------------------------------
 stents: list[Stent] = []

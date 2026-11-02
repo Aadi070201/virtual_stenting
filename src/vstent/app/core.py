@@ -7,6 +7,7 @@ wires widgets to these functions. Units: SI internally, mm / mmHg for display.
 import hashlib
 import io
 import json
+import math
 import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -106,32 +107,49 @@ def load_models() -> Models:
     )
 
 
-def cine_caption(n_frames: int, op) -> str:
-    """What the app says about a cine run (``op``: :class:`~vstent.imaging.cine.Opacification`)."""
+def cine_caption(n_frames: int, rf) -> str:
+    """What the app says about a cine run (``rf``:
+    :class:`~vstent.imaging.run_analysis.RunFrames`)."""
+    op = rf.opacification
     first, last = op.window
     return (
         f"Cine run of {n_frames} frames: contrast arrival at frame {op.arrival}, opacified frames "
-        f"{first}–{last}; the most opacified frame ({op.analysis_frame}, 0-based) is analysed. "
-        "The first frames of a run are usually recorded before the contrast arrives."
+        f"{first}–{last}. {rf.ed.note} Frame {rf.analysis_frame} (0-based) is analysed: "
+        f"{rf.frame_note} The first frames of a run are usually recorded before the contrast "
+        "arrives."
     )
 
 
-def transit_caption(tr, frame_time_ms: float | None, mm_per_px: float | None) -> str:
-    """Contrast transit along the analysed vessel (``tr``:
-    :class:`~vstent.imaging.cine.ContrastTransit` or ``None``)."""
-    if tr is None:
-        return "Contrast transit: no arrival measured along the path."
-    if not tr.plausible:
-        return (
-            "Contrast transit: not measurable along this path (arrival does not advance "
-            "steadily: overlapping vessels or the catheter)."
-        )
-    lo, hi = tr.interval
-    text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"
-    if frame_time_ms and mm_per_px:
-        v = tr.velocity_mm_s(mm_per_px, frame_time_ms)
-        text += f", {v:.0f} mm/s"
-    return text + ". Recorded at rest, not at hyperaemia: shown only, not used for FFR."
+def flow_caption(fv, tr=None) -> str:
+    """The measured flow velocity (``fv``: :class:`~vstent.imaging.flow.FlowVelocity`; ``tr``:
+    its transit, for the speed in px per frame when it cannot be converted to m/s)."""
+    text = fv.note()
+    if tr is not None and tr.plausible and math.isnan(fv.cfv):
+        lo, hi = tr.interval
+        text = f"Contrast front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f}). {text}"
+    return text + (" The fixed velocity stays the default; a measured one is not yet validated "
+                   "against real flow.")  # fmt: skip
+
+
+def flow_dict(fv, used: bool, ed=None) -> dict[str, Any]:
+    """The case report's ``flow`` section (P7)."""
+    out = {
+        "contrast_flow_velocity_m_s": None if math.isnan(fv.cfv) else round(fv.cfv, 4),
+        "interval_m_s": None if math.isnan(fv.cfv) else [round(x, 4) for x in fv.interval],
+        "runs": fv.n_runs,
+        "single_view": fv.single_view,
+        "hyperemic_run": fv.hyperemic_run,
+        "conversion": "none (hyperemic run)" if fv.hyperemic_run else "FAVOR Pilot (resting run)",
+        "accepted": fv.accepted,
+        "reasons": list(fv.reasons),
+        "used_for_ffr": used,
+    }
+    if fv.accepted:
+        out["hyperemic_velocity_m_s"] = round(fv.v_hyp, 4)
+        out["hyperemic_interval_m_s"] = [round(x, 4) for x in fv.v_hyp_interval]
+    if ed is not None:
+        out["end_diastole"] = {"source": ed.source, "frames": list(ed.frames)}
+    return out
 
 
 def load_settings(root: Path = Path(".")):
@@ -259,11 +277,20 @@ def input_uncertainty(
     pv: float,
     measurement: Measurement,
     settings: tuple[UncertaintyConfig, QCAErrorModel | None],
+    v_hyp_range: tuple[float, float] | None = None,
 ) -> InputUncertainty:
-    """Monte Carlo over the case's input assumptions (run once per case; pressures in Pa)."""
+    """Monte Carlo over the case's input assumptions (run once per case; pressures in Pa);
+    ``v_hyp_range``: a measured velocity's interval (m/s, P7)."""
     cfg, qca_error = settings
     return InputUncertainty(
-        profile, params, pa, pv, measurement=measurement, config=cfg.inputs, qca_error=qca_error
+        profile,
+        params,
+        pa,
+        pv,
+        measurement=measurement,
+        config=cfg.inputs,
+        qca_error=qca_error,
+        v_hyp_range=v_hyp_range,
     )
 
 
@@ -614,6 +641,7 @@ class CaseState:
     two_view: TwoViewAnalysis | None = None  # P5c: the 3D analysis (profile = its lumen)
     image2: ImageInput | None = None
     points2: list[tuple[int, int]] | None = None
+    flow: dict[str, Any] | None = None  # P7: the measured flow velocity (flow_dict)
 
 
 def _stent_dict(st: Stent) -> dict[str, float]:
@@ -717,6 +745,9 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
                 "note": state.image2.note,
             }
             report["input"]["points2_row_col"] = [list(map(int, p)) for p in state.points2 or []]
+    if state.flow is not None:
+        report["flow"] = state.flow
+        report["assumptions"]["hyperemic_velocity_m_s"] = state.params.v_hyp
     if state.plans is not None:
         pr = state.plans
         report["plans"] = {
