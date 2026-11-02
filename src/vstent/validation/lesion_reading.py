@@ -108,6 +108,13 @@ def test_stage(runner, data_dir=lesion_data.OUT_DIR) -> dict[str, Any]:
         m, e, lp = _predict(runner, "kemerovo", data_dir)
         groups = {"edges": lesion_grades(m, e), "learned": lesion_grades(m, lp)}
         out["kemerovo"] = {k: _kemerovo(g) for k, g in groups.items()}
+    free = Path(data_dir) / "cadica_free.npz"
+    if free.exists():  # P4k-A: the CADICA test patients' lesion-free runs (never used before)
+        m, e, lp = _predict(runner, "cadica_free", data_dir)
+        test = np.array([x["split"] == "test" for x in m], bool)
+        out["cadica_free_test"] = {"n": int(test.sum()), **{
+            k: float(np.mean(v[test] >= SIGNIFICANT)) if test.any() else None
+            for k, v in (("edges", e), ("learned", lp))}}  # fmt: skip
     return out
 
 
@@ -185,4 +192,9 @@ def test_sections(t: dict[str, Any]) -> list[str]:
                 "|---|---:|---:|---:|---:|",
                 *(f"| {n} | {v['n_lesions']} | {_pct(v['read_ge50'])} | {_pct(v['read_ge70'])} | "
                   f"{v['median_ds']:.0f} |" for n, v in k.items()), ""]  # fmt: skip
+    if "cadica_free_test" in t:
+        f = t["cadica_free_test"]
+        out += ["### CADICA test patients' lesion-free runs (fresh; P4k-A)", "",
+                f"Candidates read ≥ 50% (target ≤ 20%): edges {_pct(f['edges'])}, learned "
+                f"{_pct(f['learned'])} (of {f['n']}).", ""]  # fmt: skip
     return out
