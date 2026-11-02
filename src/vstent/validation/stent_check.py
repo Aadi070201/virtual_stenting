@@ -5,8 +5,11 @@ clinician-style path through the box and, when its FFR is ≤ 0.80, the guided a
 proposes stents. Checked: whether a stent covers the experts' lesion (its deepest point inside
 the box), and the predicted post-PCI FFR against FFR-SEARCH (0.91 ± 0.07).
 
-Arms: ``product``; ``wire`` (P4k-C2: the vessel up to the last point with a reference diameter
-≥ 2.0 mm, its FFR read there).
+Arms:
+- ``product``: the measurement before P4k-C3 (edges, no outflow, the whole path);
+- ``wire``: as ``product`` up to the last point with a reference diameter ≥ 2.0 mm (P4k-C2);
+- ``pipeline``: the product's FFR pipeline as configured in ``configs/product.yaml`` (D69:
+  the learned lesion reader, Murray outflow), which the planner uses too.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ import numpy as np
 
 from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 
-ARMS = ("product", "wire")
+ARMS = ("product", "wire", "pipeline")
 CUTOFF = 0.80
 COVER_TARGET = 0.90
 POST_MEAN_RANGE = (0.88, 0.94)  # FFR-SEARCH: 0.91 ± 0.07
@@ -75,23 +78,33 @@ def lesion_task(img, prob, item, params_dict) -> dict[str, Any]:
     track, patient, category, b = item
     box = (b.x, b.y, b.w, b.h)
     params = PhysicsParams(**params_dict)
+    from vstent.inference.product import product_config, product_params, product_reader
+
     _, planner, catalog = load_settings()
     planner = planner.model_copy(update={"backend": "solver"})
-    row: dict[str, Any] = {"track": track, "patient": patient, "category": category}
+    prod = product_config()
+    row: dict[str, Any] = {"track": track, "patient": patient, "category": category,
+                           "pipeline": prod.model_dump()}  # fmt: skip
     try:
         path = box_path(prob, box)
         if path is None:
             raise ValueError("no vessel in the box")
         q = analyse_vessel(prob, path[0], path[1], params=params, image=img, wire=False).qca
+        qp = analyse_vessel(prob, path[0], path[1], params=params, image=img,
+                            lesion_reader=product_reader(prod.lesion_reader),
+                            wire=prod.wire).qca  # fmt: skip
         at = _deepest_in_box(q, box)
         if at is None:
             raise ValueError("the path does not enter the box")
         for arm in ARMS:
-            prof = _arm_profile(q.profile, arm)
-            pre = float(solve_ffr_batch(prof.r, prof.ds, prof.r_ref, params).ffr_distal[0])
+            if arm == "pipeline":
+                prof, p_arm = _arm_profile(qp.profile, "product"), product_params(params, prod)
+            else:
+                prof, p_arm = _arm_profile(q.profile, arm), params
+            pre = float(solve_ffr_batch(prof.r, prof.ds, prof.r_ref, p_arm).ffr_distal[0])
             res: dict[str, Any] = {"pre": pre, "planned": False, "in_reach": bool(at <= prof.s[-1])}
             if pre <= CUTOFF:
-                plans = plan_stents(prof, catalog=catalog, config=planner, params=params)
+                plans = plan_stents(prof, catalog=catalog, config=planner, params=p_arm)
                 if plans.plans:
                     best = plans.plans[0]
                     covered = any(s.s_start <= at <= s.s_end for s in best.stents)
@@ -147,7 +160,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Per arm: lesions measured, significant, planned; the stent on the lesion; post-PCI FFR."""
     ok = [r for r in rows if "error" not in r]
     out: dict[str, Any] = {"n_lesions": len(rows), "n_measured": len(ok), "arms": {}}
-    for arm in ARMS:
+    for arm in [a for a in ARMS if ok and all(a in r for r in ok)]:  # arms in every row
         sig = [r[arm] for r in ok if r[arm]["pre"] <= CUTOFF]
         planned = [x for x in sig if x["planned"]]
         post = np.array([x["post"] for x in planned])

@@ -7,7 +7,7 @@ def _row(pre, post=None, covered=False, reaches=False):
     arm = {"pre": pre, "planned": post is not None, "in_reach": True}
     if post is not None:
         arm.update(post=post, covered=covered, reaches=reaches, n_stents=1, length_mm=18.0)
-    return {"product": arm, "wire": arm}
+    return {"product": arm, "wire": arm, "pipeline": arm}
 
 
 def test_summary_and_targets():
