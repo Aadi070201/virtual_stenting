@@ -1,0 +1,17 @@
+# Learned lesion reading, version 2 (P4k-A), as pre-registered in docs/PLAN.md. Do not change
+# without a new pre-registration. Everything else as P4i (configs/lesion.yaml).
+name: lesion_cnn_v2
+seed: 0
+folds: 5
+epochs: 40
+batch_size: 64
+lr: 0.001
+weight_decay: 0.0001
+huber_delta: 0.1
+bce_weight: 0.5
+dropout: 0.2
+ds_loss: interval
+free_negatives: true
+data_dir: data/derived/lesion_v2
+runs_dir: runs
+device: cpu

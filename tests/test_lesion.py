@@ -138,3 +138,41 @@ def test_analyse_vessel_with_a_lesion_reader():
     assert deep.qca.lumen_method == "learned"
     assert deep.qca.max_percent_stenosis > plain.qca.max_percent_stenosis
     assert deep.ffr_distal_solver < plain.ffr_distal_solver
+
+
+def test_version_2_intervals_and_training(tmp_path):
+    """P4k-A: grades as intervals, normal candidates ≤ 40, lesion-free CADICA negatives held out
+    with their patient's fold."""
+    torch = pytest.importorskip("torch")
+    from vstent.imaging import lesion_model as lm
+
+    assert lesion_data.ds_interval({"category": "p70_90", "sig_target": 1.0}) == (70.0, 90.0)
+    assert lesion_data.ds_interval({"category": "", "sig_target": 1.0}) == (50.0, 100.0)
+    assert lesion_data.ds_interval({"category": "", "sig_target": 0.0}) == (0.0, 40.0)
+    cfg = lm.LesionTrainConfig(ds_loss="interval")
+    pred = torch.tensor([75.0, 95.0, 30.0])
+    zero = torch.zeros(3)
+    inside = lm._loss(pred, zero, zero, zero, cfg, torch.tensor([70.0, 50.0, 0.0]),
+                      torch.tensor([90.0, 100.0, 40.0]))  # fmt: skip
+    bce = cfg.bce_weight * torch.nn.functional.binary_cross_entropy_with_logits(zero, zero)
+    assert float(inside) == pytest.approx(float(bce))  # every prediction inside its interval
+    outside = lm._loss(pred, zero, zero, zero, cfg, torch.tensor([80.0, 50.0, 0.0]),
+                       torch.tensor([90.0, 100.0, 20.0]))  # fmt: skip
+    assert float(outside) > float(inside)
+    _fake_data(tmp_path / "data")
+    rng = np.random.default_rng(1)
+    free = [{"source": "cadica_free", "split": "dev" if k < 12 else "test",
+             "patient": f"p{k % 6 + 1}", "track": f"f{k}", "category": "",
+             "ds_target": float("nan"), "sig_target": 0.0, "measured_ds": 30.0,
+             "patch": rng.normal(0, 0.1, (2, lp.PATCH_ALONG, lp.PATCH_ACROSS)).astype(np.float32),
+             "scalars": rng.uniform(0, 1, lp.N_SCALARS).astype(np.float32)}
+            for k in range(16)]  # fmt: skip
+    lesion_data.save(free, "cadica_free", tmp_path / "data")
+    data = lm.training_data(tmp_path / "data", free=True)
+    assert len(data["free"][2]) == 12  # development patients only
+    cfg = lm.LesionTrainConfig(folds=2, epochs=1, batch_size=16, ds_loss="interval",
+                               free_negatives=True, data_dir=str(tmp_path / "data"),
+                               runs_dir=str(tmp_path / "runs"))  # fmt: skip
+    run = lm.train_lesion(cfg, checkpoint_root=tmp_path / "ckpt")
+    oof = json.loads((run / lm.OOF_FILE).read_text(encoding="utf-8"))["samples"]
+    assert len(oof) == 36 and all(0 <= s["oof_ds"] <= 100 for s in oof)

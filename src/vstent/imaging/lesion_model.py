@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import torch
@@ -59,6 +59,8 @@ class LesionTrainConfig(StrictModel):
     huber_delta: float = Field(0.1, gt=0)  # on %DS ÷ 100
     bce_weight: float = Field(0.5, ge=0)
     dropout: float = Field(0.2, ge=0, lt=1)
+    ds_loss: Literal["midpoint", "interval"] = "midpoint"  # P4k-A: "interval"
+    free_negatives: bool = False  # P4k-A: CADICA lesion-free candidates in training
     data_dir: str = str(lesion_data.OUT_DIR)
     runs_dir: str = "runs"
     device: str = "cpu"
@@ -102,19 +104,24 @@ class LesionEnsemble(nn.Module):
         return ds, sig
 
 
-def training_data(data_dir: str | Path) -> dict[str, Any]:
-    """CADICA development samples (graded) and ARCADE stenosis train samples (significance)."""
-    pc, sc, mc = lesion_data.load("cadica", data_dir)
-    dev = np.array([m["split"] == "dev" for m in mc])
-    pa, sa, ma = lesion_data.load("arcade_train", data_dir)
-    for name, arr in (("cadica patches", pc), ("cadica scalars", sc), ("arcade patches", pa),
-                      ("arcade scalars", sa)):  # fmt: skip
-        if not np.isfinite(arr).all():
-            raise ValueError(f"{name}: non-finite values in the lesion samples")
-    return {
-        "cadica": (pc[dev], sc[dev], [m for m, d in zip(mc, dev, strict=True) if d]),
-        "arcade": (pa, sa, ma),
-    }
+def training_data(data_dir: str | Path, free: bool = False) -> dict[str, Any]:
+    """CADICA development samples (graded), ARCADE stenosis train samples (significance) and,
+    with ``free``, the development patients' lesion-free candidates (P4k-A)."""
+    names = ["cadica", "arcade_train"] + (["cadica_free"] if free else [])
+    loaded = {n: lesion_data.load(n, data_dir) for n in names}
+    for n, (p, s, _) in loaded.items():
+        if not (np.isfinite(p).all() and np.isfinite(s).all()):
+            raise ValueError(f"{n}: non-finite values in the lesion samples")
+
+    def dev_only(n):
+        p, s, m = loaded[n]
+        dev = np.array([x["split"] == "dev" for x in m], bool)
+        return p[dev], s[dev], [x for x, d in zip(m, dev, strict=True) if d]
+
+    out = {"cadica": dev_only("cadica"), "arcade": loaded["arcade_train"]}
+    if free:
+        out["free"] = dev_only("cadica_free")
+    return out
 
 
 def fold_of(patients: list[str], folds: int, seed: int) -> dict[str, int]:
@@ -139,9 +146,16 @@ def _augment(patch: torch.Tensor, gen: torch.Generator) -> torch.Tensor:
     return torch.roll(patch, shifts=shift, dims=2)
 
 
-def _loss(ds_pred, logit, ds_target, sig_target, cfg: LesionTrainConfig) -> torch.Tensor:
-    graded = torch.isfinite(ds_target)
+def _loss(ds_pred, logit, ds_target, sig_target, cfg: LesionTrainConfig,
+          lo=None, hi=None) -> torch.Tensor:  # fmt: skip
+    """BCE on the significance logit, plus a Huber loss on %DS ÷ 100: against the midpoint
+    target, or (``ds_loss="interval"``, P4k-A) on the distance outside [``lo``, ``hi``]."""
     loss = cfg.bce_weight * nn.functional.binary_cross_entropy_with_logits(logit, sig_target)
+    if cfg.ds_loss == "interval":
+        outside = (torch.relu(lo - ds_pred) + torch.relu(ds_pred - hi)) / 100.0
+        return loss + nn.functional.huber_loss(outside, torch.zeros_like(outside),
+                                               delta=cfg.huber_delta)  # fmt: skip
+    graded = torch.isfinite(ds_target)
     if graded.any():
         loss = loss + nn.functional.huber_loss(ds_pred[graded] / 100.0,
                                                ds_target[graded] / 100.0,
@@ -184,15 +198,24 @@ def resume_lesion(name_or_path: str | Path, *, checkpoint_root: str | Path = CHE
 
 def _fit(cfg: LesionTrainConfig, run_dir: Path, ckpt_dir: Path, log, *, resume: bool) -> Path:
     torch.manual_seed(cfg.seed)
-    data = training_data(cfg.data_dir)
+    data = training_data(cfg.data_dir, cfg.free_negatives)
     pc, sc, mc = data["cadica"]
     pa, sa, ma = data["arcade"]
+    pf, sf, mf = data.get("free", (pc[:0], sc[:0], []))
     fold = fold_of([m["patient"] for m in mc], cfg.folds, cfg.seed)
     fold_c = np.array([fold[m["patient"]] for m in mc])
+    fold_f = np.array([fold.get(m["patient"], -1) for m in mf], int)  # -1: never held out
     ds_c = np.array([m["ds_target"] for m in mc], np.float32)
     sig_c = np.array([m["sig_target"] for m in mc], np.float32)
     sig_a = np.array([m["sig_target"] for m in ma], np.float32)
-    all_s = np.concatenate([sc, sa])
+    sig_f = np.zeros(len(mf), np.float32)
+
+    def bounds(ms):
+        iv = np.array([lesion_data.ds_interval(m) for m in ms], np.float32).reshape(-1, 2)
+        return iv[:, 0], iv[:, 1]
+
+    (lo_c, hi_c), (lo_a, hi_a), (lo_f, hi_f) = bounds(mc), bounds(ma), bounds(mf)
+    all_s = np.concatenate([sc, sa, sf])
     s_mean, s_std = all_s.mean(axis=0), all_s.std(axis=0) + 1e-6
     gen = torch.Generator().manual_seed(cfg.seed)
     state = {"fold": 0, "epoch": 0, "history": [], "oof": [None] * len(mc), "resumes": [],
@@ -202,7 +225,8 @@ def _fit(cfg: LesionTrainConfig, run_dir: Path, ckpt_dir: Path, log, *, resume: 
     def new_fold():
         m = LesionNet(s_mean, s_std, cfg.dropout)
         o = torch.optim.AdamW(m.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
-        n_train = int((fold_c != state["fold"]).sum()) + len(pa)
+        n_train = (int((fold_c != state["fold"]).sum()) + len(pa)
+                   + int((fold_f != state["fold"]).sum()))  # fmt: skip
         steps = cfg.epochs * -(-n_train // cfg.batch_size)
         return m, o, torch.optim.lr_scheduler.CosineAnnealingLR(o, T_max=steps)
 
@@ -243,11 +267,14 @@ def _fit(cfg: LesionTrainConfig, run_dir: Path, ckpt_dir: Path, log, *, resume: 
         if model is None or state["epoch"] == 0:
             model, opt, sched = new_fold()
         train_c = np.flatnonzero(fold_c != k)
-        patches = torch.as_tensor(np.concatenate([pc[train_c], pa]))
-        scalars = torch.as_tensor(np.concatenate([sc[train_c], sa]))
-        ds_t = torch.as_tensor(np.concatenate([ds_c[train_c], np.full(len(pa), np.nan,
-                                                                       np.float32)]))  # fmt: skip
-        sig_t = torch.as_tensor(np.concatenate([sig_c[train_c], sig_a]))
+        train_f = np.flatnonzero(fold_f != k)
+        patches = torch.as_tensor(np.concatenate([pc[train_c], pa, pf[train_f]]))
+        scalars = torch.as_tensor(np.concatenate([sc[train_c], sa, sf[train_f]]))
+        no_ds = np.full(len(pa) + len(train_f), np.nan, np.float32)
+        ds_t = torch.as_tensor(np.concatenate([ds_c[train_c], no_ds]))
+        sig_t = torch.as_tensor(np.concatenate([sig_c[train_c], sig_a, sig_f[train_f]]))
+        lo_t = torch.as_tensor(np.concatenate([lo_c[train_c], lo_a, lo_f[train_f]]))
+        hi_t = torch.as_tensor(np.concatenate([hi_c[train_c], hi_a, hi_f[train_f]]))
         for epoch in range(state["epoch"] + 1, cfg.epochs + 1):
             t0 = time.perf_counter()
             model.train()
@@ -256,7 +283,7 @@ def _fit(cfg: LesionTrainConfig, run_dir: Path, ckpt_dir: Path, log, *, resume: 
             for i in range(0, len(order), cfg.batch_size):
                 idx = order[i : i + cfg.batch_size]
                 ds_pred, logit = model(_augment(patches[idx], gen), scalars[idx])
-                loss = _loss(ds_pred, logit, ds_t[idx], sig_t[idx], cfg)
+                loss = _loss(ds_pred, logit, ds_t[idx], sig_t[idx], cfg, lo_t[idx], hi_t[idx])
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 opt.step()

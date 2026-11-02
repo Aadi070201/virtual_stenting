@@ -14,6 +14,13 @@ a candidate narrowing far from every box:
 Each frame is segmented once in this process; the measurements run in worker processes. The
 lumen is the intensity edges (the product's shape; the absolute-size factor does not change
 %DS). Written to ``data/derived/lesion/<source>.npz`` (patches float16) + ``.json``.
+
+**Version 2** (P4k-A, ``data/derived/lesion_v2/``):
+- box samples are measured on the clinician-style path (from the tree's proximal end through
+  the box to the vessel's end, ``guided.box_path``), falling back to the P4b path;
+- normal-vessel candidates are added from CADICA's lesion-free runs (every 4th selected
+  frame, both splits; ``cadica_free``);
+- every sample has a %DS target interval (:func:`ds_interval`).
 """
 
 import json
@@ -39,9 +46,23 @@ from vstent.imaging.qca import LEVEL, qca_from_centerline
 from vstent.validation.stenosis_grading import path_through_box
 
 OUT_DIR = Path("data/derived/lesion")
+OUT_DIR_V2 = Path("data/derived/lesion_v2")
 NEGATIVES_PER_IMAGE = 2
 SEED = 0
 AUTO_PATH_PX = 100.0 / 0.30  # the guided app's automatic path length (100 mm at 0.30 mm/px)
+FREE_FRAME_STEP = 4  # P4k-A: every 4th selected frame of a lesion-free run
+GRADE_RANGES = {"p0_20": (0.0, 20.0), "p20_50": (20.0, 50.0), "p50_70": (50.0, 70.0),
+                "p70_90": (70.0, 90.0), "p90_98": (90.0, 98.0)}  # fmt: skip
+SIGNIFICANT_RANGE = (50.0, 100.0)  # an ungraded stenosis box (ARCADE, Kemerovo)
+NORMAL_RANGE = (0.0, 40.0)  # a normal-vessel candidate
+
+
+def ds_interval(meta: dict[str, Any]) -> tuple[float, float]:
+    """The %DS target interval of a sample (P4k-A): a CADICA grade's range, ≥ 50 for an
+    ungraded stenosis box, ≤ 40 for a normal-vessel candidate."""
+    if meta.get("category") in GRADE_RANGES:
+        return GRADE_RANGES[meta["category"]]
+    return SIGNIFICANT_RANGE if meta["sig_target"] >= 0.5 else NORMAL_RANGE
 
 
 def _inside(q, box) -> np.ndarray:
@@ -50,15 +71,35 @@ def _inside(q, box) -> np.ndarray:
     return (p[:, 0] >= y) & (p[:, 0] <= y + h) & (p[:, 1] >= x) & (p[:, 1] <= x + w)
 
 
-def box_sample(image, prob, graph, box) -> dict[str, Any] | None:
-    """Patch, scalars and measured %DS at the deepest point inside ``box`` (x, y, w, h)."""
-    path = path_through_box(graph, box)
-    if path is None or len(path) < 5:
+def _clinician_qca(image, prob, box):
+    """QCA on the path from the tree's proximal end through ``box`` (``guided.box_path``), or
+    ``None``."""
+    from vstent.app.guided import box_path
+    from vstent.imaging.centerline import trace_centerline
+
+    ends = box_path(prob, box)
+    if ends is None:
         return None
     try:
-        q = qca_from_centerline(prob, smooth_and_resample(path), image=image, lumen="edges")
+        q = qca_from_centerline(prob, trace_centerline(prob >= LEVEL, *ends), image=image,
+                                lumen="edges")  # fmt: skip
     except ValueError:
         return None
+    return q if _inside(q, box).any() else None
+
+
+def box_sample(image, prob, graph, box, clinician: bool = False) -> dict[str, Any] | None:
+    """Patch, scalars and measured %DS at the deepest point inside ``box`` (x, y, w, h); with
+    ``clinician``, measured on the clinician-style path when there is one (P4k-A)."""
+    q = _clinician_qca(image, prob, box) if clinician else None
+    if q is None:
+        path = path_through_box(graph, box)
+        if path is None or len(path) < 5:
+            return None
+        try:
+            q = qca_from_centerline(prob, smooth_and_resample(path), image=image, lumen="edges")
+        except ValueError:
+            return None
     inside = _inside(q, box)
     if not inside.any():
         return None
@@ -94,12 +135,13 @@ def negative_samples(image, prob, boxes, key: str) -> list[dict[str, Any]]:
 
 
 def _frame_task(image, prob, jobs) -> list[dict[str, Any]]:
-    """Every job of one frame: ("box", meta, box) or ("negatives", meta, boxes)."""
+    """Every job of one frame: ("box" or "box_clinician", meta, box) or ("negatives", meta,
+    boxes)."""
     graph = vessel_graph(prob >= LEVEL)
     out = []
     for kind, meta, arg in jobs:
-        if kind == "box":
-            s = box_sample(image, prob, graph, arg)
+        if kind in ("box", "box_clinician"):
+            s = box_sample(image, prob, graph, arg, clinician=kind == "box_clinician")
             out.append({**meta, **(s or {"error": "no vessel path through the box"})})
         else:
             out += [{**meta, **s} for s in negative_samples(image, prob, arg, meta["key"])]
@@ -181,6 +223,34 @@ def arcade_frames(raw_dir: str | Path, split: str) -> list[tuple[Path, list]]:
     return frames
 
 
+def cadica_free_frames(raw_dir: str | Path | None = None) -> list[tuple[Path, list]]:
+    """Normal-vessel candidates on CADICA's lesion-free runs (P4k-A): every
+    :data:`FREE_FRAME_STEP`-th selected frame, with the patient's split (P4b)."""
+    from vstent.data import cadica
+    from vstent.validation.stenosis_grading import lesion_tracks, patient_split
+
+    raw_dir = raw_dir or cadica.RAW_DIR
+    split = patient_split([t.patient for t in lesion_tracks(cadica.load_lesion_boxes(raw_dir))])
+    frames = []
+    for r in cadica.load_selected_runs(raw_dir):
+        if r.lesion or r.patient not in split:
+            continue
+        for f in r.selected[::FREE_FRAME_STEP]:
+            key = f"{r.patient}_{r.video}_free_f{f}"
+            meta = {"source": "cadica_free", "split": split[r.patient], "patient": r.patient,
+                    "track": key, "frame": f, "category": "", "ds_target": float("nan"),
+                    "sig_target": 0.0, "key": key}  # fmt: skip
+            frames.append((r.frames_dir / f"{r.patient}_{r.video}_{f:05d}.png",
+                           [("negatives", meta, [])]))  # fmt: skip
+    return frames
+
+
+def _clinician(frames: list[tuple[Path, list]]) -> list[tuple[Path, list]]:
+    """The same frames with every box measured on the clinician-style path (version 2)."""
+    return [(p, [("box_clinician" if k == "box" else k, m, a) for k, m, a in jobs])
+            for p, jobs in frames]  # fmt: skip
+
+
 def kemerovo_frames(raw_dir: str | Path) -> list[tuple[Path, list]]:
     """Kemerovo stenosis boxes (significant lesions; external test)."""
     from vstent.data.kemerovo import load_boxes
@@ -227,17 +297,23 @@ SOURCES = ("cadica", "arcade", "kemerovo")
 
 def build(segmenter, *, workers: int = 1, sources: tuple[str, ...] = SOURCES,
           kemerovo_dir: str | Path | None = None, arcade_dir: str | Path = "data/raw/arcade",
-          git: dict | None = None,
+          git: dict | None = None, version: int = 1,
           log: Callable[[str], None] | None = None) -> dict[str, int]:  # fmt: skip
     """The samples of ``sources``; returns the number of samples per file. Kemerovo is skipped
-    while it is not downloaded."""
+    while it is not downloaded. ``version`` 2 (P4k-A): clinician-style paths for boxes, the
+    lesion-free CADICA candidates, written to :data:`OUT_DIR_V2`."""
     log = log or (lambda _m: None)
-    sets = [("cadica", cadica_frames())] if "cadica" in sources else []
+    prep = _clinician if version == 2 else (lambda f: f)
+    sets = [("cadica", prep(cadica_frames()))] if "cadica" in sources else []
+    if "cadica" in sources and version == 2:
+        sets.append(("cadica_free", cadica_free_frames()))
     if "arcade" in sources:
-        sets += [(f"arcade_{s}", arcade_frames(arcade_dir, s)) for s in ("train", "val", "test")]
+        sets += [(f"arcade_{s}", prep(arcade_frames(arcade_dir, s)))
+                 for s in ("train", "val", "test")]  # fmt: skip
     if ("kemerovo" in sources and kemerovo_dir is not None
             and (Path(kemerovo_dir) / "train_labels.csv").exists()):  # fmt: skip
-        sets.append(("kemerovo", kemerovo_frames(kemerovo_dir)))
+        sets.append(("kemerovo", prep(kemerovo_frames(kemerovo_dir))))
+    out_dir = OUT_DIR_V2 if version == 2 else OUT_DIR
     counts = {}
     for name, frames in sets:
         log(f"{name}: {len(frames)} frames")
@@ -247,7 +323,7 @@ def build(segmenter, *, workers: int = 1, sources: tuple[str, ...] = SOURCES,
                 log(f"  {name}: {k} / {n}")
 
         samples = _run(frames, segmenter, workers, progress)
-        save(samples, name, extra={"git": git or {}})
+        save(samples, name, out_dir, extra={"git": git or {}, "version": version})
         counts[name] = sum("patch" in s for s in samples)
         log(f"  {name}: {counts[name]} samples ({len(samples) - counts[name]} failed)")
     return counts

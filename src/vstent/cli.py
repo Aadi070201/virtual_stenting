@@ -1779,9 +1779,11 @@ def lesion_data(
     sources: Annotated[
         str, typer.Option("--sources", help="Comma-separated: cadica, arcade, kemerovo.")
     ] = "cadica,arcade,kemerovo",
+    version: Annotated[int, typer.Option("--version", min=1, max=2, help="2: P4k-A.")] = 1,
 ) -> None:
     """Lesion patches from real angiograms (CADICA, ARCADE stenosis, Kemerovo) for the learned
-    lesion reading (P4i) → data/derived/lesion/."""
+    lesion reading (P4i) → data/derived/lesion/; version 2 (P4k-A: clinician-style paths,
+    lesion-free CADICA candidates) → data/derived/lesion_v2/."""
     from vstent.config import git_info
     from vstent.data.lesion_data import build
     from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
@@ -1792,7 +1794,7 @@ def lesion_data(
     counts = build(SegmentationRunner.from_dir(seg_dir), workers=workers,
                    sources=tuple(s.strip() for s in sources.split(",") if s.strip()),
                    kemerovo_dir=kemerovo_dir, git={**git, "seg_model": Path(seg_dir).as_posix()},
-                   log=typer.echo)  # fmt: skip
+                   version=version, log=typer.echo)  # fmt: skip
     typer.echo(f"Samples: {counts}")
 
 
