@@ -59,6 +59,15 @@ the imaging-chain fit on healthy stretches: 0.0% median error on held-out render
 frames its absolute accuracy is unverified; it was checked only for consistency with the
 renders. Two-view lengths are now off by more than 5% in 1 of 200 synthetic cases.
 
+P7 reads cine runs the way a cath lab records them:
+- the analysis frame is the end-diastolic frame, from the DICOM R-wave pointer or ECG, or
+  otherwise from the size of the vessel tree in the images;
+- the contrast's flow velocity is measured along the vessel, following the heart's motion and
+  correcting for phasic coronary flow. On synthetic beating hearts it is within 5.8% of the
+  truth (median, two views; [reports/cine_synthetic.md](reports/cine_synthetic.md));
+- it replaces the fixed hyperemic velocity only when the user asks (`--flow measured`, or the
+  app's toggle), because it has not been tested against real flow.
+
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):
 - intended use and preliminary classification (India, EU, US);

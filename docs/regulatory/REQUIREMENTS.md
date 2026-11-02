@@ -87,7 +87,7 @@ The end-diastolic frames of a run come from the DICOM R-wave pointer, else from 
 - **Code:** `src/vstent/imaging/cardiac.py::r_wave_pointer`, `src/vstent/imaging/cardiac.py::read_ecg`, `src/vstent/imaging/cardiac.py::r_peaks`, `src/vstent/imaging/cardiac.py::ed_from_spread`, `src/vstent/imaging/cardiac.py::end_diastole`
 - **Verified by** tests: [`test_r_peaks_and_frames`](../../tests/test_cardiac.py), [`test_dicom_r_wave_pointer_and_ecg_round_trip`](../../tests/test_cardiac.py), [`test_ed_from_spread_finds_the_largest_tree`](../../tests/test_cardiac.py)
 - **Verified by** reports: [cine_synthetic.md](../../reports/cine_synthetic.md)
-- **Risk control for:** H-12
+- **Risk control for:** H-11, H-12
 - **Status:** verified
 
 ## Segmentation and QCA

@@ -122,7 +122,7 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
   pilot; a few hundred to a few thousand runs need a workstation or cloud CPUs. I will estimate
   the cost from a pilot before you commit money.
 
-## 4. Real angiography runs (to confirm P5; before P7)
+## 4. Real angiography runs (to confirm P5 and P7)
 
 - **Two-view DICOM (confirms P5):** two runs of the same vessel from different angles (≥ 30°
   apart), with the positioner angles and distances in the DICOM header. The best option is a
@@ -130,9 +130,23 @@ invasive FFR (medRxiv 2023, doi:10.1101/2023.05.13.23289934). It has no public d
   confirm the angle convention and the C-arm distances (D49); the synthetic test cannot. A
   phantom of known lumen sizes (or IVUS / OCT reference diameters from a partner) would also
   verify the absolute lumen size (P5b), which today is checked on rendered vessels only.
-- **Cine examples:** a handful of de-identified, licensed cine DICOM runs (ideally with ECG),
-  for example from the clinical partner under the same agreement. Without them, P7 is built and
-  tested on synthetic sequences only.
+- **Cine examples with ECG (confirms P7's end-diastolic frames):** a handful of
+  de-identified, licensed cine DICOM runs whose header carries the ECG waveform or the R-wave
+  pointer, for example from the clinical partner under the same agreement. P7 reads both, but
+  only on synthetic DICOM so far; the image-based end-diastolic frames were checked against the
+  truth on synthetic runs only (CADICA has no ECG).
+- **Flow ground truth (before the measured velocity can become a default, P7):** the measured
+  contrast flow velocity is accurate on synthetic beating hearts (two views: 5.8% median
+  error), but untested on real flow. Options, cheapest first:
+  - a flow phantom with a pump of known flow rate, imaged with contrast injections at a few
+    flow rates (a university biomedical engineering lab, or the C-arm vendor's application
+    team);
+  - Doppler-wire (e.g. ComboWire) velocities recorded by a partner during the same runs;
+  - the published FAVOR / QFR studies' authors, for de-identified frame-count data.
+- **Freedom to operate for the measured velocity:** the FAVOR Pilot conversion and
+  frame-count velocity are used by QFR products, which are patented (Pulse Medical, Medis).
+  Ask the patent attorney before the measured velocity is offered commercially
+  (`docs/INVENTION_NOTES.md` §7).
 
 ## 5. Company and IP (any time, before going public)
 

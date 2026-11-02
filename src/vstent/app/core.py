@@ -408,6 +408,28 @@ def profile_figure(
     return fig
 
 
+def opacification_figure(rf, frame: int) -> go.Figure:
+    """A cine run's vessel area per frame (``rf``:
+    :class:`~vstent.imaging.run_analysis.RunFrames`), the opacified window, the end-diastolic
+    frames and the analysed ``frame`` (P7)."""
+    op = rf.opacification
+    t = np.arange(op.smoothed.size)
+    peak = max(float(op.smoothed.max()), 1.0)
+    fig = go.Figure()
+    fig.add_vrect(x0=op.window[0] - 0.5, x1=op.window[1] + 0.5, fillcolor=BAND, line_width=0,
+                  layer="below")  # fmt: skip
+    fig.add_scatter(x=t, y=100 * op.smoothed / peak, name="Vessel area (smoothed)",
+                    line={"color": SERIES_1, "width": 2})  # fmt: skip
+    ed = [f for f in rf.ed.frames if 0 <= f < t.size]
+    fig.add_scatter(x=ed, y=[100 * op.smoothed[f] / peak for f in ed], mode="markers",
+                    name=f"End-diastolic ({rf.ed.source})",
+                    marker={"color": SERIES_2, "symbol": "diamond", "size": 9})  # fmt: skip
+    fig.add_vline(x=frame, line={"color": INK_MUTED, "width": 1.2, "dash": "dash"})
+    fig.update_layout(**{**_LAYOUT, "height": 240}, xaxis_title="Frame (0-based)",
+                      yaxis_title="% of peak", yaxis_rangemode="tozero")  # fmt: skip
+    return fig
+
+
 def _interval_bar(fig: go.Figure, x: float, iv: Interval, color: str, name: str) -> None:
     """Vertical bar from iv.low to iv.high at the distal end ``x`` (mm)."""
     fig.add_scatter(

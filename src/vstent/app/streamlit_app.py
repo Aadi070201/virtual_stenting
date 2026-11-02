@@ -259,6 +259,7 @@ else:
                         key=f"cine_{run.sha256[:12]}",
                     ))  # fmt: skip
                     st.caption(core.cine_caption(len(run), rf))
+                    st.plotly_chart(core.opacification_figure(rf, run_t))
                     image_input = run.frame(run_t)
                 else:
                     image_input = read_image(data, up.name)

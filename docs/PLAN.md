@@ -445,8 +445,8 @@ lies on its epipolar guide, and the checks pass.
 
 ## P7: Cine angiography
 
-- [ ] Multi-frame DICOM: end-diastolic frame selection (ECG if present, image-based otherwise). (Run loading and the opacified analysis window: P4d.)
-- [ ] TIMI frame count → a patient-specific flow velocity instead of a fixed hyperemic velocity, with its uncertainty feeding P1. (Contrast-front transit on single runs: P4d.)
+- [x] Multi-frame DICOM: end-diastolic frame selection (ECG if present, image-based otherwise). (Run loading and the opacified analysis window: P4d.)
+- [x] TIMI frame count → a patient-specific flow velocity instead of a fixed hyperemic velocity, with its uncertainty feeding P1. (Contrast-front transit on single runs: P4d.) Available on request; the fixed velocity stays the default until real flow confirms it (D55).
 
 **Done when:** frame selection and frame counting are tested on synthetic cine sequences, and on real cine examples if the human supplies de-identified, licensed ones.
 
@@ -455,7 +455,7 @@ lies on its epipolar guide, and the checks pass.
 Development seeds 9100+ (methods and settings chosen here); held-out seeds 9200+ (the report,
 run once). CADICA development patients for real-data choices; CADICA test patients once.
 
-- [ ] Synthetic beating-heart cine runs (`vstent cine-synthetic`): P5's 3D trees on a heart
+- [x] Synthetic beating-heart cine runs (`vstent cine-synthetic`): P5's 3D trees on a heart
   sphere whose radius follows a cardiac volume curve: largest at end-diastole (the ECG R
   wave), end-systolic radius 8–15% smaller, heart rate 50–110 bpm, frame rate 7.5, 15 or
   30 fps, 2–5 beats per run. Breathing drift (a slow 3D shift). A contrast front advances
@@ -465,7 +465,7 @@ run once). CADICA development patients for real-data choices; CADICA test patien
   faster in diastole (diastolic / systolic speed ratio 1.5–2.5); the true velocity is the
   cycle average. Each run is written as a DICOM with FrameTime and C-arm geometry; half the
   runs also carry an ECG waveform (WaveformSequence) and the R-wave pointer.
-- [ ] End-diastolic (ED) frames:
+- [x] End-diastolic (ED) frames:
   - from the DICOM when present: the R-wave pointer (0028,6040); else R peaks of the ECG
     waveform (band-pass, derivative energy, 250 ms refractory period), mapped to frames
     with FrameTime (or the frame time vector);
@@ -484,7 +484,10 @@ run once). CADICA development patients for real-data choices; CADICA test patien
   the development runs. On the test runs its analysis frame lies inside the clinicians'
   selected span in ≥ 83% of runs: M5's peak rule reached 88%, the current segmenter's 82%
   (D54).
-- [ ] Flow velocity from the contrast transit:
+  **Results:** ECG 347 of 348 beats (met); image-based at 15 fps 79% (**not met**, target
+  80%); analysis frame 95% of runs (met); CADICA test 149 of 177 (84%, met; run curves at
+  probability ≥ 0.9, chosen on the development runs, D55).
+- [x] Flow velocity from the contrast transit:
   - CFV (contrast flow velocity) = the P4d front speed (Theil–Sen) × the pixel size at the
     vessel ÷ the frame time; on a two-view path (both runs at their ED frames), the 3D arc
     length is used instead;
@@ -512,15 +515,21 @@ run once). CADICA development patients for real-data choices; CADICA test patien
 
   (Amended 2026-11-02, before any beating-heart run existed: the first version set the
   accuracy targets for any run, but one view cannot meet them because of foreshortening.)
-- [ ] Product: the fixed velocity stays the default until a measured velocity has been
+
+  **Results** (`reports/cine_synthetic.md`; methods chosen on development seeds, D55: motion
+  tracking on the opacification plateau, flow time for phasic flow, 90% split-conformal
+  intervals instead of the Theil–Sen 95% interval, a two-run agreement guard). Two views:
+  median error 5.8%, 98% within ±25%, coverage 95%, FFR 0.005 (all met). One view: coverage
+  95% (met), median error −16%. Guards rejected 13% of runs (met).
+- [x] Product: the fixed velocity stays the default until a measured velocity has been
   checked against real flow (a phantom or a Doppler wire, HUMAN_ACTIONS). `vstent analyse
   <run>` and the app also show the FFR from the measured velocity, with its interval and
   source (rest / hyperemic), and the user can choose it as the primary value. The app's
   run view shows the ED frames on the opacification curve. The case report stores the ED
   source, the CFV, the conversion and the guards.
-- [ ] Reports: `reports/cine_synthetic.md` (ED frames and velocity on the held-out
+- [x] Reports: `reports/cine_synthetic.md` (ED frames and velocity on the held-out
   runs); `reports/cine_frames.md` adds the ED rule on CADICA.
-- [ ] Regulatory: requirements for ED selection and the measured velocity; H-11 and H-12
+- [x] Regulatory: requirements for ED selection and the measured velocity; H-11 and H-12
   updated (the transit becomes an optional FFR input), with a hazard for a wrong measured
   velocity.
 

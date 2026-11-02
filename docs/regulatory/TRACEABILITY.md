@@ -62,6 +62,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-10 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 | H-11 | SR-05 | Cine runs on one intensity scale | 1 tests | verified |
 | H-11 | SR-06 | End-diastolic analysis frame in the opacified phase | 3 tests, 2 reports | verified |
+| H-11 | SR-44 | End-diastolic frames from the DICOM or the images | 3 tests, 1 reports | verified |
 | H-11 | SR-13 | Analysed path shown on the image | 2 tests | verified |
 | H-12 | SR-31 | Measured flow velocity is shown, and used only when the user chooses it | 3 tests, inspection | verified |
 | H-12 | SR-46 | Measured flow velocity with guards, phase correction and interval | 3 tests, 2 reports | verified |

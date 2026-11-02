@@ -284,14 +284,17 @@ hazards:
     severity: 4
     probability: 5
     basis: >-
-      Measured on CADICA test patients: the analysis frame lies outside the span of the
-      clinicians' selected frames in 32 of 177 runs (18%) with the D53 segmenter, against 22
-      (12%) with M5 (D54).
-    controls: [SR-05, SR-06, SR-13]
+      Measured on CADICA test patients: with the P7 end-diastolic rule the analysis frame
+      lies outside the span of the clinicians' selected frames in 28 of 177 runs (16%); with
+      P4d's peak rule 32 (18%) with the D53 segmenter and 22 (12%) with M5 (D54, D55). On
+      synthetic beating hearts it is within one frame of end-diastole in 95% of runs.
+    controls: [SR-05, SR-06, SR-44, SR-13]
     residual_probability: 5
     residual_basis: Measured with the controls (the CADICA result is the product's own rule).
-    evidence: [reports/cine_frames.md]
-    needed: A lesion-aware and end-diastolic frame choice (P7); the user's confirmation.
+    evidence: [reports/cine_frames.md, reports/cine_synthetic.md]
+    needed: >-
+      A lesion-aware frame choice; real runs with ECG to confirm the end-diastolic frames;
+      the user's confirmation.
 
   - id: H-12
     title: Wrong measured flow velocity used

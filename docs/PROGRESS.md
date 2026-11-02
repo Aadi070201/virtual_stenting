@@ -1110,3 +1110,69 @@ qualified person, not regulatory advice.
 
 **Open issues**
 - Recovering the frame choice is now a P7 target (D54).
+
+## 2026-11-02 — P7: Cine angiography (done; one target missed)
+
+**What was done**
+- Plan and targets pre-registered (commit d4484b6), amended once before any data existed
+  (two-view velocity targets, single-view foreshortening; c63c29a).
+- End-diastolic frames (`imaging/cardiac.py`), in order:
+  - the DICOM R-wave pointer;
+  - the R peaks of a DICOM ECG waveform, mapped to frames with FrameDelay, FrameTime and
+    the waveform's time offset;
+  - the vessel tree's spread in the images, its beat by autocorrelation.
+
+  The analysis frame is the ED frame in the opacified window with the most vessel. The
+  loader carries the pointer and the ECG.
+- Heart motion (`imaging/motion.py`): affine registration of the vessel maps, on the
+  opacification plateau only. Filling and washout frames take the transform of the same
+  phase a whole number of beats away.
+- Flow velocity (`imaging/flow.py`):
+  - the contrast front's slope of distance on flow time, a phasic-flow correction from the
+    ED frames (D55);
+  - guards; a resting run converted with the FAVOR Pilot relation;
+  - 90% split-conformal intervals (× / ÷ 1.68 for one run, 1.23 for two runs that agree
+    within ×1.5), widened for one view's foreshortening;
+  - the input Monte Carlo draws from the interval when the velocity is used.
+- One pass over a run (`imaging/run_analysis.py`), shared by `vstent analyse` (`--flow
+  measured`, `--hyperemic-run`), the app and the report.
+  - The app shows the opacification curve with the ED frames and the measured velocity, with
+    a toggle to use it; the case report has a `flow` section.
+  - The fixed velocity stays the default.
+- Synthetic beating hearts (`imaging/synthetic_cine.py`):
+  - P5's trees contract about the heart's centre with a twist, plus breathing;
+  - phasic contrast fronts;
+  - an ECG; written as XA DICOM.
+- Reports: `vstent cine-synthetic` (held-out seeds 9200–9259), `--calibrate` (development
+  seeds 9164–9199), and the ED rule in `vstent cine-frames`.
+- Regulatory: SR-06 revised, SR-44–SR-46 added (46 requirements, 45 verified); H-11 and H-12
+  revised (H-12: a wrong measured velocity used); D55; INVENTION_NOTES §7; HUMAN_ACTIONS
+  (ECG runs, flow ground truth, freedom to operate).
+
+**Results** (held-out synthetic cases unless named)
+- ED frames:
+  - from the ECG: 347 of 348 beats within ±1 frame;
+  - from the images: 79% of beats at 15 fps (target ≥ 80%, **not met**);
+  - analysis frame within ±1 frame of a true ED frame: 114 of 120 runs (95%).
+- Velocity, two views (3D path): median |error| 5.8% (bias −1.2%), 98% of cases within
+  ±25%, interval coverage 95%. The FFR changes by 0.005 (median; 90th percentile 0.022) from
+  the velocity error alone. 40 of 51 analysable cases had an accepted velocity.
+- Velocity, one view: median error −16% (foreshortening), widened-interval coverage 95%.
+  Guards rejected 13% of runs.
+- On development cases the phasic correction cut the median error from 19.9% to 9.7% (per
+  run, 3D path). Plateau tracking removed a +3.8% bias from registering partly filled
+  frames.
+- CADICA test patients: the analysis frame within the clinicians' span in 149 of 177 runs
+  (84%; target ≥ 83%, met). The peak rule with the same segmenter gave 82%, with M5 88%.
+- The intervals are wide for one run (× / ÷ 1.68): a single run's velocity is barely more
+  informative than the fixed one. Two agreeing runs narrow it to × / ÷ 1.23.
+
+**Open issues**
+- Image-based ED at 15 fps missed its target by one point; 7.5 fps runs are the weakest.
+  Not retuned on the held-out data.
+- Untested on real flow and on real ECG-carrying DICOM (HUMAN_ACTIONS). The phasic
+  correction assumes the generator's flow-profile family.
+- M5's segmentation for the run curves would give 88–89% on CADICA, at the cost of a second
+  segmentation pass and model (D55).
+- Freedom to operate for the FAVOR Pilot conversion and frame-count velocity (QFR patents).
+- Fast test suite now about 5 minutes (the P7 CLI test renders a run).

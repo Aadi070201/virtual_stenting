@@ -56,7 +56,7 @@ A: acceptable, R: reduce, U: unacceptable.
 | H-08 | Wrong vessel or path analysed | 4 | 4 | 16 unacceptable | SR-08, SR-13, SR-10, SR-02 | 4 | 16 unacceptable |
 | H-09 | Plan used as a sizing instruction | 4 | 4 | 16 unacceptable | SR-43, SR-26, SR-25, SR-27, SR-09, SR-01 | 4 | 16 unacceptable |
 | H-10 | Post-PCI FFR overestimated | 3 | 5 | 15 unacceptable | SR-15, SR-24, SR-03, SR-01 | 5 | 15 unacceptable |
-| H-11 | Wrong analysis frame | 4 | 5 | 20 unacceptable | SR-05, SR-06, SR-13 | 5 | 20 unacceptable |
+| H-11 | Wrong analysis frame | 4 | 5 | 20 unacceptable | SR-05, SR-06, SR-44, SR-13 | 5 | 20 unacceptable |
 | H-12 | Wrong measured flow velocity used | 4 | 3 | 12 unacceptable | SR-31, SR-46, SR-45, SR-44 | 3 | 12 unacceptable |
 | H-13 | Result attributed to the wrong patient | 4 | 3 | 12 unacceptable | SR-36, SR-04 | 3 | 12 unacceptable |
 | H-14 | Unit or conversion error | 4 | 2 | 8 reduce | SR-09, SR-14, SR-17 | 1 | 4 acceptable |
@@ -182,11 +182,11 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** The chosen frame of a run is before full opacification, during washout or blurred by motion.
 - **Hazardous situation:** An under-filled vessel shows a false narrowing or hides a lesion.
 - **Harm:** As H-01 or H-02.
-- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA test patients: the analysis frame lies outside the span of the clinicians' selected frames in 32 of 177 runs (18%) with the D53 segmenter, against 22 (12%) with M5 (D54).
-- **Controls:** SR-05 Cine runs on one intensity scale; SR-06 End-diastolic analysis frame in the opacified phase; SR-13 Analysed path shown on the image
+- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured on CADICA test patients: with the P7 end-diastolic rule the analysis frame lies outside the span of the clinicians' selected frames in 28 of 177 runs (16%); with P4d's peak rule 32 (18%) with the D53 segmenter and 22 (12%) with M5 (D54, D55). On synthetic beating hearts it is within one frame of end-diastole in 95% of runs.
+- **Controls:** SR-05 Cine runs on one intensity scale; SR-06 End-diastolic analysis frame in the opacified phase; SR-44 End-diastolic frames from the DICOM or the images; SR-13 Analysed path shown on the image
 - **After controls:** P5 Frequent = 20 unacceptable. Measured with the controls (the CADICA result is the product's own rule).
-- **Evidence:** [cine_frames.md](../../reports/cine_frames.md)
-- **Needed:** A lesion-aware and end-diastolic frame choice (P7); the user's confirmation.
+- **Evidence:** [cine_frames.md](../../reports/cine_frames.md), [cine_synthetic.md](../../reports/cine_synthetic.md)
+- **Needed:** A lesion-aware frame choice; real runs with ECG to confirm the end-diastolic frames; the user's confirmation.
 
 ### H-12: Wrong measured flow velocity used
 
