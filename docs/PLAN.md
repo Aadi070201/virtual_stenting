@@ -776,6 +776,11 @@ path, K = 5 consensus, pixel size assumed):
   - FFR ≤ 0.80 by grade (50–70 / 70–90 / 90–98%): 88 / 78 / 81% now; 0 / 14 / 19% with
     `murray` (FAME 35 / 80 / 96%). The FAME distance grows by 36 points (limit 10).
 
+  **Test** (CADICA test patients, `reports/p4k_physics.md`): the same pattern.
+  - Lesion-free vessels read ≤ 0.80: 54% now, 10% with `murray`.
+  - By grade: 64 / 66 / 73% now; 5 / 9 / 10% with `murray`.
+  - FAME distance: 22 vs 62 points.
+
   **Amendment 1** (2026-11-02, after this result, before any result of A or E): if A or E is
   adopted, this development check is run again with the adopted lesion reading, same rule.
   Reason: the lesions' own pressure loss depends on their measured depth, which the edges
