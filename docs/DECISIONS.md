@@ -1192,3 +1192,32 @@ attempts the analysis and options are written in PROGRESS and the human decides 
 - Adopting it on the test result: rejected. The decision is made on development data; using
   the test to choose would leave no unbiased result.
 - Relaxing the rule after seeing it: rejected.
+
+### D62 — Hybrid vessel segmentation: not adopted; vessel coverage is not the main gap (2026-11-02)
+**Finding** (`reports/vessel_coverage_dev.md`; pre-registered in docs/PLAN.md, P4j, commit
+c6623be; CADICA development patients and ARCADE val):
+
+| Segmentation | CADICA development boxes crossed by a measurable path | ARCADE val recall | Added pixels near annotated vessels |
+|---|---:|---:|---:|
+| Model alone | 95.4% | 80.8% | – |
+| Hybrid, T = 0.05–0.20 | 98.3–99.3% | 81.9–85.9% | 15.5–24.1% |
+
+- No threshold met the guard (≥ 50% of the added pixels near annotated vessels), so none was
+  eligible and the hybrid is **not adopted**. It stays an option
+  (`SegmentationRunner(hybrid_threshold=...)`).
+- The added structure could be real small branches (ARCADE annotates only the SYNTAX
+  segments) or noise from ribs and lung edges; the data cannot tell them apart.
+- **The model already crosses 95% of the boxes.** The faint mid-vessel in the app's overlay is
+  often marked only thinly, but enough for a path. Vessel coverage is not the main reason
+  severe lesions read mild.
+
+**Seen with it (the user's screenshot, CADICA p12):** a long diffuse lesion graded 90–98% on
+three boxes, measured on the path "through the expert box" (box ± its size), reads 17–36%.
+That path starts inside the diseased segment, so the healthy reference along it is itself
+narrow. Experts compare with the healthy proximal vessel. The app's expert-box path now starts
+at the tree's proximal end and runs through the box (as *Target* does). The grading protocol's
+short path has the same weakness; a pre-registered comparison follows.
+
+**Alternatives:**
+- Relaxing the guard after the result: rejected.
+- Adopting the hybrid for display only: possible later, as an option.

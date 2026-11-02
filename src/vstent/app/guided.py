@@ -174,10 +174,15 @@ def severity(grade: str) -> float:
     return float(grade.split("–")[0].rstrip("%"))
 
 
-def box_path(prob: np.ndarray, box: tuple[float, float, float, float]):
-    """(start, end) of the vessel path through an expert box (x, y, w, h), extended by the box
-    size on every side (:func:`~vstent.validation.stenosis_grading.path_through_box`), proximal
-    (wider) end first; ``None`` if no segmented vessel crosses the box."""
+def box_path(prob: np.ndarray, box: tuple[float, float, float, float],
+             mm_per_px: float | None = None):  # fmt: skip
+    """(start, end) of a path through an expert box (x, y, w, h) as a clinician draws it: from
+    the vessel tree's proximal end, through the vessel in the box, to that vessel's end
+    (:func:`target_path`), so the healthy proximal vessel sets the reference. If the box's
+    vessel is not connected to the tree in the segmentation, the vessel path through the box
+    extended by the box size on every side
+    (:func:`~vstent.validation.stenosis_grading.path_through_box`). ``None`` if no segmented
+    vessel crosses the box."""
     from scipy.ndimage import distance_transform_edt
 
     from vstent.imaging.centerline import vessel_graph
@@ -187,6 +192,13 @@ def box_path(prob: np.ndarray, box: tuple[float, float, float, float]):
     path = path_through_box(vessel_graph(mask), box)
     if path is None or len(path) < 5:
         return None
+    x, y, w, h = box
+    inside = [p for p in path if x <= p[1] <= x + w and y <= p[0] <= y + h]
+    if inside:
+        try:
+            return target_path(prob, inside[len(inside) // 2], mm_per_px)
+        except ValueError:
+            pass  # not connected to the tree: the path through the box alone
     a, b = tuple(map(int, path[0])), tuple(map(int, path[-1]))
     width = distance_transform_edt(mask)
     return (a, b) if width[a] >= width[b] else (b, a)

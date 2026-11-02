@@ -62,7 +62,7 @@ def test_plain_language_helpers():
     prob[45:56, 5:195] = 1.0  # a vessel, wider at the left end
     prob[42:59, 5:30] = 1.0
     start, end = guided.box_path(prob, (90, 40, 20, 20))
-    assert start[1] < end[1] and 60 <= end[1] - start[1] <= 70  # the box ± its size
+    assert start[1] < 30 and end[1] > 180  # proximal start, through the box, to the vessel end
     assert guided.box_path(prob, (90, 75, 10, 10)) is None  # no vessel in that box
     img = np.full((64, 80), 128, np.uint8)
     out = guided.overlay(img, np.zeros((64, 80)), points=[(10, 10), (50, 70)],

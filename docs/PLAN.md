@@ -666,19 +666,26 @@ placed on the missed vessels, and lesions sit in gaps.
   (≥ 0.9) and are unchanged.
 
 **Development** (CADICA development patients' expert boxes; ARCADE val vessel masks):
-- [ ] **T** in {0.05, 0.10, 0.15, 0.20}: the one with the highest share of development boxes
+- [x] **T** in {0.05, 0.10, 0.15, 0.20}: the one with the highest share of development boxes
   crossed by a measurable path (`path_through_box`, ≥ 5 px), among those meeting both:
   - ARCADE val recall (annotated vessel pixels covered) ≥ the model's;
   - ≥ 50% of the added pixels within 5 px of an annotated vessel (ARCADE annotates only the
     main segments, so a correct small branch counts against this).
-- [ ] **Adopt** the hybrid segmentation for the product only if it raises the development box
+- [x] **Adopt** the hybrid segmentation for the product only if it raises the development box
   coverage by ≥ 10 points over the model alone. Otherwise it stays an option.
 
+  **Result: not adopted** (D62).
+  - No threshold was eligible: only 15–24% of the added pixels lay near annotated vessels.
+  - The model alone already crosses 95.4% of the development boxes; the hybrid crosses
+    98–99%.
+
 **Test** (once):
-- [ ] Box coverage on CADICA test patients and on Kemerovo.
-- [ ] ARCADE test recall and the near-annotation share of the added pixels.
-- [ ] If adopted: P4i continues on the adopted segmentation (amendment 2, before its
-  development decision); the grading is re-run.
+- [x] Box coverage on CADICA test patients and on Kemerovo. **Not run:** no threshold was
+  eligible.
+- [x] ARCADE test recall and the near-annotation share of the added pixels. **Not run.**
+- [x] If adopted: P4i continues on the adopted segmentation (amendment 2, before its
+  development decision); the grading is re-run. **Not adopted:** P4i evaluates its run on the
+  model's segmentation, as amendment 2 says.
 - [ ] Report: `vstent vessel-coverage` → `reports/vessel_coverage.md`.
 
 ## P5: Projection geometry and two-view 3D reconstruction

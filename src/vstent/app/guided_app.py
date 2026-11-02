@@ -299,7 +299,8 @@ def main() -> None:
             if boxes and st.button("Through the expert box", key="expert_path",
                                    help="A path through the most severe expert box."):  # fmt: skip
                 ranked = sorted(boxes, key=lambda b: -guided.severity(b[4]))
-                ends = next((e for b in ranked if (e := guided.box_path(prob, b[:4]))), None)
+                ends = next((e for b in ranked if (e := guided.box_path(prob, b[:4], mm_px))),
+                            None)  # fmt: skip
                 if ends is None:
                     st.warning("No segmented vessel crosses the expert boxes.")
                 else:
