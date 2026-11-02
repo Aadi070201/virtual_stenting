@@ -8,6 +8,9 @@ runner = CliRunner()
 COMMANDS = [
     "physics-report",
     "physics-check",
+    "export-map",
+    "lesion-detection",
+    "vessel-id-report",
     "synth",
     "synth-tree",
     "tree-report",
