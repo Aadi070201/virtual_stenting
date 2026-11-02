@@ -639,9 +639,47 @@ product):**
   whose segment FFR (median of up to 5 keyframes) is ≤ 0.80, by grade (targets: 70–98% ≥ 50%;
   0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported).
 - [ ] Report: `vstent lesion-report` → `reports/lesion_reading.md`.
+- **Amendment 2** (2026-11-02, before any development result of P4i was computed): if P4j
+  adopts the hybrid segmentation, the lesion samples are re-extracted with it and the reader
+  is retrained with the same configuration, and the run trained on the model-only
+  segmentation (`runs/lesion_cnn-20261102-171855`) is not evaluated. If P4j does not adopt
+  it, that run is evaluated as planned.
 
 **Done when:** the decision is recorded, the report exists with the test results, and the
 product uses the rule's outcome.
+
+## P4j: Vessel coverage on real angiograms: hybrid segmentation (added 2026-11-02; pre-registered before any measurement)
+
+Why: on CADICA frames the segmenter (trained on ARCADE, whose masks cover only the SYNTAX
+segments) misses most of the tree. On one development frame (p12 run 1) it marks the proximal
+and distal vessel but not the mid-vessel holding all three expert lesions (1 of 3 boxes
+reached). A training-free vesselness filter (Frangi) reaches all 3. Paths then cannot be
+placed on the missed vessels, and lesions sit in gaps.
+
+**Method (`imaging/vesselness.py`):**
+- **Vesselness:** Frangi (scikit-image, dark ridges) at σ = 1–5 px × (image size ÷ 512),
+  divided by its 99.5th percentile.
+- **Added vessels:** the connected components of {vesselness ≥ T} that touch the model's mask
+  (probability ≥ 0.5, dilated by 2 px); components < 30 px dropped.
+- **Hybrid probability:** max(model, 0.6 on the added pixels).
+- The run's curves (opacification, end-diastole) keep counting the model's confident pixels
+  (≥ 0.9) and are unchanged.
+
+**Development** (CADICA development patients' expert boxes; ARCADE val vessel masks):
+- [ ] **T** in {0.05, 0.10, 0.15, 0.20}: the one with the highest share of development boxes
+  crossed by a measurable path (`path_through_box`, ≥ 5 px), among those meeting both:
+  - ARCADE val recall (annotated vessel pixels covered) ≥ the model's;
+  - ≥ 50% of the added pixels within 5 px of an annotated vessel (ARCADE annotates only the
+    main segments, so a correct small branch counts against this).
+- [ ] **Adopt** the hybrid segmentation for the product only if it raises the development box
+  coverage by ≥ 10 points over the model alone. Otherwise it stays an option.
+
+**Test** (once):
+- [ ] Box coverage on CADICA test patients and on Kemerovo.
+- [ ] ARCADE test recall and the near-annotation share of the added pixels.
+- [ ] If adopted: P4i continues on the adopted segmentation (amendment 2, before its
+  development decision); the grading is re-run.
+- [ ] Report: `vstent vessel-coverage` → `reports/vessel_coverage.md`.
 
 ## P5: Projection geometry and two-view 3D reconstruction
 
