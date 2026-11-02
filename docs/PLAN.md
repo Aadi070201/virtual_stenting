@@ -919,6 +919,39 @@ are reported.
 
 - [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 
+## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)
+
+Why: image-based ED frames are within ±1 frame for 75–79% of beats (synthetic, every frame
+rate). Real runs rarely carry an ECG, and none of our real datasets does. The user asked for a
+ground truth and a method that need no ECG (`docs/INVENTION_NOTES.md` §8).
+
+**Ground truth without an ECG**
+- [ ] [needs human] **Expert-labelled ED frames,** as in Meng et al. 2022:
+  - an ED-labelling page in the app (scroll the frames, mark one ED frame per beat);
+  - 60 runs (30 CADICA test patients, 30 AngioCAD), labelled by two readers;
+  - their agreement within ±1 frame reported;
+  - the consensus is the real test set.
+- [ ] **Beat-to-beat reproducibility (no labels):** for each method's ED frames, the mean
+  centreline distance between successive beats after an affine registration, relative to the
+  same frames shifted by ±1. Lower is better. Reported on CADICA development runs.
+
+**Methods** (all on the same runs)
+- M0: the vessel-tree spread maxima (now).
+- M1: two clocks (mechanical spread, length and motion, plus contrast-front kinetics while
+  filling), fused per beat.
+- M2: a spatio-temporal network (MobileNetV3 per frame, temporal convolutions) trained on
+  synthetic runs with a known ECG at 7.5, 10, 15 and 30 fps.
+- M3: M2 fine-tuned on real runs (CADICA development patients, AngioCAD) with the
+  reproducibility and two-clock signals.
+
+**Choice and targets**
+- **Choice:** the method with the best synthetic development ±1-frame accuracy among those
+  whose real development reproducibility is no worse than M0's. Both are measured on
+  development data only.
+- **Targets (test):**
+  - synthetic ±1 frame ≥ 95% at every frame rate;
+  - expert-labelled real runs ±1 frame ≥ 90% (Meng et al.: 93%).
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.

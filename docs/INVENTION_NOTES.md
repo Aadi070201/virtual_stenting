@@ -259,6 +259,49 @@ generated reports in `reports/`.
   correction assumes; its benefit on real contrast transits still needs a phantom or
   Doppler-wire data recorded with angiograms.
 
+## 8. End-diastolic frames without an ECG: two physiological clocks and beat-to-beat reproducibility (planned, P4l)
+
+- **Proposed:** 2026-11-02 (the user asked for an ECG-free ground truth and method).
+  Pre-registered in docs/PLAN.md, P4l. Not implemented.
+- **The problem:**
+  - ED frames come from the ECG, which is often missing or out of sync in exported runs.
+  - Image-only methods use a single mechanical cue: vessel motion, landmark trajectories or
+    image statistics.
+  - Without an ECG there is no real ground truth to train or check them against.
+- **The idea:**
+  1. **Two independent clocks:**
+     - a mechanical clock: the vessel tree's size and length are largest at end-diastole,
+       and its motion surges at the start of ejection;
+     - a haemodynamic clock: while the arteries fill, the contrast front advances fast in
+       diastole and slows or stops in systole, because intramyocardial compression impedes
+       coronary inflow. The switch from fast to slow marks the onset of systole, just after
+       the R wave.
+
+     Where both clocks agree, the frame is a pseudo-label without an ECG. Where they
+     disagree, the run is flagged.
+  2. **Beat-to-beat reproducibility as an ECG-free accuracy measure:**
+     - frames at the same cardiac phase in successive beats show the same coronary geometry,
+       after removing breathing and table motion with an affine registration;
+     - a method that finds the true ED frames minimises the geometric difference between the
+       beats' chosen frames, compared with the frames one before or after;
+     - this scores any ED method on real runs, and is a self-supervised training signal
+       (cycle consistency across beats).
+  3. **A spatio-temporal network:** trained on synthetic beating hearts with a known ECG, then
+     adapted to real runs with the reproducibility and two-clock signals.
+- **Status:** a candidate for discussion only; a proper prior-art search is needed.
+- **Known prior art:**
+  - Meng et al., Technol Health Care 2022 (landmark tracking and optical flow, expert-labelled
+    ED frames, 93% within ±1 frame);
+  - Ciusdel et al., Comput Med Imaging Graph 2020 (deep spatio-temporal network, ECG-labelled);
+  - US 8,605,976 (wavelet motion analysis for optimal QCA frames);
+  - US 8,175,356 (cardiac phase from the lowest-variance subtraction image);
+  - US 11,058,385 (cardiac motion from angiography);
+  - temporal cycle-consistency learning (Dwibedi et al., CVPR 2019) as a general method.
+- **Not found in one search:** the contrast front's systolic slowing used as a phase marker.
+  This needs a search of the phasic-flow and TIMI frame-count literature.
+- **India:** s.3(k). A claim would rest on the imaging system and its measured technical
+  effect.
+
 ---
 
 ## Not considered inventive (engineering choices)
