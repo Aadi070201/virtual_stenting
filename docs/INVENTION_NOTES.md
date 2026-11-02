@@ -251,8 +251,13 @@ generated reports in `reports/`.
   phase detection (e.g. Ciusdel et al., Comput Med Imaging Graph 2020).
 - **India:** s.3(k) excludes computer programs per se and mathematical methods; a claim would
   need to be framed around the imaging system and its measured technical effect.
+- **Real-data support (2026-11-02, D56):** in DEFINE-FLOW's Doppler tracings (455 real
+  lesions) the resting diastolic / systolic velocity ratio has a median of 1.73, so the phasic
+  bias the method corrects exists in patients. It differs by artery (RCA 1.35, left coronary
+  about 1.8), which points to an artery-specific prior.
 - **Weakness:** the synthetic test draws its flow profiles from the same family the
-  correction assumes; real benefit needs a phantom or Doppler-wire data.
+  correction assumes; its benefit on real contrast transits still needs a phantom or
+  Doppler-wire data recorded with angiograms.
 
 ---
 

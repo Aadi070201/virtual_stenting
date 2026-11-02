@@ -129,11 +129,11 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Cause / sequence of events:** The model assumes steady, fully developed flow, an area-only expansion loss, a fixed hyperaemic velocity and a healthy microcirculation; real lesions, diffuse disease, microvascular dysfunction and collaterals differ.
 - **Hazardous situation:** The FFR shown is systematically wrong for the patient.
 - **Harm:** As H-01 (FFR too high) or H-02 (too low).
-- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured where possible. FDA benchmark nozzle, abrupt exit, Re 500: modelled loss 0.61 × the measured median (FFR too high). Synthetic stand-in study with the product's fixed assumptions, scored against its own physics: limits of agreement −0.135 to +0.152, accuracy at 0.80 of 0.902. Nothing is measured against invasive FFR.
+- **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured where possible. FDA benchmark nozzle, abrupt exit, Re 500: modelled loss 0.61 × the measured median (FFR too high). Synthetic stand-in study with the product's fixed assumptions, scored against its own physics: limits of agreement −0.135 to +0.152, accuracy at 0.80 of 0.902. Real physiology (DEFINE-FLOW, 455 lesions): the stenosis-free hyperemic velocity is 0.21–0.33 m/s (median, by the Doppler mean-to-peak factor) against the fixed 0.35 m/s, and P1's velocity range holds only 27–56% of lesions. Nothing is measured against invasive FFR from images.
 - **Controls:** SR-14 Reduced-order FFR model; SR-15 Microvascular resistance calibration; SR-16 Vessel-tree physics; SR-23 Input interval (Monte Carlo); SR-03 Scope of the uncertainty intervals stated; SR-01 Research-use notice everywhere
 - **After controls:** P5 Frequent = 20 unacceptable. The intervals cover the listed assumptions, not the model's own error.
-- **Evidence:** [physics_nozzle.md](../../reports/physics_nozzle.md), [validation_synthetic.md](../../reports/validation_synthetic.md)
-- **Needed:** 3D CFD comparison on coronary geometries (P6), a patient-specific flow, and agreement with invasive FFR.
+- **Evidence:** [physics_nozzle.md](../../reports/physics_nozzle.md), [validation_synthetic.md](../../reports/validation_synthetic.md), [physiology_real.md](../../reports/physiology_real.md)
+- **Needed:** 3D CFD comparison on coronary geometries (P6), a patient-specific flow, an input interval wide enough for real patients' flow, and agreement with invasive FFR.
 
 ### H-07: Surrogate error or extrapolation
 

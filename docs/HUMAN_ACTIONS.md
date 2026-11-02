@@ -19,6 +19,29 @@ milestones.
 
 ## 2. Start early (months of lead time)
 
+### Requests and sign-ups for FFR data (found 2026-11-02, in order of value)
+
+1. **DEFINE-FLOW angiograms** (the best lead: real angiograms with wire FFR, CFR and Doppler
+   flow for up to 455 patients). The study's README lists "anonymous angiographic images", but
+   only the physiology was deposited (`docs/DATA.md`). **Your action:** email the corresponding
+   author of Johnson, Kirkeeide and Gould, JACC Cardiovasc Interv 2021
+   (doi:10.1016/j.jcin.2021.07.041; Nils P. Johnson, UTHealth Houston) and ask for research
+   access to the anonymised angiograms. The group has already shared the rest as CC0, so a
+   request has a real chance. Offer co-authorship, and say that analysis can run on their
+   side.
+2. **ICADD** (70–85 Indian patients, CCTA and invasive angiography with FFR; medRxiv 2023,
+   doi:10.1101/2023.05.13.23289934). "Available upon reasonable request", possibly with a
+   data-access sub-contract or fee. **Your action:** email the corresponding authors.
+3. **CT perfusion vs CTA with invasive FFR** (Andreini et al., JACC Cardiovasc Imaging 2020;
+   Zenodo 3690825, files restricted). **Your action:** request it from the Centro Cardiologico
+   Monzino's scientific office (the address is on the Zenodo record). CT, not angiography, so
+   it is for P6 rather than the angiogram pipeline.
+4. **ImageCAS / ASOCA** (CT, no FFR): registration for P6, as before.
+5. **Trial data platforms** (Vivli, BioLINCC): an account and a research proposal per study;
+   no angiography-with-FFR trial was confirmed there, so this is the lowest priority.
+
+Already downloaded, with no sign-in: DEFINE-FLOW's physiology and CONTRAST (both CC0).
+
 ### Ground truth without a hospital partner (P4b, from 2026-10-31)
 
 You told me a hospital partner is not possible now, so validation runs on **public data**, one

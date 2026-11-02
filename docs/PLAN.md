@@ -389,28 +389,33 @@ Analyses use core-lab-accepted measurements only. An absolute mean velocity is k
 k bracketed at 0.5 (Doucette et al., Circulation 1992, parabolic profile) and 0.8 (in vitro,
 Ultrasound Med Biol 1999), because the true factor varies; ratios do not depend on k.
 
-- [ ] `vstent data define-flow` and `vstent data contrast`: download, MD5 check, extract into
+- [x] `vstent data define-flow` and `vstent data contrast`: download, MD5 check, extract into
   `data/raw/`; source and licence in `docs/DATA.md`.
-- [ ] **Phasic flow profile** (independent of k): per resting beat, fit the P7 flow-time step
+- [x] **Phasic flow profile** (independent of k): per resting beat, fit the P7 flow-time step
   profile (systole duration after the R wave, diastolic / systolic ratio) to the Doppler
   velocity between R waves. Compare with the P7 prior (0.31 s; ratio 2.0; generator range
   1.5–2.5). **Rule:** if the median resting ratio lies outside 1.5–2.5, or differs from 2.0
   by more than 25%, the prior is replaced by the measured median (systole likewise); P7's
   calibration and held-out report are then rerun on their seeds, and a decision is recorded.
-  Otherwise the prior stays and the real distribution is reported.
-- [ ] **Hyperemic velocity:** the stenosis-free hyperemic mean velocity per lesion, estimated
+  Otherwise the prior stays and the real distribution is reported. **Result:** median 1.73
+  (IQR 1.50–2.01, 455 lesions; LAD 1.77, LCx 1.81, RCA 1.35); systole 0.39 s. The rule did
+  not fire; the prior stays (D56).
+- [x] **Hyperemic velocity:** the stenosis-free hyperemic mean velocity per lesion, estimated
   as k × vAPV / FFR_c (FFR = the ratio of maximal flows, measured at the same distal site),
   against the fixed 0.35 m/s and P1's range of 0.25–0.45 m/s. **Rule:** if 0.35 m/s lies
   outside the interquartile range at both k = 0.5 and k = 0.8, the fixed velocity is revisited
-  in a decision, never changed silently. Otherwise it is reported.
-- [ ] **FAVOR Pilot conversion:** the hyperemic mean velocity predicted from the resting one,
+  in a decision, never changed silently. Otherwise it is reported. **Result:** median 0.21
+  m/s (k 0.5) and 0.33 m/s (k 0.8); 0.35 m/s is inside the IQR at k 0.8, so the rule did
+  not fire.
+- [x] **FAVOR Pilot conversion:** the hyperemic mean velocity predicted from the resting one,
   FAVOR(k × bAPV), against the measured k × vAPV: bias and 90% range at k = 0.5 and 0.8.
   FAVOR was fitted on contrast frame counts, not Doppler, so this is reported, not tuned.
-- [ ] **Pressures:** Pa at hyperemia against P1's 70–110 mmHg (reported). Pv is not measured.
-- [ ] **CONTRAST:** if the condition segments can be identified in the tracings, Pd / Pa at
+  **Result:** median +28% (k 0.5) and +4% (k 0.8); 5th–95th percentile −29% to +72% at k 0.8.
+- [x] **Pressures:** Pa at hyperemia against P1's 70–110 mmHg (reported). Pv is not measured.
+- [x] **CONTRAST:** if the condition segments can be identified in the tracings, Pd / Pa at
   rest, during contrast and during adenosine: how far a contrast injection is from rest
-  (reported).
-- [ ] Report: `vstent physiology-real` → `reports/physiology_real.md`.
+  (reported). **Result:** the tracings carry no condition markers; not analysed.
+- [x] Report: `vstent physiology-real` → `reports/physiology_real.md`.
 
 **Done when:** the report exists and every rule that fires has been acted on.
 

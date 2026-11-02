@@ -68,6 +68,15 @@ P7 reads cine runs the way a cath lab records them:
 - it replaces the fixed hyperemic velocity only when the user asks (`--flow measured`, or the
   app's toggle), because it has not been tested against real flow.
 
+P4e checks the model's physiology against real invasive measurements of 455 lesions
+(DEFINE-FLOW, open data, [reports/physiology_real.md](reports/physiology_real.md)).
+- **Phasic flow:** the diastolic flow surge that P7 corrects for is real (diastolic / systolic
+  ratio 1.73), and weaker in the right coronary artery (1.35).
+- **Hyperemic velocity:** the fixed velocity is plausible but at the high end, and the
+  uncertainty range is narrower than real patients' spread.
+- **What is missing:** these data have no angiograms; their authors are the best lead for
+  angiograms with wire FFR.
+
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):
 - intended use and preliminary classification (India, EU, US);
@@ -169,6 +178,8 @@ Trainings can be paused and resumed exactly:
 | `vstent stenosis-grading [--edges probability,intensity,model] [--workers N]` | automatic %DS at every CADICA expert lesion vs the experts' grades, per lumen method → `reports/stenosis_grading.md` | P4b–P4c |
 | `vstent cine-synthetic [--workers N] [--calibrate]` | end-diastolic frames and flow velocity on synthetic beating-heart runs against the truth → `reports/cine_synthetic.md`; `--calibrate`: the velocity intervals on development seeds → `reports/cine_calibration.md` | P7 |
 | `vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]` | a cine run on its end-diastolic frame (R-wave pointer, ECG or images) with the contrast flow velocity; `--flow measured` uses it instead of the fixed hyperemic velocity | P7 |
+| `vstent data define-flow` / `vstent data contrast` | download and verify open invasive physiology data (DEFINE-FLOW, CONTRAST; CC0) | P4e |
+| `vstent physiology-real` | the model's physiology assumptions against DEFINE-FLOW's invasive measurements → `reports/physiology_real.md` | P4e |
 | `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |

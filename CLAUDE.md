@@ -82,7 +82,8 @@ vstent/
                         # tree_report.py (tree checks + throughput), nozzle.py (FDA nozzle check, P4b)
     data/               # synth.py (sampling, generation, load_split), card.py (dataset card), arcade.py,
                         # synth_tree.py + tree_card.py (synthetic vessel trees, P2), cadica.py and
-                        # fda_nozzle.py (public validation data, P4b), synth_angio.py (rendered
+                        # fda_nozzle.py (public validation data, P4b), physiology.py (DEFINE-FLOW,
+                        # CONTRAST: open invasive physiology, P4e), synth_angio.py (rendered
                         # angiograms with vessel labels for segmentation, P8)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
@@ -122,7 +123,8 @@ vstent/
                         # Wilson, cluster bootstrap, weighted kappa), report.py, sample_size.py,
                         # synthetic.py + synthetic_report.py (stand-in study), stenosis_grading.py
                         # (CADICA expert grades, P4b), cine_frames.py (CADICA runs: analysis
-                        # frame vs the clinicians' frames, contrast transit, P4d)
+                        # frame vs the clinicians' frames, contrast transit, P4d),
+                        # physiology_real.py (model assumptions vs DEFINE-FLOW, P4e)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -202,6 +204,8 @@ uv run vstent cine-synthetic [--workers N] [--calibrate]
                                   # P7: ED frames + flow velocity on beating-heart runs → reports/cine_synthetic.md
 uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]
                                   # P7: cine run on its ED frame; measured flow velocity (default: fixed)
+uv run vstent data define-flow    # P4e: open invasive physiology (CC0); also `data contrast`
+uv run vstent physiology-real     # P4e: model physiology vs DEFINE-FLOW → reports/physiology_real.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
 uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms

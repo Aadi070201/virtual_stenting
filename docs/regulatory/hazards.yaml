@@ -186,14 +186,17 @@ hazards:
       Measured where possible. FDA benchmark nozzle, abrupt exit, Re 500: modelled loss 0.61
       × the measured median (FFR too high). Synthetic stand-in study with the product's fixed
       assumptions, scored against its own physics: limits of agreement −0.135 to +0.152,
-      accuracy at 0.80 of 0.902. Nothing is measured against invasive FFR.
+      accuracy at 0.80 of 0.902. Real physiology (DEFINE-FLOW, 455 lesions): the
+      stenosis-free hyperemic velocity is 0.21–0.33 m/s (median, by the Doppler mean-to-peak
+      factor) against the fixed 0.35 m/s, and P1's velocity range holds only 27–56% of
+      lesions. Nothing is measured against invasive FFR from images.
     controls: [SR-14, SR-15, SR-16, SR-23, SR-03, SR-01]
     residual_probability: 5
     residual_basis: The intervals cover the listed assumptions, not the model's own error.
-    evidence: [reports/physics_nozzle.md, reports/validation_synthetic.md]
+    evidence: [reports/physics_nozzle.md, reports/validation_synthetic.md, reports/physiology_real.md]
     needed: >-
-      3D CFD comparison on coronary geometries (P6), a patient-specific flow, and agreement
-      with invasive FFR.
+      3D CFD comparison on coronary geometries (P6), a patient-specific flow, an input
+      interval wide enough for real patients' flow, and agreement with invasive FFR.
 
   - id: H-07
     title: Surrogate error or extrapolation

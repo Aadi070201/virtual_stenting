@@ -1176,3 +1176,37 @@ qualified person, not regulatory advice.
   segmentation pass and model (D55).
 - Freedom to operate for the FAVOR Pilot conversion and frame-count velocity (QFR patents).
 - Fast test suite now about 5 minutes (the P7 CLI test renders a run).
+
+## 2026-11-02 — P4e: Real coronary physiology (DEFINE-FLOW; done)
+
+**What was done**
+- A thorough search for open FFR data: Zenodo, Dryad, Figshare, Mendeley, PhysioNet, Kaggle and
+  GitHub, grand-challenge, BioLINCC / Vivli, and a curated catalogue. Still no open angiograms
+  with invasive FFR. Found two open (CC0) physiology datasets:
+  - DEFINE-FLOW: 455 subjects; FFR, CFR, Doppler velocity, raw pressure, Doppler and ECG
+    tracings;
+  - CONTRAST: 763 subjects; raw pressure tracings.
+  The other leads are in `docs/DATA.md` and `docs/HUMAN_ACTIONS.md`.
+- Plan and rules pre-registered before the download (commit d45a676).
+- `vstent data define-flow` and `vstent data contrast` (`data/physiology.py`): MD5-verified,
+  safely extracted.
+- `vstent physiology-real` (`validation/physiology_real.py`) compares, on real patients:
+  - the phasic profile per beat (P7's flow-time step), from ECG R peaks or the recorder's flags;
+  - the stenosis-free hyperemic velocity;
+  - the FAVOR conversion;
+  - Pa.
+
+**Results** (455 lesions of 379 patients)
+- Resting diastolic / systolic ratio: median 1.73 (prior 2.0); LAD 1.77, LCx 1.81, **RCA
+  1.35**. Systole 0.39 s (assumed 0.31 s).
+- Hyperemic stenosis-free velocity: 0.21–0.33 m/s (median, k 0.5–0.8) against the fixed
+  0.35 m/s. P1's range holds 27–56% of lesions.
+- FAVOR conversion: median +4% to +28%, wide spread. Pa inside P1's range: 78%.
+- No pre-registered rule fired; nothing changed (D56). CONTRAST is not analysed: no condition
+  markers.
+
+**Open issues**
+- Candidate changes to pre-register: an artery-specific phasic prior; wider P1 velocity and Pa
+  ranges.
+- DEFINE-FLOW's angiograms are not deposited. With them (a request to the corresponding
+  author), the product could be compared with wire FFR end to end (HUMAN_ACTIONS, first item).

@@ -950,3 +950,33 @@ Every choice below was made on development data only, before the held-out synthe
 - The FAVOR Pilot conversion and frame-count velocity are the subject of QFR patents
   (freedom to operate, INVENTION_NOTES §7).
 - The fixed velocity stays the default.
+
+### D56 — Real coronary physiology checks the model's assumptions; nothing changed by rule (2026-11-02)
+**Finding** (`reports/physiology_real.md`; DEFINE-FLOW, 455 lesions of 379 patients,
+core-lab-accepted pre-PCI measurements; rules pre-registered in docs/PLAN.md, P4e):
+- **Phasic flow exists in real patients.** The resting diastolic / systolic ratio of the
+  Doppler velocity has a median of 1.73 (IQR 1.50–2.01) against P7's prior of 2.0, and a
+  systole of 0.39 s against 0.31 s. It differs by artery: LAD 1.77, LCx 1.81, RCA 1.35. The
+  rule (replace the prior if the median lies outside 1.5–2.5) did not fire.
+- **Hyperemic velocity.** The stenosis-free hyperemic mean velocity is 0.21 m/s (median, k 0.5)
+  or 0.33 m/s (k 0.8), so the fixed 0.35 m/s is plausible only with the higher Doppler
+  mean-to-peak factor. The rule (revisit if 0.35 m/s is outside the IQR at both k) did not
+  fire. P1's 0.25–0.45 m/s range contains 27% (k 0.5) to 56% (k 0.8) of lesions.
+- **FAVOR Pilot conversion:** median relative error +28% (k 0.5) or +4% (k 0.8), 5th–95th
+  percentile −29% to +72% (k 0.8). Individual conversions are imprecise, which supports keeping
+  the fixed velocity as the default (D55).
+- **Pa at hyperemia:** median 92 mmHg; 78% inside P1's 70–110 mmHg.
+
+**Decision:** nothing changes, because no pre-registered rule fired. Two candidate changes are
+recorded, each to be pre-registered before it is tested:
+- an artery-specific phasic prior (RCA about 1.35, left coronary about 1.8), evaluated on
+  P7's development seeds and then on its held-out report;
+- wider velocity and Pa ranges in P1's input Monte Carlo, so that they cover real patients.
+
+**Reason:** a check that is pre-registered and then followed is what makes it evidence; a change
+seen in the data and applied at once would not be.
+
+**Limits:** Doppler measures a peak velocity at the wire tip, distal to the lesion, and the wire
+alters the flow; the mean-to-peak factor is uncertain (0.5–0.8). The population is stable
+patients with intermediate lesions. No angiograms are included, so FFR from images is not
+measured.
