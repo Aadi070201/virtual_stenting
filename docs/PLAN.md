@@ -809,7 +809,57 @@ path, K = 5 consensus, pixel size assumed):
 - **Blocked on the human:** a real evaluation needs de-identified DICOM runs with their ECG,
   from a hospital.
 
-- [ ] Report: `reports/p4k.md` (A–C, E), each part as it finishes.
+### G. Vessel identity: LAD, LCx, RCA (GPU; waits for the user's go-ahead)
+- **Data:** ARCADE's SYNTAX labels (1,500 images, 6,816 segments; CC0).
+- **Classes:** background, plus SYNTAX segments grouped into four vessels:
+  - RCA: 1–4, 16, 16a–c;
+  - left main: 5;
+  - LAD: 6–10, 9a, 10a;
+  - LCx: 11–15, 12a, 12b, 14a, 14b.
+- **Model:** the segmentation model's architecture with 5 output classes, trained on ARCADE
+  train (early stopping on val), resumable.
+- [ ] **Reported:**
+  - ARCADE test: Dice per vessel, and pixel accuracy on vessel pixels (published reference:
+    95–98% on a private cohort, arXiv 2601.17429);
+  - CADICA (external): agreement of the run's side with CADICA's left / right labels
+    (`CADICAprojections.json`). A run is "right" when RCA pixels outnumber left-tree pixels on
+    its analysis frame. Reference: CathAI 93–97%.
+- [ ] **Used in the product** (each path named by its majority vessel; "LAD / LCx / RCA"
+  buttons that choose the target vessel; B's candidates limited to the chosen vessel) if both:
+  - ARCADE val vessel-pixel accuracy ≥ 90%;
+  - CADICA development agreement ≥ 95%.
+
+  Otherwise a research option.
+
+### H. Frame rates (7.5, 10, 15, 30 fps)
+- [ ] The synthetic cine evaluation (`vstent cine-synthetic`) also at 10 fps, CADICA's rate,
+  on new seeds. ED frames and flow velocity reported per frame rate.
+- [ ] Two steps count frames, not seconds: the 3-frame median of the contrast curve and the
+  3-frame minimum heart period. If any frame rate's image-based ED result is ≥ 10 points
+  below the others, both become times (0.2 s, 0.3 s) and are re-evaluated on further new
+  seeds.
+- F (a learned ED model) is the main route to better ED frames: image-based ED is within
+  ±1 frame for 75–79% of beats at every rate now.
+
+### I. Contrast along the target vessel (display; no FFR change)
+- **Per frame, along the chosen path:** the share of the path filled with contrast, from P7's
+  transit along the centreline. The frame slider shows "vessel filling / full / washing out"
+  for the target vessel, not the whole image.
+- **TIMI frame count** (Gibson 1996): the frames from contrast entering the path to reaching
+  its end, corrected to 30 fps (× 30 / fps).
+- [ ] Reported on synthetic runs, where the truth is known: TIMI frame count error per frame
+  rate.
+
+### J. AngioCAD: an external, segment-level test (CPU; after G)
+- **Data:** AngioCAD (Zenodo 10.5281/zenodo.15826856; CC BY 4.0). 413 patients' cine frames,
+  each patient's 15 coronary segments graded by experts. No FFR, no ECG. Download
+  MD5-verified; extracted without running anything.
+- [ ] **Protocol:** written into this plan after its file layout is inspected and **before**
+  any model is run on it. Planned: per patient and main vessel, whether the product flags a
+  lesion ≥ 50% where the experts graded ≥ 50% (sensitivity), and where they graded the
+  vessel normal (false alarms).
+
+- [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 
 ## P5: Projection geometry and two-view 3D reconstruction
 
