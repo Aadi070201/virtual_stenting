@@ -1840,6 +1840,29 @@ def physics_check(
 
 
 @app.command()
+def ed_data(
+    split: Annotated[str, typer.Option("--split", help="train, val or test.")],
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+) -> None:
+    """Synthetic runs for the learned ED-frame model (P4l, M2) → data/derived/ed/<split>/
+    (resumable)."""
+    from vstent.imaging.ed_data import SPLITS, generate
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+
+    if split not in SPLITS:
+        raise typer.BadParameter(f"--split is one of {', '.join(SPLITS)}")
+    typer.echo(DISCLAIMER)
+    seg_dir = str(_latest_model_dir(Path("models/seg"), SEG_ONNX_FILE))
+
+    def progress(k, n):
+        if k % 10 == 0 or k == n:
+            typer.echo(f"  {split}: {k} / {n} cases")
+
+    n = generate(split, seg_dir, workers=workers, progress=progress)
+    typer.echo(f"Wrote {n} runs to data/derived/ed/{split}")
+
+
+@app.command()
 def stent_check(
     stage: Annotated[str, typer.Option("--stage", help="dev, then test.")],
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,

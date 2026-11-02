@@ -9,6 +9,7 @@ COMMANDS = [
     "physics-report",
     "physics-check",
     "stent-check",
+    "ed-data",
     "artery-velocity",
     "label-ed",
     "export-map",
