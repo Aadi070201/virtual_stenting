@@ -55,8 +55,8 @@ def _deepest_in_box(q, box) -> float | None:
 
 
 def _arm_profile(profile, arm: str):
+    from vstent.imaging.qca import wire_index
     from vstent.physics.geometry import VesselProfile
-    from vstent.validation.physics_check import wire_index
 
     r_ref = profile.reference_radius()
     if arm == "product":

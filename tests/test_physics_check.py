@@ -40,11 +40,12 @@ def test_wire_arm():
     """P4k-C2: the FFR read at the last point with a reference diameter ≥ 2.0 mm."""
     import numpy as np
 
+    from vstent.imaging.qca import wire_index
     from vstent.physics.geometry import VesselProfile
     from vstent.physics.solver import PhysicsParams
 
-    assert pc.wire_index(np.array([1.5e-3, 1.2e-3, 0.99e-3, 0.8e-3])) == 1
-    assert pc.wire_index(np.array([0.9e-3, 0.8e-3])) == 1  # nothing to cut
+    assert wire_index(np.array([1.5e-3, 1.2e-3, 0.99e-3, 0.8e-3])) == 1
+    assert wire_index(np.array([0.9e-3, 0.8e-3])) == 1  # nothing to cut
     s = np.linspace(0.0, 0.12, 241)
     r = np.linspace(1.6e-3, 0.5e-3, s.size)  # tapers below 2 mm diameter at about 2/3
     f = pc.distal_ffr(VesselProfile(s, r, r), PhysicsParams())
@@ -68,3 +69,27 @@ def test_c3_rule_needs_a_small_lesion_free_share():
     assert not r["none"]["qualifies"]  # 30% > 25%
     assert r["murray"]["qualifies"] and abs(r["murray"]["score"] - 0.31) < 1e-9
     assert not r["wire"]["qualifies"]  # FAME 17 points worse
+
+
+def test_at_wire_cuts_the_measured_vessel():
+    """D68: the QCA cut where the reference diameter falls below 2 mm; every per-point array
+    cut alike, the reference kept from the whole path."""
+    import numpy as np
+
+    from vstent.imaging.qca import at_wire, run_qca
+
+    prob = np.zeros((100, 420))
+    for c in range(10, 410):
+        half = 7.0 - 4.5 * (c - 10) / 400  # 14 px wide (3.5 mm at 0.25) → 5 px (1.25 mm)
+        prob[int(50 - half) : int(50 + half) + 1, c] = 1.0
+    q = run_qca(prob, (50, 15), (50, 405), mm_per_px=0.25)
+    cut, k = at_wire(q)
+    n = len(q.profile.s)
+    assert 2 < k < n - 1 and len(cut.profile.s) == k + 1
+    assert len(cut.centerline.points) == k + 1 and len(cut.diameters.diameter_px) == k + 1
+    ref = 2e3 * cut.profile.reference_radius()
+    assert ref[-1] >= 2.0 and np.allclose(ref, 2e3 * q.profile.reference_radius()[: k + 1])
+    wide = np.zeros((60, 200))
+    wide[22:38, 10:190] = 1.0  # 4 mm everywhere: nothing to cut
+    w = run_qca(wide, (30, 15), (30, 185), mm_per_px=0.25)
+    assert at_wire(w)[0] is w

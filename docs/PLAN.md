@@ -805,6 +805,15 @@ diameter ≥ 2 mm, and a wire measures in the distal vessel, not in a terminal b
   - By grade (50–70 / 70–90 / 90–98%): 88 / 78 / 81% → 53 / 60 / 69% (FAME 35 / 80 / 96%).
   - FAME distance 23 → 22 points.
 
+  **Correction, before the product change** (2026-11-02):
+  - The check solved the whole path, including the part beyond the wire point, then read the
+    FFR at that point.
+  - The text above says the path beyond is "not used for the FFR", and P4m cut the vessel.
+  - The shared rule is now `qca.at_wire`: the vessel is cut, the reference kept from the whole
+    path.
+  - The development check is run again with it, under the same rule, and both runs are
+    reported. The product follows only if the corrected run also meets the rule.
+
 ### C3. Learned lesion reading together with the physics, judged end to end (CPU; added 2026-11-02, before running)
 Why: C showed the FFR depends on how deep the lesions are measured. In the model a 3 mm
 vessel's lesion read at 40% loses about 2 mmHg; read at 65% (reader v1's median for 90–98%

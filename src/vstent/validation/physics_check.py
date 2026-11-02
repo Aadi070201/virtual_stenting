@@ -12,8 +12,8 @@ invasive FFR, against two literature anchors (docs/PLAN.md, P4k-C). Torch-free.
 Every arm is solved on the same measured profiles:
 - ``none``: the product;
 - ``murray``: side-branch outflow (P4k-C);
-- ``wire``: the product's physics, with the FFR read at the last point whose reference diameter
-  is ≥ 2.0 mm, where a pressure wire would sit (P4k-C2).
+- ``wire``: the product's physics on the vessel cut at the last point whose reference diameter
+  is ≥ 2.0 mm, where a pressure wire would sit (P4k-C2; ``qca.at_wire``).
 """
 
 from __future__ import annotations
@@ -30,7 +30,6 @@ from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 
 OUTFLOWS = ("none", "murray", "wire")  # the arms (``wire``: no outflow, FFR at the wire)
 ARM_LABELS = {"none": "Product (now)", "murray": "Murray outflow", "wire": "FFR at the wire"}
-WIRE_MIN_REF_M = 2.0e-3  # FAVOR II: reference vessel diameter ≥ 2 mm
 CUTOFF = 0.80
 LESION_FREE_ANCHOR = 0.13  # De Bruyne 2001: P(FFR ≤ 0.80) for 0.89 ± 0.08 (normal approx.)
 FAME_SHARES = {"p50_70": 0.35, "p70_90": 0.80, "p90_98": 0.96}  # FFR ≤ 0.80 by visual grade
@@ -39,23 +38,20 @@ FAME_LABELS = {"p50_70": "50–70%", "p70_90": "70–90%", "p90_98": "90–98%"}
 OUT_DIR = Path("data/derived/p4k")
 
 
-def wire_index(r_ref: np.ndarray) -> int:
-    """The last point whose reference diameter is ≥ 2.0 mm (``r_ref`` in m); the path's end if
-    no point is (nothing to cut)."""
-    ok = np.flatnonzero(2.0 * np.asarray(r_ref) >= WIRE_MIN_REF_M)
-    return int(ok[-1]) if ok.size else len(r_ref) - 1
-
-
 def distal_ffr(profile, params: PhysicsParams) -> dict[str, float]:
     """FFR (-) of a measured profile for every arm (reference from the QCA)."""
+    from vstent.imaging.qca import wire_index
+
     out = {}
     r_ref = profile.reference_radius()
     for o in ("none", "murray"):
         p = params.model_copy(update={"outflow": o})
-        res = solve_ffr_batch(profile.r, profile.ds, r_ref, p)
-        out[o] = float(res.ffr_distal[0])
-        if o == "none":
-            out["wire"] = float(res.ffr[0, wire_index(r_ref)])
+        out[o] = float(solve_ffr_batch(profile.r, profile.ds, r_ref, p).ffr_distal[0])
+    # the wire arm solves the vessel cut at the wire position (``qca.at_wire``, D68)
+    k = max(wire_index(r_ref), 2)
+    cut = slice(0, k + 1)
+    out["wire"] = float(solve_ffr_batch(profile.r[cut], profile.ds, r_ref[cut], params)
+                        .ffr_distal[0]) if k < len(r_ref) - 1 else out["none"]  # fmt: skip
     return out
 
 

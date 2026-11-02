@@ -642,3 +642,43 @@ def run_qca(
     centerline = trace_centerline(np.asarray(prob) >= level, start, end)
     return qca_from_centerline(prob, centerline, mm_per_px=mm_per_px, level=level, image=image,
                                lumen=lumen)  # fmt: skip
+
+
+WIRE_MIN_REF_MM = 2.0  # P4k-C2 (D68): FAVOR II's vessel size; the FFR is read where a wire sits
+
+
+def wire_index(r_ref_m: np.ndarray) -> int:
+    """The last point whose reference diameter is ≥ :data:`WIRE_MIN_REF_MM` (``r_ref_m``:
+    reference radii in m); the path's end if no point is (nothing to cut)."""
+    ok = np.flatnonzero(2.0 * np.asarray(r_ref_m) >= mm_to_m(WIRE_MIN_REF_MM))
+    return int(ok[-1]) if ok.size else len(r_ref_m) - 1
+
+
+def _cut(obj, n: int, k: int):
+    """``obj`` (a dataclass) with every per-point array (first axis ``n``) cut to ``[:k + 1]``,
+    nested dataclasses included."""
+    from dataclasses import fields, is_dataclass, replace
+
+    changes = {}
+    for f in fields(obj):
+        v = getattr(obj, f.name)
+        if isinstance(v, np.ndarray) and v.ndim >= 1 and v.shape[0] == n:
+            changes[f.name] = v[: k + 1]
+        elif is_dataclass(v) and not isinstance(v, type) and not isinstance(v, VesselProfile):
+            changes[f.name] = _cut(v, n, k)
+    return replace(obj, **changes)
+
+
+def at_wire(qca: "QCAResult") -> tuple["QCAResult", int]:
+    """The measured vessel up to the wire position (P4k-C2, D68), and the index of its last
+    point. The reference keeps the whole path's values (it is not re-fitted on the cut part).
+    The FFR, the stent plan and its evaluation use the cut vessel; the rest is shown only."""
+    p = qca.profile
+    r_ref = p.reference_radius()
+    n, k = len(p.s), max(wire_index(r_ref), 2)
+    if k >= n - 1:
+        return qca, n - 1
+    cut = _cut(qca, n, k)
+    from dataclasses import replace
+
+    return replace(cut, profile=VesselProfile(p.s[: k + 1], p.r[: k + 1], r_ref[: k + 1])), k
