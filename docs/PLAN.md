@@ -488,6 +488,67 @@ Patients split as in P4b: 21 development, 21 test.
 
 **Done when:** the report exists with the test result, and the product uses the consensus.
 
+## P4h: Densitometric lumen at lesions (added 2026-11-02; pre-registered before any measurement with it)
+
+Why: the product's lumen reads lesions the CADICA experts graded 70–90% at a median 42% DS and
+90–98% at 43%. On those lesions it calls segment FFR ≤ 0.80 in 16–23%, where FAME found wire
+FFR ≤ 0.80 in about 80% and 96% of such visual grades. The close-ups (D60) show tight lesions as
+a fading of the contrast column, narrower than the blur, so their edges stay apart. The
+imaging-chain fit (D44) did not fix this; it smooths the lumen along the vessel and starts
+from the edges.
+
+**Method, fixed now** (`imaging/densitometry.py`, lumen option `dense`):
+- **Straighten the vessel:** at every centreline point, sample the image along the normal
+  every 0.5 px over ± (half the edges' robust reference diameter + 6 px). Average three
+  parallel profiles (−1, 0, +1 px along the tangent).
+- **Background:** a straight line through the medians of the outer 3 px on each side, its
+  two parameters median-filtered over 9 points along the vessel.
+- **Integrated contrast (IOD):** the signed sum over the window of (background − image), in
+  one of two domains:
+  - `log`: log of intensity, for an image proportional to transmitted X-rays;
+  - `linear`: grey levels, for an image already log-transformed by the X-ray system.
+
+  Blur and the X-ray system's edge enhancement are linear filters that keep this integral.
+  Median over 3 points along the vessel.
+- **Lumen diameter:**
+  - densitometric diameter = (edges' robust reference diameter) × √(IOD / IOD reference),
+    where the IOD reference is `robust_reference` of √IOD;
+  - lumen = min(edge diameter, densitometric diameter). Only densitometry can narrow a
+    lumen: an overlapping vessel or a branch raises the IOD and is ignored;
+  - the absolute size is the scaled lumen's (P5b), so %DS comes from the shape alone.
+- No constant above is changed after this commit. The domain is the only choice, made by the
+  rule below.
+
+**Development** (CADICA development patients, as split in P4b; rendered lesions,
+`vstent lumen-synthetic`):
+- [ ] **Domain:** the variant with the higher weighted kappa against the expert grades on the
+  development patients (a tie: `log`).
+- [ ] **Adopt** `dense` as the product lumen only if, with that domain:
+  - on the development patients, both its weighted kappa and its AUC for ≥ 70% lesions are
+    higher than the intensity edges' (the D43 / D44 rule), and its median %DS of lesions
+    graded 0–20% is ≤ 30%;
+  - on the rendered lesions, its mean |%DS error| is ≤ 10 points for circular lesions
+    ≥ 85% and ≤ 8 points for vessels without a lesion.
+
+  Otherwise `dense` stays an option and nothing changes.
+- During development, lesions of development patients may be viewed (p11, p12 so far). One
+  test patient (p24, run 15) was shown in the app demo before this plan; nothing is tuned on
+  it.
+
+**Test** (CADICA test patients, once, every method reported whatever it shows; the test half
+was used before in P4b, D44, P4f, P4g and the exploratory FAME comparison of 2026-11-02):
+- [ ] Weighted kappa and AUC for ≥ 70%, against the intensity edges (reported; target kappa
+  ≥ 0.40).
+- [ ] Median %DS by grade (targets: 70–90% ≥ 50%; 90–98% ≥ 60%; 0–20% ≤ 30%).
+- [ ] If adopted: the P4f measurements re-made with the new lumen. Then the share of lesions
+  whose segment FFR (median of up to 5 keyframes) is ≤ 0.80, by grade (targets: 70–98% ≥ 50%;
+  0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported).
+- [ ] Report: `vstent stenosis-grading --edges intensity,dense`, `vstent lumen-synthetic`,
+  `vstent repeatability`, `vstent consensus-report`.
+
+**Done when:** the decision is recorded, the reports exist with the test results, and the
+product uses the rule's outcome.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
