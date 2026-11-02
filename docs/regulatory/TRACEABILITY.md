@@ -18,7 +18,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-01 | SR-02 | Plain-language warnings with every result | 5 tests | verified |
 | H-01 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 | H-02 | SR-10 | Lumen edges from the image intensity | 6 tests | verified |
-| H-02 | SR-06 | Analysis frame in the opacified phase | 3 tests, 1 reports | verified |
+| H-02 | SR-06 | End-diastolic analysis frame in the opacified phase | 3 tests, 2 reports | verified |
 | H-02 | SR-13 | Analysed path shown on the image | 2 tests | verified |
 | H-02 | SR-24 | Grey-zone flag | 3 tests | verified |
 | H-02 | SR-01 | Research-use notice everywhere | 4 tests | verified |
@@ -61,9 +61,12 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-10 | SR-03 | Scope of the uncertainty intervals stated | 1 reports, inspection | verified |
 | H-10 | SR-01 | Research-use notice everywhere | 4 tests | verified |
 | H-11 | SR-05 | Cine runs on one intensity scale | 1 tests | verified |
-| H-11 | SR-06 | Analysis frame in the opacified phase | 3 tests, 1 reports | verified |
+| H-11 | SR-06 | End-diastolic analysis frame in the opacified phase | 3 tests, 2 reports | verified |
 | H-11 | SR-13 | Analysed path shown on the image | 2 tests | verified |
 | H-12 | SR-31 | Measured flow velocity is shown, and used only when the user chooses it | 3 tests, inspection | verified |
+| H-12 | SR-46 | Measured flow velocity with guards, phase correction and interval | 3 tests, 2 reports | verified |
+| H-12 | SR-45 | Heart motion followed through the run | 3 tests, 1 reports | verified |
+| H-12 | SR-44 | End-diastolic frames from the DICOM or the images | 3 tests, 1 reports | verified |
 | H-13 | SR-36 | Traceable case report | 1 tests | verified |
 | H-13 | SR-04 | One image loader | 2 tests | verified |
 | H-14 | SR-09 | Pixel size and units | 3 tests | verified |
@@ -100,7 +103,10 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | SR-03 | `src/vstent/app/core.py::UNCERTAINTY_NOTE`, `src/vstent/app/core.py::case_report` | – | [uncertainty.md](../../reports/uncertainty.md) |
 | SR-04 | `src/vstent/imaging/image_io.py::read_image`, `src/vstent/imaging/image_io.py::ImageInput` | [`test_read_image_png_jpg_dicom`](../../tests/test_app.py), [`test_cli_and_app_give_the_segmenter_the_same_pixels`](../../tests/test_pipeline.py) | – |
 | SR-05 | `src/vstent/imaging/image_io.py::read_run`, `src/vstent/imaging/image_io.py::read_run_bytes`, `src/vstent/imaging/image_io.py::RunInput` | [`test_read_run_from_a_folder_and_a_dicom`](../../tests/test_cine.py) | – |
-| SR-06 | `src/vstent/imaging/cine.py::opacification`, `src/vstent/imaging/cine.py::vessel_areas`, `src/vstent/cli.py::_run_frame` | [`test_opacification_window_and_frames`](../../tests/test_cine.py), [`test_synthetic_run_analysis_frame_is_fully_opacified`](../../tests/test_cine.py), [`test_cli_analyse_cine_run`](../../tests/test_pipeline.py) | [cine_frames.md](../../reports/cine_frames.md) |
+| SR-06 | `src/vstent/imaging/cine.py::opacification`, `src/vstent/imaging/cardiac.py::ed_analysis_frame`, `src/vstent/imaging/run_analysis.py::analyse_frames`, `src/vstent/cli.py::_run_frame` | [`test_opacification_window_and_frames`](../../tests/test_cine.py), [`test_ed_from_spread_finds_the_largest_tree`](../../tests/test_cardiac.py), [`test_cli_analyse_cine_run`](../../tests/test_pipeline.py) | [cine_frames.md](../../reports/cine_frames.md), [cine_synthetic.md](../../reports/cine_synthetic.md) |
+| SR-44 | `src/vstent/imaging/cardiac.py::r_wave_pointer`, `src/vstent/imaging/cardiac.py::read_ecg`, `src/vstent/imaging/cardiac.py::r_peaks`, `src/vstent/imaging/cardiac.py::ed_from_spread`, `src/vstent/imaging/cardiac.py::end_diastole` | [`test_r_peaks_and_frames`](../../tests/test_cardiac.py), [`test_dicom_r_wave_pointer_and_ecg_round_trip`](../../tests/test_cardiac.py), [`test_ed_from_spread_finds_the_largest_tree`](../../tests/test_cardiac.py) | [cine_synthetic.md](../../reports/cine_synthetic.md) |
+| SR-45 | `src/vstent/imaging/motion.py::track_affine_maps`, `src/vstent/imaging/motion.py::plateau`, `src/vstent/imaging/cine.py::contrast_transit` | [`test_track_affine_follows_scale_and_shift`](../../tests/test_cardiac.py), [`test_transit_with_tracking_ignores_partial_filling`](../../tests/test_cardiac.py), [`test_plateau_and_same_phase_transforms`](../../tests/test_cardiac.py) | [cine_synthetic.md](../../reports/cine_synthetic.md) |
+| SR-46 | `src/vstent/imaging/flow.py::flow_velocity`, `src/vstent/imaging/flow.py::flow_time`, `src/vstent/imaging/flow.py::combine_runs`, `src/vstent/imaging/flow.py::hyperemic_velocity`, `src/vstent/uncertainty/inputs.py::InputUncertainty` | [`test_flow_velocity_conversion_and_guards`](../../tests/test_cardiac.py), [`test_flow_time_and_phasic_slope`](../../tests/test_cardiac.py), [`test_monte_carlo_ranges_and_reproducibility`](../../tests/test_uncertainty.py) | [cine_synthetic.md](../../reports/cine_synthetic.md), [cine_calibration.md](../../reports/cine_calibration.md) |
 | SR-07 | `src/vstent/inference/onnx_runtime.py::SegmentationRunner`, `src/vstent/imaging/segment.py::preprocess_image` | [`test_export_seg_parity_and_runner`](../../tests/test_pipeline.py), [`test_runner_rejects_non_segmentation_model`](../../tests/test_pipeline.py), [`test_preprocess_image_any_size_and_dtype`](../../tests/test_segmentation.py) | [seg_onnx.md](../../reports/seg_onnx.md), [seg_eval.md](../../reports/seg_eval.md), [seg_onnx.md](../../reports/seg_synth/seg_onnx.md), [seg_eval.md](../../reports/seg_synth/seg_eval.md), [sim_to_real.md](../../reports/sim_to_real.md) |
 | SR-08 | `src/vstent/imaging/centerline.py::snap_point`, `src/vstent/imaging/qca_tree.py::tree_qca` | [`test_points_off_the_vessel_are_refused`](../../tests/test_qca.py), [`test_tree_qca_refuses_points_off_the_vessel`](../../tests/test_qca_tree.py) | – |
 | SR-09 | `src/vstent/units.py`, `src/vstent/imaging/qca.py::run_qca`, `src/vstent/imaging/qca.py::DEFAULT_MM_PER_PX` | [`test_qca_units_and_calibration_flag`](../../tests/test_qca.py), [`test_unit_conversions`](../../tests/test_units.py), [`test_physics_yaml_matches_spec_defaults`](../../tests/test_physics_report.py) | – |

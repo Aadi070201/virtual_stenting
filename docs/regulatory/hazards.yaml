@@ -294,20 +294,30 @@ hazards:
     needed: A lesion-aware and end-diastolic frame choice (P7); the user's confirmation.
 
   - id: H-12
-    title: Contrast transit read as flow
-    cause: A user reads the displayed contrast-front speed as a measured coronary flow.
-    situation: The user changes the flow assumptions or the decision on the basis of a resting, imprecise speed.
+    title: Wrong measured flow velocity used
+    cause: >-
+      The contrast front is timed wrongly (overlapping vessels, the catheter, a wrong heart
+      cycle, a coarse frame rate), one view foreshortens the path, the injection itself adds
+      flow, or a resting run is converted with a relation that does not fit the patient.
+    situation: The user chooses the measured velocity and the FFR is too high or too low.
     harm: As H-01 or H-02.
     severity: 4
-    probability: 2
+    probability: 3
     basis: >-
-      Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and
-      is shown only when the front advances (CADICA: 55% of runs).
-    controls: [SR-31]
-    residual_probability: 2
-    residual_basis: Unchanged; the label is the control.
-    evidence: [reports/cine_frames.md]
-    needed: A validated relation between transit and hyperaemic flow before any use.
+      Measured on held-out synthetic beating-heart runs only: two views, median velocity
+      error 5.8%, 98% of cases within ±25%, distal FFR changed by 0.005 (median; 90th
+      percentile 0.022) by the velocity error alone; one view −16% (foreshortening). Not
+      measured against real flow.
+    controls: [SR-31, SR-46, SR-45, SR-44]
+    residual_probability: 3
+    residual_basis: >-
+      The fixed velocity stays the default. The measured one is used only on request and
+      only when every guard passed (13% of synthetic runs rejected); its calibrated interval
+      then enters the input Monte Carlo. Its accuracy on real runs is unknown.
+    evidence: [reports/cine_synthetic.md, reports/cine_calibration.md]
+    needed: >-
+      Agreement with real flow (a flow phantom, or Doppler-wire velocities) before the
+      measured velocity could become a default.
 
   - id: H-13
     title: Result attributed to the wrong patient

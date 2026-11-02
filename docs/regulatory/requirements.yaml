@@ -93,22 +93,90 @@ requirements:
       - tests/test_cine.py::test_read_run_from_a_folder_and_a_dicom
 
   - id: SR-06
-    title: Analysis frame in the opacified phase
+    title: End-diastolic analysis frame in the opacified phase
     kind: input
     text: >-
-      For a run, the analysis frame is the most opacified frame (peak of the smoothed vessel
-      area) and lies in the opacified window (frames above 70% of the peak). The user can
-      choose another frame; a frame outside the window is warned about.
+      For a run, the analysis frame is the end-diastolic frame (SR-44) inside the opacified
+      window (frames above 70% of the peak of the smoothed vessel area, counted at probability
+      ≥ 0.9) with the most vessel; with no end-diastolic frame there, the most opacified
+      frame. The frame and the reason are shown. The user can choose another frame; a frame
+      outside the window is warned about.
     code:
       - src/vstent/imaging/cine.py::opacification
-      - src/vstent/imaging/cine.py::vessel_areas
+      - src/vstent/imaging/cardiac.py::ed_analysis_frame
+      - src/vstent/imaging/run_analysis.py::analyse_frames
       - src/vstent/cli.py::_run_frame
     tests:
       - tests/test_cine.py::test_opacification_window_and_frames
-      - tests/test_cine.py::test_synthetic_run_analysis_frame_is_fully_opacified
+      - tests/test_cardiac.py::test_ed_from_spread_finds_the_largest_tree
       - tests/test_pipeline.py::test_cli_analyse_cine_run
     reports:
       - reports/cine_frames.md
+      - reports/cine_synthetic.md
+
+  - id: SR-44
+    title: End-diastolic frames from the DICOM or the images
+    kind: input
+    text: >-
+      The end-diastolic frames of a run come from the DICOM R-wave pointer, else from the R
+      peaks of a DICOM ECG waveform mapped to frames (FrameDelay, FrameTime and the
+      waveform's time offset), else from the images (the vessel tree's spread, its beat by
+      autocorrelation). The source is shown and stored in the case report (P7).
+    code:
+      - src/vstent/imaging/cardiac.py::r_wave_pointer
+      - src/vstent/imaging/cardiac.py::read_ecg
+      - src/vstent/imaging/cardiac.py::r_peaks
+      - src/vstent/imaging/cardiac.py::ed_from_spread
+      - src/vstent/imaging/cardiac.py::end_diastole
+    tests:
+      - tests/test_cardiac.py::test_r_peaks_and_frames
+      - tests/test_cardiac.py::test_dicom_r_wave_pointer_and_ecg_round_trip
+      - tests/test_cardiac.py::test_ed_from_spread_finds_the_largest_tree
+    reports:
+      - reports/cine_synthetic.md
+
+  - id: SR-45
+    title: Heart motion followed through the run
+    kind: imaging
+    text: >-
+      Points on the analysed centreline are followed through the run by affine registration of
+      the vessel maps, on the fully opacified frames only; filling and washout frames take the
+      transform of the same heart phase (P7, D55).
+    code:
+      - src/vstent/imaging/motion.py::track_affine_maps
+      - src/vstent/imaging/motion.py::plateau
+      - src/vstent/imaging/cine.py::contrast_transit
+    tests:
+      - tests/test_cardiac.py::test_track_affine_follows_scale_and_shift
+      - tests/test_cardiac.py::test_transit_with_tracking_ignores_partial_filling
+      - tests/test_cardiac.py::test_plateau_and_same_phase_transforms
+    reports:
+      - reports/cine_synthetic.md
+
+  - id: SR-46
+    title: Measured flow velocity with guards, phase correction and interval
+    kind: uncertainty
+    text: >-
+      The contrast flow velocity is the slope of distance on flow time (phasic correction
+      from the end-diastolic frames). It is accepted only with a forward-moving front, a
+      frame time, a calibrated pixel size, a known heart cycle, 0.05–0.80 m/s and a precise
+      slope. Its 90% interval is calibrated on separate synthetic cases (one view: widened
+      for foreshortening); two runs are combined only when they agree within ×1.5. A resting
+      run is converted with the FAVOR Pilot relation, and the interval enters the input
+      Monte Carlo when the velocity is used (P7).
+    code:
+      - src/vstent/imaging/flow.py::flow_velocity
+      - src/vstent/imaging/flow.py::flow_time
+      - src/vstent/imaging/flow.py::combine_runs
+      - src/vstent/imaging/flow.py::hyperemic_velocity
+      - src/vstent/uncertainty/inputs.py::InputUncertainty
+    tests:
+      - tests/test_cardiac.py::test_flow_velocity_conversion_and_guards
+      - tests/test_cardiac.py::test_flow_time_and_phasic_slope
+      - tests/test_uncertainty.py::test_monte_carlo_ranges_and_reproducibility
+    reports:
+      - reports/cine_synthetic.md
+      - reports/cine_calibration.md
 
   # --- Segmentation and QCA ------------------------------------------------------------------
   - id: SR-07
