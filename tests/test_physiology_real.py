@@ -71,8 +71,9 @@ def test_artery_velocity_rule():
     les = ([{"vessel": "LAD", "vapv": 0.40, "ffr": 0.8}] * 4
            + [{"vessel": "RCA", "vapv": 0.30, "ffr": 0.8}] * 2)  # fmt: skip
     r = artery_velocity(les)
-    assert r["arteries"]["left"]["median"] == 0.4 and r["arteries"]["RCA"]["median"] == 0.3
-    assert r["pooled"] == 0.4 and r["use_per_artery"]  # RCA 25% lower
+    assert r["arteries"]["left"]["median"] == pytest.approx(0.4)
+    assert r["arteries"]["RCA"]["median"] == pytest.approx(0.3)
+    assert r["pooled"] == pytest.approx(0.4) and r["use_per_artery"]  # RCA 25% lower
     same = artery_velocity([{"vessel": "LCx", "vapv": 0.4, "ffr": 0.8},
                             {"vessel": "RCA", "vapv": 0.41, "ffr": 0.8}])  # fmt: skip
     assert not same["use_per_artery"]
