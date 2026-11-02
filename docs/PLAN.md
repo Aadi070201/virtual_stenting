@@ -372,6 +372,48 @@ real expert ground truth. Parts of P7 move here.
 - the CADICA window-agreement report is generated from code, with every result reported as
   measured.
 
+## P4e: Real coronary physiology (added 2026-11-02; pre-registered before the data were downloaded)
+
+**Data** (open, CC0, no sign-in; no angiograms, so these test the model's physiology
+assumptions, not the image pipeline):
+- **DEFINE-FLOW:** Johnson, Kirkeeide and Gould, JACC Cardiovasc Interv 2021,
+  doi:10.1016/j.jcin.2021.07.041. Data: Dryad doi:10.5061/dryad.h18931zm6 (Zenodo 5508241).
+  455 subjects and 668 lesions; site and core-lab FFR and CFR; Doppler average peak velocity
+  (APV) at baseline and at hyperemia; aortic and distal pressures; raw pressure, Doppler and
+  ECG tracings.
+- **CONTRAST:** Johnson et al., JACC Cardiovasc Interv 2016, doi:10.1016/j.jcin.2015.12.273.
+  Data: Dryad doi:10.5061/dryad.f76nv (Zenodo 4992130). Raw Pa, Pd and ECG tracings of 763
+  subjects at rest, during intracoronary contrast and during adenosine.
+
+Analyses use core-lab-accepted measurements only. An absolute mean velocity is k × APV, with
+k bracketed at 0.5 (Doucette et al., Circulation 1992, parabolic profile) and 0.8 (in vitro,
+Ultrasound Med Biol 1999), because the true factor varies; ratios do not depend on k.
+
+- [ ] `vstent data define-flow` and `vstent data contrast`: download, MD5 check, extract into
+  `data/raw/`; source and licence in `docs/DATA.md`.
+- [ ] **Phasic flow profile** (independent of k): per resting beat, fit the P7 flow-time step
+  profile (systole duration after the R wave, diastolic / systolic ratio) to the Doppler
+  velocity between R waves. Compare with the P7 prior (0.31 s; ratio 2.0; generator range
+  1.5–2.5). **Rule:** if the median resting ratio lies outside 1.5–2.5, or differs from 2.0
+  by more than 25%, the prior is replaced by the measured median (systole likewise); P7's
+  calibration and held-out report are then rerun on their seeds, and a decision is recorded.
+  Otherwise the prior stays and the real distribution is reported.
+- [ ] **Hyperemic velocity:** the stenosis-free hyperemic mean velocity per lesion, estimated
+  as k × vAPV / FFR_c (FFR = the ratio of maximal flows, measured at the same distal site),
+  against the fixed 0.35 m/s and P1's range of 0.25–0.45 m/s. **Rule:** if 0.35 m/s lies
+  outside the interquartile range at both k = 0.5 and k = 0.8, the fixed velocity is revisited
+  in a decision, never changed silently. Otherwise it is reported.
+- [ ] **FAVOR Pilot conversion:** the hyperemic mean velocity predicted from the resting one,
+  FAVOR(k × bAPV), against the measured k × vAPV: bias and 90% range at k = 0.5 and 0.8.
+  FAVOR was fitted on contrast frame counts, not Doppler, so this is reported, not tuned.
+- [ ] **Pressures:** Pa at hyperemia against P1's 70–110 mmHg (reported). Pv is not measured.
+- [ ] **CONTRAST:** if the condition segments can be identified in the tracings, Pd / Pa at
+  rest, during contrast and during adenosine: how far a contrast injection is from rest
+  (reported).
+- [ ] Report: `vstent physiology-real` → `reports/physiology_real.md`.
+
+**Done when:** the report exists and every rule that fires has been acted on.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
