@@ -105,7 +105,9 @@ class SegConfig(StrictModel):
     train: SegTrainConfig = SegTrainConfig()
     augment: AugmentConfig = AugmentConfig()
     synthetic: SegSyntheticData | None = None  # P8: rendered training images
-    labels: Literal["vessel", "vessel_id"] = "vessel"  # P4k-G: ARCADE SYNTAX vessel classes
+    labels: Literal["vessel", "vessel_id", "lesion_boxes"] = "vessel"
+    # vessel_id: ARCADE SYNTAX vessel classes (P4k-G); lesion_boxes: filled expert lesion
+    # boxes on CADICA, ARCADE stenosis and Kemerovo (the whole-image detector, P4k-E)
 
 
 def resolve_device(spec: str = "auto") -> torch.device:
@@ -314,6 +316,13 @@ def _fit(
             raise ValueError(f"vessel_id needs model.classes = {N_CLASSES} and no synthetic data")
         images, masks = load_labels(config.raw_dir, "train", tc.max_train_images)
         val_images, val_masks = load_labels(config.raw_dir, "val", tc.max_val_images)
+    elif config.labels == "lesion_boxes":
+        from vstent.data.lesion_boxes import dataset
+
+        if config.model.classes != 1 or config.synthetic is not None:
+            raise ValueError("lesion_boxes needs model.classes = 1 and no synthetic data")
+        images, masks = dataset("train", max_images=tc.max_train_images)
+        val_images, val_masks = dataset("val", max_images=tc.max_val_images)
     else:
         train_split = load_split(config.raw_dir, "syntax", "train", tc.max_train_images)
         val_split = load_split(config.raw_dir, "syntax", "val", tc.max_val_images)

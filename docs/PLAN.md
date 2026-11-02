@@ -800,6 +800,16 @@ path, K = 5 consensus, pixel size assumed):
   patients held out (seed 0), and 10 patients of Kemerovo's training half.
 - **Detections:** connected components of the output ≥ t. An expert box is found when a
   detection overlaps it.
+- **Implementation details, fixed before training** (2026-11-02):
+  - images held at 512 px;
+  - every CADICA box of every grade is a target;
+  - Kemerovo frames taken every 4th per series (consecutive, nearly identical frames), for
+    training, validation and test alike;
+  - Kemerovo has 64 patients with boxes: 32 / 32.
+  - Counts: train 3,566 images (4,838 boxes); validation 1,181 (1,479 boxes, 88 lesion-free
+    frames); test 3,483 (4,424 boxes, 308 lesion-free frames).
+  - Training: `configs/lesion_det.yaml` (as `configs/seg.yaml`, 60 epochs, patience 15,
+    validation Dice for early stopping).
 - **Operating point:** the highest t with validation sensitivity ≥ 95% of boxes. False alarms:
   per lesion-free frame, and per annotated frame (an upper bound: not every lesion is boxed).
 - [ ] **Shown in the app** (flags to review, each with "measure this", and B's path through
