@@ -835,6 +835,23 @@ FFR ≤ 0.80.
   end-to-end rule is the stricter clinical test. Test patients once, for the chosen one.
 - P4m is then re-run with it as an arm.
 
+**Result, reader v1** (`reports/p4k_reader_lesion_cnn-20261102-171855_dev.md`): no arm
+qualifies.
+
+| Arm | Lesion-free ≤ 0.80 | 50–70 / 70–90 / 90–98% ≤ 0.80 | FAME distance |
+|---|---:|---:|---:|
+| No outflow | 60% | 94 / 92 / 91% | 25 |
+| Murray outflow | 27% | 35 / 56 / 75% | 15 |
+| Wire position | 37% | 91 / 86 / 91% | 23 |
+
+Murray outflow with reader v1 is the closest of all so far: its 50–70% share equals FAME's,
+but its lesion-free share is 27% against the ≤ 25% limit.
+
+**Amendment (2026-11-02, before running it):** a fourth arm, Murray outflow on the vessel
+cut at the wire position (`murray_wire`), is added for every reader, under the same rule.
+Reason: the wire position is adopted (D68, pending its corrected re-run), so the product's
+vessel is the cut one.
+
 ### C4. Hyperemic velocity by artery from real Doppler data (CPU; added 2026-11-02, before the per-artery numbers were looked at)
 Why: the user asked whether the vessel (LAD, LCx, RCA) makes a difference. The model uses one
 velocity, 0.35 m/s, for every artery. DEFINE-FLOW has Doppler velocities measured in real

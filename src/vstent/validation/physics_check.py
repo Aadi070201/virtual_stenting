@@ -28,8 +28,9 @@ import numpy as np
 
 from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 
-OUTFLOWS = ("none", "murray", "wire")  # the arms (``wire``: no outflow, FFR at the wire)
-ARM_LABELS = {"none": "Product (now)", "murray": "Murray outflow", "wire": "FFR at the wire"}
+OUTFLOWS = ("none", "murray", "wire", "murray_wire")  # the arms; ``*wire``: the cut vessel
+ARM_LABELS = {"none": "Product (now)", "murray": "Murray outflow", "wire": "FFR at the wire",
+              "murray_wire": "Murray at the wire"}  # fmt: skip
 CUTOFF = 0.80
 LESION_FREE_ANCHOR = 0.13  # De Bruyne 2001: P(FFR ≤ 0.80) for 0.89 ± 0.08 (normal approx.)
 FAME_SHARES = {"p50_70": 0.35, "p70_90": 0.80, "p90_98": 0.96}  # FFR ≤ 0.80 by visual grade
@@ -52,6 +53,9 @@ def distal_ffr(profile, params: PhysicsParams) -> dict[str, float]:
     cut = slice(0, k + 1)
     out["wire"] = float(solve_ffr_batch(profile.r[cut], profile.ds, r_ref[cut], params)
                         .ffr_distal[0]) if k < len(r_ref) - 1 else out["none"]  # fmt: skip
+    murray = params.model_copy(update={"outflow": "murray"})
+    out["murray_wire"] = float(solve_ffr_batch(profile.r[cut], profile.ds, r_ref[cut], murray)
+                               .ffr_distal[0]) if k < len(r_ref) - 1 else out["murray"]  # fmt: skip
     return out
 
 
@@ -211,13 +215,15 @@ def summarise(free: list[dict[str, Any]], graded: list[dict[str, Any]]) -> dict[
     for r in graded:
         if "error" not in r:
             lesions.setdefault(r["track"], []).append(r)
+    rows = ok_free + [r for rs in lesions.values() for r in rs]
+    arms = [o for o in OUTFLOWS if rows and all(f"ffr_{o}" in r for r in rows)]  # saved runs
     per_lesion = [{"category": rs[0]["category"],
-                   **{o: float(np.median([x[f"ffr_{o}"] for x in rs])) for o in OUTFLOWS}}
+                   **{o: float(np.median([x[f"ffr_{o}"] for x in rs])) for o in arms}}
                   for rs in lesions.values()]  # fmt: skip
     out: dict[str, Any] = {"n_free": len(ok_free), "n_free_failed": len(free) - len(ok_free),
                            "n_boxes": len(graded), "n_lesions": len(per_lesion),
                            "outflow": {}}  # fmt: skip
-    for o in OUTFLOWS:
+    for o in arms:
         ffr = np.array([r[f"ffr_{o}"] for r in ok_free])
         share = float(np.mean(ffr <= CUTOFF)) if ffr.size else None
         grades = {}
@@ -235,7 +241,9 @@ def summarise(free: list[dict[str, Any]], graded: list[dict[str, Any]]) -> dict[
             "fame_mad": float(np.mean(diffs)) if len(diffs) == len(FAME_SHARES) else None,
         }
     out["adopt"], out["reason"] = rule(out["outflow"]["none"], out["outflow"]["murray"])
-    out["wire_adopt"], out["wire_reason"] = rule(out["outflow"]["none"], out["outflow"]["wire"])
+    if "wire" in out["outflow"]:  # rows saved before P4k-C2 have no wire arm
+        out["wire_adopt"], out["wire_reason"] = rule(out["outflow"]["none"],
+                                                     out["outflow"]["wire"])  # fmt: skip
     return out
 
 

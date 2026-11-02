@@ -6,13 +6,13 @@ from vstent.validation import physics_check as pc
 
 
 def _free(none, murray):
-    return [{"ffr_none": a, "ffr_murray": b, "ffr_wire": b}
+    return [{"ffr_none": a, "ffr_murray": b, "ffr_wire": b, "ffr_murray_wire": b}
             for a, b in zip(none, murray, strict=True)]  # fmt: skip
 
 
 def _graded(category, none, murray):
     return [{"track": f"{category}{k}", "category": category, "ffr_none": a, "ffr_murray": b,
-             "ffr_wire": a}
+             "ffr_wire": a, "ffr_murray_wire": b}
             for k, (a, b) in enumerate(zip(none, murray, strict=True))]  # fmt: skip
 
 
