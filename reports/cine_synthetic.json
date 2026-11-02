@@ -1,0 +1,6957 @@
+{
+ "summary": {
+  "n_cases": 60,
+  "n_runs": 120,
+  "ecg_beats": {
+   "k": 347,
+   "n": 348,
+   "rate": 0.9971264367816092
+  },
+  "image_beats": {
+   "k": 380,
+   "n": 486,
+   "rate": 0.7818930041152263
+  },
+  "image_beats_15fps": {
+   "k": 188,
+   "n": 237,
+   "rate": 0.7932489451476793
+  },
+  "analysis_frame": {
+   "k": 114,
+   "n": 120,
+   "rate": 0.95
+  },
+  "analysis_frame_images": {
+   "k": 52,
+   "n": 58
+  },
+  "by_fps": {
+   "7.5": {
+    "runs": 26,
+    "image_beats": 0.7524752475247525,
+    "single_median": 0.2796755164371321
+   },
+   "15.0": {
+    "runs": 58,
+    "image_beats": 0.7932489451476793,
+    "single_median": 0.16147356878293845
+   },
+   "30.0": {
+    "runs": 36,
+    "image_beats": 0.7837837837837838,
+    "single_median": 0.13917725929821262
+   }
+  },
+  "single": {
+   "n": 107,
+   "accepted": 104,
+   "median_err": -0.16061171574603217,
+   "median_abs": 0.16640548115707254,
+   "coverage": 0.9519230769230769
+  },
+  "rejected_runs": 0.13333333333333333,
+  "reasons": [
+   "0.01 m/s is outside 0.05\u20130.8 m/s",
+   "1.04 m/s is outside 0.05\u20130.8 m/s",
+   "heart cycle unknown",
+   "imprecise",
+   "the contrast front does not advance steadily along the path"
+  ],
+  "two_view": {
+   "n": 51,
+   "accepted": 40,
+   "failed": 0,
+   "median_abs": 0.057579111259324744,
+   "median_err": -0.011787476777758321,
+   "within": 0.975,
+   "coverage": 0.95,
+   "ffr_median": 0.005189819335401302,
+   "ffr_p90": 0.022382498054383467,
+   "length_abs": 0.011670971031844557
+  },
+  "targets": [
+   {
+    "metric": "ED frames from the ECG within \u00b11 frame (beats)",
+    "value": "100%",
+    "target": "\u2265 98%",
+    "passed": true
+   },
+   {
+    "metric": "Image-based ED frames within \u00b11 frame at 15 fps (beats)",
+    "value": "79%",
+    "target": "\u2265 80%",
+    "passed": false
+   },
+   {
+    "metric": "Analysis frame within \u00b11 frame of a true ED frame (runs)",
+    "value": "95%",
+    "target": "\u2265 80%",
+    "passed": true
+   },
+   {
+    "metric": "Two views: median |CFV error| (cases)",
+    "value": "5.8%",
+    "target": "\u2264 10%",
+    "passed": true
+   },
+   {
+    "metric": "Two views: cases within \u00b125%",
+    "value": "98%",
+    "target": "\u2265 90%",
+    "passed": true
+   },
+   {
+    "metric": "Two views: 90% interval covers the true velocity (cases)",
+    "value": "95%",
+    "target": "\u2265 85%",
+    "passed": true
+   },
+   {
+    "metric": "Two views: median |FFR(measured) \u2212 FFR(true velocity)|",
+    "value": "0.005",
+    "target": "\u2264 0.02",
+    "passed": true
+   },
+   {
+    "metric": "One view: 90% interval (widened) covers the true velocity (runs)",
+    "value": "95%",
+    "target": "\u2265 85%",
+    "passed": true
+   },
+   {
+    "metric": "Runs rejected by the guards",
+    "value": "13%",
+    "target": "\u2264 20%",
+    "passed": true
+   }
+  ]
+ },
+ "rows": [
+  {
+   "seed": 9200,
+   "velocity": 0.271755155804562,
+   "heart_rate": 98.26814073488727,
+   "diastolic_ratio": 1.6047217177381983,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 105,
+     "has_ecg": true,
+     "true_ed": [
+      17,
+      36,
+      54,
+      72,
+      91
+     ],
+     "source": "R-wave pointer",
+     "frame": 36,
+     "frame_err": 0,
+     "image_ed": [
+      18,
+      35,
+      54,
+      72,
+      85
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.24291378400905259,
+      "lo": 0.14441723597857536,
+      "hi": 0.5597651506388073,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.10612998936532136,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 31,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      6,
+      11,
+      15,
+      20,
+      24,
+      29
+     ],
+     "source": "images",
+     "frame": 15,
+     "frame_err": 0,
+     "image_ed": [
+      10,
+      15,
+      19,
+      24
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.14941354123860073,
+      "lo": 0.08882942041134013,
+      "hi": 0.3443052594157692,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.4501905923505113,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.011670971031844557,
+    "runs": [
+     {
+      "cfv": 0.24536482720856273,
+      "lo": 0.14587443152464677,
+      "hi": 0.41271042362839216,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.09711068228997422,
+      "covered": true
+     },
+     {
+      "cfv": 0.19744811311130828,
+      "lo": 0.11738696040261591,
+      "hi": 0.33211318563409375,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.27343379180151817,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2214064701599355,
+     "lo": 0.17946859666751205,
+     "hi": 0.2731443045687798,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.18527223704574614,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5365753241503277,
+    "ffr_measured": 0.5815246284248567
+   }
+  },
+  {
+   "seed": 9201,
+   "velocity": 0.3009074150530048,
+   "heart_rate": 56.98670055436907,
+   "diastolic_ratio": 1.892782651168989,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 90,
+     "has_ecg": false,
+     "true_ed": [
+      9,
+      25,
+      41,
+      57,
+      73,
+      88
+     ],
+     "source": "images",
+     "frame": 40,
+     "frame_err": 1,
+     "image_ed": [
+      25,
+      40,
+      56,
+      72
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.22539690740788476,
+      "lo": 0.1340030929029228,
+      "hi": 0.5193996476708542,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.25094266165497736,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 72,
+     "has_ecg": false,
+     "true_ed": [
+      11,
+      26,
+      42,
+      58
+     ],
+     "source": "images",
+     "frame": 58,
+     "frame_err": 0,
+     "image_ed": [
+      26,
+      42,
+      58
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.1751208826258219,
+      "lo": 0.10411296309972772,
+      "hi": 0.40354468826433887,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.418024037078068,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.023338868366090337,
+    "runs": [
+     {
+      "cfv": 0.2636121979388908,
+      "lo": 0.15672286837025667,
+      "hi": 0.4434030057311101,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12394249941479318,
+      "covered": true
+     },
+     {
+      "cfv": 0.2619977570582608,
+      "lo": 0.15576305009323904,
+      "hi": 0.44068747153108623,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12930774068126594,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2628049774985758,
+     "lo": 0.21302557452289506,
+     "hi": 0.3242167347874185,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.12662512004802962,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9767841153767445,
+    "ffr_measured": 0.9788058133050164
+   }
+  },
+  {
+   "seed": 9202,
+   "velocity": 0.18708307416782738,
+   "heart_rate": 102.19670179993192,
+   "diastolic_ratio": 2.37586930657076,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 114,
+     "has_ecg": true,
+     "true_ed": [
+      6,
+      24,
+      42,
+      59,
+      77,
+      95,
+      112
+     ],
+     "source": "R-wave pointer",
+     "frame": 59,
+     "frame_err": 0,
+     "image_ed": [
+      24,
+      41,
+      59,
+      77,
+      94
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.1627969783969274,
+      "lo": 0.09678614880443316,
+      "hi": 0.3751457559629579,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12981450021028396,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 59,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      13,
+      22,
+      31,
+      40,
+      48,
+      57
+     ],
+     "source": "images",
+     "frame": 22,
+     "frame_err": 0,
+     "image_ed": [
+      13,
+      22,
+      30,
+      39,
+      49
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.16515186038231683,
+      "lo": 0.09818617453279202,
+      "hi": 0.38057229392030584,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11722714031220494,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.006211127181020126,
+    "runs": [
+     {
+      "cfv": 0.2019904788345432,
+      "lo": 0.12008749016147457,
+      "hi": 0.3397535703756194,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.07968334245642539,
+      "covered": true
+     },
+     {
+      "cfv": 0.17437215641117246,
+      "lo": 0.10366782998031468,
+      "hi": 0.29329878842121104,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06794263892228047,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.18818131762285784,
+     "lo": 0.1525368114510005,
+     "hi": 0.23215516284507093,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.0058703517670724015,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7718795579082877,
+    "ffr_measured": 0.7709065215579093
+   }
+  },
+  {
+   "seed": 9203,
+   "velocity": 0.16442907900539316,
+   "heart_rate": 98.51979338031514,
+   "diastolic_ratio": 2.217275206363531,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 119,
+     "has_ecg": true,
+     "true_ed": [
+      11,
+      29,
+      47,
+      66,
+      84,
+      102
+     ],
+     "source": "R-wave pointer",
+     "frame": 47,
+     "frame_err": 0,
+     "image_ed": [
+      29,
+      47,
+      65,
+      83,
+      100
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.13728188404654817,
+      "lo": 0.0816169009297345,
+      "hi": 0.3163493369335992,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.16509972033568698,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 60,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      14,
+      24,
+      33,
+      42,
+      51
+     ],
+     "source": "R-wave pointer",
+     "frame": 33,
+     "frame_err": 0,
+     "image_ed": [
+      14,
+      23,
+      32,
+      42,
+      48
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.1332563037267424,
+      "lo": 0.07922361071210554,
+      "hi": 0.3070728786901233,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.18958188823540334,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.019811076764683966,
+    "runs": [
+     {
+      "cfv": 0.1793319945629855,
+      "lo": 0.10661655567617404,
+      "hi": 0.30164137333059193,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.09063430658213156,
+      "covered": true
+     },
+     {
+      "cfv": 0.1277040653686276,
+      "lo": 0.075922690920978,
+      "hi": 0.21480176892898564,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.22334865498797207,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.15351802996580655,
+     "lo": 0.1244392965626619,
+     "hi": 0.18939182537659738,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.06635717420292031,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.6357225041601613,
+    "ffr_measured": 0.6492134984947266
+   }
+  },
+  {
+   "seed": 9204,
+   "velocity": 0.30101186846135375,
+   "heart_rate": 59.62450321197762,
+   "diastolic_ratio": 2.148663187161005,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 151,
+     "has_ecg": false,
+     "true_ed": [
+      27,
+      58,
+      88,
+      118,
+      148
+     ],
+     "source": "images",
+     "frame": 118,
+     "frame_err": 0,
+     "image_ed": [
+      27,
+      57,
+      87,
+      118
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.15907443877501895,
+      "lo": 0.0945730225085754,
+      "hi": 0.3665676180004829,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.4715343298982174,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 148,
+     "has_ecg": false,
+     "true_ed": [
+      21,
+      51,
+      81,
+      112,
+      142
+     ],
+     "source": "images",
+     "frame": 51,
+     "frame_err": 0,
+     "image_ed": [
+      51,
+      81,
+      111,
+      131
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.1433918516963108,
+      "lo": 0.08524940224495153,
+      "hi": 0.3304290112337622,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.5236338938086736,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.00611602759081431,
+    "runs": [
+     {
+      "cfv": 0.20999966940779996,
+      "lo": 0.12484911852988488,
+      "hi": 0.3532252503715449,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3023541879553452,
+      "covered": true
+     },
+     {
+      "cfv": 0.22809555458065273,
+      "lo": 0.13560749409885503,
+      "hi": 0.38366302957805937,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.24223733852561558,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.21904761199422634,
+     "lo": 0.1775565433999101,
+     "hi": 0.2702342330031946,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.27229576324048044,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.4234723104274932,
+    "ffr_measured": 0.4827354201431774
+   }
+  },
+  {
+   "seed": 9205,
+   "velocity": 0.3435424510622239,
+   "heart_rate": 62.88285006119381,
+   "diastolic_ratio": 2.200549346003184,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 127,
+     "has_ecg": true,
+     "true_ed": [
+      24,
+      53,
+      81,
+      110
+     ],
+     "source": "R-wave pointer",
+     "frame": 53,
+     "frame_err": 0,
+     "image_ed": [
+      52,
+      80,
+      104
+     ],
+     "image_beats": [
+      2,
+      3
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.2680575649682677,
+      "lo": 0.1593657304124905,
+      "hi": 0.6177059233029872,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2197250612276852,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 107,
+     "has_ecg": false,
+     "true_ed": [
+      9,
+      38,
+      67,
+      95
+     ],
+     "source": "images",
+     "frame": 38,
+     "frame_err": 0,
+     "image_ed": [
+      38,
+      65,
+      84
+     ],
+     "image_beats": [
+      1,
+      3
+     ],
+     "single": {
+      "cfv": 0.44935649350042917,
+      "lo": 0.2671516687498402,
+      "hi": 1.0354871638960599,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.30800863797481526,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.012407683115068902,
+    "runs": [
+     {
+      "cfv": 0.30104015071621437,
+      "lo": 0.17897455536483364,
+      "hi": 0.5063578571741926,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12371775369999716,
+      "covered": true
+     },
+     {
+      "cfv": 0.5995435535282447,
+      "lo": 0.3564409619756096,
+      "hi": 1.008448834233232,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.7451804039776522,
+      "covered": false
+     }
+    ],
+    "combined": {
+     "cfv": 0.45029185212222955,
+     "lo": 0.36499948141901645,
+     "hi": 0.5555151785404808,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d72.0): one transit is unreliable"
+     ],
+     "err": 0.3107313251388275,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.4728417561461413
+   }
+  },
+  {
+   "seed": 9206,
+   "velocity": 0.31821407217023767,
+   "heart_rate": 54.07313487859939,
+   "diastolic_ratio": 1.9711930815069918,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 171,
+     "has_ecg": false,
+     "true_ed": [
+      7,
+      40,
+      74,
+      107,
+      140
+     ],
+     "source": "images",
+     "frame": 40,
+     "frame_err": 0,
+     "image_ed": [
+      40,
+      73,
+      106,
+      140
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.27775763146069266,
+      "lo": 0.1651326192589143,
+      "hi": 0.640058541963509,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12713592593071021,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 67,
+     "has_ecg": false,
+     "true_ed": [
+      5,
+      21,
+      38,
+      55
+     ],
+     "source": "images",
+     "frame": 21,
+     "frame_err": 0,
+     "image_ed": [
+      21,
+      38,
+      54
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.2670763479440781,
+      "lo": 0.15878237672959158,
+      "hi": 0.6154448284968794,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1607022715161447,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.004330985409551458,
+    "runs": [
+     {
+      "cfv": 0.34620385629903583,
+      "lo": 0.2058253063562972,
+      "hi": 0.5823244587273583,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.08795897660309704,
+      "covered": true
+     },
+     {
+      "cfv": 0.31274244293851605,
+      "lo": 0.1859318085493438,
+      "hi": 0.5260414362569602,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.017194805982038486,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.32947314961877594,
+     "lo": 0.26706574455115817,
+     "hi": 0.40646379602952926,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.03538208531052933,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5337238295025569,
+    "ffr_measured": 0.5269934296276828
+   }
+  },
+  {
+   "seed": 9207,
+   "velocity": 0.2041102067383997,
+   "heart_rate": 74.81965903750219,
+   "diastolic_ratio": 2.152863312774142,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 69,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      16,
+      28,
+      40,
+      52,
+      65
+     ],
+     "source": "images",
+     "frame": 40,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      28,
+      40,
+      52,
+      60
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.1536867894431067,
+      "lo": 0.09136995427549567,
+      "hi": 0.3541524380543563,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.24704015590910045,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 65,
+     "has_ecg": true,
+     "true_ed": [
+      11,
+      23,
+      35,
+      47,
+      59
+     ],
+     "source": "R-wave pointer",
+     "frame": 47,
+     "frame_err": 0,
+     "image_ed": [
+      23,
+      35,
+      47,
+      57
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.10617390369587584,
+      "lo": 0.06312256740540674,
+      "hi": 0.24466479511931405,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.479820703763458,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.007836605801537555,
+    "runs": [
+     {
+      "cfv": 0.17976251379081823,
+      "lo": 0.10687250820341687,
+      "hi": 0.3023655185755336,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1192869937111326,
+      "covered": true
+     },
+     {
+      "cfv": 0.13889061717328277,
+      "lo": 0.08257332582977855,
+      "hi": 0.23361785836920462,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3195312503343176,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.1593265654820505,
+     "lo": 0.12914760394428754,
+     "hi": 0.19655768820346706,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.21940912202272522,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.6029577076546186,
+    "ffr_measured": 0.6493450327629696
+   }
+  },
+  {
+   "seed": 9208,
+   "velocity": 0.32842835146665117,
+   "heart_rate": 61.772168825828366,
+   "diastolic_ratio": 1.9238821080413753,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 118,
+     "has_ecg": false,
+     "true_ed": [
+      11,
+      40,
+      69,
+      98
+     ],
+     "source": "images",
+     "frame": 69,
+     "frame_err": 0,
+     "image_ed": [
+      39,
+      69,
+      98
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.32727756473772995,
+      "lo": 0.19457323712622596,
+      "hi": 0.7541711808305214,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0035039201816231547,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 61,
+     "has_ecg": true,
+     "true_ed": [
+      2,
+      16,
+      31,
+      45,
+      60
+     ],
+     "source": "R-wave pointer",
+     "frame": 31,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      30,
+      45
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.3137038023995191,
+      "lo": 0.18650335650289565,
+      "hi": 0.7228921031487839,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.04483336776918667,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.012650982910933473,
+    "runs": [
+     {
+      "cfv": 0.3788075136810011,
+      "lo": 0.22520885060885565,
+      "hi": 0.637164711925133,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.15339468102973886,
+      "covered": true
+     },
+     {
+      "cfv": 0.3297383618920836,
+      "lo": 0.1960362315988758,
+      "hi": 0.5546290418689023,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.00398872514989157,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.35427293778654234,
+     "lo": 0.28716806214334745,
+     "hi": 0.43705875058367755,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.0786917030898151,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.976179141938761,
+    "ffr_measured": 0.9750600783446041
+   }
+  },
+  {
+   "seed": 9209,
+   "velocity": 0.2195756631026024,
+   "heart_rate": 55.25445519168344,
+   "diastolic_ratio": 1.5207599720081135,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 43,
+     "has_ecg": true,
+     "true_ed": [
+      0,
+      8,
+      17,
+      25,
+      33,
+      41
+     ],
+     "source": "R-wave pointer",
+     "frame": 33,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      24,
+      32,
+      38
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.2278392162839277,
+      "lo": 0.13545509571422032,
+      "hi": 0.525027650221149,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.03763419435724957,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 155,
+     "has_ecg": true,
+     "true_ed": [
+      28,
+      60,
+      93,
+      125
+     ],
+     "source": "R-wave pointer",
+     "frame": 60,
+     "frame_err": 0,
+     "image_ed": [
+      60,
+      92,
+      125
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.20727834470686482,
+      "lo": 0.1232312350774801,
+      "hi": 0.47764763256364595,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.05600492432529436,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.01884007560236778,
+    "runs": [
+     {
+      "cfv": 0.2283342584121929,
+      "lo": 0.13574940843158487,
+      "hi": 0.384064536022799,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.03988873441542484,
+      "covered": true
+     },
+     {
+      "cfv": 0.19932840656415418,
+      "lo": 0.11850483349654663,
+      "hi": 0.33527589121132834,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.09221084091175968,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.21383133248817354,
+     "lo": 0.17332830940972654,
+     "hi": 0.26379902342197525,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.02616105324816742,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.32113825491216297,
+    "ffr_measured": 0.3250278511567952
+   }
+  },
+  {
+   "seed": 9210,
+   "velocity": 0.11548720098950696,
+   "heart_rate": 99.17488700405269,
+   "diastolic_ratio": 2.1553159857223965,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 78,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      13,
+      23,
+      32,
+      41,
+      50,
+      59,
+      68,
+      77
+     ],
+     "source": "images",
+     "frame": 23,
+     "frame_err": 0,
+     "image_ed": [
+      23,
+      30,
+      40,
+      51,
+      59,
+      69
+     ],
+     "image_beats": [
+      5,
+      6
+     ],
+     "single": {
+      "cfv": 0.1056134979344176,
+      "lo": 0.06278939466501894,
+      "hi": 0.2433734084787361,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.08549608069543979,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 84,
+     "has_ecg": false,
+     "true_ed": [
+      8,
+      17,
+      26,
+      35,
+      44,
+      53,
+      62,
+      71,
+      80
+     ],
+     "source": "images",
+     "frame": 35,
+     "frame_err": 0,
+     "image_ed": [
+      26,
+      35,
+      44,
+      51,
+      62,
+      68
+     ],
+     "image_beats": [
+      4,
+      6
+     ],
+     "single": {
+      "cfv": 0.10543919342562816,
+      "lo": 0.06268576705293977,
+      "hi": 0.2429717450242822,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.08700537789284335,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.002585389245531422,
+    "runs": [
+     {
+      "cfv": 0.11598209864428236,
+      "lo": 0.06895374084073187,
+      "hi": 0.19508509678978664,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.004285303051204448,
+      "covered": true
+     },
+     {
+      "cfv": 0.11638730031746727,
+      "lo": 0.06919464156151221,
+      "hi": 0.19576665720778794,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.00779393145082885,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.11618469948087481,
+     "lo": 0.0941774870219777,
+     "hi": 0.14333451465222286,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.006039617251016649,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.4159543057425824,
+    "ffr_measured": 0.4142213313996348
+   }
+  },
+  {
+   "seed": 9211,
+   "velocity": 0.3014100154501913,
+   "heart_rate": 64.14783686922124,
+   "diastolic_ratio": 2.030493834995677,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 75,
+     "has_ecg": true,
+     "true_ed": [
+      12,
+      26,
+      40,
+      55,
+      69
+     ],
+     "source": "R-wave pointer",
+     "frame": 40,
+     "frame_err": 0,
+     "image_ed": [
+      12,
+      26,
+      40,
+      52,
+      61
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.25046849259467563,
+      "lo": 0.1489086654666551,
+      "hi": 0.5771740539940239,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.16901071711047333,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 70,
+     "has_ecg": false,
+     "true_ed": [
+      6,
+      20,
+      34,
+      48,
+      62
+     ],
+     "source": "images",
+     "frame": 57,
+     "frame_err": 5,
+     "image_ed": [
+      16,
+      27,
+      36,
+      46,
+      57
+     ],
+     "image_beats": [
+      0,
+      3
+     ],
+     "single": {
+      "cfv": 0.20320700768604788,
+      "lo": 0.12081074156089268,
+      "hi": 0.46826573359049417,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3258120259124956,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.03238537822943455,
+    "runs": [
+     {
+      "cfv": 0.2876425401503477,
+      "lo": 0.17100940058972333,
+      "hi": 0.48382270576250686,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.045676900547847676,
+      "covered": true
+     },
+     {
+      "cfv": 0.27908925152341,
+      "lo": 0.16592429474828913,
+      "hi": 0.46943583779614273,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.07405448652209712,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2833658958368789,
+     "lo": 0.22969193101060306,
+     "hi": 0.3495822886339453,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.059865693534972286,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5459338842389392,
+    "ffr_measured": 0.5598764302149358
+   }
+  },
+  {
+   "seed": 9212,
+   "velocity": 0.27817775253618976,
+   "heart_rate": 65.34487219971385,
+   "diastolic_ratio": 2.2328989464349993,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 61,
+     "has_ecg": false,
+     "true_ed": [
+      9,
+      23,
+      37,
+      51
+     ],
+     "source": "images",
+     "frame": 23,
+     "frame_err": 0,
+     "image_ed": [
+      10,
+      23,
+      36,
+      50
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.20922771551333885,
+      "lo": 0.12439017607754214,
+      "hi": 0.482139719530173,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.24786323275036448,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 55,
+     "has_ecg": false,
+     "true_ed": [
+      11,
+      25,
+      38,
+      52
+     ],
+     "source": "images",
+     "frame": 24,
+     "frame_err": 1,
+     "image_ed": [
+      10,
+      24,
+      38
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.23092554561146372,
+      "lo": 0.1372899819172435,
+      "hi": 0.5321397192541882,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1698633571301814,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.01975230566727748,
+    "runs": [
+     {
+      "cfv": 0.34092985615628385,
+      "lo": 0.2026898049014334,
+      "hi": 0.5734534446627335,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.22558275436469466,
+      "covered": true
+     },
+     {
+      "cfv": 0.25055156949918517,
+      "lo": 0.14895805639344778,
+      "hi": 0.4214346675730816,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0993112597435718,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2957407128277345,
+     "lo": 0.23972276271015483,
+     "hi": 0.3648488288515438,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.06313574731056137,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.6182243101535401,
+    "ffr_measured": 0.6062693070159935
+   }
+  },
+  {
+   "seed": 9213,
+   "velocity": 0.23208788640625028,
+   "heart_rate": 88.21803047042246,
+   "diastolic_ratio": 1.8134572151051636,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 62,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      12,
+      23,
+      33,
+      43,
+      53
+     ],
+     "source": "images",
+     "frame": 43,
+     "frame_err": 0,
+     "image_ed": [
+      13,
+      22,
+      32,
+      43,
+      52
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.20572910021804977,
+      "lo": 0.12231017739504997,
+      "hi": 0.47407758783277315,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11357243411688311,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 159,
+     "has_ecg": false,
+     "true_ed": [
+      15,
+      36,
+      56,
+      77,
+      97,
+      118,
+      138,
+      158
+     ],
+     "source": "images",
+     "frame": 76,
+     "frame_err": 1,
+     "image_ed": [
+      36,
+      56,
+      76,
+      97,
+      117,
+      138
+     ],
+     "image_beats": [
+      6,
+      6
+     ],
+     "failed": "end point (374, 114) is 10 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    }
+   ]
+  },
+  {
+   "seed": 9214,
+   "velocity": 0.3028258217133624,
+   "heart_rate": 100.86912691939577,
+   "diastolic_ratio": 1.6896763787414357,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 54,
+     "has_ecg": false,
+     "true_ed": [
+      8,
+      17,
+      26,
+      35,
+      44,
+      53
+     ],
+     "source": "images",
+     "frame": 26,
+     "frame_err": 0,
+     "image_ed": [
+      17,
+      26,
+      34,
+      43
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.2537477279017322,
+      "lo": 0.1508582382383296,
+      "hi": 0.584730651299207,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.16206707054884084,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 30,
+     "has_ecg": true,
+     "true_ed": [
+      3,
+      8,
+      12,
+      17,
+      21,
+      26
+     ],
+     "source": "R-wave pointer",
+     "frame": 17,
+     "frame_err": 0,
+     "image_ed": [
+      12
+     ],
+     "image_beats": [
+      1,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.20387394755628957,
+      "lo": 0.12120725101801193,
+      "hi": 0.4698026150748275,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.32676167969168435,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.02091668463285168,
+    "runs": [
+     {
+      "cfv": 0.28123059904764075,
+      "lo": 0.16719736985178937,
+      "hi": 0.47303764353951305,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.07131235554332116,
+      "covered": true
+     },
+     {
+      "cfv": 0.2331950304029132,
+      "lo": 0.13863923725906607,
+      "hi": 0.39224048891007246,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.22993676997715784,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.25721281472527696,
+     "lo": 0.2084926554779581,
+     "hi": 0.3173178062662929,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.1506245627602395,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5929091423546387,
+    "ffr_measured": 0.6269160561414333
+   }
+  },
+  {
+   "seed": 9215,
+   "velocity": 0.2976378855201183,
+   "heart_rate": 54.6112260510641,
+   "diastolic_ratio": 1.9032472333623394,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 81,
+     "has_ecg": false,
+     "true_ed": [
+      10,
+      26,
+      43,
+      59,
+      75
+     ],
+     "source": "images",
+     "frame": 42,
+     "frame_err": 1,
+     "image_ed": [
+      26,
+      42,
+      59,
+      70
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.19603823176464075,
+      "lo": 0.11654875697182217,
+      "hi": 0.45174616492989983,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3413532305470235,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 116,
+     "has_ecg": true,
+     "true_ed": [
+      29,
+      61,
+      94
+     ],
+     "source": "R-wave pointer",
+     "frame": 61,
+     "frame_err": 0,
+     "image_ed": [
+      28,
+      61,
+      94
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.22281182953189188,
+      "lo": 0.13246621098754188,
+      "hi": 0.5134426513951127,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.25139963569311363,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.023962646264375054,
+    "runs": [
+     {
+      "cfv": 0.31711554097159395,
+      "lo": 0.18853170518829665,
+      "hi": 0.5333971080634411,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.0654407802200272,
+      "covered": true
+     },
+     {
+      "cfv": 0.2779557473744349,
+      "lo": 0.16525040324051393,
+      "hi": 0.46752925247651816,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06612779858749873,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2975356441730144,
+     "lo": 0.24117770578123682,
+     "hi": 0.3670631962713443,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.00034350918373571293,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.807952290953486,
+    "ffr_measured": 0.8080018176767777
+   }
+  },
+  {
+   "seed": 9216,
+   "velocity": 0.1681852251448701,
+   "heart_rate": 88.12058395411441,
+   "diastolic_ratio": 1.5546178661736056,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 140,
+     "has_ecg": false,
+     "true_ed": [
+      3,
+      23,
+      44,
+      64,
+      85,
+      105,
+      126
+     ],
+     "source": "images",
+     "frame": 84,
+     "frame_err": 1,
+     "image_ed": [
+      44,
+      64,
+      84,
+      105,
+      120
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "single": {
+      "cfv": 0.19639177813634287,
+      "lo": 0.1167589475544594,
+      "hi": 0.4525608693684355,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.1677112419784581,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 61,
+     "has_ecg": true,
+     "true_ed": [
+      6,
+      16,
+      26,
+      36,
+      46,
+      57
+     ],
+     "source": "R-wave pointer",
+     "frame": 16,
+     "frame_err": 0,
+     "image_ed": [
+      15,
+      26,
+      36,
+      46,
+      52
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.14336956614779173,
+      "lo": 0.08523615302843415,
+      "hi": 0.33037765690870924,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.14754957800664625,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.011642744249899861,
+    "runs": [
+     {
+      "cfv": 0.19583930823331175,
+      "lo": 0.11643049284497228,
+      "hi": 0.32940713134633315,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.16442635234231284,
+      "covered": true
+     },
+     {
+      "cfv": 0.18364288453324112,
+      "lo": 0.10917946834352964,
+      "hi": 0.30889240945537155,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.09190854532588233,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.18974109638327644,
+     "lo": 0.15380114354139474,
+     "hi": 0.2340794276801859,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.12816744883409759,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.3118159977129439,
+    "ffr_measured": 0.29197742107036184
+   }
+  },
+  {
+   "seed": 9217,
+   "velocity": 0.31707111611830124,
+   "heart_rate": 58.80076545762869,
+   "diastolic_ratio": 1.7509484418274188,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 70,
+     "has_ecg": false,
+     "true_ed": [
+      13,
+      29,
+      44,
+      59
+     ],
+     "source": "images",
+     "frame": 28,
+     "frame_err": 1,
+     "image_ed": [
+      12,
+      28,
+      44,
+      53
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "failed": "end point (149, 396) is 39 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 80,
+     "has_ecg": true,
+     "true_ed": [
+      11,
+      26,
+      42,
+      57,
+      72
+     ],
+     "source": "R-wave pointer",
+     "frame": 42,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      25,
+      41,
+      57,
+      67
+     ],
+     "image_beats": [
+      3,
+      5
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.2112604158640019,
+      "lo": 0.12559865820387756,
+      "hi": 0.486823829255087,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.33371283247011596,
+      "covered": true
+     }
+    }
+   ]
+  },
+  {
+   "seed": 9218,
+   "velocity": 0.254426094095751,
+   "heart_rate": 57.95479674319635,
+   "diastolic_ratio": 2.0332187372363775,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 32,
+     "has_ecg": false,
+     "true_ed": [
+      5,
+      13,
+      20,
+      28
+     ],
+     "source": "images",
+     "frame": 20,
+     "frame_err": 0,
+     "image_ed": [
+      6,
+      12,
+      20,
+      26
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 0.10617002128209181,
+      "lo": 0.06312025923063641,
+      "hi": 0.24465584857086878,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.5827078128152388,
+      "covered": false
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 162,
+     "has_ecg": true,
+     "true_ed": [
+      7,
+      38,
+      69,
+      100,
+      131
+     ],
+     "source": "R-wave pointer",
+     "frame": 38,
+     "frame_err": 0,
+     "image_ed": [
+      38,
+      69,
+      100,
+      131
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.21356550761042353,
+      "lo": 0.1269690826120817,
+      "hi": 0.49213563168711316,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1605990400888282,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.01613775004349538,
+    "runs": [
+     {
+      "cfv": 0.14181336429303118,
+      "lo": 0.08431095904898969,
+      "hi": 0.2385339998376992,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.44261470193516794,
+      "covered": false
+     },
+     {
+      "cfv": 0.2658363923966762,
+      "lo": 0.15804519767809155,
+      "hi": 0.4471441623074122,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.04484720146916632,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2038248783448537,
+     "lo": 0.16521723532312835,
+     "hi": 0.2514542804873983,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.9): one transit is unreliable"
+     ],
+     "err": -0.19888375023300087,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.6002219352058504
+   }
+  },
+  {
+   "seed": 9219,
+   "velocity": 0.3404267841757115,
+   "heart_rate": 84.09457301878093,
+   "diastolic_ratio": 2.3291969722329173,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 65,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      16,
+      27,
+      37,
+      48,
+      59
+     ],
+     "source": "R-wave pointer",
+     "frame": 37,
+     "frame_err": 0,
+     "image_ed": [
+      13,
+      21,
+      29,
+      37,
+      44,
+      50,
+      57
+     ],
+     "image_beats": [
+      1,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.25434950355821095,
+      "lo": 0.15121600623137446,
+      "hi": 0.5861173698107718,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.25285108169711956,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 66,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      15,
+      25,
+      36,
+      47,
+      57
+     ],
+     "source": "images",
+     "frame": 27,
+     "frame_err": 2,
+     "image_ed": [
+      27,
+      44
+     ],
+     "image_beats": [
+      0,
+      5
+     ],
+     "single": {
+      "cfv": 0.4142941833254574,
+      "lo": 0.2463064048915151,
+      "hi": 0.9546903519040891,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.2169846868207035,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.030129874883696783,
+    "runs": [
+     {
+      "cfv": 0.29192494005765424,
+      "lo": 0.17355537532924273,
+      "hi": 0.49102582081366447,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.14247364300519605,
+      "covered": true
+     },
+     {
+      "cfv": 0.4563760228676168,
+      "lo": 0.2713249231957135,
+      "hi": 0.7676370891229427,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.3405996357562102,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.3741504814626355,
+     "lo": 0.3032804858957729,
+     "hi": 0.46158124010270557,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.6): one transit is unreliable"
+     ],
+     "err": 0.09906299637550697,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8166275847552407
+   }
+  },
+  {
+   "seed": 9220,
+   "velocity": 0.14496979526820916,
+   "heart_rate": 68.98233164770305,
+   "diastolic_ratio": 2.498364035153622,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 86,
+     "has_ecg": true,
+     "true_ed": [
+      1,
+      14,
+      27,
+      40,
+      53,
+      66,
+      79
+     ],
+     "source": "R-wave pointer",
+     "frame": 27,
+     "frame_err": 0,
+     "image_ed": [
+      27,
+      40,
+      53,
+      66,
+      76
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.12735306764487092,
+      "lo": 0.07571401556191389,
+      "hi": 0.2934695920421244,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12151998691000054,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 81,
+     "has_ecg": false,
+     "true_ed": [
+      0,
+      13,
+      26,
+      39,
+      52,
+      65,
+      78
+     ],
+     "source": "images",
+     "frame": 38,
+     "frame_err": 1,
+     "image_ed": [
+      25,
+      38,
+      51,
+      64
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.1570674234687963,
+      "lo": 0.09337981066893533,
+      "hi": 0.3619426963238265,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.08344930182321963,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.01758089295559173,
+    "runs": [
+     {
+      "cfv": 0.13576786886156134,
+      "lo": 0.08071678779232093,
+      "hi": 0.22836530936583863,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06347478376184024,
+      "covered": true
+     },
+     {
+      "cfv": 0.15193725117799614,
+      "lo": 0.09032981782742731,
+      "hi": 0.2555626575006342,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.04806143167200072,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.14385256001977875,
+     "lo": 0.11660461889451346,
+     "hi": 0.1774677471650116,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.0077066760449195915,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.836540516862389,
+    "ffr_measured": 0.8374274845815746
+   }
+  },
+  {
+   "seed": 9221,
+   "velocity": 0.28758560760491236,
+   "heart_rate": 96.4340237237841,
+   "diastolic_ratio": 1.5826690088344715,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 112,
+     "has_ecg": false,
+     "true_ed": [
+      5,
+      23,
+      42,
+      61,
+      79,
+      98
+     ],
+     "source": "images",
+     "frame": 42,
+     "frame_err": 0,
+     "image_ed": [
+      42,
+      60,
+      79,
+      98
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.3735661607595758,
+      "lo": 0.22209275859790473,
+      "hi": 0.8608375976035681,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.29897376948287446,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 27,
+     "has_ecg": true,
+     "true_ed": [
+      2,
+      7,
+      12,
+      16,
+      21,
+      26
+     ],
+     "source": "R-wave pointer",
+     "frame": 7,
+     "frame_err": 0,
+     "image_ed": [
+      8,
+      11,
+      15,
+      21
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.21597887749293604,
+      "lo": 0.1284038805970878,
+      "hi": 0.49769694786084434,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.24899274587603937,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.006478725061116575,
+    "runs": [
+     {
+      "cfv": 0.3668613641474221,
+      "lo": 0.21810661924201838,
+      "hi": 0.6170709581022157,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.2756596799218807,
+      "covered": true
+     },
+     {
+      "cfv": 0.21563634151432928,
+      "lo": 0.128200235919387,
+      "hi": 0.3627062887070137,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2501838207057553,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2912488528308757,
+     "lo": 0.23608173176159739,
+     "hi": 0.3593073197250217,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.7): one transit is unreliable"
+     ],
+     "err": 0.012737929608062748,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9244118059700425
+   }
+  },
+  {
+   "seed": 9222,
+   "velocity": 0.1595716650589619,
+   "heart_rate": 100.83655278728862,
+   "diastolic_ratio": 1.9066484832504562,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 80,
+     "has_ecg": true,
+     "true_ed": [
+      6,
+      15,
+      24,
+      33,
+      42,
+      51,
+      60,
+      69,
+      78
+     ],
+     "source": "R-wave pointer",
+     "frame": 33,
+     "frame_err": 0,
+     "image_ed": [
+      18,
+      24,
+      33,
+      42,
+      51,
+      60,
+      69
+     ],
+     "image_beats": [
+      6,
+      7
+     ],
+     "ecg_beats": [
+      9,
+      9
+     ],
+     "single": {
+      "cfv": 0.15526345846969933,
+      "lo": 0.09230731640915316,
+      "hi": 0.3577856792834554,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.026998568872930395,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 136,
+     "has_ecg": true,
+     "true_ed": [
+      4,
+      22,
+      40,
+      58,
+      75,
+      93,
+      111,
+      129
+     ],
+     "source": "R-wave pointer",
+     "frame": 93,
+     "frame_err": 0,
+     "image_ed": [
+      40,
+      57,
+      75,
+      93,
+      111,
+      121
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "ecg_beats": [
+      8,
+      8
+     ],
+     "single": {
+      "cfv": 0.14858676864240977,
+      "lo": 0.08833788711440595,
+      "hi": 0.34240006293324426,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0688398934265253,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.005315598307244929,
+    "runs": [
+     {
+      "cfv": 0.1683335649865531,
+      "lo": 0.10007776329758188,
+      "hi": 0.2831417106797667,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.054908870721839476,
+      "covered": true
+     },
+     {
+      "cfv": 0.1576691305514315,
+      "lo": 0.09373753789342117,
+      "hi": 0.2652038370914912,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.01192275901130313,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.1630013477689923,
+     "lo": 0.13212632457345289,
+     "hi": 0.20109118648598484,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.021493055855268173,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7779203138592938,
+    "ffr_measured": 0.7749375242951613
+   }
+  },
+  {
+   "seed": 9223,
+   "velocity": 0.17034322266200042,
+   "heart_rate": 67.29748966667549,
+   "diastolic_ratio": 1.8687715349498928,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 70,
+     "has_ecg": true,
+     "true_ed": [
+      1,
+      14,
+      28,
+      41,
+      54,
+      68
+     ],
+     "source": "R-wave pointer",
+     "frame": 41,
+     "frame_err": 0,
+     "image_ed": [
+      27,
+      41,
+      53
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.14330648505628638,
+      "lo": 0.08519865002334584,
+      "hi": 0.3302322942367925,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.15871918578974553,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 82,
+     "has_ecg": true,
+     "true_ed": [
+      0,
+      14,
+      27,
+      40,
+      54,
+      67,
+      80
+     ],
+     "source": "R-wave pointer",
+     "frame": 67,
+     "frame_err": 0,
+     "image_ed": [
+      26,
+      39,
+      53,
+      61
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.14783300128956725,
+      "lo": 0.08788975693475197,
+      "hi": 0.3406630981186219,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.13214626928303774,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.0007707077712397759,
+    "runs": [
+     {
+      "cfv": 0.181143156123788,
+      "lo": 0.10769332843976491,
+      "hi": 0.30468779715393357,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.06340101644793417,
+      "covered": true
+     },
+     {
+      "cfv": 0.17543538356758676,
+      "lo": 0.1042999403719629,
+      "hi": 0.2950871658962106,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.029893533925270166,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.17828926984568738,
+     "lo": 0.14451847336244172,
+     "hi": 0.21995156053433187,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.046647275186602055,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9622871020190847,
+    "ffr_measured": 0.961175002267405
+   }
+  },
+  {
+   "seed": 9224,
+   "velocity": 0.331822760321314,
+   "heart_rate": 81.25482558645966,
+   "diastolic_ratio": 1.8389258011256615,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 29,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      9,
+      15,
+      20,
+      26
+     ],
+     "source": "images",
+     "frame": 15,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      15,
+      20
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.24390454049067356,
+      "lo": 0.1450062610649337,
+      "hi": 0.562048227959608,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2649553627530149,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 73,
+     "has_ecg": true,
+     "true_ed": [
+      7,
+      18,
+      29,
+      40,
+      51,
+      62
+     ],
+     "source": "R-wave pointer",
+     "frame": 29,
+     "frame_err": 0,
+     "image_ed": [
+      18,
+      29,
+      40,
+      51,
+      62
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.2954095697226307,
+      "lo": 0.17562705926713773,
+      "hi": 0.6807352780349888,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.10973686845177022,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.017732730551036857,
+    "runs": [
+     {
+      "cfv": 0.24513943578143124,
+      "lo": 0.14574043168988077,
+      "hi": 0.4123313090159519,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2612338118577059,
+      "covered": true
+     },
+     {
+      "cfv": 0.3106815552908865,
+      "lo": 0.18470656849577005,
+      "hi": 0.5225749662507244,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06371234152219052,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2779104955361589,
+     "lo": 0.2252698694713784,
+     "hi": 0.34285208097466563,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.16247307668994815,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.1535886744196392,
+    "ffr_measured": 0.16967203617984572
+   }
+  },
+  {
+   "seed": 9225,
+   "velocity": 0.2481747989480269,
+   "heart_rate": 84.84293220734645,
+   "diastolic_ratio": 1.5542506770980324,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 70,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      13,
+      23,
+      34,
+      45,
+      55,
+      66
+     ],
+     "source": "images",
+     "frame": 34,
+     "frame_err": 0,
+     "image_ed": [
+      23,
+      34,
+      44,
+      55
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.19556208615555154,
+      "lo": 0.11626567862339285,
+      "hi": 0.4506489455206139,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.21199861152499044,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 32,
+     "has_ecg": false,
+     "true_ed": [
+      1,
+      6,
+      11,
+      16,
+      22,
+      27
+     ],
+     "source": "images",
+     "frame": 11,
+     "frame_err": 0,
+     "image_ed": [
+      11,
+      16,
+      21,
+      25
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 0.19175954091070185,
+      "lo": 0.11400498734074337,
+      "hi": 0.4418864443703505,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2273206557493358,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.004910672580815012,
+    "runs": [
+     {
+      "cfv": 0.21721153570513252,
+      "lo": 0.12913672123286282,
+      "hi": 0.3653558088895898,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12476392999669061,
+      "covered": true
+     },
+     {
+      "cfv": 0.20032326055677763,
+      "lo": 0.11909629463739145,
+      "hi": 0.3369492631343343,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.19281384973044913,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.20876739813095507,
+     "lo": 0.1692235639971381,
+     "hi": 0.2575517587084137,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.15878888986356987,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.19149424674502202,
+    "ffr_measured": 0.20643474017890273
+   }
+  },
+  {
+   "seed": 9226,
+   "velocity": 0.12132114685449893,
+   "heart_rate": 79.94628997066164,
+   "diastolic_ratio": 2.1787357844479818,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 63,
+     "has_ecg": true,
+     "true_ed": [
+      8,
+      19,
+      31,
+      42,
+      53
+     ],
+     "source": "R-wave pointer",
+     "frame": 19,
+     "frame_err": 0,
+     "image_ed": [
+      19,
+      26,
+      36,
+      53
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.10794519227975147,
+      "lo": 0.06417563486490584,
+      "hi": 0.24874651335124853,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11025245739548861,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 39,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      9,
+      15,
+      21,
+      26,
+      32,
+      37
+     ],
+     "source": "images",
+     "frame": 15,
+     "frame_err": 0,
+     "image_ed": [
+      10,
+      15,
+      20,
+      26,
+      31
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.10338674101897877,
+      "lo": 0.061465541923455824,
+      "hi": 0.23824211909846704,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.14782588444394607,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.010797949591312861,
+    "runs": [
+     {
+      "cfv": 0.11920926952448191,
+      "lo": 0.07087236024082157,
+      "hi": 0.20051328744058539,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0174073307479512,
+      "covered": true
+     },
+     {
+      "cfv": 0.12235370655854004,
+      "lo": 0.07274179266936759,
+      "hi": 0.20580231747460834,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.008510962275022571,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.12078148804151098,
+     "lo": 0.09790357141128536,
+     "hi": 0.14900547184573984,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.004448184236464314,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9752162169142987,
+    "ffr_measured": 0.9752807993586453
+   }
+  },
+  {
+   "seed": 9227,
+   "velocity": 0.20666595600680304,
+   "heart_rate": 84.18271465878854,
+   "diastolic_ratio": 2.0678846274444536,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 34,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      9,
+      15,
+      20,
+      25,
+      31
+     ],
+     "source": "images",
+     "frame": 19,
+     "frame_err": 1,
+     "image_ed": [
+      9,
+      19,
+      25
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 0.17950657467103898,
+      "lo": 0.1067203471376787,
+      "hi": 0.41365098000221273,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.13141681320202558,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 33,
+     "has_ecg": true,
+     "true_ed": [
+      4,
+      9,
+      15,
+      20,
+      25,
+      31
+     ],
+     "source": "R-wave pointer",
+     "frame": 25,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      14,
+      20,
+      25
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.16809863941906023,
+      "lo": 0.09993809522046379,
+      "hi": 0.3873627863500828,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.18661668971968104,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.01376482035213078,
+    "runs": [
+     {
+      "cfv": 0.20493673592262662,
+      "lo": 0.12183910053994298,
+      "hi": 0.344709256260897,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.008367222727866719,
+      "covered": true
+     },
+     {
+      "cfv": 0.20576054005659938,
+      "lo": 0.12232886902509259,
+      "hi": 0.3460949175921754,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.004381059985389402,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.205348637989613,
+     "lo": 0.16645237088581538,
+     "hi": 0.25333410932978534,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.00637414135662806,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.33241966148221824,
+    "ffr_measured": 0.33368237811478807
+   }
+  },
+  {
+   "seed": 9228,
+   "velocity": 0.10131617353075131,
+   "heart_rate": 81.3144400478866,
+   "diastolic_ratio": 1.7182865773383722,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 145,
+     "has_ecg": false,
+     "true_ed": [
+      16,
+      38,
+      60,
+      82,
+      104,
+      127
+     ],
+     "source": "images",
+     "frame": 80,
+     "frame_err": 2,
+     "image_ed": [
+      39,
+      58,
+      80,
+      97,
+      127
+     ],
+     "image_beats": [
+      2,
+      5
+     ],
+     "single": {
+      "cfv": 0.09230909903861637,
+      "lo": 0.05487965614307314,
+      "hi": 0.2127150459553915,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.08890065799219249,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 86,
+     "has_ecg": false,
+     "true_ed": [
+      5,
+      16,
+      27,
+      38,
+      49,
+      60,
+      71,
+      82
+     ],
+     "source": "images",
+     "frame": 60,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      26,
+      35,
+      44,
+      52,
+      60,
+      71
+     ],
+     "image_beats": [
+      4,
+      6
+     ],
+     "single": {
+      "cfv": 0.08504232481806973,
+      "lo": 0.05055940955149807,
+      "hi": 0.19596965218197393,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.16062439140323614,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.011254965296330188,
+    "runs": [
+     {
+      "cfv": 0.09818754933856091,
+      "lo": 0.058374515636611723,
+      "hi": 0.16515417284363307,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.030879810035865596,
+      "covered": true
+     },
+     {
+      "cfv": 0.09230663732375605,
+      "lo": 0.054878192603005437,
+      "hi": 0.15526231622928488,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0889249553454633,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.09524709333115848,
+     "lo": 0.07720579332868914,
+     "hi": 0.11750424931730244,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.0599023826906645,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7347841277622403,
+    "ffr_measured": 0.7434439811674314
+   }
+  },
+  {
+   "seed": 9229,
+   "velocity": 0.1498394258292792,
+   "heart_rate": 50.483910179115,
+   "diastolic_ratio": 1.5417104539776503,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 33,
+     "has_ecg": true,
+     "true_ed": [
+      3,
+      12,
+      21,
+      30
+     ],
+     "source": "R-wave pointer",
+     "frame": 21,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      16,
+      24
+     ],
+     "image_beats": [
+      0,
+      2
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.012432330783839344,
+      "lo": 0.007391276110154882,
+      "hi": 0.028648788056209958,
+      "accepted": false,
+      "reasons": [
+       "the contrast front does not advance steadily along the path",
+       "0.01 m/s is outside 0.05\u20130.8 m/s",
+       "imprecise (95% interval of the slope \u00b1387%)"
+      ],
+      "err": -0.9170289747505825,
+      "covered": false
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 74,
+     "has_ecg": false,
+     "true_ed": [
+      15,
+      32,
+      50,
+      68
+     ],
+     "source": "images",
+     "frame": 58,
+     "frame_err": 8,
+     "image_ed": [
+      17,
+      32,
+      45,
+      58
+     ],
+     "image_beats": [
+      1,
+      3
+     ],
+     "single": {
+      "cfv": 0.11880234590099056,
+      "lo": 0.07063043578520148,
+      "hi": 0.2737654979967435,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.20713560370720452,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.007556000951253861,
+    "runs": [
+     {
+      "cfv": 0.013667065306963535,
+      "lo": 0.008125351155440393,
+      "hi": 0.022988381736553064,
+      "accepted": false,
+      "reasons": [
+       "the contrast front does not advance steadily along the path",
+       "0.01 m/s is outside 0.05\u20130.8 m/s",
+       "imprecise (95% interval of the slope \u00b1473%)"
+      ],
+      "err": -0.9087885899767447,
+      "covered": false
+     },
+     {
+      "cfv": 0.13339966341907578,
+      "lo": 0.07930884099494842,
+      "hi": 0.22438192233141055,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.10971586629632579,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.13339966341907578,
+     "lo": 0.07930884099494842,
+     "hi": 0.22438192233141055,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.10971586629632579,
+     "covered": true,
+     "n_runs": 1
+    },
+    "ffr_true_velocity": 0.404377040730309,
+    "ffr_measured": 0.42546793703664676
+   }
+  },
+  {
+   "seed": 9230,
+   "velocity": 0.31025999010728583,
+   "heart_rate": 55.415668990903264,
+   "diastolic_ratio": 1.777715319542399,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 77,
+     "has_ecg": true,
+     "true_ed": [
+      10,
+      27,
+      43,
+      59,
+      75
+     ],
+     "source": "R-wave pointer",
+     "frame": 59,
+     "frame_err": 0,
+     "image_ed": [
+      11,
+      22,
+      42,
+      56
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "failed": "end point (195, 375) is 21 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 43,
+     "has_ecg": false,
+     "true_ed": [
+      5,
+      13,
+      21,
+      29,
+      37
+     ],
+     "source": "images",
+     "frame": 12,
+     "frame_err": 1,
+     "image_ed": [
+      12,
+      21,
+      29,
+      34
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "failed": "end point (298, 219) is 23 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    }
+   ]
+  },
+  {
+   "seed": 9231,
+   "velocity": 0.10164122428748054,
+   "heart_rate": 63.41118165923194,
+   "diastolic_ratio": 2.158811388697573,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 79,
+     "has_ecg": true,
+     "true_ed": [
+      12,
+      26,
+      41,
+      55,
+      69
+     ],
+     "source": "R-wave pointer",
+     "frame": 26,
+     "frame_err": 0,
+     "image_ed": [
+      26,
+      40,
+      53,
+      65
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "failed": "no vessel path connects (np.float64(306.7222265459241), np.float64(392.47377484569097)) and (np.float64(187.02484329591493), np.float64(279.9176538702239))"
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 165,
+     "has_ecg": true,
+     "true_ed": [
+      10,
+      39,
+      67,
+      95,
+      124,
+      152
+     ],
+     "source": "R-wave pointer",
+     "frame": 95,
+     "frame_err": 0,
+     "image_ed": [
+      42,
+      50,
+      58,
+      67,
+      82,
+      94,
+      102,
+      114,
+      124,
+      135
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.09006232629469374,
+      "lo": 0.05354390358019176,
+      "hi": 0.2075376325427128,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11391930856752785,
+      "covered": true
+     }
+    }
+   ]
+  },
+  {
+   "seed": 9232,
+   "velocity": 0.24555063647104838,
+   "heart_rate": 73.39704855882954,
+   "diastolic_ratio": 1.6703729649642522,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 161,
+     "has_ecg": true,
+     "true_ed": [
+      21,
+      45,
+      70,
+      94,
+      119,
+      143
+     ],
+     "source": "R-wave pointer",
+     "frame": 94,
+     "frame_err": 0,
+     "image_ed": [
+      35,
+      70,
+      94,
+      119,
+      143
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.1295181247461516,
+      "lo": 0.07700118649615403,
+      "hi": 0.2984587017354419,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.47254005687978573,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 145,
+     "has_ecg": true,
+     "true_ed": [
+      0,
+      24,
+      49,
+      73,
+      98,
+      122
+     ],
+     "source": "R-wave pointer",
+     "frame": 73,
+     "frame_err": 0,
+     "image_ed": [
+      24,
+      48,
+      73,
+      97,
+      118
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "failed": "no vessel path connects (np.float64(303.5057618831663), np.float64(309.160939354115)) and (np.float64(162.73455678245477), np.float64(395.8473493791196))"
+    }
+   ]
+  },
+  {
+   "seed": 9233,
+   "velocity": 0.15793107242597199,
+   "heart_rate": 65.29936057921128,
+   "diastolic_ratio": 1.8670585422435515,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 39,
+     "has_ecg": false,
+     "true_ed": [
+      6,
+      13,
+      20,
+      27,
+      34
+     ],
+     "source": "images",
+     "frame": 21,
+     "frame_err": 1,
+     "image_ed": [
+      13,
+      21,
+      32
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "failed": "end point (85, 116) is 37 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 167,
+     "has_ecg": true,
+     "true_ed": [
+      21,
+      48,
+      76,
+      103,
+      131,
+      159
+     ],
+     "source": "R-wave pointer",
+     "frame": 48,
+     "frame_err": 0,
+     "image_ed": [
+      47,
+      67,
+      84,
+      104,
+      122,
+      143
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "failed": "end point (28, 115) is 9 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    }
+   ]
+  },
+  {
+   "seed": 9234,
+   "velocity": 0.3156887163420352,
+   "heart_rate": 80.35784833248123,
+   "diastolic_ratio": 2.4255946466768936,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 131,
+     "has_ecg": false,
+     "true_ed": [
+      6,
+      29,
+      51,
+      73,
+      96,
+      118
+     ],
+     "source": "images",
+     "frame": 51,
+     "frame_err": 0,
+     "image_ed": [
+      28,
+      51,
+      73,
+      96,
+      116
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "single": {
+      "cfv": 0.26973561855989014,
+      "lo": 0.1603633677533052,
+      "hi": 0.6215727928811233,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.14556458752981483,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 72,
+     "has_ecg": false,
+     "true_ed": [
+      0,
+      11,
+      22,
+      34,
+      45,
+      56,
+      67
+     ],
+     "source": "images",
+     "frame": 44,
+     "frame_err": 1,
+     "image_ed": [
+      22,
+      33,
+      44,
+      56
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.2249829182210301,
+      "lo": 0.13375696782470023,
+      "hi": 0.518445660146071,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.28732670325387644,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.013819316211931887,
+    "runs": [
+     {
+      "cfv": 0.30734837764005396,
+      "lo": 0.1827249258923151,
+      "hi": 0.5169684692806658,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.026419502092513314,
+      "covered": true
+     },
+     {
+      "cfv": 0.3096749974817434,
+      "lo": 0.1841081491955146,
+      "hi": 0.5208819081847254,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.019049521091454635,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.30851168756089864,
+     "lo": 0.250074713634541,
+     "hi": 0.38060410018411034,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.02273451159198403,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9685032909634598,
+    "ffr_measured": 0.9689453749290273
+   }
+  },
+  {
+   "seed": 9235,
+   "velocity": 0.103510937495743,
+   "heart_rate": 58.23052130507024,
+   "diastolic_ratio": 1.9798022643444686,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 49,
+     "has_ecg": false,
+     "true_ed": [
+      1,
+      9,
+      17,
+      24,
+      32,
+      40,
+      47
+     ],
+     "source": "images",
+     "frame": 31,
+     "frame_err": 1,
+     "image_ed": [
+      16,
+      24,
+      31,
+      37,
+      43
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 0.05436958940002967,
+      "lo": 0.03232383808302011,
+      "hi": 0.1252880791628668,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.4747454644368796,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 41,
+     "has_ecg": false,
+     "true_ed": [
+      3,
+      11,
+      19,
+      27,
+      34
+     ],
+     "source": "images",
+     "frame": 26,
+     "frame_err": 1,
+     "image_ed": [
+      11,
+      18,
+      26,
+      33
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.11550267065317087,
+      "lo": 0.06866871104874403,
+      "hi": 0.26616179934419565,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.11584991352166085,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.015826845678138746,
+    "runs": [
+     {
+      "cfv": 0.05890382003429813,
+      "lo": 0.035019531364328636,
+      "hi": 0.09907785397057665,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.43094110188384094,
+      "covered": false
+     },
+     {
+      "cfv": 0.12984686894656985,
+      "lo": 0.07719663167832871,
+      "hi": 0.21840602379495822,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.25442655711537676,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.094375344490434,
+     "lo": 0.0764991674519551,
+     "hi": 0.11642879189870793,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d72.2): one transit is unreliable"
+     ],
+     "err": -0.08825727238423198,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7002241944768156
+   }
+  },
+  {
+   "seed": 9236,
+   "velocity": 0.23742543947236763,
+   "heart_rate": 65.68414564832977,
+   "diastolic_ratio": 1.8016957050490032,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 158,
+     "has_ecg": true,
+     "true_ed": [
+      17,
+      44,
+      72,
+      99,
+      127,
+      154
+     ],
+     "source": "R-wave pointer",
+     "frame": 72,
+     "frame_err": 0,
+     "image_ed": [
+      44,
+      71,
+      99,
+      126,
+      144
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.2211819128172116,
+      "lo": 0.1314971920091844,
+      "hi": 0.5096867073714186,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06841527467003594,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 65,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      19,
+      32,
+      46,
+      60
+     ],
+     "source": "R-wave pointer",
+     "frame": 19,
+     "frame_err": 0,
+     "image_ed": [
+      18,
+      32,
+      43,
+      55
+     ],
+     "image_beats": [
+      2,
+      3
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.2324474936170623,
+      "lo": 0.13819481127951413,
+      "hi": 0.5356468625729328,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.020966354179939084,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.018591018130189707,
+    "runs": [
+     {
+      "cfv": 0.21403195144278092,
+      "lo": 0.12724639305489213,
+      "hi": 0.36000766024576697,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.09852982932904852,
+      "covered": true
+     },
+     {
+      "cfv": 0.25610472277507,
+      "lo": 0.15225952012198932,
+      "hi": 0.4307752249261359,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.07867431284622861,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.23506833710892547,
+     "lo": 0.1905426907869041,
+     "hi": 0.28999865008179687,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.0099277582414099,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8184068529855199,
+    "ffr_measured": 0.8197516850886478
+   }
+  },
+  {
+   "seed": 9237,
+   "velocity": 0.1895443318111774,
+   "heart_rate": 60.655810518423536,
+   "diastolic_ratio": 1.7474042444482434,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 73,
+     "has_ecg": true,
+     "true_ed": [
+      13,
+      28,
+      43,
+      58
+     ],
+     "source": "R-wave pointer",
+     "frame": 43,
+     "frame_err": 0,
+     "image_ed": [
+      28,
+      43,
+      57
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "failed": "no vessel path connects (np.float64(173.76468323467728), np.float64(354.1750886576744)) and (np.float64(119.51258553771869), np.float64(205.91203777115012))"
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 78,
+     "has_ecg": false,
+     "true_ed": [
+      10,
+      25,
+      40,
+      55,
+      70
+     ],
+     "source": "images",
+     "frame": 25,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      40,
+      54,
+      64
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "failed": "no vessel path connects (np.float64(195.82111686542513), np.float64(425.02844630167414)) and (np.float64(144.51844529307908), np.float64(219.3377911959328))"
+    }
+   ]
+  },
+  {
+   "seed": 9238,
+   "velocity": 0.18148426951654406,
+   "heart_rate": 57.764699815754796,
+   "diastolic_ratio": 2.201322498522956,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 74,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      20,
+      36,
+      51,
+      67
+     ],
+     "source": "images",
+     "frame": 35,
+     "frame_err": 1,
+     "image_ed": [
+      20,
+      35,
+      51,
+      62
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.14777474794467002,
+      "lo": 0.08785512412422257,
+      "hi": 0.3405288603991996,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.18574348984445221,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 72,
+     "has_ecg": true,
+     "true_ed": [
+      13,
+      29,
+      44,
+      60
+     ],
+     "source": "R-wave pointer",
+     "frame": 29,
+     "frame_err": 0,
+     "image_ed": [
+      13,
+      28,
+      44,
+      54
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.39217124521957747,
+      "lo": 0.23315386360609663,
+      "hi": 0.903710742690355,
+      "accepted": true,
+      "reasons": [],
+      "err": 1.1609103988146323,
+      "covered": false
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.008491209631092733,
+    "runs": [
+     {
+      "cfv": 0.17043466481189962,
+      "lo": 0.10132691031708696,
+      "hi": 0.286675818680777,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06088464159499596,
+      "covered": true
+     },
+     {
+      "cfv": 0.43004981929956376,
+      "lo": 0.2556734542244597,
+      "hi": 0.723355686809876,
+      "accepted": true,
+      "reasons": [],
+      "err": 1.3696258658955593,
+      "covered": false
+     }
+    ],
+    "combined": {
+     "cfv": 0.3002422420557317,
+     "lo": 0.24337163138514367,
+     "hi": 0.37040226669637794,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d72.5): one transit is unreliable"
+     ],
+     "err": 0.6543706121502817,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5054507706404228
+   }
+  },
+  {
+   "seed": 9239,
+   "velocity": 0.10547052183568867,
+   "heart_rate": 70.54385013482573,
+   "diastolic_ratio": 1.5637473814622798,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 64,
+     "has_ecg": false,
+     "true_ed": [
+      6,
+      19,
+      32,
+      45,
+      57
+     ],
+     "source": "images",
+     "frame": 32,
+     "frame_err": 0,
+     "image_ed": [
+      19,
+      32,
+      42,
+      53
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "single": {
+      "cfv": 0.11040039614442088,
+      "lo": 0.06563530401190763,
+      "hi": 0.254404230828098,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.04674172672068888,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 38,
+     "has_ecg": true,
+     "true_ed": [
+      6,
+      12,
+      18,
+      25,
+      31,
+      37
+     ],
+     "source": "R-wave pointer",
+     "frame": 18,
+     "frame_err": 0,
+     "image_ed": [
+      10,
+      16,
+      22,
+      31
+     ],
+     "image_beats": [
+      1,
+      5
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.08837770377058626,
+      "lo": 0.05254236087403645,
+      "hi": 0.20365562566186238,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.162062515360748,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.016102452508562903,
+    "runs": [
+     {
+      "cfv": 0.12299619430299581,
+      "lo": 0.07312376483526556,
+      "hi": 0.2068829996253756,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.16616654741322123,
+      "covered": true
+     },
+     {
+      "cfv": 0.10228266227276737,
+      "lo": 0.06080914442225598,
+      "hi": 0.17204226602760786,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.03022512364059049,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.1126394282878816,
+     "lo": 0.09130374604524547,
+     "hi": 0.13896079136483047,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.06797071188631532,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.4880046711008148,
+    "ffr_measured": 0.4764726713231622
+   }
+  },
+  {
+   "seed": 9240,
+   "velocity": 0.15061738193950744,
+   "heart_rate": 92.02723418249755,
+   "diastolic_ratio": 1.9976354687337579,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 73,
+     "has_ecg": true,
+     "true_ed": [
+      3,
+      13,
+      23,
+      33,
+      43,
+      52,
+      62,
+      72
+     ],
+     "source": "R-wave pointer",
+     "frame": 52,
+     "frame_err": 0,
+     "image_ed": [
+      22
+     ],
+     "image_beats": [
+      1,
+      5
+     ],
+     "ecg_beats": [
+      8,
+      8
+     ],
+     "single": {
+      "cfv": 0.13758437931027181,
+      "lo": 0.08179674057968186,
+      "hi": 0.3170464003281551,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.08653053493168594,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 67,
+     "has_ecg": false,
+     "true_ed": [
+      1,
+      11,
+      21,
+      31,
+      40,
+      50,
+      60
+     ],
+     "source": "images",
+     "frame": 20,
+     "frame_err": 1,
+     "image_ed": [
+      20
+     ],
+     "image_beats": [
+      1,
+      5
+     ],
+     "single": {
+      "cfv": 0.11312918610657036,
+      "lo": 0.0672576257155003,
+      "hi": 0.26069239405628,
+      "accepted": false,
+      "reasons": [
+       "heart cycle unknown (no ECG and no beat found in the images)"
+      ],
+      "err": -0.24889687597938392,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.03831619944849485,
+    "runs": [
+     {
+      "cfv": 0.15276552929747023,
+      "lo": 0.09082224618888877,
+      "hi": 0.25695584419923023,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.014262280556871954,
+      "covered": true
+     },
+     {
+      "cfv": 0.13638148498058383,
+      "lo": 0.08108159518364552,
+      "hi": 0.2293974286443354,
+      "accepted": false,
+      "reasons": [
+       "heart cycle unknown (no ECG and no beat found in the images)"
+      ],
+      "err": -0.09451695930182336,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.15276552929747023,
+     "lo": 0.09082224618888877,
+     "hi": 0.25695584419923023,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.014262280556871954,
+     "covered": true,
+     "n_runs": 1
+    },
+    "ffr_true_velocity": 0.6015161640654019,
+    "ffr_measured": 0.5985093737428422
+   }
+  },
+  {
+   "seed": 9241,
+   "velocity": 0.270545628355631,
+   "heart_rate": 61.47093431033113,
+   "diastolic_ratio": 2.19138160363851,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 81,
+     "has_ecg": true,
+     "true_ed": [
+      2,
+      17,
+      32,
+      46,
+      61,
+      76
+     ],
+     "source": "R-wave pointer",
+     "frame": 46,
+     "frame_err": 0,
+     "image_ed": [
+      17,
+      31,
+      46,
+      61,
+      71
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.22702022953461096,
+      "lo": 0.1349681912632362,
+      "hi": 0.5231403952719387,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.16088006701703605,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 33,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      9,
+      16,
+      24,
+      31
+     ],
+     "source": "images",
+     "frame": 23,
+     "frame_err": 1,
+     "image_ed": [
+      16,
+      23,
+      28
+     ],
+     "image_beats": [
+      2,
+      3
+     ],
+     "single": {
+      "cfv": 0.19089816679750055,
+      "lo": 0.11349288273095558,
+      "hi": 0.4399015129174094,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.29439567012124934,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.006269473467349962,
+    "runs": [
+     {
+      "cfv": 0.25902314545272925,
+      "lo": 0.15399458237151994,
+      "hi": 0.43568409256346696,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.042589795196230296,
+      "covered": true
+     },
+     {
+      "cfv": 0.214588874769654,
+      "lo": 0.1275774954163621,
+      "hi": 0.3609444206803298,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.20682926545914138,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.23680601011119162,
+     "lo": 0.19195122114718877,
+     "hi": 0.2921423791400718,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.12470953032768584,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.24496053167205012,
+    "ffr_measured": 0.25986447762418174
+   }
+  },
+  {
+   "seed": 9242,
+   "velocity": 0.19644755622301047,
+   "heart_rate": 70.43375574653277,
+   "diastolic_ratio": 2.289249279718062,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 142,
+     "has_ecg": true,
+     "true_ed": [
+      21,
+      46,
+      72,
+      97,
+      123
+     ],
+     "source": "R-wave pointer",
+     "frame": 123,
+     "frame_err": 0,
+     "image_ed": [
+      44,
+      60,
+      84,
+      99,
+      119
+     ],
+     "image_beats": [
+      0,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.2052458189658068,
+      "lo": 0.12202285676014275,
+      "hi": 0.47296392520524344,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.04478682714081916,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 158,
+     "has_ecg": true,
+     "true_ed": [
+      21,
+      47,
+      73,
+      98,
+      124,
+      149
+     ],
+     "source": "R-wave pointer",
+     "frame": 73,
+     "frame_err": 0,
+     "image_ed": [
+      48,
+      66,
+      93,
+      118,
+      144
+     ],
+     "image_beats": [
+      1,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.19311941945330438,
+      "lo": 0.11481346307706433,
+      "hi": 0.4450201184035294,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.016941604332954552,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.03349585227913676,
+    "runs": [
+     {
+      "cfv": 0.22651965124725726,
+      "lo": 0.1346705871855367,
+      "hi": 0.3810123165980355,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.1530795068283184,
+      "covered": true
+     },
+     {
+      "cfv": 0.1933674775326577,
+      "lo": 0.1149609387023299,
+      "hi": 0.32524944376245846,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.015678885243327723,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.20994356438995748,
+     "lo": 0.17017694583732712,
+     "hi": 0.2590027692170063,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.06870031079249528,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7794955650233889,
+    "ffr_measured": 0.7686286286245905
+   }
+  },
+  {
+   "seed": 9243,
+   "velocity": 0.14644286839588058,
+   "heart_rate": 65.79042094355503,
+   "diastolic_ratio": 2.0382534485572714,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 73,
+     "has_ecg": true,
+     "true_ed": [
+      8,
+      22,
+      35,
+      49,
+      63
+     ],
+     "source": "R-wave pointer",
+     "frame": 49,
+     "frame_err": 0,
+     "image_ed": [
+      21,
+      35,
+      49,
+      62
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.16491805490939448,
+      "lo": 0.0980471723749118,
+      "hi": 0.38003351776026023,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.12615968750058704,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 154,
+     "has_ecg": true,
+     "true_ed": [
+      26,
+      54,
+      81,
+      108,
+      136
+     ],
+     "source": "R-wave pointer",
+     "frame": 108,
+     "frame_err": 0,
+     "image_ed": [
+      53,
+      81,
+      108,
+      133
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.12062786687673024,
+      "lo": 0.07171574551602931,
+      "hi": 0.2779721881528737,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.17628035971928913,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.0027478417366630925,
+    "runs": [
+     {
+      "cfv": 0.15778835497765867,
+      "lo": 0.09380841926463317,
+      "hi": 0.2654043758729248,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.07747380740390652,
+      "covered": true
+     },
+     {
+      "cfv": 0.1311003129593893,
+      "lo": 0.07794182989968008,
+      "hi": 0.22051435128187002,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1047681980321199,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.14444433396852396,
+     "lo": 0.11708430153454188,
+     "hi": 0.17819780570203253,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.013647195314106741,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7977797308667482,
+    "ffr_measured": 0.7997174824317119
+   }
+  },
+  {
+   "seed": 9244,
+   "velocity": 0.14682143446046797,
+   "heart_rate": 88.52226001826322,
+   "diastolic_ratio": 2.4225095310401037,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 68,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      15,
+      25,
+      35,
+      45,
+      55,
+      66
+     ],
+     "source": "R-wave pointer",
+     "frame": 25,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      35,
+      45,
+      55
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.12385871378834785,
+      "lo": 0.07363655039233202,
+      "hi": 0.2854172803099543,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1563989669253837,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 72,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      15,
+      25,
+      36,
+      46,
+      56,
+      66
+     ],
+     "source": "R-wave pointer",
+     "frame": 56,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      35,
+      45,
+      56,
+      63
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.10889098950730033,
+      "lo": 0.06473793075089687,
+      "hi": 0.2509259875614602,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.25834405645573844,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.010083797707275965,
+    "runs": [
+     {
+      "cfv": 0.14045027804884563,
+      "lo": 0.08350057626816586,
+      "hi": 0.23624125108605493,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.043393912033585114,
+      "covered": true
+     },
+     {
+      "cfv": 0.1376389919817454,
+      "lo": 0.08182920893505245,
+      "hi": 0.23151259018997908,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06254156630784702,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.13904463501529551,
+     "lo": 0.11270739063007319,
+     "hi": 0.1715363155730632,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.052967739170716066,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8044902641779315,
+    "ffr_measured": 0.8121930675560506
+   }
+  },
+  {
+   "seed": 9245,
+   "velocity": 0.22785144660183201,
+   "heart_rate": 81.45252068960207,
+   "diastolic_ratio": 1.6608052319513176,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 141,
+     "has_ecg": true,
+     "true_ed": [
+      20,
+      42,
+      64,
+      86,
+      108,
+      131
+     ],
+     "source": "R-wave pointer",
+     "frame": 86,
+     "frame_err": 0,
+     "image_ed": [
+      42,
+      64,
+      86,
+      107,
+      122
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.2212797883641847,
+      "lo": 0.1315553810330037,
+      "hi": 0.5099122496168649,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.028841854355795338,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 31,
+     "has_ecg": true,
+     "true_ed": [
+      4,
+      9,
+      15,
+      20,
+      26
+     ],
+     "source": "R-wave pointer",
+     "frame": 20,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      20
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.14635627288778946,
+      "lo": 0.08701181155612389,
+      "hi": 0.3372601578546682,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3576680110197171,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.001851087903098625,
+    "runs": [
+     {
+      "cfv": 0.246981998738315,
+      "lo": 0.1468358732286769,
+      "hi": 0.4154305508557413,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.08396063497421391,
+      "covered": true
+     },
+     {
+      "cfv": 0.1786293657161731,
+      "lo": 0.10619882838914747,
+      "hi": 0.3004595321827775,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.21602707211104077,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.21280568222724405,
+     "lo": 0.17249693346634187,
+     "hi": 0.2625337011978776,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.06603321856841349,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.3253868465509735,
+    "ffr_measured": 0.3358255386215735
+   }
+  },
+  {
+   "seed": 9246,
+   "velocity": 0.19040654750101266,
+   "heart_rate": 53.63580544117303,
+   "diastolic_ratio": 1.6825008453804475,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 49,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      13,
+      21,
+      30,
+      38,
+      47
+     ],
+     "source": "R-wave pointer",
+     "frame": 13,
+     "frame_err": 0,
+     "image_ed": [
+      13,
+      21,
+      29,
+      38
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.21690753464021517,
+      "lo": 0.12895598635316463,
+      "hi": 0.4998369248492195,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.13918107064601637,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 153,
+     "has_ecg": false,
+     "true_ed": [
+      3,
+      36,
+      70,
+      103,
+      137
+     ],
+     "source": "images",
+     "frame": 118,
+     "frame_err": 15,
+     "image_ed": [
+      37,
+      45,
+      55,
+      69,
+      77,
+      85,
+      94,
+      103,
+      118,
+      132
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 1.0367143658290097,
+      "lo": 0.6163479928612353,
+      "hi": 2.388981652585284,
+      "accepted": false,
+      "reasons": [
+       "1.04 m/s is outside 0.05\u20130.8 m/s",
+       "imprecise (95% interval of the slope \u00b172%)"
+      ],
+      "err": 4.444741157462015,
+      "covered": false
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.020781417774186073,
+    "runs": [
+     {
+      "cfv": 0.20546015755708188,
+      "lo": 0.12215028545687878,
+      "hi": 0.34558966592250134,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.07906035928722033,
+      "covered": true
+     },
+     {
+      "cfv": 1.0456695070484008,
+      "lo": 0.6216720083261382,
+      "hi": 1.7588450233024147,
+      "accepted": false,
+      "reasons": [
+       "1.05 m/s is outside 0.05\u20130.8 m/s",
+       "imprecise (95% interval of the slope \u00b170%)"
+      ],
+      "err": 4.491772844853665,
+      "covered": false
+     }
+    ],
+    "combined": {
+     "cfv": 0.20546015755708188,
+     "lo": 0.12215028545687878,
+     "hi": 0.34558966592250134,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.07906035928722033,
+     "covered": true,
+     "n_runs": 1
+    },
+    "ffr_true_velocity": 0.9682255075017553,
+    "ffr_measured": 0.9666519317601823
+   }
+  },
+  {
+   "seed": 9247,
+   "velocity": 0.23655362631598184,
+   "heart_rate": 96.32399594070847,
+   "diastolic_ratio": 1.635660408438125,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 69,
+     "has_ecg": true,
+     "true_ed": [
+      7,
+      17,
+      26,
+      35,
+      45,
+      54,
+      63
+     ],
+     "source": "R-wave pointer",
+     "frame": 26,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      26,
+      35,
+      44,
+      53,
+      61
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "ecg_beats": [
+      7,
+      7
+     ],
+     "single": {
+      "cfv": 0.18702888233301132,
+      "lo": 0.11119251361087489,
+      "hi": 0.43098521938567436,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.20935947909256203,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 115,
+     "has_ecg": true,
+     "true_ed": [
+      16,
+      34,
+      53,
+      72,
+      90,
+      109
+     ],
+     "source": "R-wave pointer",
+     "frame": 34,
+     "frame_err": 0,
+     "image_ed": [
+      34,
+      53,
+      71,
+      90,
+      101
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.22891313636847382,
+      "lo": 0.13609356327136088,
+      "hi": 0.5275023679089587,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.03229918757323158,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.009978569491450262,
+    "runs": [
+     {
+      "cfv": 0.20450383971954014,
+      "lo": 0.1215817348520698,
+      "hi": 0.3439811128778559,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.13548634656579084,
+      "covered": true
+     },
+     {
+      "cfv": 0.27813182520556484,
+      "lo": 0.16535508512916272,
+      "hi": 0.4678254202569777,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.17576648279339402,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2413178324625525,
+     "lo": 0.19560843326581806,
+     "hi": 0.29770851538536813,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.020140068113801757,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8740665470740699,
+    "ffr_measured": 0.8719484559940304
+   }
+  },
+  {
+   "seed": 9248,
+   "velocity": 0.3280149577158833,
+   "heart_rate": 72.49026766270677,
+   "diastolic_ratio": 1.5838591375900637,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 38,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      10,
+      17,
+      23,
+      29,
+      35
+     ],
+     "source": "images",
+     "frame": 10,
+     "frame_err": 0,
+     "image_ed": [
+      10,
+      16,
+      22,
+      29,
+      33
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.11031930190802786,
+      "lo": 0.06558709182205003,
+      "hi": 0.2542173590635513,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.6636760022279742,
+      "covered": false
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 50,
+     "has_ecg": false,
+     "true_ed": [
+      1,
+      14,
+      26,
+      38
+     ],
+     "source": "images",
+     "frame": 13,
+     "frame_err": 1,
+     "image_ed": [
+      13,
+      26,
+      38
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.2082159195904701,
+      "lo": 0.12378864261104419,
+      "hi": 0.4798081593863515,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3652243146459788,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.030753685235158645,
+    "runs": [
+     {
+      "cfv": 0.12111384654437275,
+      "lo": 0.07200467041433851,
+      "hi": 0.2037168386490229,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.6307673058943918,
+      "covered": false
+     },
+     {
+      "cfv": 0.2485475990295487,
+      "lo": 0.14776665477172343,
+      "hi": 0.418063933833973,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.24226748450650482,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.18483072278696072,
+     "lo": 0.14982087206239325,
+     "hi": 0.22802160750822031,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d72.1): one transit is unreliable"
+     ],
+     "err": -0.4365173952004483,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8220127223956253
+   }
+  },
+  {
+   "seed": 9249,
+   "velocity": 0.27068822943007076,
+   "heart_rate": 58.823929507313125,
+   "diastolic_ratio": 2.3979619320812064,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 31,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      11,
+      19,
+      27
+     ],
+     "source": "images",
+     "frame": 19,
+     "frame_err": 0,
+     "image_ed": [
+      11,
+      19
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "single": {
+      "cfv": 0.1451492222790997,
+      "lo": 0.0862941951668179,
+      "hi": 0.3344786571318574,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.46377711884735884,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 61,
+     "has_ecg": true,
+     "true_ed": [
+      0,
+      15,
+      31,
+      46
+     ],
+     "source": "R-wave pointer",
+     "frame": 46,
+     "frame_err": 0,
+     "image_ed": [
+      15,
+      30,
+      45
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.26878292405796217,
+      "lo": 0.15979697129597079,
+      "hi": 0.6193774247443995,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.0070387448176826295,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.011342143458353049,
+    "runs": [
+     {
+      "cfv": 0.157161680942761,
+      "lo": 0.09343584867400712,
+      "hi": 0.26435029281887856,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.41939964928042084,
+      "covered": false
+     },
+     {
+      "cfv": 0.2630655564973741,
+      "lo": 0.15639787880090297,
+      "hi": 0.4424835397120078,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.028160341322362004,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.21011361872006756,
+     "lo": 0.17031478919827336,
+     "hi": 0.25921256151306377,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.7): one transit is unreliable"
+     ],
+     "err": -0.22377999530139137,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.7192941011211522
+   }
+  },
+  {
+   "seed": 9250,
+   "velocity": 0.12054395698153536,
+   "heart_rate": 63.474453184484055,
+   "diastolic_ratio": 1.9831466676368428,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 36,
+     "has_ecg": true,
+     "true_ed": [
+      2,
+      9,
+      16,
+      23,
+      30
+     ],
+     "source": "R-wave pointer",
+     "frame": 9,
+     "frame_err": 0,
+     "image_ed": [
+      9,
+      16,
+      23,
+      30
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.08337693155810881,
+      "lo": 0.04956929903800024,
+      "hi": 0.19213195679207326,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3083275707393587,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 163,
+     "has_ecg": true,
+     "true_ed": [
+      18,
+      46,
+      75,
+      103,
+      131,
+      160
+     ],
+     "source": "R-wave pointer",
+     "frame": 103,
+     "frame_err": 0,
+     "image_ed": [
+      46,
+      74,
+      103,
+      131,
+      150
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.10453693324346083,
+      "lo": 0.062149354835025955,
+      "hi": 0.2408925966184121,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.1327899310666104,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.00953460240303483,
+    "runs": [
+     {
+      "cfv": 0.10723288752801935,
+      "lo": 0.06375215505358428,
+      "hi": 0.18036868177917942,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11042502491895945,
+      "covered": true
+     },
+     {
+      "cfv": 0.12052466596463401,
+      "lo": 0.07165439045321885,
+      "hi": 0.2027258206232367,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.00016003304839495858,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.11387877674632668,
+     "lo": 0.0923083423809285,
+     "hi": 0.14048974836665537,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.0552925289836772,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9578028498916882,
+    "ffr_measured": 0.9591734200018015
+   }
+  },
+  {
+   "seed": 9251,
+   "velocity": 0.320052274541042,
+   "heart_rate": 75.95338483931627,
+   "diastolic_ratio": 1.8776934118741018,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 31,
+     "has_ecg": true,
+     "true_ed": [
+      0,
+      6,
+      12,
+      18,
+      24,
+      30
+     ],
+     "source": "R-wave pointer",
+     "frame": 18,
+     "frame_err": 0,
+     "image_ed": [
+      6,
+      10,
+      17,
+      23
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      6
+     ],
+     "single": {
+      "cfv": 0.19935310900119124,
+      "lo": 0.1185195196029501,
+      "hi": 0.4593848947090123,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.37712328622858415,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 154,
+     "has_ecg": false,
+     "true_ed": [
+      17,
+      40,
+      64,
+      88,
+      112,
+      135
+     ],
+     "source": "images",
+     "frame": 63,
+     "frame_err": 1,
+     "image_ed": [
+      40,
+      63,
+      87,
+      112,
+      130
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "single": {
+      "cfv": 0.40705358411433995,
+      "lo": 0.24200171988088898,
+      "hi": 0.9380052752434112,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.2718346860620149,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": 0.013483336961416681,
+    "runs": [
+     {
+      "cfv": 0.21758281228885631,
+      "lo": 0.12935745279086677,
+      "hi": 0.36598030636909895,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.3201647680808639,
+      "covered": true
+     },
+     {
+      "cfv": 0.40136284076671247,
+      "lo": 0.23861845602749973,
+      "hi": 0.6751033957313017,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.25405401771404557,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.3094728265277844,
+     "lo": 0.2508537977392867,
+     "hi": 0.3817898362401268,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.8): one transit is unreliable"
+     ],
+     "err": -0.033055375183409175,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.12017415105467577
+   }
+  },
+  {
+   "seed": 9252,
+   "velocity": 0.2093351713890777,
+   "heart_rate": 65.72664606845109,
+   "diastolic_ratio": 1.56440904286616,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 75,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      16,
+      29,
+      43,
+      57,
+      70
+     ],
+     "source": "images",
+     "frame": 43,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      43,
+      56
+     ],
+     "image_beats": [
+      2,
+      3
+     ],
+     "single": {
+      "cfv": 0.18586341119439917,
+      "lo": 0.11049961707090375,
+      "hi": 0.42829953347397615,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.11212525845001509,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 79,
+     "has_ecg": true,
+     "true_ed": [
+      12,
+      26,
+      39,
+      53,
+      67
+     ],
+     "source": "R-wave pointer",
+     "frame": 39,
+     "frame_err": 0,
+     "image_ed": [
+      15,
+      25,
+      39,
+      53,
+      66
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.1883892870472071,
+      "lo": 0.11200130216701978,
+      "hi": 0.4341201059170338,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.10005907847630557,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.014913564796371959,
+    "runs": [
+     {
+      "cfv": 0.20536307141933818,
+      "lo": 0.1220925657530671,
+      "hi": 0.345426364354414,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.018974833246520384,
+      "covered": true
+     },
+     {
+      "cfv": 0.21523238405356068,
+      "lo": 0.1279600749084542,
+      "hi": 0.36202682108869877,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.028171150721357785,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.21029772773644945,
+     "lo": 0.17046402506649358,
+     "hi": 0.25943969276721435,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.004598158737418867,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.8582438116368631,
+    "ffr_measured": 0.857822007246348
+   }
+  },
+  {
+   "seed": 9253,
+   "velocity": 0.33176784725989034,
+   "heart_rate": 58.15075799075749,
+   "diastolic_ratio": 2.4353073989124514,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 65,
+     "has_ecg": false,
+     "true_ed": [
+      6,
+      22,
+      37,
+      53
+     ],
+     "source": "images",
+     "frame": 18,
+     "frame_err": 4,
+     "image_ed": [
+      18,
+      36,
+      51
+     ],
+     "image_beats": [
+      1,
+      3
+     ],
+     "single": {
+      "cfv": 0.11574968118472269,
+      "lo": 0.06881556388531662,
+      "hi": 0.2667310049492523,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.6511124205051426,
+      "covered": false
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 141,
+     "has_ecg": true,
+     "true_ed": [
+      15,
+      46,
+      77,
+      108,
+      139
+     ],
+     "source": "R-wave pointer",
+     "frame": 108,
+     "frame_err": 0,
+     "image_ed": [
+      23,
+      43,
+      65,
+      100,
+      121
+     ],
+     "image_beats": [
+      0,
+      3
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "failed": "end point (331, 369) is 45 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    }
+   ]
+  },
+  {
+   "seed": 9254,
+   "velocity": 0.20674546462915394,
+   "heart_rate": 54.8970500334619,
+   "diastolic_ratio": 1.9750771431467562,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 42,
+     "has_ecg": true,
+     "true_ed": [
+      5,
+      13,
+      21,
+      29,
+      38
+     ],
+     "source": "R-wave pointer",
+     "frame": 21,
+     "frame_err": 0,
+     "image_ed": [
+      11,
+      19,
+      25,
+      30,
+      37
+     ],
+     "image_beats": [
+      2,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.18908992585675505,
+      "lo": 0.11241784633600142,
+      "hi": 0.4357346424916869,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.08539746593265396,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 88,
+     "has_ecg": false,
+     "true_ed": [
+      7,
+      23,
+      40,
+      56,
+      73
+     ],
+     "source": "images",
+     "frame": 72,
+     "frame_err": 1,
+     "image_ed": [
+      17,
+      39,
+      56,
+      72
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "single": {
+      "cfv": 0.14806808584619555,
+      "lo": 0.08802951953417795,
+      "hi": 0.34120482177086625,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.28381458760514977,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.00540547822952353,
+    "runs": [
+     {
+      "cfv": 0.2105514701106324,
+      "lo": 0.12517717538610318,
+      "hi": 0.3541533944108324,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.018409136511436497,
+      "covered": true
+     },
+     {
+      "cfv": 0.185770856926048,
+      "lo": 0.11044459165656663,
+      "hi": 0.3124717178578686,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.10145135585309584,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.1981611635183402,
+     "lo": 0.16062631731108876,
+     "hi": 0.24446707976807688,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.04152110967082967,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.29524364723995655,
+    "ffr_measured": 0.3017336896661269
+   }
+  },
+  {
+   "seed": 9255,
+   "velocity": 0.3441473323275436,
+   "heart_rate": 65.32109957352151,
+   "diastolic_ratio": 2.2436147102875266,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 7.5,
+     "n_frames": 39,
+     "has_ecg": true,
+     "true_ed": [
+      2,
+      8,
+      15,
+      22,
+      29,
+      36
+     ],
+     "source": "R-wave pointer",
+     "frame": 29,
+     "frame_err": 0,
+     "image_ed": [
+      8,
+      15,
+      22,
+      29
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.20116528840349257,
+      "lo": 0.11959689749422658,
+      "hi": 0.46356084083842564,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.41546753524727975,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 141,
+     "has_ecg": false,
+     "true_ed": [
+      13,
+      40,
+      68,
+      95,
+      123
+     ],
+     "source": "images",
+     "frame": 68,
+     "frame_err": 0,
+     "image_ed": [
+      40,
+      68,
+      95,
+      123
+     ],
+     "image_beats": [
+      4,
+      4
+     ],
+     "single": {
+      "cfv": 0.28361435368031324,
+      "lo": 0.16861456096223232,
+      "hi": 0.6535546430962195,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.17589262784003756,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.010281299416793788,
+    "runs": [
+     {
+      "cfv": 0.25071589000851713,
+      "lo": 0.14905574831269858,
+      "hi": 0.4217110592131906,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.27148675448718196,
+      "covered": true
+     },
+     {
+      "cfv": 0.3577520987490221,
+      "lo": 0.2126909737857557,
+      "hi": 0.6017489218336616,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.03953180845385762,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.30423399437876963,
+     "lo": 0.24660728293201314,
+     "hi": 0.37532680395809126,
+     "accepted": true,
+     "reasons": [],
+     "err": -0.11597747301666217,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.9194708979835251,
+    "ffr_measured": 0.9263499321589811
+   }
+  },
+  {
+   "seed": 9256,
+   "velocity": 0.22575575491579825,
+   "heart_rate": 53.136336527623115,
+   "diastolic_ratio": 1.5557878231275466,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 172,
+     "has_ecg": true,
+     "true_ed": [
+      8,
+      41,
+      75,
+      109,
+      143
+     ],
+     "source": "R-wave pointer",
+     "frame": 75,
+     "frame_err": 0,
+     "image_ed": [
+      35,
+      78,
+      111,
+      142
+     ],
+     "image_beats": [
+      1,
+      4
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "failed": "end point (85, 199) is 45 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    },
+    {
+     "k": 1,
+     "fps": 7.5,
+     "n_frames": 35,
+     "has_ecg": true,
+     "true_ed": [
+      7,
+      15,
+      24,
+      32
+     ],
+     "source": "R-wave pointer",
+     "frame": 7,
+     "frame_err": 0,
+     "image_ed": [
+      6,
+      11,
+      15,
+      23,
+      29
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      4,
+      4
+     ],
+     "failed": "end point (50, 217) is 86 px from the nearest segmented vessel: it is not on the vessel mask (the segmentation may have missed that part of the vessel)"
+    }
+   ]
+  },
+  {
+   "seed": 9257,
+   "velocity": 0.2716720750363479,
+   "heart_rate": 98.83233983908377,
+   "diastolic_ratio": 2.0536606696904958,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 30.0,
+     "n_frames": 106,
+     "has_ecg": true,
+     "true_ed": [
+      7,
+      25,
+      43,
+      62,
+      80,
+      98
+     ],
+     "source": "R-wave pointer",
+     "frame": 43,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      38,
+      49,
+      61,
+      79,
+      93
+     ],
+     "image_beats": [
+      3,
+      4
+     ],
+     "ecg_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.12981393377341552,
+      "lo": 0.0771770510411375,
+      "hi": 0.2991403575145991,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.5221668117488804,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 72,
+     "has_ecg": false,
+     "true_ed": [
+      2,
+      12,
+      21,
+      30,
+      39,
+      48,
+      57,
+      66
+     ],
+     "source": "images",
+     "frame": 39,
+     "frame_err": 0,
+     "image_ed": [
+      20,
+      27,
+      33,
+      39,
+      48,
+      56
+     ],
+     "image_beats": [
+      4,
+      5
+     ],
+     "single": {
+      "cfv": 0.21033313090273772,
+      "lo": 0.12504736824058224,
+      "hi": 0.48468701430181205,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.2257830295049773,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.013627399146671881,
+    "runs": [
+     {
+      "cfv": 0.14351320294669023,
+      "lo": 0.08532154805682399,
+      "hi": 0.24139317545318068,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.47174105793726084,
+      "covered": false
+     },
+     {
+      "cfv": 0.25714586131433925,
+      "lo": 0.15287849837686857,
+      "hi": 0.4325264487363539,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.05346966087723637,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.20032953213051474,
+     "lo": 0.16238396274757366,
+     "hi": 0.24714214855081548,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d71.8): one transit is unreliable"
+     ],
+     "err": -0.2626053594072486,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.3865617902692339
+   }
+  },
+  {
+   "seed": 9258,
+   "velocity": 0.2604497893080847,
+   "heart_rate": 106.91584327299232,
+   "diastolic_ratio": 1.9263796730883385,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 66,
+     "has_ecg": false,
+     "true_ed": [
+      7,
+      15,
+      23,
+      32,
+      40,
+      49,
+      57
+     ],
+     "source": "images",
+     "frame": 40,
+     "frame_err": 0,
+     "image_ed": [
+      15,
+      23,
+      32,
+      40,
+      48,
+      57
+     ],
+     "image_beats": [
+      6,
+      6
+     ],
+     "single": {
+      "cfv": 0.24307872301630734,
+      "lo": 0.14451529560755014,
+      "hi": 0.5601452324386887,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.06669641138096383,
+      "covered": true
+     }
+    },
+    {
+     "k": 1,
+     "fps": 15.0,
+     "n_frames": 63,
+     "has_ecg": false,
+     "true_ed": [
+      0,
+      8,
+      17,
+      25,
+      34,
+      42,
+      50,
+      59
+     ],
+     "source": "images",
+     "frame": 42,
+     "frame_err": 0,
+     "image_ed": [
+      16,
+      25,
+      33,
+      42,
+      50
+     ],
+     "image_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.24761823659239204,
+      "lo": 0.14721412970632214,
+      "hi": 0.5706059871097751,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.04926689612528079,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.005521774432873383,
+    "runs": [
+     {
+      "cfv": 0.2662863988525246,
+      "lo": 0.15831273576281263,
+      "hi": 0.4479010856086922,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.022409730335914313,
+      "covered": true
+     },
+     {
+      "cfv": 0.25791837076617885,
+      "lo": 0.1533377711194884,
+      "hi": 0.4338258309940018,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.009719410979870169,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.2621023848093517,
+     "lo": 0.2124560639576762,
+     "hi": 0.32334996160163676,
+     "accepted": true,
+     "reasons": [],
+     "err": 0.006345159678022183,
+     "covered": true,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.5000624387755506,
+    "ffr_measured": 0.49881127491403
+   }
+  },
+  {
+   "seed": 9259,
+   "velocity": 0.33077158649020844,
+   "heart_rate": 84.54673130743478,
+   "diastolic_ratio": 1.6027433037807888,
+   "runs": [
+    {
+     "k": 0,
+     "fps": 15.0,
+     "n_frames": 62,
+     "has_ecg": false,
+     "true_ed": [
+      4,
+      15,
+      26,
+      36,
+      47,
+      58
+     ],
+     "source": "images",
+     "frame": 36,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      36,
+      46
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "single": {
+      "cfv": 0.14169256133598956,
+      "lo": 0.08423913920877288,
+      "hi": 0.3265132041155921,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.5716301909741452,
+      "covered": false
+     }
+    },
+    {
+     "k": 1,
+     "fps": 30.0,
+     "n_frames": 97,
+     "has_ecg": true,
+     "true_ed": [
+      4,
+      25,
+      46,
+      68,
+      89
+     ],
+     "source": "R-wave pointer",
+     "frame": 25,
+     "frame_err": 0,
+     "image_ed": [
+      25,
+      46,
+      67,
+      81
+     ],
+     "image_beats": [
+      3,
+      3
+     ],
+     "ecg_beats": [
+      5,
+      5
+     ],
+     "single": {
+      "cfv": 0.2882431217452048,
+      "lo": 0.17136645868859857,
+      "hi": 0.6642210738370109,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.12857351260508765,
+      "covered": true
+     }
+    }
+   ],
+   "two_view": {
+    "length_err": -0.003482041108248013,
+    "runs": [
+     {
+      "cfv": 0.1605134209637647,
+      "lo": 0.09542852698794786,
+      "hi": 0.2699880122088091,
+      "accepted": true,
+      "reasons": [],
+      "err": -0.5147303229187243,
+      "covered": false
+     },
+     {
+      "cfv": 0.3484731659163499,
+      "lo": 0.20717445755349678,
+      "hi": 0.5861415002494081,
+      "accepted": true,
+      "reasons": [],
+      "err": 0.05351602177796333,
+      "covered": true
+     }
+    ],
+    "combined": {
+     "cfv": 0.25449329344005733,
+     "lo": 0.20628825436757844,
+     "hi": 0.3139627925231321,
+     "accepted": false,
+     "reasons": [
+      "the two runs disagree (\u00d72.2): one transit is unreliable"
+     ],
+     "err": -0.2306071505703804,
+     "covered": false,
+     "n_runs": 2
+    },
+    "ffr_true_velocity": 0.3860391679673104
+   }
+  }
+ ],
+ "provenance": {
+  "git_commit": "dd511aaa1d123624f8961f86aa59221942b0013e",
+  "git_dirty": false,
+  "vstent_version": "0.1.0",
+  "seg_model": "models/seg/seg_unet_r34_synth-20261101-182811",
+  "created_utc": "2026-11-02T02:28:34+00:00"
+ },
+ "seeds": [
+  9200,
+  9201,
+  9202,
+  9203,
+  9204,
+  9205,
+  9206,
+  9207,
+  9208,
+  9209,
+  9210,
+  9211,
+  9212,
+  9213,
+  9214,
+  9215,
+  9216,
+  9217,
+  9218,
+  9219,
+  9220,
+  9221,
+  9222,
+  9223,
+  9224,
+  9225,
+  9226,
+  9227,
+  9228,
+  9229,
+  9230,
+  9231,
+  9232,
+  9233,
+  9234,
+  9235,
+  9236,
+  9237,
+  9238,
+  9239,
+  9240,
+  9241,
+  9242,
+  9243,
+  9244,
+  9245,
+  9246,
+  9247,
+  9248,
+  9249,
+  9250,
+  9251,
+  9252,
+  9253,
+  9254,
+  9255,
+  9256,
+  9257,
+  9258,
+  9259
+ ]
+}
