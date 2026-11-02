@@ -919,6 +919,40 @@ are reported.
 
 - [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 
+## P4m: Virtual stenting checked on real angiograms without FFR (added 2026-11-02; pre-registered before any code)
+
+Why: the user's goal is the best virtual stenting with the data we have. Without FFR, two real
+anchors remain: the experts' lesion boxes (where a stent belongs) and the published post-PCI
+physiology.
+
+**Set:** CADICA patients' lesions graded 70–98%, one box per lesion (the box on the frame
+nearest the middle of the lesion's boxes).
+- **Measurement:** the clinician-style path through the box (`guided.box_path`), the product's
+  QCA and physics.
+- **Planner:** the guided app's (solver backend, `configs/planner.yaml`).
+- **Lesions included:** those whose pre-PCI FFR is ≤ 0.80 (a plan is proposed).
+
+**Measures**
+1. **The stent is on the experts' lesion:** the share of lesions whose deepest point inside the
+   box lies under a planned stent. Target ≥ 90%.
+2. **Post-PCI FFR:** the mean, and the share ≤ 0.80, of the best plan's predicted FFR.
+   - Anchor: FFR-SEARCH, 0.91 ± 0.07 (Circulation 2019), with about 11% of patients having a
+     lesion ≤ 0.80.
+   - Targets: mean 0.88–0.94; share ≤ 0.80 at most 15%.
+3. **Plans reaching 0.90:** reported.
+
+**Arms**
+- The product now.
+- Every adopted change, each as an arm: P4k-C2 (the wire position) if adopted; lesion reader
+  v2 (P4k-A) if adopted.
+
+**Stages**
+- Development patients first.
+- A change becomes the product only by its own rule (C2, A). P4m judges the stenting result,
+  it adopts nothing.
+- Test patients reported.
+- [ ] `vstent stent-check --stage dev|test` → `reports/stent_check[_dev].md`.
+
 ## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)
 
 Why: image-based ED frames are within ±1 frame for 75–79% of beats (synthetic, every frame
