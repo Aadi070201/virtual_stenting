@@ -466,6 +466,24 @@ def cadica(
 
 
 @data_app.command()
+def angiocad(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/angiocad"),
+) -> None:
+    """Download (16.4 GB) and verify (MD5) the AngioCAD dataset (CC BY 4.0; 413 patients,
+    segment-level stenosis grades; external test, P4k-J). Extraction is a separate step."""
+    from urllib.error import URLError
+
+    from vstent.data.angiocad import fetch_angiocad
+
+    try:
+        source = fetch_angiocad(out, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(f"AngioCAD download failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Verified {len(source['files'])} files in {out} ({source['licence']})")
+
+
+@data_app.command()
 def kemerovo(
     out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/kemerovo"),
     force: Annotated[bool, typer.Option("--force", help="Download and extract again.")] = False,

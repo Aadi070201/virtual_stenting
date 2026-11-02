@@ -224,3 +224,22 @@ significant lesions read as significant (P4i). Nothing is trained or tuned on it
 
 **Download.** `uv run vstent data kemerovo` (8.3 GB), SHA-256 as published by Mendeley; only
 the frames and label files are extracted.
+
+## AngioCAD (P4k-J; external, segment-level test)
+
+- **Source:** Zenodo, doi:10.5281/zenodo.15826856, "AngioCAD: A Publicly Available X-ray
+  Angiography Dataset for Coronary Artery Stenosis and CAD Detection". University of Isfahan,
+  Isfahan University of Technology and Isfahan University of Medical Sciences. Published
+  2025-07-15.
+- **Licence:** CC BY 4.0 (Zenodo API licence field, checked 2026-11-02).
+- **Contents:**
+  - 413 patients' anonymised cine frames: PNG extracted from DICOM, 16.4 GB in four RAR parts;
+  - every patient's 15 coronary segments graded by experts in seven severity categories
+    (`AngioCAD_Labels.xlsx`);
+  - clinical and laboratory data, including dominance (`AngioCAD_Features.xlsx`);
+  - no FFR, no ECG, no lesion boxes.
+- **Command:** `vstent data angiocad` downloads and checks every file against Zenodo's MD5.
+  The RAR parts are listed and checked for unsafe paths before extraction; nothing in them is
+  run.
+- **Use:** an external test only (P4k-J). The protocol is written into docs/PLAN.md before
+  any model is run on it.
