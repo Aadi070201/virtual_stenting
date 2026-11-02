@@ -366,3 +366,26 @@ def write_report(result: dict[str, Any], git: dict, report_dir: str | Path = "re
     payload |= {"provenance": prov, "source": source}
     (report_dir / f"{REPORT}.json").write_text(json.dumps(payload, indent=1, default=float),
                                                encoding="utf-8", newline="\n")  # fmt: skip
+
+
+ARTERY_K = 0.8  # P4k-C4: the Doppler mean-to-peak factor of P4e's main estimate
+ARTERY_MIN_CHANGE = 0.10  # an artery's own velocity is used if it differs ≥ 10% from pooled
+
+
+def artery_velocity(lesions: list[dict[str, Any]], k: float = ARTERY_K) -> dict[str, Any]:
+    """P4k-C4: the stenosis-free hyperemic mean velocity (k × APV at peak flow ÷ FFR, m/s) per
+    artery (left = LAD + LCx; RCA) and pooled, and the pre-registered rule."""
+    groups = {"left": ("LAD", "LCx"), "RCA": ("RCA",)}
+    vals = {g: [k * x["vapv"] / x["ffr"] for x in lesions if x["vessel"] in arts
+                and x["vapv"] is not None and x["ffr"] and x["ffr"] > 0]
+            for g, arts in groups.items()}  # fmt: skip
+    pooled = float(np.median(vals["left"] + vals["RCA"]))
+    out: dict[str, Any] = {"k": k, "pooled": pooled, "n_pooled": len(vals["left"] + vals["RCA"]),
+                           "arteries": {}}  # fmt: skip
+    for g, v in vals.items():
+        med = float(np.median(v)) if v else None
+        change = None if med is None else med / pooled - 1.0
+        out["arteries"][g] = {"n": len(v), "median": med, "change": change}
+    out["use_per_artery"] = any(a["change"] is not None and abs(a["change"]) >= ARTERY_MIN_CHANGE
+                                for a in out["arteries"].values())  # fmt: skip
+    return out

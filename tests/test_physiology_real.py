@@ -62,3 +62,17 @@ def test_datasets_are_pinned_by_md5():
     for meta in DATASETS.values():
         assert meta["files"] and all(len(md5) == 32 for md5 in meta["files"].values())
         assert meta["record"].startswith("https://zenodo.org/records/")
+
+
+def test_artery_velocity_rule():
+    """P4k-C4: per-artery hyperemic velocity and the ≥ 10% rule."""
+    from vstent.validation.physiology_real import artery_velocity
+
+    les = ([{"vessel": "LAD", "vapv": 0.40, "ffr": 0.8}] * 4
+           + [{"vessel": "RCA", "vapv": 0.30, "ffr": 0.8}] * 2)  # fmt: skip
+    r = artery_velocity(les)
+    assert r["arteries"]["left"]["median"] == 0.4 and r["arteries"]["RCA"]["median"] == 0.3
+    assert r["pooled"] == 0.4 and r["use_per_artery"]  # RCA 25% lower
+    same = artery_velocity([{"vessel": "LCx", "vapv": 0.4, "ffr": 0.8},
+                            {"vessel": "RCA", "vapv": 0.41, "ffr": 0.8}])  # fmt: skip
+    assert not same["use_per_artery"]
