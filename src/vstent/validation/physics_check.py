@@ -9,7 +9,11 @@ invasive FFR, against two literature anchors (docs/PLAN.md, P4k-C). Torch-free.
    box, ``guided.box_path``; the median over a lesion's boxes): the share with FFR ≤ 0.80 per
    grade. Anchor: FAME, visual 50–70% / 70–90% / 90–99% → 35% / 80% / 96%.
 
-Both outflows are solved on the same measured profiles.
+Every arm is solved on the same measured profiles:
+- ``none``: the product;
+- ``murray``: side-branch outflow (P4k-C);
+- ``wire``: the product's physics, with the FFR read at the last point whose reference diameter
+  is ≥ 2.0 mm, where a pressure wire would sit (P4k-C2).
 """
 
 from __future__ import annotations
@@ -24,7 +28,9 @@ import numpy as np
 
 from vstent.physics.solver import PhysicsParams, solve_ffr_batch
 
-OUTFLOWS = ("none", "murray")
+OUTFLOWS = ("none", "murray", "wire")  # the arms (``wire``: no outflow, FFR at the wire)
+ARM_LABELS = {"none": "Product (now)", "murray": "Murray outflow", "wire": "FFR at the wire"}
+WIRE_MIN_REF_M = 2.0e-3  # FAVOR II: reference vessel diameter ≥ 2 mm
 CUTOFF = 0.80
 LESION_FREE_ANCHOR = 0.13  # De Bruyne 2001: P(FFR ≤ 0.80) for 0.89 ± 0.08 (normal approx.)
 FAME_SHARES = {"p50_70": 0.35, "p70_90": 0.80, "p90_98": 0.96}  # FFR ≤ 0.80 by visual grade
@@ -33,13 +39,23 @@ FAME_LABELS = {"p50_70": "50–70%", "p70_90": "70–90%", "p90_98": "90–98%"}
 OUT_DIR = Path("data/derived/p4k")
 
 
+def wire_index(r_ref: np.ndarray) -> int:
+    """The last point whose reference diameter is ≥ 2.0 mm (``r_ref`` in m); the path's end if
+    no point is (nothing to cut)."""
+    ok = np.flatnonzero(2.0 * np.asarray(r_ref) >= WIRE_MIN_REF_M)
+    return int(ok[-1]) if ok.size else len(r_ref) - 1
+
+
 def distal_ffr(profile, params: PhysicsParams) -> dict[str, float]:
-    """Distal FFR (-) of a measured profile with each outflow (reference from the QCA)."""
+    """FFR (-) of a measured profile for every arm (reference from the QCA)."""
     out = {}
-    for o in OUTFLOWS:
+    r_ref = profile.reference_radius()
+    for o in ("none", "murray"):
         p = params.model_copy(update={"outflow": o})
-        res = solve_ffr_batch(profile.r, profile.ds, profile.reference_radius(), p)
+        res = solve_ffr_batch(profile.r, profile.ds, r_ref, p)
         out[o] = float(res.ffr_distal[0])
+        if o == "none":
+            out["wire"] = float(res.ffr[0, wire_index(r_ref)])
     return out
 
 
@@ -203,24 +219,30 @@ def summarise(free: list[dict[str, Any]], graded: list[dict[str, Any]]) -> dict[
             "grades": grades,
             "fame_mad": float(np.mean(diffs)) if len(diffs) == len(FAME_SHARES) else None,
         }
-    n, m = out["outflow"]["none"], out["outflow"]["murray"]
-    stats = (n["free_distance"], m["free_distance"], n["fame_mad"], m["fame_mad"])
-    if any(v is None for v in stats):
-        out["adopt"], out["reason"] = False, "a statistic could not be computed"
-    else:
-        closer = m["free_distance"] < n["free_distance"]
-        fame_ok = m["fame_mad"] <= n["fame_mad"] + MAX_FAME_WORSENING
-        out["adopt"] = bool(closer and fame_ok)
-        out["reason"] = (f"lesion-free share closer to 13%: {closer}; FAME distance grows by "
-                         f"{100 * (m['fame_mad'] - n['fame_mad']):+.1f} points (limit +10): "
-                         f"{'met' if fame_ok else 'not met'}")  # fmt: skip
+    out["adopt"], out["reason"] = rule(out["outflow"]["none"], out["outflow"]["murray"])
+    out["wire_adopt"], out["wire_reason"] = rule(out["outflow"]["none"], out["outflow"]["wire"])
     return out
 
 
-def save(stage: str, free, graded, summary, out_dir: str | Path = OUT_DIR) -> Path:
+def rule(n: dict[str, Any], m: dict[str, Any]) -> tuple[bool, str]:
+    """The pre-registered rule for an arm ``m`` against the product ``n``: the lesion-free
+    share closer to 13%, and the FAME distance not more than 10 points worse."""
+    stats = (n["free_distance"], m["free_distance"], n["fame_mad"], m["fame_mad"])
+    if any(v is None for v in stats):
+        return False, "a statistic could not be computed"
+    closer = m["free_distance"] < n["free_distance"]
+    fame_ok = m["fame_mad"] <= n["fame_mad"] + MAX_FAME_WORSENING
+    return bool(closer and fame_ok), (
+        f"lesion-free share closer to 13%: {closer}; FAME distance grows by "
+        f"{100 * (m['fame_mad'] - n['fame_mad']):+.1f} points (limit +10): "
+        f"{'met' if fame_ok else 'not met'}")  # fmt: skip
+
+
+def save(stage: str, free, graded, summary, out_dir: str | Path = OUT_DIR,
+         name: str = "physics") -> Path:  # fmt: skip
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    path = out / f"physics_{stage}.json"
+    path = out / f"{name}_{stage}.json"
     path.write_text(json.dumps({"stage": stage, "summary": summary, "lesion_free": free,
                                 "graded": graded}, indent=1), encoding="utf-8")  # fmt: skip
     return path
@@ -230,29 +252,39 @@ def _pct(x) -> str:
     return "–" if x is None else f"{100 * x:.0f}%"
 
 
-def section(stage: str, s: dict[str, Any]) -> list[str]:
-    """The report's lines for one stage."""
+def section(stage: str, s: dict[str, Any], part: str = "c") -> list[str]:
+    """The report's lines for one stage: every arm in ``s``; the rule of ``part`` (``c``:
+    Murray outflow; ``c2``: the FFR at the wire)."""
     title = "Development (CADICA development patients)" if stage == "dev" else (
         "Test (CADICA test patients)")  # fmt: skip
-    lines = [f"## {title}", "",
-             "| | No outflow (now) | Murray outflow |", "|---|---:|---:|"]  # fmt: skip
-    n, m = s["outflow"]["none"], s["outflow"]["murray"]
-    lines.append(f"| Lesion-free vessels: FFR ≤ 0.80 (anchor ≈ 13%) | {_pct(n['free_share'])} | "
-                 f"{_pct(m['free_share'])} |")  # fmt: skip
-    med = lambda v: "–" if v is None else f"{v:.2f}"  # noqa: E731
-    lines.append(f"| Lesion-free vessels: median FFR (anchor 0.89) | {med(n['free_median'])} | "
-                 f"{med(m['free_median'])} |")  # fmt: skip
+    arms = [a for a in OUTFLOWS if a in s["outflow"]]
+    lines = [f"## {title}", "", "| | " + " | ".join(ARM_LABELS[a] for a in arms) + " |",
+             "|---|" + "---:|" * len(arms)]  # fmt: skip
+
+    def row(label, f):
+        lines.append(f"| {label} | " + " | ".join(f(s["outflow"][a]) for a in arms) + " |")
+
+    def med(v):
+        return "–" if v is None else f"{v:.2f}"
+
+    def mad(v):
+        return "–" if v is None else f"{100 * v:.0f} points"
+
+    n = s["outflow"]["none"]
+    row("Lesion-free vessels: FFR ≤ 0.80 (anchor ≈ 13%)", lambda x: _pct(x["free_share"]))
+    row("Lesion-free vessels: median FFR (anchor 0.89)", lambda x: med(x["free_median"]))
     for c, label in FAME_LABELS.items():
-        lines.append(f"| Lesions {label}: FFR ≤ 0.80 (FAME {_pct(FAME_SHARES[c])}; "
-                     f"n = {n['grades'][c]['n']}) | {_pct(n['grades'][c]['share'])} | "
-                     f"{_pct(m['grades'][c]['share'])} |")  # fmt: skip
-    mad = lambda v: "–" if v is None else f"{100 * v:.0f} points"  # noqa: E731
-    lines.append(f"| Mean distance from FAME's shares | {mad(n['fame_mad'])} | "
-                 f"{mad(m['fame_mad'])} |")  # fmt: skip
+        title = (
+            f"Lesions {label}: FFR ≤ 0.80 (FAME {_pct(FAME_SHARES[c])}; n = {n['grades'][c]['n']})"
+        )
+        row(title, lambda x, c=c: _pct(x["grades"][c]["share"]))
+    row("Mean distance from FAME's shares", lambda x: mad(x["fame_mad"]))
     lines += ["", f"{s['n_free']} lesion-free runs measured ({s['n_free_failed']} could not be); "
               f"{s['n_boxes']} boxes of {s['n_lesions']} graded lesions.", ""]  # fmt: skip
     if stage == "dev":
-        decision = "adopt `murray`" if s["adopt"] else "not adopted"
-        lines += [f"**Rule** (docs/PLAN.md, P4k-C): {s['reason']}.", "",
+        key, name = ("adopt", "`murray`") if part == "c" else ("wire_adopt", "the wire position")
+        reason = s["reason"] if part == "c" else s["wire_reason"]
+        decision = f"adopt {name}" if s[key] else "not adopted"
+        lines += [f"**Rule** (docs/PLAN.md, P4k-{part.upper()}): {reason}.", "",
                   f"**Decision: {decision}.**", ""]  # fmt: skip
     return lines
