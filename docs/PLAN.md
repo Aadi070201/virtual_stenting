@@ -695,6 +695,122 @@ placed on the missed vessels, and lesions sit in gaps.
   model's segmentation, as amendment 2 says.
 - [ ] Report: `vstent vessel-coverage` → `reports/vessel_coverage.md`.
 
+## P4k: Do not miss lesions; target vessel; side-branch physics (added 2026-11-02; pre-registered before any code, training or evaluation)
+
+Why: the user compared the guided app with commercial QFR software. Three problems:
+- severe lesions read mild (D63);
+- the automatic path is the main trunk, not the vessel with the lesion;
+- long paths lose pressure "diffusely" because the model carries the whole inflow to the
+  path's thin end (D64).
+
+The user's priority is not missing lesions. The test sets of P4i (CADICA test patients,
+ARCADE test, Kemerovo) have each been seen once; where they are used again, the report says
+so. The CADICA test patients' lesion-free runs have never been used for lesion reading or FFR.
+
+### A. Lesion reader, version 2 (CPU)
+Changes from P4i. Everything else is as in P4i: the patch function, the network, the
+optimiser, 40 epochs, 5 development folds, seed 0, and how the product uses the reader.
+1. **Grades as intervals:**
+   - the %DS loss is a Huber loss (δ = 0.1 on %DS ÷ 100) on the distance outside the target
+     interval;
+   - CADICA grades: their ranges (0–20, 20–50, 50–70, 70–90, 90–98);
+   - ARCADE stenosis boxes: ≥ 50;
+   - normal-vessel candidates: ≤ 40.
+2. **Normal-vessel examples:**
+   - ARCADE's distant candidates, now with the ≤ 40 interval;
+   - CADICA **development** patients' lesion-free runs: every 4th selected frame, up to 2
+     candidates per frame on the automatic path (seed 0), ≤ 40.
+3. **Clinician-style paths for box samples:**
+   - from the vessel tree's proximal end through the box to the vessel's end
+     (`guided.box_path`), so the healthy proximal vessel sets the reference;
+   - otherwise, the P4b path.
+- [ ] **Development:** adopt only if all of P4i's conditions hold (unchanged).
+- [ ] **Test:**
+  - P4i's sets with P4i's targets (a second look);
+  - **fresh:** candidates on the CADICA test patients' lesion-free runs read ≥ 50%
+    (target ≤ 20%; the edges reported too).
+
+### B. Automatic target vessel (CPU)
+"Lesion-seeking" path:
+- **Candidates:** from the tree's proximal end (as `main_trunk_endpoints`) to every skeleton
+  end of the same vessel tree, at least 30 mm long.
+- **Measurement:** each candidate measured with the product's QCA. Its score is the highest
+  lesion %DS where the reference diameter is ≥ 2.0 mm (FAVOR II's vessel size).
+- **Choice:** the candidate with the highest score. With no lesion ≥ 50%, the main trunk
+  (as now).
+
+Evaluation:
+- **Set:** CADICA development patients' lesion runs. On each run, the expert-annotated frame
+  nearest to the product's analysis frame.
+- **Metric:** the share of runs whose automatic path crosses ≥ 1 expert box (≥ 5 px inside, as
+  P4j).
+- [ ] **Adopt** if the share is ≥ 10 points above the main trunk's. Test patients reported.
+
+### C. Side-branch outflow in the physics (CPU)
+μQFR (Murray's law) lets flow leave through side branches. Here, the flow at s is
+Q(s) = φ(s)·Q_in with φ(s) = (min over s' ≤ s of r_ref(s') ÷ r_ref(0))³. The viscous and
+expansion coefficients carry φ and φ², so ΔP = a·Q_in + b·Q_in² keeps its closed form. The
+distal microvascular term becomes R_micro·φ(L)·Q_in, calibrated exactly as now. Kt, μ, ρ
+and the velocity are unchanged. φ ≡ 1 for a vessel without taper, so every M1 check is
+unchanged. Option: `PhysicsParams.outflow` in {`none`, `murray`}.
+
+Evaluation (no invasive FFR; two literature anchors; product pipeline: automatic main-trunk
+path, K = 5 consensus, pixel size assumed):
+1. **Lesion-free vessels:** CADICA development patients' lesion-free runs. The share with
+   FFR ≤ 0.80. Anchor: De Bruyne 2001 (Circulation 104:2401) measured FFR 0.89 ± 0.08 in
+   non-stenotic arteries of patients with disease elsewhere, about 13% ≤ 0.80 (normal
+   approximation).
+2. **Graded lesions:** CADICA development patients' lesions, measured on the path from the
+   proximal end through the box (`guided.box_path`; median over the lesion's boxes). The share
+   with FFR ≤ 0.80 per grade. Anchor: FAME, visual 50–70% / 70–90% / 90–99% → 35% / 80% /
+   96% with FFR ≤ 0.80.
+- [ ] **Adopt** `murray` only if both hold:
+  - the lesion-free share moves closer to 13%;
+  - the mean absolute difference from FAME's three shares does not grow by more than
+    10 points.
+
+  Test patients reported. If adopted, the planner and the app use it.
+
+### D. Display like a clinical QFR tool (no measurement change)
+- The lumen contours along the whole path.
+- Lesions as shaded segments labelled A, B…
+- A lesion table: MLD, reference diameter, length, %DS, FFR drop across the lesion.
+- Below the FFR curve, the FFR drop per mm.
+
+### E. Whole-image lesion detector (GPU; waits for the user's go-ahead)
+- **Model:** U-Net (ResNet34 encoder, ImageNet start, as the segmentation model). Input: the
+  frame through the shared pre-processing. Target: the expert boxes, filled. Loss: BCE + Dice.
+  AMP; resumable.
+- **Training data:**
+  - CADICA development patients' annotated frames;
+  - their lesion-free frames (every 4th, empty targets);
+  - ARCADE stenosis train;
+  - Kemerovo: patients split 50 / 50 (seed 0), the training half.
+- **Validation** (early stopping and the operating point): ARCADE val, 5 CADICA development
+  patients held out (seed 0), and 10 patients of Kemerovo's training half.
+- **Detections:** connected components of the output ≥ t. An expert box is found when a
+  detection overlaps it.
+- **Operating point:** the highest t with validation sensitivity ≥ 95% of boxes. False alarms:
+  per lesion-free frame, and per annotated frame (an upper bound: not every lesion is boxed).
+- [ ] **Shown in the app** (flags to review, each with "measure this", and B's path through
+  the strongest flag) if, at t, false alarms are ≤ 2 per lesion-free validation frame.
+  Otherwise a research option.
+- [ ] **Test:**
+  - sensitivity (target ≥ 90%) on CADICA test patients, ARCADE test and Kemerovo's test
+    half (all second looks, except Kemerovo's half, which was a P4i test once);
+  - false alarms per lesion-free frame of the CADICA test patients (fresh).
+
+### F. End-diastolic frames from the images (needs data with ECG) [needs human]
+- **Method to follow:** Ciusdel et al. 2020 (Comput Med Imaging Graph). Spatial and temporal
+  convolutions, trained against the ECG: precision 97.4% and recall 96.9% for ED frames
+  after training on 56,655 runs.
+- **Missing data:** no public angiogram runs with an ECG are known to us; CADICA, ARCADE and
+  Kemerovo have none. Synthetic beating-heart runs (P7) carry an ECG and can pre-train.
+- **Blocked on the human:** a real evaluation needs de-identified DICOM runs with their ECG,
+  from a hospital.
+
+- [ ] Report: `reports/p4k.md` (A–C, E), each part as it finishes.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
