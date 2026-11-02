@@ -800,6 +800,27 @@ diameter ≥ 2 mm, and a wire measures in the distal vessel, not in a terminal b
 
   Test patients reported.
 
+### C3. Learned lesion reading together with the physics, judged end to end (CPU; added 2026-11-02, before running)
+Why: C showed the FFR depends on how deep the lesions are measured. In the model a 3 mm
+vessel's lesion read at 40% loses about 2 mmHg; read at 65% (reader v1's median for 90–98%
+lesions on test) it loses about 38 mmHg. Reader v1 failed P4i's patch-level false-alarm rule.
+The end-to-end check judges false alarms where they matter: lesion-free vessels read
+FFR ≤ 0.80.
+- **Arms:** C's three (no outflow, Murray outflow, the wire position), each with the
+  learned reader applied to the measured lumen (`analyse_vessel(..., lesion_reader=...)`).
+- **Readers:** v1 (exported, P4i) now. v2 once trained, whatever its own P4k-A decision.
+- **Data, anchors and rule:** C's (development patients).
+- [ ] **Adopt** the reader and the arm together as the product's FFR pipeline if:
+  - C's rule holds against the product (lesion-free share closer to 13%; FAME distance not
+    more than 10 points worse);
+  - **and** the lesion-free share is ≤ 25%.
+
+  Of several qualifying combinations, the smallest mean distance from the two anchors wins:
+  |lesion-free share − 13%| plus the FAME distance.
+- An adopted combination supersedes D63's patch-level decision for the FFR pipeline: the
+  end-to-end rule is the stricter clinical test. Test patients once, for the chosen one.
+- P4m is then re-run with it as an arm.
+
 ### D. Display like a clinical QFR tool (no measurement change)
 - The lumen contours along the whole path.
 - Lesions as shaded segments labelled A, B…
