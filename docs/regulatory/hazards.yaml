@@ -63,7 +63,8 @@ hazards:
       Measured. CADICA test patients, intensity edges (the product default) with the D53
       segmenter: weighted kappa 0.13 against expert grades (0.14 with M5), median measured
       %DS 44% for lesions graded 70–90%. Rendered vessels: edges read 95% lesions as 37–59%
-      DS.
+      DS. A densitometric lumen (P4h, D61) improves agreement (test kappa 0.25, AUC 0.77) but
+      still reads lesions graded 90–98% at a median 49%; it was not adopted by its rule.
     controls: [SR-10, SR-11, SR-12, SR-23, SR-24, SR-47, SR-02, SR-01]
     residual_probability: 5
     residual_basis: >-

@@ -168,8 +168,9 @@ virtual stents before placing a real one.
 - **Diameters:** where the image brightness changes fastest across the vessel
   (minimum-cost edge tracking, the classical QCA criterion). The absolute size is set by
   fitting a model of the X-ray imaging chain (blur, edge enhancement) to healthy segments.
-- **Densitometry (new, section 6):** at tight lesions the width drops below the image
-  resolution. The amount of contrast the vessel carries still shows the true lumen area.
+- **Densitometry (option, section 6):** at tight lesions the width drops below the image
+  resolution. The amount of contrast the vessel carries shows the lumen area: accurate on
+  simulated images, a partial improvement on real ones.
 - **Pixel size:** from the DICOM geometry (magnification-corrected); otherwise 0.30 mm is
   assumed and the user is warned.
 - On synthetic test tubes, the worst-case median diameter error was 0.10 px and the
@@ -288,7 +289,7 @@ pipeline, not clinical accuracy.
 |---|---|
 | Repeatability: one frame | FFR coefficient of variation 18.7% (not good enough) |
 | Repeatability: median of 5 frames | **5.1%**, below QFR's published 9.4% between observers |
-| Lesion severity against expert visual grades (CADICA) | weak agreement so far (weighted kappa 0.13 on test patients); severe lesions read too mild: being fixed (section 6) |
+| Lesion severity against expert visual grades (CADICA) | weak agreement (weighted kappa 0.13 on test patients; 0.25 with densitometry); severe lesions read too mild (section 6) |
 | Physiology assumptions against invasive measurements (DEFINE-FLOW, 455 lesions) | the assumed maximal-flow velocity (0.35 m/s) is inside the measured interquartile range for the more realistic Doppler factor (median 0.33 m/s, k = 0.8) but above it for k = 0.5 (median 0.21 m/s): flow is a real source of error |
 | Physics against an FDA laboratory benchmark (nozzle) | losses at a gradual exit match (1.06×); at an abrupt exit the model gives 0.61× the measured loss |
 
@@ -297,18 +298,19 @@ Figures: `figures/repeatability.png`, `figures/stenosis_grading.png`,
 
 ---
 
-## 6. Closing the accuracy gap: measuring tight lesions
+## 6. The accuracy gap we found, and the first fix
 
 **Slide**
 - Title: *When a narrowing is thinner than the X-ray blur*
-- Key message: in small vessels a very tight narrowing does not look thinner. It looks
-  fainter. vstent now measures that fading (densitometry) as well as the edges.
+- Key message: on real angiograms, very tight lesions were read too mild. A physics-based fix
+  (densitometry) works perfectly on simulated images and improves agreement on real ones, but
+  not enough yet. We report this openly; it sets the next step.
 - Figures: `figures/cadica_vessel_and_lesions.png` (the experts' box in cyan),
-  `figures/cadica_ffr_curve.png`.
+  `figures/cadica_ffr_curve.png`, `figures/stenosis_grading.png`.
 
-**The problem we found ourselves.**
-- On 382 real angiogram runs (CADICA), lesions the experts graded 70–90% or 90–98% were
-  measured at a median of only about 42–43% narrowing.
+**The problem, found by our own checks.**
+- On real angiogram runs (CADICA), lesions the experts graded 70–90% or 90–98% were measured
+  at a median of only about 40–46% narrowing.
 - So the tool called most of them not significant, where pressure-wire studies find most such
   lesions significant:
 
@@ -318,33 +320,58 @@ Figures: `figures/repeatability.png`, `figures/stenosis_grading.png`,
 | 70–90% | 16% | ~80% |
 | 90–98% | 23% | ~96% |
 
-**Why.** A 90% narrowing in a 2 mm vessel is narrower than the image blur. Its two edges stay
-a few pixels apart, so edge-based measurement reads it as moderate. What does change is how
-much contrast passes through it: the vessel fades.
+**Why.**
+- A 90% narrowing in a 2 mm vessel is narrower than the image blur. Its two edges stay a few
+  pixels apart, so edge-based measurement reads it as moderate.
+- What changes is how much contrast passes through it: the vessel fades. Visual grades also
+  read tight lesions 10–20 points above careful measurement, which explains part of the gap.
 
-**The fix: densitometry.**
+**The fix tried: densitometry.**
 - The X-ray darkness summed across the vessel is proportional to the lumen's area, and blur
   does not change that sum.
-- vstent now takes the narrower of the edge measurement and the area measurement at every
-  point.
-- Overlapping vessels only make the area reading larger, so they cannot create a false
-  narrowing.
+- The lumen is the narrower of the edge measurement and the area measurement at every point.
+- **Tested with rules fixed in writing beforehand:** developed on rendered lesions and on half
+  of the real patients, adopted only if it beat the current method on both agreement measures,
+  then tested once on the other half.
 
-**How it is being tested (the method and pass marks were fixed in writing before any
-real-image measurement):**
-- developed on rendered lesions with a known true lumen, and on half of the real patients;
-- adopted only if it beats the current method on agreement with the experts without
-  inventing narrowings in healthy vessels;
-- then tested once on the other half.
+**Results.**
 
-**Result:** *[to be filled in from the P4h report when it is generated: section 6 table of
-median measured narrowing by expert grade, before and after; agreement (weighted kappa);
-share of 70–98% lesions called significant.]*
+On rendered lesions with a known lumen (mean error in %DS points):
 
-*[Rendered lesions with a known lumen: the table of mean %DS error by lesion group for edges
-and densitometry, from the regenerated `reports/lumen_synthetic.md`.]*
+| Lesions | Edges | Densitometry |
+|---|---:|---:|
+| tight (≥ 85%) | 30.7 | **5.9** |
+| moderate (< 85%) | 8.5 | 5.4 |
+| no lesion | 6.5 | 5.5 |
 
----
+On real angiograms (CADICA, 21 test patients, 208 lesions):
+
+| | Edges (current) | Densitometry |
+|---|---:|---:|
+| Agreement with experts (weighted kappa) | 0.13 | 0.25 |
+| AUC, lesions ≥ 70% | 0.71 | 0.77 |
+| Median narrowing, lesions graded 70–90% | 44% | 46% |
+| Median narrowing, lesions graded 90–98% | 40% | 49% |
+| Healthy-looking lesions (0–20%) | 18% | 19% |
+
+**Outcome (honest):**
+- Densitometry improved agreement on both halves of the real data and almost never invented
+  narrowings (1 of 219 mild lesions read as critical).
+- On the development half one of its two pass marks fell slightly (AUC 0.80 against 0.82),
+  so by the pre-agreed rule it was **not adopted**. It remains an option.
+- Even with it, severe lesions read at about 49%, far from the experts' 90–98%. **The gap is
+  not closed.**
+- Likely reason: X-ray systems process images before export (local contrast equalisation,
+  edge enhancement), which removes much of the density signal that physics-based methods
+  rely on. Simulated images do not have this processing.
+
+**Next steps under consideration** (section 12):
+- outline correction by the user, as in QFR's own workflow;
+- a lesion-severity model trained on real angiograms, tested on an untouched external dataset;
+- calibration against pressure-wire data as soon as it is available.
+
+**Speaker note:** showing this openly is a strength. Every claim is pre-registered and tested
+once; the weakness was found by our own checks, not by a reviewer.
 
 ## 7. Benefits
 
@@ -422,8 +449,8 @@ must be validated the same way before any comparison of accuracy is claimed.
 1. **No wire-FFR validation.** No angiogram with a matching pressure-wire measurement has
    been analysed yet, so the clinical accuracy is unknown. This is the next and most
    important step, and it needs hospital data.
-2. **Lesion severity on real images.** Tight lesions were read too mild (section 6). The
-   densitometry fix is being tested.
+2. **Lesion severity on real images.** Tight lesions are read too mild (section 6). The
+   first fix (densitometry) improved agreement but did not close the gap.
 3. **Physics simplifications.**
    - The model is steady and one-dimensional.
    - It underestimates the loss at abrupt lesion exits (0.61× on the FDA benchmark).
@@ -477,8 +504,8 @@ must be validated the same way before any comparison of accuracy is claimed.
 
 | Horizon | Milestones |
 |---|---|
-| Now | lesion-severity fix tested on real angiograms; guided app; presentation |
-| Next 3 months | first wire-FFR dataset (30–50 vessels); locked validation; contour correction in the app; densitometry refinements |
+| Now | guided app; densitometry tested (partial improvement); presentation |
+| Next 3 months | first wire-FFR dataset (30–50 vessels); locked validation; outline correction in the app; a lesion-severity model trained on real angiograms with an external test |
 | 3–6 months | multicentre retrospective study; 3D-simulation labels for the surrogate; two-view workflow in hospitals |
 | 6–12 months | quality-management system; regulatory submission planning (CDSCO India; CE mark; FDA 510(k) with predicate devices); pilot deployments |
 

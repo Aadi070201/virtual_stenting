@@ -65,7 +65,7 @@ def pipeline() -> None:
         ("Cine angiogram", "multi-frame DICOM\n(+ ECG if recorded)"),
         ("Frames", "contrast curve,\nend-diastolic frames"),
         ("Vessels", "AI segmentation\n(U-Net, ONNX)"),
-        ("Path & QCA", "centreline, diameters,\nlesions (edges +\ndensitometry)"),
+        ("Path & QCA", "centreline, diameters,\nlesions (edge\ntracking)"),
         ("Physics", "pressure drop along\nthe vessel → FFR\n(+ learned surrogate)"),
         ("Heartbeats", "median of up to 5\nend-diastolic frames"),
         ("Virtual stent", "planner: shortest\nstent reaching\nFFR ≥ 0.90"),

@@ -1146,3 +1146,49 @@ expert box gives 32–35% DS and FFR above 0.9. The close-ups show why:
 
 Measuring density (densitometry) is the candidate fix; D44 dropped a simple version because
 it overestimated severity on rendered vessels. Not done here.
+
+### D61 — Densitometric lumen: not adopted by the rule; agreement improves, severe lesions still read mild (2026-11-02)
+**Finding.** Pre-registered in docs/PLAN.md (P4h, commit 031074a). Amendment 1 (the IOD
+smoothing, commit 8aa3def) was chosen on development renders before any CADICA measurement.
+Reports: `reports/stenosis_grading.md`, `reports/lumen_synthetic.md`; development rows in
+`data/derived/p4h/` (`scripts/p4h_dev.py`, commit 5c38b64).
+- **Domain:** `log` by the rule (development kappa 0.294 against 0.281 for `linear`).
+- **Development patients** (21 patients, 248 lesions):
+  - weighted kappa 0.214 → 0.294 (higher);
+  - median %DS of 0–20% lesions 19.6 (≤ 30, met);
+  - **AUC for ≥ 70% lesions 0.818 → 0.803 (lower)**.
+
+  The adoption rule needs both kappa and AUC higher: **not met**.
+- **Rendered lesions** (the report's seeds): tight lesions ≥ 85% mean |error| 5.9 points
+  (edges 30.7; ≤ 10 met); no lesion 5.5 (edges 6.5; ≤ 8 met).
+- **Test patients** (21 patients, 208 lesions; run once; nothing chosen on them):
+
+  | | Edges | `dense` |
+  |---|---:|---:|
+  | Weighted kappa | 0.13 | 0.25 |
+  | AUC for ≥ 70% lesions | 0.71 | 0.77 |
+  | Median %DS, lesions graded 70–90% | 44 | 46 |
+  | Median %DS, lesions graded 90–98% | 40 | 49 |
+  | Median %DS, lesions graded 0–20% | 18 | 19 |
+  | 0–50% lesions read as critical | 0 / 219 | 1 / 219 |
+
+  The pre-registered targets were not met (kappa ≥ 0.40; 70–90% ≥ 50; 90–98% ≥ 60).
+- **Reading:**
+  - Densitometry improves agreement on both halves; the development AUC drop of 0.015 lies
+    well inside the interval.
+  - But it moves severe lesions by only 2–9 points. On rendered images it is accurate. On
+    real angiograms a tight lesion's density deficit is far smaller than the physics
+    predicts. Likely causes: the X-ray systems' processing before export (local contrast
+    equalisation, edge enhancement, 8-bit images) evens out density, and visual grades read
+    above QCA.
+  - It is the second physics-based attempt at lesion severity that does not meet its rule
+    (D44 was the first).
+
+**Decision:** the product's lumen is unchanged. `dense` stays an option (`--lumen dense`, the
+app's research view, `vstent stenosis-grading --edges dense`). Following CLAUDE.md, after two
+attempts the analysis and options are written in PROGRESS and the human decides the next step.
+
+**Alternatives:**
+- Adopting it on the test result: rejected. The decision is made on development data; using
+  the test to choose would leave no unbiased result.
+- Relaxing the rule after seeing it: rejected.

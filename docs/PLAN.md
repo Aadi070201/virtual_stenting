@@ -534,9 +534,9 @@ from the edges.
 
 **Development** (CADICA development patients, as split in P4b; rendered lesions,
 `vstent lumen-synthetic`):
-- [ ] **Domain:** the variant with the higher weighted kappa against the expert grades on the
-  development patients (a tie: `log`).
-- [ ] **Adopt** `dense` as the product lumen only if, with that domain:
+- [x] **Domain:** the variant with the higher weighted kappa against the expert grades on the
+  development patients (a tie: `log`). **Result:** `log` (kappa 0.294 vs 0.281).
+- [x] **Adopt** `dense` as the product lumen only if, with that domain:
   - on the development patients, both its weighted kappa and its AUC for ≥ 70% lesions are
     higher than the intensity edges' (the D43 / D44 rule), and its median %DS of lesions
     graded 0–20% is ≤ 30%;
@@ -544,20 +544,27 @@ from the edges.
     ≥ 85% and ≤ 8 points for vessels without a lesion.
 
   Otherwise `dense` stays an option and nothing changes.
+
+  **Result: not adopted** (D61).
+  - Kappa higher (0.294 vs 0.214); median %DS of 0–20% lesions 19.6.
+  - Both rendered targets met (5.9 and 5.5 points).
+  - But the AUC for ≥ 70% lesions was lower (0.803 vs 0.818).
 - During development, lesions of development patients may be viewed (p11, p12 so far). One
   test patient (p24, run 15) was shown in the app demo before this plan; nothing is tuned on
   it.
 
 **Test** (CADICA test patients, once, every method reported whatever it shows; the test half
 was used before in P4b, D44, P4f, P4g and the exploratory FAME comparison of 2026-11-02):
-- [ ] Weighted kappa and AUC for ≥ 70%, against the intensity edges (reported; target kappa
-  ≥ 0.40).
-- [ ] Median %DS by grade (targets: 70–90% ≥ 50%; 90–98% ≥ 60%; 0–20% ≤ 30%).
-- [ ] If adopted: the P4f measurements re-made with the new lumen. Then the share of lesions
+- [x] Weighted kappa and AUC for ≥ 70%, against the intensity edges (reported; target kappa
+  ≥ 0.40). **Result:** `dense` kappa 0.25 (edges 0.13), AUC 0.77 (0.71); target not met.
+- [x] Median %DS by grade (targets: 70–90% ≥ 50%; 90–98% ≥ 60%; 0–20% ≤ 30%).
+  **Result:** `dense` 46% and 49% (edges 44% and 40%): not met; 0–20%: 19%, met.
+- [x] If adopted: the P4f measurements re-made with the new lumen. **Not run:** not
+  adopted. Then the share of lesions
   whose segment FFR (median of up to 5 keyframes) is ≤ 0.80, by grade (targets: 70–98% ≥ 50%;
   0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported).
-- [ ] Report: `vstent stenosis-grading --edges intensity,dense`, `vstent lumen-synthetic`,
-  `vstent repeatability`, `vstent consensus-report`.
+- [x] Report: `vstent stenosis-grading --edges intensity,dense`, `vstent lumen-synthetic`,
+  `vstent repeatability`, `vstent consensus-report` (the last two not re-run: not adopted).
 
 **Done when:** the decision is recorded, the reports exist with the test results, and the
 product uses the rule's outcome.

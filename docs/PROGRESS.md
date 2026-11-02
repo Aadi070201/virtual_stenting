@@ -1309,3 +1309,54 @@ qualified person, not regulatory advice.
 
 **Seen:** expert 90–98% lesions read 32–35% DS. The close-ups show density loss without a
 resolvable width change: densitometry is the candidate fix.
+
+## 2026-11-02 — P4h: Densitometric lumen (done; not adopted by the rule; D61)
+
+**What was done**
+- `imaging/densitometry.py`: integrated contrast across the vessel → lumen area. The lumen
+  is the narrower of the edges and densitometry. Lumen options `dense`, `dense_log` and
+  `dense_linear` are wired into QCA, the grading and the rendered-lesion report.
+- Pre-registered first (031074a). Amendment 1 (IOD smoothing σ = 3 px) was chosen on separate
+  development renders before any CADICA measurement (8aa3def).
+
+**Results**
+- Development: kappa 0.214 → 0.294, but AUC for ≥ 70% lesions 0.818 → 0.803. Rule not met:
+  **not adopted**.
+- Rendered lesions: tight lesions within 5.9 points (edges 30.7).
+- Test (once): kappa 0.13 → 0.25; AUC 0.71 → 0.77; lesions graded 90–98% read at a median
+  49% (edges 40%). Targets not met.
+
+**Analysis after two attempts** (D44: the imaging-chain fit; D61: densitometry). Both read
+rendered lesions almost perfectly and both raise agreement on real angiograms, but neither
+brings severe lesions near the experts' grades (≈ 45–50% against a visual 70–98%). Causes,
+most likely first:
+1. **The real images:** the X-ray systems' processing (local contrast equalisation, edge
+   enhancement, 8-bit export) removes most of the density signal that physics-based methods
+   need. Our renderer does not imitate that processing, so methods tuned on it look better
+   than they are.
+2. **The reference:** visual grades exceed QCA by about 10–20 points in tight lesions; a
+   careful QCA would read a 90–98% visual lesion at perhaps 70–80%. A gap of 20–30 points
+   remains.
+3. **The segmentation:** it smooths over narrowings, and the edge search starts from it.
+
+**Options for the next step (for the human to choose):**
+- **A. Learned lesion severity on real angiograms.**
+  - What: a model trained on real lesion patches with expert labels, used to narrow the
+    lumen at lesions. Labels from CADICA development patients (grades) and ARCADE stenosis
+    boxes; the untouched Kemerovo dataset (8.3 GB, CC BY 4.0, all lesions significant) as a
+    fresh external test.
+  - For: it learns what real images look like.
+  - Against: the labels are coarse, visual (biased high) and few; a fresh pre-registration
+    is needed.
+- **B. Segmenter retrained with rendered tight stenoses** (as in P8), so the mask narrows at
+  lesions; judged by the same pre-registered rule.
+  - For: cheap and controlled.
+  - Against: the sim-to-real gap of point 1.
+- **C. Outline correction in the app**, as QFR analysts do. A product feature; accuracy then
+  depends on the user, as in QFR's own validations.
+- **D. Re-test `dense` on a fresh external dataset** (Kemerovo) under a new pre-registered rule.
+- **E. Wait for wire-FFR data** and calibrate lesion measurement against FFR directly on a
+  development part, testing on the rest.
+
+Recommendation: C now (the product needs it in any case), then A with Kemerovo as the
+external test. E remains the final word.
