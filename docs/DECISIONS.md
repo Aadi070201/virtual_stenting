@@ -1385,3 +1385,36 @@ remaining gap is lesion depth and diffuse loss: P4k-A, C3, E.
 **Alternatives:** a different diameter limit chosen on the data was rejected (tuning). Murray
 outflow failed its own rule (D66).
 
+### D69 — The product's FFR pipeline: learned lesion reading (v2) with Murray side-branch outflow (2026-11-02)
+**Finding** (pre-registered in docs/PLAN.md, P4k-C3 and its amendment; CADICA development
+patients; anchors De Bruyne 2001 and FAME). Product before the change: lesion-free vessels
+read ≤ 0.80 in 52%; FAME distance 23 points.
+
+| Combination | Lesion-free ≤ 0.80 | 50–70 / 70–90 / 90–98% ≤ 0.80 | FAME distance | Combined |
+|---|---:|---:|---:|---:|
+| Reader v2 + Murray (adopted) | 19% | 35 / 52 / 66% | 20 | 0.258 |
+| Reader v1 + Murray at the wire | 21% | 32 / 48 / 75% | 19 | 0.267 |
+| Reader v2 + Murray at the wire | 15% | 29 / 42 / 66% | 25 | 0.270 |
+| (FAME) | (≈ 13%) | (35 / 80 / 96%) | | |
+
+**Decision:** `configs/product.yaml`:
+- `lesion_reader`: models/lesion/lesion_cnn_v2-20261102-194645;
+- `outflow`: murray;
+- `wire`: false.
+
+The app, `vstent analyse` and `vstent validate` use it. The rule was the end-to-end one, so
+this supersedes D63's and P4k-A's patch-level decisions for the FFR pipeline. D68's wire
+position is superseded for the product: with outflow, thin distal segments carry little flow.
+It stays an option (`wire: true`).
+
+**Still open:**
+- Severe lesions are under-called: 70–90% → 52% and 90–98% → 66% read ≤ 0.80, against
+  FAME's 80% and 96%. Lesion depth is still under-read.
+- Test patients once, as pre-registered (C3).
+- The virtual stenting check (P4m) re-run with this pipeline.
+
+**Alternatives:**
+- Reader v1 + Murray at the wire: fewer false negatives on 90–98% lesions (75% vs 66%), but a
+  larger combined distance.
+- Choosing by eye after seeing the results was rejected. The rule chose.
+

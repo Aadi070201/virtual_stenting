@@ -857,6 +857,19 @@ qualifies.
 Murray outflow with reader v1 is the closest of all so far: its 50–70% share equals FAME's,
 but its lesion-free share is 27% against the ≤ 25% limit.
 
+**Result, reader v2** (`reports/p4k_reader_lesion_cnn_v2-20261102-194645_dev.md`) and
+**reader v1 with four arms** (`reports/p4k_reader_lesion_cnn-20261102-171855_dev.md`; the
+three-arm run is in `reports/c3_v1_three_arms/`). Three combinations qualify:
+
+| Combination | Lesion-free ≤ 0.80 | FAME distance | Combined distance |
+|---|---:|---:|---:|
+| Reader v2 + Murray outflow | 19.2% | 19.6 points | **0.258** |
+| Reader v1 + Murray at the wire | 21.2% | 18.6 points | 0.267 |
+| Reader v2 + Murray at the wire | 15.4% | 24.7 points | 0.270 |
+
+- [x] **Adopted: reader v2 with Murray outflow on the whole path** (D69): the smallest
+  combined distance.
+
 **Amendment (2026-11-02, before running it):** a fourth arm, Murray outflow on the vessel
 cut at the wire position (`murray_wire`), is added for every reader, under the same rule.
 Reason: the wire position is adopted (D68, pending its corrected re-run), so the product's
