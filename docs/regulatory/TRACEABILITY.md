@@ -63,7 +63,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | H-11 | SR-05 | Cine runs on one intensity scale | 1 tests | verified |
 | H-11 | SR-06 | Analysis frame in the opacified phase | 3 tests, 1 reports | verified |
 | H-11 | SR-13 | Analysed path shown on the image | 2 tests | verified |
-| H-12 | SR-31 | Contrast transit is shown, never used | 2 tests, inspection | verified |
+| H-12 | SR-31 | Measured flow velocity is shown, and used only when the user chooses it | 3 tests, inspection | verified |
 | H-13 | SR-36 | Traceable case report | 1 tests | verified |
 | H-13 | SR-04 | One image loader | 2 tests | verified |
 | H-14 | SR-09 | Pixel size and units | 3 tests | verified |
@@ -126,7 +126,7 @@ Hazard → risk control → verification (ISO 14971 §7.2, IEC 62304 §7.3), the
 | SR-28 | `src/vstent/app/streamlit_app.py`, `src/vstent/app/core.py::CaseState` | [`test_plans_and_stents_belong_to_one_geometry_and_pressure`](../../tests/test_app.py), [`test_new_vessel_resets_stent_controls`](../../tests/test_app.py) | – |
 | SR-29 | `src/vstent/app/core.py::stent_update` | [`test_slider_update_is_fast`](../../tests/test_app.py), [`test_app_synthetic_mode_end_to_end`](../../tests/test_app.py) | [app_latency.md](../../reports/app_latency.md) |
 | SR-30 | `src/vstent/planning/optimizer.py::plan_stents` | [`test_solver_backend_throughput_5000_candidates`](../../tests/test_planning.py) | [planner_benchmark.md](../../reports/planner_benchmark.md) |
-| SR-31 | `src/vstent/imaging/cine.py::contrast_transit`, `src/vstent/imaging/cine.py::ContrastTransit`, `src/vstent/app/core.py::transit_caption` | [`test_contrast_transit_recovers_the_front_speed`](../../tests/test_cine.py), [`test_cine_and_transit_captions`](../../tests/test_app.py) | – |
+| SR-31 | `src/vstent/imaging/cine.py::contrast_transit`, `src/vstent/imaging/flow.py::flow_velocity`, `src/vstent/app/core.py::flow_caption`, `src/vstent/app/core.py::flow_dict` | [`test_contrast_transit_recovers_the_front_speed`](../../tests/test_cine.py), [`test_cine_and_flow_captions`](../../tests/test_app.py), [`test_cli_analyse_beating_heart_run_with_measured_flow`](../../tests/test_cardiac.py) | – |
 | SR-32 | `src/vstent/cli.py` | [`test_console_output_never_crashes_on_legacy_code_page`](../../tests/test_cli.py) | – |
 | SR-33 | `src/vstent/validation/manifest.py::check_local_only` | [`test_local_only_guard`](../../tests/test_validation.py), [`test_run_refuses_tracked_output`](../../tests/test_validation.py) | – |
 | SR-34 | `src/vstent/cli.py::launch_app` | [`test_cli_app_launches_streamlit_on_localhost`](../../tests/test_app.py) | – |

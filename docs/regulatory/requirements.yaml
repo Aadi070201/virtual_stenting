@@ -518,22 +518,26 @@ requirements:
       - reports/planner_benchmark.md
 
   - id: SR-31
-    title: Contrast transit is shown, never used
+    title: Measured flow velocity is shown, and used only when the user chooses it
     kind: interface
     text: >-
-      The contrast-front speed of a run is shown only when the front advances (positive speed
-      with a positive lower 95% bound), otherwise "not measurable", and is never an input to
-      the FFR.
+      The contrast flow velocity of a run is shown with its interval, its source (rest:
+      FAVOR Pilot conversion; hyperemic run: as measured) and the reasons when a guard fails.
+      The fixed hyperemic velocity stays the default; the measured one replaces it only when
+      the user chooses it (CLI --flow measured, the app's toggle) and every guard passed, and
+      the case report records which velocity was used (P7).
     code:
       - src/vstent/imaging/cine.py::contrast_transit
-      - src/vstent/imaging/cine.py::ContrastTransit
-      - src/vstent/app/core.py::transit_caption
+      - src/vstent/imaging/flow.py::flow_velocity
+      - src/vstent/app/core.py::flow_caption
+      - src/vstent/app/core.py::flow_dict
     tests:
       - tests/test_cine.py::test_contrast_transit_recovers_the_front_speed
-      - tests/test_app.py::test_cine_and_transit_captions
+      - tests/test_app.py::test_cine_and_flow_captions
+      - tests/test_cardiac.py::test_cli_analyse_beating_heart_run_with_measured_flow
     inspection: >-
-      solve_ffr, analyse_vessel and the app's evaluate take no transit input; the transit is
-      computed after the analysis, for display only.
+      vstent analyse and the app compute the analysis with the configured velocity unless the
+      user selects the measured one; the alternative FFR is printed alongside.
 
   - id: SR-32
     title: Robust console output

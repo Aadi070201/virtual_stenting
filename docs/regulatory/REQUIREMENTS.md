@@ -352,13 +352,13 @@ Planning over 5,000 candidate stents takes < 1 s (surrogate backend, median).
 - **Risk control for:** H-16
 - **Status:** verified
 
-### SR-31: Contrast transit is shown, never used
+### SR-31: Measured flow velocity is shown, and used only when the user chooses it
 
-The contrast-front speed of a run is shown only when the front advances (positive speed with a positive lower 95% bound), otherwise "not measurable", and is never an input to the FFR.
+The contrast flow velocity of a run is shown with its interval, its source (rest: FAVOR Pilot conversion; hyperemic run: as measured) and the reasons when a guard fails. The fixed hyperemic velocity stays the default; the measured one replaces it only when the user chooses it (CLI --flow measured, the app's toggle) and every guard passed, and the case report records which velocity was used (P7).
 
-- **Code:** `src/vstent/imaging/cine.py::contrast_transit`, `src/vstent/imaging/cine.py::ContrastTransit`, `src/vstent/app/core.py::transit_caption`
-- **Verified by** tests: [`test_contrast_transit_recovers_the_front_speed`](../../tests/test_cine.py), [`test_cine_and_transit_captions`](../../tests/test_app.py)
-- **Verified by** inspection: solve_ffr, analyse_vessel and the app's evaluate take no transit input; the transit is computed after the analysis, for display only.
+- **Code:** `src/vstent/imaging/cine.py::contrast_transit`, `src/vstent/imaging/flow.py::flow_velocity`, `src/vstent/app/core.py::flow_caption`, `src/vstent/app/core.py::flow_dict`
+- **Verified by** tests: [`test_contrast_transit_recovers_the_front_speed`](../../tests/test_cine.py), [`test_cine_and_flow_captions`](../../tests/test_app.py), [`test_cli_analyse_beating_heart_run_with_measured_flow`](../../tests/test_cardiac.py)
+- **Verified by** inspection: vstent analyse and the app compute the analysis with the configured velocity unless the user selects the measured one; the alternative FFR is printed alongside.
 - **Risk control for:** H-12
 - **Status:** verified
 

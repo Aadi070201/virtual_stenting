@@ -194,7 +194,7 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Hazardous situation:** The user changes the flow assumptions or the decision on the basis of a resting, imprecise speed.
 - **Harm:** As H-01 or H-02.
 - **Before controls:** S4 Critical × P2 Remote = 8 reduce. Estimated: the speed is never an input to the FFR, is labelled "not used for FFR" and is shown only when the front advances (CADICA: 55% of runs).
-- **Controls:** SR-31 Contrast transit is shown, never used
+- **Controls:** SR-31 Measured flow velocity is shown, and used only when the user chooses it
 - **After controls:** P2 Remote = 8 reduce. Unchanged; the label is the control.
 - **Evidence:** [cine_frames.md](../../reports/cine_frames.md)
 - **Needed:** A validated relation between transit and hyperaemic flow before any use.
