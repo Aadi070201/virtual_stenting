@@ -569,6 +569,80 @@ was used before in P4b, D44, P4f, P4g and the exploratory FAME comparison of 202
 **Done when:** the decision is recorded, the reports exist with the test results, and the
 product uses the rule's outcome.
 
+## P4i: Lesion severity learned from real angiograms (added 2026-11-02; pre-registered before any training)
+
+Why: physics-based lumen methods (D44, D61) read rendered lesions accurately but real ones too
+mild, because X-ray systems process images before export. The product only sees real images,
+so the lesion reading is learned from real angiograms with expert labels. The physics, the
+multi-frame median and the planner stay as they are.
+
+**Inputs (one function, `imaging/lesion_patch.py`, for training, ONNX inference and the
+product):**
+- A candidate narrowing is a point k of a QCA path (the product's lumen) with reference
+  diameter d (px, at least 4).
+- **Patch:** 64 × 32 samples, straightened along the centreline: ± 6 d along the path
+  (extrapolated along the end tangents) and ± 2 d across. Two channels:
+  - log contrast, log(background) − log(image), the background being the median of the
+    outer 4 columns on each side;
+  - the segmentation probability.
+- **Scalars:** the edges' %DS at k ÷ 100, log d, and the measured lesion length ÷ d.
+
+**Model and training (`learn/lesion_model.py`, torch; ONNX for inference):**
+- **Network:** three conv blocks (16, 32, 64 channels; 3 × 3, batch norm, ReLU, 2 × 2 max
+  pooling), global average pooling, the scalars concatenated, then FC 64, ReLU, dropout 0.2.
+  Two heads: %DS (sigmoid × 100) and a significance logit.
+- **Training data:**
+  - CADICA **development** patients' expert boxes graded 0–98%, at the point of largest
+    measured %DS inside each box. %DS target: the grade's midpoint (10, 35, 60, 80, 94);
+    significance target: grade ≥ 50%.
+  - ARCADE **stenosis train** split: each stenosis box at its point of largest measured %DS
+    (significance 1, no %DS target). Plus up to 2 candidates per image farther than one box
+    diagonal from every stenosis box (significance 0), chosen with seed 0.
+- **Loss:** Huber (δ = 0.1 on %DS ÷ 100) + 0.5 × binary cross-entropy.
+- **Augmentation:** mirror across, reverse along, contrast gain × U(0.8, 1.2), Gaussian
+  noise σ 0.02, shift ± 2 samples along.
+- **Optimiser:** AdamW, lr 1e-3, weight decay 1e-4, batch 64, cosine schedule, 40 epochs
+  without early stopping, seed 0.
+- **Folds:** 5 folds of the development patients (fixed with seed 0); every fold also trains
+  on ARCADE train.
+- **The product model** is the mean of the 5 fold models. Every development prediction is
+  out-of-fold.
+
+**In the product (lumen `learned`, the product's lumen if adopted):**
+- **Candidates:** local minima of the path's diameter with %DS ≥ 15%, greedily from the
+  deepest, at least 2 d apart.
+- Each candidate's depth is rescaled to the predicted %DS over its extent (where its %DS ≥
+  half its minimum): d'(s) = ref(s) − k · (ref(s) − d(s)), with k = predicted ÷ measured
+  %DS, k ≤ 4, d' ≥ the 0.5 px floor.
+- Everything after (physics, multi-frame median, planner) is unchanged.
+
+**Development** (CADICA development patients, out-of-fold; ARCADE val):
+- [ ] **Adopt** `learned` only if all of these hold:
+  - weighted kappa and AUC for ≥ 70% lesions both higher than the intensity edges' (the
+    D43 / D44 / D61 rule; development edges: kappa 0.214, AUC 0.818);
+  - median %DS of 0–20% lesions ≤ 30%;
+  - on ARCADE val, the share of stenosis boxes read ≥ 50% is higher than the edges', and
+    the share of distant candidates read ≥ 50% is at most the edges' + 10 points.
+
+  Otherwise `learned` stays an option and nothing changes.
+
+**Test** (once; every method reported whatever it shows):
+- [ ] CADICA test patients: weighted kappa (target ≥ 0.40); median %DS by grade (targets
+  70–90% ≥ 60%, 90–98% ≥ 70%, 0–20% ≤ 30%). The test half was used before (P4b, D44, P4f,
+  P4g, P4h) but never for training.
+- [ ] ARCADE test: the share of stenosis boxes read ≥ 50% (target ≥ 70%); distant
+  candidates read ≥ 50% (target ≤ 20%).
+- [ ] Kemerovo (external: another hospital and other X-ray systems; every box a significant
+  lesion, `docs/DATA.md`): the share of lesions read ≥ 50% (target ≥ 70%), a lesion being
+  a patient's run (median over its boxes).
+- [ ] If adopted: the P4f measurements re-made with the new lumen. Then the share of lesions
+  whose segment FFR (median of up to 5 keyframes) is ≤ 0.80, by grade (targets: 70–98% ≥ 50%;
+  0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported).
+- [ ] Report: `vstent lesion-report` → `reports/lesion_reading.md`.
+
+**Done when:** the decision is recorded, the report exists with the test results, and the
+product uses the rule's outcome.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.

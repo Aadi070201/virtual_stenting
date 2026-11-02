@@ -465,6 +465,29 @@ def cadica(
     typer.echo(f"CADICA ready in {out} (licence {source['licence']})")
 
 
+@data_app.command()
+def kemerovo(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/kemerovo"),
+    force: Annotated[bool, typer.Option("--force", help="Download and extract again.")] = False,
+) -> None:
+    """Download (8.3 GB), verify (SHA-256) and extract the frames and labels of the Kemerovo
+    stenosis dataset (CC BY 4.0; external test of lesion reading, P4i)."""
+    from urllib.error import URLError
+
+    from vstent.data.kemerovo import ARCHIVE, URL, fetch_kemerovo
+
+    try:
+        source = fetch_kemerovo(out, force=force, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(
+            f"Kemerovo download failed: {exc}\nDownload {URL} manually as {out}/{ARCHIVE} "
+            "and run this command again (the archive is verified, then extracted).",
+            err=True,
+        )
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Kemerovo ready in {out} (licence {source['licence']})")
+
+
 @data_app.command("fda-nozzle")
 def fda_nozzle(
     out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path(
