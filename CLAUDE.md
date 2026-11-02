@@ -71,6 +71,7 @@ vstent/
                         # stent_catalog, planner, uncertainty, tree_surrogate, validation,
                         # validation_synthetic, two_view_synthetic, cine_synthetic
   docs/                 # PLAN.md, PROGRESS.md, DECISIONS.md, PHYSICS.md, DATA.md, INVENTION_NOTES.md,
+                        # COMMIT_MAP.md (old → new hashes after a message rewrite),
                         # HUMAN_ACTIONS.md (what only the human can do), validation/ (P4: PROTOCOL.md,
                         # DATA_SPEC.md, templates/), regulatory/ (P8 drafts: hand-written INTENDED_USE,
                         # SAFETY_CLASS, DEVELOPMENT_PLAN, ARCHITECTURE, RISK_MANAGEMENT_PLAN; sources

@@ -1114,8 +1114,8 @@ qualified person, not regulatory advice.
 ## 2026-11-02 — P7: Cine angiography (done; one target missed)
 
 **What was done**
-- Plan and targets pre-registered (commit d4484b6), amended once before any data existed
-  (two-view velocity targets, single-view foreshortening; c63c29a).
+- Plan and targets pre-registered (commit dc16be1), amended once before any data existed
+  (two-view velocity targets, single-view foreshortening; fcb0506).
 - End-diastolic frames (`imaging/cardiac.py`), in order:
   - the DICOM R-wave pointer;
   - the R peaks of a DICOM ECG waveform, mapped to frames with FrameDelay, FrameTime and
