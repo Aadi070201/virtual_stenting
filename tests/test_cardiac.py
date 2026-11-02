@@ -22,8 +22,8 @@ from vstent.imaging.cine import ContrastTransit, opacification
 from vstent.imaging.flow import (
     CFV_RANGE,
     SINGLE_VIEW_UPPER,
-    VELOCITY_HALF_WIDTH,
-    VELOCITY_HALF_WIDTH_TWO_RUNS,
+    VELOCITY_LOG_HALF_WIDTH,
+    VELOCITY_LOG_HALF_WIDTH_TWO_RUNS,
     combine_runs,
     flow_time,
     flow_velocity,
@@ -153,20 +153,25 @@ def test_flow_velocity_conversion_and_guards():
     cycle = {"ed_frames": ed, "period_frames": period}
     fv = flow_velocity(tr, dt_ms, lambda x: x * px_m, single_view=True, **cycle)
     assert fv.accepted and fv.cfv == pytest.approx(0.15, rel=1e-3)
-    assert fv.interval == pytest.approx(
-        (0.15 * (1 - VELOCITY_HALF_WIDTH), 0.15 * (1 + VELOCITY_HALF_WIDTH) * SINGLE_VIEW_UPPER),
-        rel=1e-3,
-    )
+    q = np.exp(VELOCITY_LOG_HALF_WIDTH)
+    assert fv.interval == pytest.approx((0.15 / q, 0.15 * q * SINGLE_VIEW_UPPER), rel=1e-3)
     assert fv.v_hyp == pytest.approx(hyperemic_velocity(fv.cfv))
     assert "one view" in fv.note() and "FAVOR" in fv.note()
     hyp = flow_velocity(tr, dt_ms, lambda x: x * px_m, single_view=False, hyperemic_run=True,
                         **cycle)  # fmt: skip
     assert hyp.v_hyp == pytest.approx(hyp.cfv) and hyp.interval[1] < fv.interval[1]
-    two = combine_runs([hyp, flow_velocity(_phasic_transit(0.25, px_m, dt_ms, ed, period),
-                                           dt_ms, lambda x: x * px_m, single_view=False,
-                                           hyperemic_run=True, **cycle)])  # fmt: skip
-    assert two.n_runs == 2 and two.cfv == pytest.approx(0.20, rel=1e-3)
-    assert two.interval[1] == pytest.approx(0.20 * (1 + VELOCITY_HALF_WIDTH_TWO_RUNS), rel=1e-3)
+
+    def run(v):
+        return flow_velocity(_phasic_transit(v, px_m, dt_ms, ed, period), dt_ms,
+                             lambda x: x * px_m, single_view=False, hyperemic_run=True,
+                             **cycle)  # fmt: skip
+
+    two = combine_runs([hyp, run(0.20)])
+    assert two.accepted and two.n_runs == 2 and two.cfv == pytest.approx(0.175, rel=1e-3)
+    q2 = np.exp(VELOCITY_LOG_HALF_WIDTH_TWO_RUNS)
+    assert two.interval == pytest.approx((0.175 / q2, 0.175 * q2), rel=1e-3)
+    apart = combine_runs([hyp, run(0.25)])  # ×1.67: one of them failed
+    assert not apart.accepted and "disagree" in apart.reasons[0]
     slow = flow_velocity(tr, dt_ms, lambda x: x * px_m * 0.1, single_view=False, **cycle)
     assert not slow.accepted and f"{CFV_RANGE[0]:g}" in slow.reasons[0]
     assert combine_runs([slow, fv]) is fv
@@ -218,7 +223,9 @@ def test_cine_report_end_to_end(dark_seg_dir, tmp_path):
     assert len(s["targets"]) == 9
     c = cr.write_calibration([row], [9100], {"git_commit": "x", "git_dirty": False},
                              str(dark_seg_dir), tmp_path)  # fmt: skip
-    assert (tmp_path / "cine_calibration.md").exists() and c["in_use"]["per_run"] == 0.38
+    assert (tmp_path / "cine_calibration.md").exists() and c["in_use"][
+        "per_run"
+    ] == VELOCITY_LOG_HALF_WIDTH
 
 
 def test_plateau_and_same_phase_transforms():

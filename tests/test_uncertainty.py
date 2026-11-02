@@ -186,6 +186,11 @@ def test_monte_carlo_ranges_and_reproducibility():
     v_only = InputUncertainty(prof, params, params.pa, params.pv, measurement=m, sources=["v_hyp"])
     np.testing.assert_array_equal(v_only.v_hyp, a.v_hyp)
     assert np.all(v_only.k == 1.0)
+    # a measured velocity (P7): draws over its interval, the same random numbers
+    measured = InputUncertainty(prof, params, params.pa, params.pv, measurement=m,
+                                sources=["v_hyp"], v_hyp_range=(0.30, 0.40))  # fmt: skip
+    assert measured.v_hyp.min() >= 0.30 and measured.v_hyp.max() <= 0.40
+    np.testing.assert_allclose(measured.v_hyp - 0.35, (a.v_hyp - params.v_hyp) / 2, atol=1e-12)
 
 
 def test_stent_raises_post_samples_and_narrows_spread():

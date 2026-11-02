@@ -13,10 +13,11 @@ runs at the systolic speed, the rest of the beat ``DS_RATIO_PRIOR`` times faster
 flow time per beat. CFV is the Theil–Sen slope of distance on flow time. The ratio is a
 population prior: fitting it per run was worse on the development cases.
 
-**Interval** (D55): CFV × (1 ± ``VELOCITY_HALF_WIDTH``), a split-conformal 90% half-width
-from development cases; the mean of a case's two runs (two views) ± ``VELOCITY_HALF_WIDTH_TWO_
-RUNS``. One view foreshortens the path, so its CFV is biased low: the point estimate is kept
-and the upper end is multiplied by ``SINGLE_VIEW_UPPER``.
+**Interval** (D55): CFV × exp(± ``VELOCITY_LOG_HALF_WIDTH``), a split-conformal 90%
+quantile of |ln(true / measured)| on development cases; the mean of a case's two runs (two
+views) × exp(± ``VELOCITY_LOG_HALF_WIDTH_TWO_RUNS``), used only when the two runs agree within
+``MAX_RUN_RATIO``. One view foreshortens the path, so its CFV is biased low: the point estimate
+is kept and the upper end is multiplied by ``SINGLE_VIEW_UPPER``.
 
 **Hyperemic velocity:** a run recorded under hyperemia (adenosine; DICOM does not record it, the
 user says so) uses CFV directly. A resting run uses the FAVOR Pilot relation
@@ -44,11 +45,12 @@ MAX_REL_HALF_WIDTH = 0.5  # Theil–Sen 95% half-width ≤ this share of CFV
 # synthetic cases, seeds 5001–5100, 200 views (`foreshortening_quantile`; median 1.138). Those
 # cases are not used in any P7 evaluation.
 SINGLE_VIEW_UPPER = 1.37
-# Split-conformal 90% quantiles of |true − measured| / measured on the P7 development seeds
-# 9124–9163 (not used to choose the method): 77 accepted runs on the 3D path, and the mean of
-# both runs of 38 cases (`vstent cine-synthetic --calibrate`).
-VELOCITY_HALF_WIDTH = 0.38
-VELOCITY_HALF_WIDTH_TWO_RUNS = 0.34
+# Split-conformal 90% quantiles of |ln(true / measured)| on the P7 calibration seeds
+# 9164–9199 (not used to choose the method): accepted runs on the 3D path, and the mean of both
+# runs (`vstent cine-synthetic --calibrate`, reports/cine_calibration.md).
+VELOCITY_LOG_HALF_WIDTH = 0.38
+VELOCITY_LOG_HALF_WIDTH_TWO_RUNS = 0.34
+MAX_RUN_RATIO = 1.5  # two runs of one vessel farther apart than this: one transit failed
 LEVEL = 0.90
 
 
@@ -170,15 +172,16 @@ def flow_velocity(
     half = (hi - lo) / 2.0
     if slope > 0 and half > MAX_REL_HALF_WIDTH * slope:
         reasons.append(f"imprecise (95% interval of the slope ±{half / slope:.0%})")
-    interval = (slope * (1.0 - VELOCITY_HALF_WIDTH), slope * (1.0 + VELOCITY_HALF_WIDTH)
-                * (SINGLE_VIEW_UPPER if single_view else 1.0))  # fmt: skip
+    q = float(np.exp(VELOCITY_LOG_HALF_WIDTH))
+    interval = (slope / q, slope * q * (SINGLE_VIEW_UPPER if single_view else 1.0))
     return FlowVelocity(slope, interval, hyperemic_run, single_view, tuple(dict.fromkeys(reasons)))
 
 
 def combine_runs(runs: Sequence[FlowVelocity]) -> FlowVelocity:
     """One velocity from a case's runs (two views): the mean of the accepted runs' CFVs,
-    ± ``VELOCITY_HALF_WIDTH_TWO_RUNS`` if both were accepted; a single accepted run as it is;
-    none accepted: the first run, with every reason."""
+    × exp(± ``VELOCITY_LOG_HALF_WIDTH_TWO_RUNS``) if both were accepted and agree within
+    ``MAX_RUN_RATIO`` (otherwise not accepted); a single accepted run as it is; none accepted:
+    the first run, with every reason."""
     ok = [r for r in runs if r.accepted]
     if len(ok) == 1:
         return ok[0]
@@ -187,12 +190,16 @@ def combine_runs(runs: Sequence[FlowVelocity]) -> FlowVelocity:
         first = runs[0]
         return FlowVelocity(first.cfv, first.interval, first.hyperemic_run, first.single_view,
                             reasons or ("no run measured",), len(runs))  # fmt: skip
-    v = float(np.mean([r.cfv for r in ok]))
+    cfvs = [r.cfv for r in ok]
+    v = float(np.mean(cfvs))
     upper = SINGLE_VIEW_UPPER if any(r.single_view for r in ok) else 1.0
-    return FlowVelocity(v, (v * (1 - VELOCITY_HALF_WIDTH_TWO_RUNS),
-                            v * (1 + VELOCITY_HALF_WIDTH_TWO_RUNS) * upper),
-                        all(r.hyperemic_run for r in ok), any(r.single_view for r in ok), (),
-                        len(ok))  # fmt: skip
+    q = float(np.exp(VELOCITY_LOG_HALF_WIDTH_TWO_RUNS))
+    ratio = max(cfvs) / min(cfvs) if min(cfvs) > 0 else float("inf")
+    reasons = ()
+    if ratio > MAX_RUN_RATIO:
+        reasons = (f"the two runs disagree (×{ratio:.1f}): one transit is unreliable",)
+    return FlowVelocity(v, (v / q, v * q * upper), all(r.hyperemic_run for r in ok),
+                        any(r.single_view for r in ok), reasons, len(ok))  # fmt: skip
 
 
 SYSTOLE_S = 0.31  # assumed R wave to end-systole (s)
