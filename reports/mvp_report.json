@@ -291,10 +291,10 @@
     "P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)"
   ],
   "provenance_report": {
-    "git_commit": "eb0c71acd2f9528106231b6a0a13f1247a0ab78d",
+    "git_commit": "55fc56cdf1777640c7f865d38a120f272567609d",
     "git_dirty": false,
     "vstent_version": "0.1.0",
-    "created_utc": "2026-11-02T02:57:58+00:00"
+    "created_utc": "2026-11-02T07:45:56+00:00"
   },
   "all_targets_met": true
 }

@@ -89,4 +89,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `cb3f600b79` | False | 2026-11-01T23:03:06+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `eb0c71acd2f9528106231b6a0a13f1247a0ab78d` (dirty: False), vstent 0.1.0, 2026-11-02T02:57:58+00:00.
+This summary: commit `55fc56cdf1777640c7f865d38a120f272567609d` (dirty: False), vstent 0.1.0, 2026-11-02T07:45:56+00:00.
