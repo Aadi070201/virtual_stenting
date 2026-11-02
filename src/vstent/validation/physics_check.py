@@ -67,8 +67,24 @@ def _split_of(raw_dir) -> tuple[dict[str, str], list]:
     return patient_split([t.patient for t in tracks]), tracks
 
 
-def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams) -> dict[str, Any]:
-    """One lesion-free run through the product's steps; both outflows on each heartbeat."""
+_READERS: dict[str, Any] = {}
+
+
+def _reader(reader_dir: str | None):
+    """The learned lesion reader of ``reader_dir`` (P4k-C3), loaded once per process."""
+    if reader_dir is None:
+        return None
+    if reader_dir not in _READERS:
+        from vstent.inference.lesion_runtime import LesionRunner
+
+        _READERS[reader_dir] = LesionRunner.from_dir(reader_dir)
+    return _READERS[reader_dir]
+
+
+def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams,
+                    reader=None) -> dict[str, Any]:  # fmt: skip
+    """One lesion-free run through the product's steps; every arm on each heartbeat. With
+    ``reader``, the learned lesion reading is applied to every measurement (P4k-C3)."""
     from vstent.app.guided import auto_path
     from vstent.imaging.image_io import read_run
     from vstent.imaging.run_analysis import analyse_frames
@@ -86,7 +102,7 @@ def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams) -> d
 
         def one(p, im, a, b):
             return analyse_vessel(p, a, b, params=params, mm_per_px=run.pixel_spacing_mm,
-                                  image=im)  # fmt: skip
+                                  image=im, lesion_reader=reader)  # fmt: skip
 
         cons = run_consensus(rf, frame, start, end, segmenter.predict, one,
                              reference_analysis=one(prob, image, start, end))  # fmt: skip
@@ -99,11 +115,12 @@ def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams) -> d
     return row
 
 
-def _box_task(img, prob, items, params_dict) -> list[dict[str, Any]]:
+def _box_task(img, prob, items, params_dict, reader_dir=None) -> list[dict[str, Any]]:
     from vstent.app.guided import box_path
     from vstent.inference.pipeline import analyse_vessel
 
     params = PhysicsParams(**params_dict)
+    reader = _reader(reader_dir)
     rows = []
     for track, patient, category, split, box in items:
         row: dict[str, Any] = {"track": track, "patient": patient, "category": category,
@@ -112,7 +129,8 @@ def _box_task(img, prob, items, params_dict) -> list[dict[str, Any]]:
             path = box_path(prob, box)
             if path is None:
                 raise ValueError("no vessel in the box")
-            analysis = analyse_vessel(prob, path[0], path[1], params=params, image=img)
+            analysis = analyse_vessel(prob, path[0], path[1], params=params, image=img,
+                                      lesion_reader=reader)  # fmt: skip
             row.update({f"ffr_{o}": v for o, v in distal_ffr(analysis.qca.profile, params).items()})
         except Exception as exc:  # noqa: BLE001
             row["error"] = f"{type(exc).__name__}: {exc}"
@@ -122,7 +140,7 @@ def _box_task(img, prob, items, params_dict) -> list[dict[str, Any]]:
 
 def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
                 workers: int = 1, progress: Callable[[int, int], None] | None = None,
-                ) -> list[dict[str, Any]]:  # fmt: skip
+                reader_dir: str | None = None) -> list[dict[str, Any]]:  # fmt: skip
     """One row per expert box (graded 50–98%) of the ``stage`` patients; segmentation here,
     measurements in ``workers`` processes."""
     from concurrent.futures import ProcessPoolExecutor
@@ -144,7 +162,7 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
     if workers <= 1:
         for k, (image, items) in enumerate(frames):
             img = read_image_file(image).image
-            results[k] = _box_task(img, segmenter.predict(img), items, pd)
+            results[k] = _box_task(img, segmenter.predict(img), items, pd, reader_dir)
             if progress:
                 progress(k + 1, len(frames))
     else:
@@ -155,7 +173,8 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
             pending = {}
             for k, (image, items) in enumerate(frames):
                 img = read_image_file(image).image
-                pending[pool.submit(_box_task, img, segmenter.predict(img), items, pd)] = k
+                fut = pool.submit(_box_task, img, segmenter.predict(img), items, pd, reader_dir)
+                pending[fut] = k
                 while len(pending) >= 2 * workers:
                     fut = next(iter(pending))
                     results[pending.pop(fut)] = fut.result()
@@ -172,7 +191,7 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
 
 def lesion_free_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None,
                      progress: Callable[[int, int], None] | None = None,
-                     ) -> list[dict[str, Any]]:  # fmt: skip
+                     reader_dir: str | None = None) -> list[dict[str, Any]]:  # fmt: skip
     """One row per lesion-free selected run of the ``stage`` patients (patients without a
     graded lesion have no split and are left out)."""
     from vstent.data import cadica
@@ -183,7 +202,7 @@ def lesion_free_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None,
             if not r.lesion and split.get(r.patient) == stage]  # fmt: skip
     rows = []
     for k, r in enumerate(runs):
-        rows.append(lesion_free_row(r, stage, segmenter, params))
+        rows.append(lesion_free_row(r, stage, segmenter, params, _reader(reader_dir)))
         if progress:
             progress(k + 1, len(runs))
     return rows
@@ -288,3 +307,21 @@ def section(stage: str, s: dict[str, Any], part: str = "c") -> list[str]:
         lines += [f"**Rule** (docs/PLAN.md, P4k-{part.upper()}): {reason}.", "",
                   f"**Decision: {decision}.**", ""]  # fmt: skip
     return lines
+
+
+C3_MAX_FREE = 0.25  # P4k-C3: the lesion-free share must also be ≤ 25%
+
+
+def c3_rules(product: dict[str, Any], s: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """P4k-C3: every arm (with the reader) against the product's development numbers: C's rule,
+    the lesion-free share ≤ 25%, and the combined distance used to choose among qualifiers."""
+    out = {}
+    for arm, x in s["outflow"].items():
+        ok, reason = rule(product, x)
+        share = x["free_share"]
+        small = share is not None and share <= C3_MAX_FREE
+        score = (None if share is None or x["fame_mad"] is None
+                 else abs(share - LESION_FREE_ANCHOR) + x["fame_mad"])  # fmt: skip
+        why = f"{reason}; lesion-free share {_pct(share)} (≤ 25%): {'met' if small else 'not met'}"
+        out[arm] = {"qualifies": bool(ok and small), "reason": why, "score": score}
+    return out

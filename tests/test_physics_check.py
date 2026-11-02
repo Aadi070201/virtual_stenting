@@ -54,3 +54,17 @@ def test_wire_arm():
                       + _graded("p90_98", [0.7], [0.9]))  # fmt: skip
     assert s2["wire_adopt"] and not s2["adopt"]  # wire keeps the lesions' readings here
     assert any("adopt the wire position" in x for x in pc.section("dev", s2, "c2"))
+
+
+def test_c3_rule_needs_a_small_lesion_free_share():
+    """P4k-C3: C's rule against the product, plus a lesion-free share ≤ 25%."""
+    product = {"free_distance": 0.39, "fame_mad": 0.23, "free_share": 0.52}
+    s = {"outflow": {
+        "none": {"free_share": 0.30, "free_distance": 0.17, "fame_mad": 0.20},
+        "murray": {"free_share": 0.12, "free_distance": 0.01, "fame_mad": 0.30},
+        "wire": {"free_share": 0.10, "free_distance": 0.03, "fame_mad": 0.40},
+    }}  # fmt: skip
+    r = pc.c3_rules(product, s)
+    assert not r["none"]["qualifies"]  # 30% > 25%
+    assert r["murray"]["qualifies"] and abs(r["murray"]["score"] - 0.31) < 1e-9
+    assert not r["wire"]["qualifies"]  # FAME 17 points worse
