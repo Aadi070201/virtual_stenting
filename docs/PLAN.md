@@ -967,10 +967,33 @@ are reported.
 - **Data:** AngioCAD (Zenodo 10.5281/zenodo.15826856; CC BY 4.0). 413 patients' cine frames,
   each patient's 15 coronary segments graded by experts. No FFR, no ECG. Download
   MD5-verified; extracted without running anything.
-- [ ] **Protocol:** written into this plan after its file layout is inspected and **before**
-  any model is run on it. Planned: per patient and main vessel, whether the product flags a
-  lesion ≥ 50% where the experts graded ≥ 50% (sensitivity), and where they graded the
-  vessel normal (false alarms).
+- [x] **Protocol** (written 2026-11-02 after inspecting the files, **before** any model was
+  run on AngioCAD).
+  - **Layout:**
+    - `AngioCAD_Dataset/<ID>/<series>/frame_NNNN.png`: 413 patients, 2,711 series, 121,566
+      frames; frame rate and pixel size unknown.
+    - `AngioCAD_Labels.xlsx`: per patient, the right- and left-coronary series (ranges such as
+      "1-2" and "3-9"), and 15 segments graded NL, 1-25, 26-50, 51-75, 76-90, 91-99, 100.
+    - Three frames at the archive's volume boundaries could not be decoded (`docs/DATA.md`).
+  - **Units:**
+    - a patient's side: right = Prox / Mid / Dist RCA, PDA, PLB; left = LM, Prox / Mid / Dist
+      LAD, diagonals, Prox / Mid / Dist LCX, OM;
+    - a side is **significant** if any of its segments is ≥ 51% (51-75 or worse), **normal**
+      if all are NL, and **mild** otherwise (reported separately);
+    - total occlusions (100) are reported separately as well.
+  - **The product on every series of a side:** its analysis frame, the automatic path, the
+    product's QCA and physics (with every adopted change at run time). A side is
+    **flagged** if any of its series has a marked lesion ≥ 50% or FFR ≤ 0.80.
+  - **Reported:**
+    1. sensitivity: significant sides flagged, by worst grade;
+    2. false alarms: normal sides flagged;
+    3. normal sides' series with FFR ≤ 0.80 (De Bruyne anchor ≈ 13%), an external replicate
+       of C;
+    4. with G: each series' predicted side against the labels (an external check of G);
+    5. with E chosen: E's detections on the same analysis frames, as a second flag.
+
+  There are no targets; this is the external description of where the product stands. Run
+  once.
 
 - [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 

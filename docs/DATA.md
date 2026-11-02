@@ -243,3 +243,9 @@ the frames and label files are extracted.
   run.
 - **Use:** an external test only (P4k-J). The protocol is written into docs/PLAN.md before
   any model is run on it.
+- **Extracted 2026-11-02:**
+  - Windows' `tar.exe` (libarchive) wrote 121,566 frame files: 413 patients, 2,711 series,
+    PNG only.
+  - Three frames that cross the archive's volume boundaries could not be decoded:
+    `203/6/frame_0019.png`, `297/1/frame_0002.png`, `385/1/frame_0032.png`. They are
+    excluded.
