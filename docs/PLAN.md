@@ -453,6 +453,37 @@ total occlusions are left out.
 
 **Done when:** the report exists with every target's result.
 
+## P4g: Multi-frame consensus (added 2026-11-02; pre-registered before any consensus was computed)
+
+P4f found that one automatic frame does not measure a lesion stably (D57). The consensus is
+the median %DS and the median FFR over K frames of the same lesion. Data: the same CADICA
+per-keyframe measurements as P4f (re-measured with the rows saved; the method is unchanged).
+Patients split as in P4b: 21 development, 21 test.
+
+- [ ] **Repeatability of a K-frame consensus:** for each lesion with ≥ 2K measured keyframes,
+  two disjoint sets of K frames (alternate keyframes in time order: the 1st, 3rd, … and the
+  2nd, 4th, …, the first K of each); the median of each set; the CV between the two medians
+  (root mean square over lesions, as in P4f).
+- [ ] **K, chosen on the development patients only:** the smallest K in 1–5 whose FFR CV is
+  ≤ 9.4% and whose %DS CV is ≤ 11.9% (P4f's targets). If none qualifies, the K with the
+  lowest FFR CV.
+- [ ] **Test patients, once, with the chosen K:** FFR CV ≤ 9.4% and %DS CV ≤ 11.9% (the same
+  targets), plus the two medians' agreement on the side of 0.80 (reported).
+- [ ] **Instability flag:** a consensus is flagged when its K frames' FFR values lie on both
+  sides of 0.80. On the test patients, reported: the share flagged; among lesions whose two
+  medians disagree at 0.80, the share flagged in either set (sensitivity); among those that
+  agree, the share flagged in neither.
+- [ ] **Product:** for a cine run, the analysis is repeated on up to K end-diastolic frames in
+  the opacified window (the user's points move to each frame with the heart, P7). The median
+  FFR is reported with every frame's value; the planner uses the profile of the frame
+  closest to the median; the flag is shown. `vstent analyse`, the app and `vstent validate`
+  use the same function. A single image is still measured once.
+- [ ] Tests on a synthetic beating-heart run: the points follow the heart, and the median and
+  the flag are computed as specified.
+- [ ] Report: `vstent consensus-report` → `reports/consensus.md`.
+
+**Done when:** the report exists with the test result, and the product uses the consensus.
+
 ## P5: Projection geometry and two-view 3D reconstruction
 
 - [x] Read the projection geometry from DICOM (`PositionerPrimaryAngle`, `PositionerSecondaryAngle`, `DistanceSourceToDetector`, `DistanceSourceToPatient`, `ImagerPixelSpacing`) → magnification-corrected pixel size at the vessel.
