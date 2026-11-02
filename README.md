@@ -135,7 +135,7 @@ Right after cloning:
 uv run vstent physics-report    # physics sanity checks
 uv run vstent qca-synthetic     # QCA accuracy on rendered tubes
 uv run vstent demo              # synthetic case end-to-end; plans with the physics solver
-uv run vstent app               # app in synthetic mode (solver only)
+uv run vstent app               # guided app: cine run → frame → path → virtual FFR → stent
 ```
 
 ### Reproducing the full pipeline
@@ -210,15 +210,33 @@ Trainings can be paused and resumed exactly:
 | `vstent analyse <image> [--start R C --end R C] [--plan] [--lumen edges\|model]` | segment an angiogram; QCA + FFR (solver and surrogate) for one vessel; optionally stent plans; `--lumen` picks the lumen measurement | M5–M6, P4c |
 | `vstent qca-gallery` | qualitative QCA gallery on 20 ARCADE stenosis images → `reports/qca_gallery.md` | M5 |
 | `vstent plan-benchmark` | planner speed (5,000 candidates) and behaviour on synthetic vessels → `reports/planner_benchmark.md` | M6 |
-| `vstent app` | launch the Streamlit app on http://localhost:8501 (`--port`, `--address`) | M7 |
+| `vstent app` | launch the guided app on http://localhost:8501 (`--port`, `--address`); `--advanced`: the full research view | M7, P4g |
 | `vstent app-latency` | time the app's response to stent-control changes → `reports/app_latency.md` | M7 |
 | `vstent demo` | synthetic case end-to-end (FFR → plan → post-PCI) → `reports/demo/` | M8 |
 | `vstent mvp-report` | assemble `reports/mvp_report.md` from all generated reports | M8 |
 
 ## Using the app
 
-`uv run vstent app` opens the planner in your browser. It listens on this computer only. The
-red banner is permanent: **research use only**.
+`uv run vstent app` opens the **guided app** in your browser. It listens on this computer
+only, and every screen says **research use only**. One cine run, six steps:
+
+1. **Load** a cine run (multi-frame DICOM), or a demo: a synthetic beating heart with ECG, or
+   a real CADICA run if the dataset is downloaded.
+2. **Frame:** the end-diastolic frames with the vessels full of contrast, as thumbnails; ★ is
+   recommended. Any other frame can be chosen.
+3. **Vessel and lesions:** vessels in blue, an automatic path in yellow (from the widest end
+   along the main vessel, at most 100 mm), narrowings of 50% or more numbered in red.
+   *Change path* takes two clicks (start, end); *Reverse* swaps them.
+4. **Virtual FFR:** the median over the run's end-diastolic frames (P4g) in large type, what
+   it means (significant, not significant, borderline), its likely range, whether the
+   heartbeats agreed, and the FFR curve along the path.
+5. **Stent:** *Suggest a stent* gives the shortest plans reaching the target; the stent is
+   drawn on the vessel with the FFR before and after. Diameter, length and position can be
+   changed by hand.
+6. **Report:** JSON and PNG downloads.
+
+The full research view, with synthetic vessels, single images, two views, vessel trees and
+every interval, is `uv run vstent app --advanced`:
 
 1. **Pick the input** in the sidebar:
    - **Synthetic vessel:** a preset (focal, tandem) or a random synthetic vessel.

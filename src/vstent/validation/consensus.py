@@ -122,23 +122,68 @@ def choose_k(dev: dict[int, dict[str, Any]]) -> tuple[int, str]:
     return best, "no K met both targets on the development patients: the lowest FFR CV"
 
 
+def merged_tracks(rows: list[dict[str, Any]]) -> set[str]:
+    """Lesion tracks with more than one box on the same keyframe: two boxes of one grade in one
+    video joined into one track (:func:`~vstent.validation.stenosis_grading.lesion_tracks`)."""
+    seen: dict[tuple, int] = {}
+    for r in rows:
+        seen[(r["track"], r["frame"])] = seen.get((r["track"], r["frame"]), 0) + 1
+    return {track for (track, _), n in seen.items() if n > 1}
+
+
 def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Development results for every K, the chosen K and its one test result."""
+    """Development results for every K, the chosen K and its one test result; and, as a
+    sensitivity check found after the result, the same without the merged tracks."""
     lesions = lesion_frames(rows)
     dev = {k: split_half(lesions, k, "dev") for k in KS}
     k, reason = choose_k(dev)
     test = split_half(lesions, k, "test")
     common = {k_: split_half(lesions, k_, "dev", COMMON_MIN_FRAMES) for k_ in KS}
+    merged = merged_tracks(rows)
+    clean = lesion_frames([r for r in rows if r["track"] not in merged])
+    clean_dev = {k_: split_half(clean, k_, "dev") for k_ in KS}
+    sensitivity = {
+        "n_tracks": len(merged),
+        "n_rows": sum(r["track"] in merged for r in rows),
+        "by_split": {s: len({r["track"] for r in rows if r["track"] in merged
+                             and r.get("split") == s}) for s in ("dev", "test")},
+        "dev": clean_dev, "chosen_k": choose_k(clean_dev)[0],
+        "test": split_half(clean, k, "test"),
+    }  # fmt: skip
     return {
         "n_boxes": len(rows), "n_lesions_measured": len(lesions),
         "n_patients": {s: len({r["patient"] for r in rows if r.get("split") == s})
                        for s in ("dev", "test")},
         "dev": dev, "chosen_k": k, "reason": reason, "test": test, "common_dev": common,
+        "sensitivity": sensitivity,
         "targets": [
             rp._target(f"Test, K = {k}: %DS CV", test["ds_cv"], TARGETS["ds_cv"]),
             rp._target(f"Test, K = {k}: FFR CV", test["ffr_cv"], TARGETS["ffr_cv"]),
         ],
     }  # fmt: skip
+
+
+def _sensitivity_lines(s: dict[str, Any]) -> list[str]:
+    """The merged-track check (added after the result; nothing was chosen on it)."""
+    m = s.get("sensitivity")
+    if not m or not m["n_tracks"]:
+        return []
+    t = m["test"]
+    return [
+        "## Sensitivity: tracks with two boxes on one keyframe",
+        "",
+        f"Found after the result above, while preparing a demonstration: {m['n_tracks']} lesion "
+        f"tracks ({m['by_split']['dev']} development, {m['by_split']['test']} test; "
+        f"{m['n_rows']} boxes) hold two boxes on the same keyframes: two boxes of one grade in "
+        "one video were joined into one track. Their alternate keyframes can mix two lesions. "
+        "Without them (not pre-registered; nothing above is changed by it):",
+        "",
+        f"- Development: K = {m['chosen_k']} by the same rule.",
+        f"- Test, K = {s['chosen_k']}: {t['n_lesions']} lesions; FFR CV {rp._pct(t['ffr_cv'])} "
+        f"(95% {rp._ci(t['ffr_cv_ci'])}); %DS CV {rp._pct(t['ds_cv'])}; medians agree at "
+        f"{THRESHOLD:.2f} in {rp._pct(t['agree_080'])}.",
+        "",
+    ]  # fmt: skip
 
 
 def _row(r: dict[str, Any]) -> str:
@@ -227,6 +272,7 @@ def write_report(s: dict[str, Any], git: dict, seg_model: str, rows_git: dict,
         *head,
         *(_row(r) for r in s["common_dev"].values()),
         "",
+        *_sensitivity_lines(s),
         "## Limits",
         "",
         "- CADICA's keyframes span heart phases; the product takes its consensus over "

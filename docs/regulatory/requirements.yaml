@@ -633,6 +633,30 @@ requirements:
       vstent analyse and the app compute the analysis with the configured velocity unless the
       user selects the measured one; the alternative FFR is printed alongside.
 
+  - id: SR-48
+    title: Guided cine workflow
+    kind: interface
+    text: >-
+      The default app guides one cine run in six steps: load; choose an end-diastolic frame
+      (recommended one marked, any frame selectable); an automatic path along the main vessel
+      the user can replace with two clicks, with narrowings of 50% or more numbered; the
+      multi-frame virtual FFR with a plain-language reading, its likely range and whether the
+      heartbeats agreed; a suggested stent with the FFR before and after, adjustable by hand
+      (only lengths that fit the path); and the report. Every screen carries the research-use
+      notice.
+    code:
+      - src/vstent/app/guided.py::frame_choices
+      - src/vstent/app/guided.py::auto_path
+      - src/vstent/app/guided.py::lesion_marks
+      - src/vstent/app/guided.py::verdict
+      - src/vstent/app/guided.py::stability
+      - src/vstent/imaging/centerline.py::main_trunk_endpoints
+    tests:
+      - tests/test_guided.py::test_guided_app_whole_flow
+      - tests/test_guided.py::test_plain_language_helpers
+      - tests/test_guided.py::test_main_trunk_takes_the_wider_branch_and_stops
+    reports: []
+
   - id: SR-32
     title: Robust console output
     kind: interface

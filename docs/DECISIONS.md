@@ -1070,3 +1070,44 @@ saved; the single-frame result reproduced exactly (%DS CV 44.6%, FFR CV 18.7%).
 
 **Not solved:** %DS repeatability; the severity compression every frame shares (D44); accuracy
 against wire FFR.
+
+### D59 — A guided app as the default; the research view behind --advanced (2026-11-02)
+**Decision:** `vstent app` opens a guided, single-page workflow for one cine run
+(`app/guided.py` for the logic, `app/guided_app.py` for the screen); the previous app stays as
+`vstent app --advanced`. The steps follow a cath-lab reading:
+1. load the run;
+2. pick the frame;
+3. check the vessel path and its lesions;
+4. read the virtual FFR;
+5. plan a stent;
+6. download the report.
+
+Choices:
+- **"Virtual FFR", not "QFR"**: QFR is another company's trademark.
+- **The headline is the multi-frame median** (D58), with the heartbeats' agreement in words.
+  The stent step uses the frame closest to the median, shown with the path moved there.
+- **The plain-language reading** uses the grey-zone flag. *Borderline* when the input
+  interval contains 0.80; otherwise *significant* (≤ 0.80) or *not significant*.
+- **Frame choices** are the end-diastolic frames on the opacification plateau: the same frames
+  the median can use.
+- **Automatic path: the main trunk** (`centerline.main_trunk_endpoints`). It starts at the
+  wider end of the longest path, takes the widest branch over the next 15 px at every fork,
+  and stops at 100 mm.
+  - On a real CADICA run (patient 24, run 15) the longest path alone was about 270 mm and
+    crossed vessels: 9 "lesions" and FFR 0.49. The trunk path was 100 mm, with 2 lesions of
+    50% or more and FFR 0.74.
+  - This was found by trying the demo, not chosen on any evaluation.
+- **Only narrowings of ≥ 50% are numbered**; milder ones are counted.
+- **Manual stent lengths are limited to those that fit the path.** The flow test found a
+  crash on a 7 mm path.
+
+**Alternatives:**
+- Simplifying the research app in place: rejected, because its options are needed for
+  research and the reports.
+- Tabs or several pages: rejected; one page in order keeps the dependence between steps
+  visible.
+
+**Not solved:**
+- The automatic path can still pick the wrong vessel; the user is asked to check it.
+- Without an ECG, the motion tracking between heartbeats often fails on real runs (CADICA:
+  the moved points landed 86 px away). The result then rests on one heartbeat and says so.

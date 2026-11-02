@@ -13,7 +13,7 @@ from streamlit.testing.v1 import AppTest
 from typer.testing import CliRunner
 
 from vstent.app import core
-from vstent.cli import APP_SCRIPT, app
+from vstent.cli import APP_SCRIPT, GUIDED_SCRIPT, app
 from vstent.imaging.image_io import read_image
 from vstent.physics.solver import PhysicsParams
 from vstent.planning.stent import Stent
@@ -249,10 +249,12 @@ def test_cli_app_launches_streamlit_on_localhost(monkeypatch):
     result = CliRunner().invoke(app, ["app", "--headless", "--port", "8600"])
     assert result.exit_code == 0 and "Research use only" in result.output
     cmd = calls[0]
-    assert cmd[1:4] == ["-m", "streamlit", "run"] and Path(cmd[4]) == APP_SCRIPT
+    assert cmd[1:4] == ["-m", "streamlit", "run"] and Path(cmd[4]) == GUIDED_SCRIPT
     assert cmd[cmd.index("--server.address") + 1] == "localhost"
     assert cmd[cmd.index("--browser.gatherUsageStats") + 1] == "false"
     assert "--server.headless" in cmd and "8600" in cmd
+    CliRunner().invoke(app, ["app", "--advanced"])
+    assert Path(calls[1][4]) == APP_SCRIPT
 
 
 def test_new_vessel_resets_stent_controls(app_env):

@@ -118,7 +118,8 @@ vstent/
                         # (multi-frame median of a cine run, P4g), models.py
                         # (locate exported models), tree_runtime.py (TreeSurrogateRunner, P3)
     app/                # core.py (app logic, no Streamlit), tree_view.py (tree mode), streamlit_app.py (UI),
-                        # latency.py (AppTest-driven update timing)
+                        # latency.py (AppTest-driven update timing), guided.py (guided workflow
+                        # logic, no Streamlit) + guided_app.py (the default `vstent app` UI)
     validation/         # P4, torch-free: manifest.py (cases.csv / reference.csv, local-only guard),
                         # run.py (predictions, locking, scoring), stats.py (AUC, Bland–Altman,
                         # Wilson, cluster bootstrap, weighted kappa), report.py, sample_size.py,
@@ -191,7 +192,8 @@ uv run vstent plan-benchmark                       # → reports/planner_benchma
 uv run vstent qca-synthetic     # → reports/qca_synthetic.md (QCA on rendered tubes)
 uv run vstent demo              # end-to-end synthetic case → reports/demo/
 uv run vstent mvp-report        # → reports/mvp_report.md, assembled from the other reports
-uv run vstent app               # launches the Streamlit app on localhost:8501 (--port, --address)
+uv run vstent app               # guided app (cine run, six steps) on localhost:8501 (--port, --address)
+uv run vstent app --advanced    # the full research view (streamlit_app.py)
 uv run vstent app-latency       # → reports/app_latency.md (stent-control update times)
 uv run vstent validate --manifest cases.csv [--reference reference.csv]  # P4: local, de-identified
 uv run vstent validate --predictions <dir>/predictions.csv --reference reference.csv  # score locked

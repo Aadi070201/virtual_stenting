@@ -2086,7 +2086,8 @@ def cine_frames(
     typer.echo("Wrote reports/cine_frames.md")
 
 
-APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"
+APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"  # the research view
+GUIDED_SCRIPT = Path(__file__).resolve().parent / "app" / "guided_app.py"
 
 
 @app.command()
@@ -2143,8 +2144,13 @@ def launch_app(
     headless: Annotated[
         bool, typer.Option("--headless", help="Do not open a browser window.")
     ] = False,
+    advanced: Annotated[
+        bool,
+        typer.Option("--advanced", help="The full research view instead of the guided app."),
+    ] = False,
 ) -> None:
-    """Launch the Streamlit app (research use only)."""
+    """Launch the app (research use only): the guided cine workflow, or with --advanced the
+    full research view."""
     import subprocess
     import sys
 
@@ -2153,7 +2159,7 @@ def launch_app(
         "-m",
         "streamlit",
         "run",
-        str(APP_SCRIPT),
+        str(APP_SCRIPT if advanced else GUIDED_SCRIPT),
         "--server.port",
         str(port),
         "--browser.gatherUsageStats",

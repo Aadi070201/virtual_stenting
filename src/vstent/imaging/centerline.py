@@ -40,6 +40,7 @@ SNAP_TOLERANCE_PX = 5.0  # beyond the vessel wall
 BRIDGE_MAX_GAP_PX = 40.0
 BRIDGE_MAX_ANGLE_DEG = 45.0
 BRIDGE_DIRECTION_PX = 15
+TRUNK_LOOKAHEAD_PX = 15  # main_trunk_endpoints: how far ahead a fork's branches are compared
 BRIDGE_END_SKIP_PX = 4
 BRIDGE_PENALTY = 2.0
 
@@ -334,3 +335,40 @@ def longest_path_endpoints(
     width = distance_transform_edt(clean_mask(mask))[tuple(np.asarray(paths[b]).T)]
     k = max(3, len(width) // 10)
     return (a, b) if np.median(width[:k]) >= np.median(width[-k:]) else (b, a)
+
+
+def _ahead_width(graph: nx.Graph, node: Pixel, blocked: set, width: np.ndarray) -> float:
+    """Mean half-width over up to ``TRUNK_LOOKAHEAD_PX`` skeleton pixels from ``node``, always
+    stepping to the widest unvisited neighbour."""
+    seen, vals, cur = set(blocked), [], node
+    for _ in range(TRUNK_LOOKAHEAD_PX):
+        seen.add(cur)
+        vals.append(width[cur])
+        nxt = [m for m in graph.neighbors(cur) if m not in seen]
+        if not nxt:
+            break
+        cur = max(nxt, key=lambda m: width[m])
+    return float(np.mean(vals))
+
+
+def main_trunk_endpoints(
+    mask: np.ndarray, max_length_px: float | None = None, min_spur_px: float = MIN_SPUR_PX
+) -> tuple[Pixel, Pixel]:
+    """An automatic path along a main vessel: from the wider end of the longest path
+    (:func:`longest_path_endpoints`), follow the skeleton, taking at every fork the branch that
+    is widest over the next ``TRUNK_LOOKAHEAD_PX`` pixels, until a vessel end or
+    ``max_length_px`` of path. The longest path alone wanders through side branches and
+    crossing vessels on real angiograms; the main vessel stays the widest."""
+    graph = vessel_graph(mask, min_spur_px)
+    a, _ = longest_path_endpoints(mask, min_spur_px)
+    width = distance_transform_edt(clean_mask(mask))
+    visited, cur, length = {a}, a, 0.0
+    while max_length_px is None or length < max_length_px:
+        nxt = [n for n in graph.neighbors(cur) if n not in visited]
+        if not nxt:
+            break
+        n = max(nxt, key=lambda m: _ahead_width(graph, m, visited | {cur}, width))
+        length += float(graph[cur][n].get("weight", 1.0))
+        visited.add(n)
+        cur = n
+    return a, cur

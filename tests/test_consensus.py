@@ -160,3 +160,15 @@ def test_validate_reports_the_consensus_on_a_run(beating_run, tmp_path):
     assert row["tree_consensus_frames"]
     assert row["frame_single_solver"] != "" and row["frame_tree_solver"] != ""
     assert isinstance(row["consensus_unstable"], bool)
+
+
+def test_merged_tracks_are_found_and_checked(tmp_path):
+    rows = [r for p in ("p1", "p2") for r in _rows(f"L{p}", p, "dev", [0.7, 0.9] * 5)]
+    rows += [r for p in ("p3", "p4") for r in _rows(f"L{p}", p, "test", [0.75] * 10)]
+    rows += [dict(rows[0], default_ffr=0.5)]  # a second box on Lp1's first keyframe
+    assert vc.merged_tracks(rows) == {"Lp1"}
+    s = vc.summarise(rows)
+    assert s["sensitivity"]["n_tracks"] == 1 and s["sensitivity"]["by_split"]["dev"] == 1
+    vc.write_report(s, {"git_commit": "x", "git_dirty": False}, "m",
+                    {"git_commit": "y", "git_dirty": False}, tmp_path)  # fmt: skip
+    assert "two boxes on one keyframe" in (tmp_path / "consensus.md").read_text(encoding="utf-8")
