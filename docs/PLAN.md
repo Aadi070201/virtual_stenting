@@ -973,6 +973,13 @@ nearest the middle of the lesion's boxes).
   it adopts nothing.
 - Test patients reported.
 - [ ] `vstent stent-check --stage dev|test` → `reports/stent_check[_dev].md`.
+  - **Development, the product now** (`reports/stent_check_dev.md`):
+    - stent on the experts' lesion: 77% (target 90%);
+    - post-PCI FFR 0.62 ± 0.29 (FFR-SEARCH 0.91 ± 0.07), still ≤ 0.80 in 65%;
+    - 13% of plans reach 0.90.
+  - **With the wire position:** 79%; 0.79 ± 0.13; 38%.
+  - Neither meets the targets: the residual loss after stenting is the diffuse artefact and
+    the under-read lesions (C, C3).
 
 ## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)
 
