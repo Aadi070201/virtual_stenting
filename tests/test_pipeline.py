@@ -276,8 +276,8 @@ def test_tree_gallery_on_fake_arcade(tiny_arcade, dark_seg_dir, tmp_path):
 
 
 def test_cli_analyse_cine_run(dark_seg_dir, tiny_export, tmp_path):
-    """A frame folder is a cine run: the most opacified frame is analysed and the contrast
-    transit is reported (P4d)."""
+    """A frame folder is a cine run: an opacified frame is analysed and the contrast front is
+    reported (P4d); without frame time and pixel size no velocity in m/s (P7)."""
     from vstent.imaging.synthetic import render_cine, sine_centerline
 
     pts, s = sine_centerline((64.0, 10.0), 110.0, amplitude_px=6.0, wavelength_px=120.0)
@@ -293,12 +293,14 @@ def test_cli_analyse_cine_run(dark_seg_dir, tiny_export, tmp_path):
     result = CliRunner().invoke(app, args)
     assert result.exit_code == 0, result.output
     out = result.output
-    chosen_frame = int(re.search(r"most opacified frame (\d+)", out).group(1))
+    chosen_frame = int(re.search(r"Analysis frame (\d+):", out).group(1))
+    first, last = map(int, re.search(r"opacified frames (\d+)–(\d+)", out).groups())
     # the front reaches the vessel's end at frame ~14; the contrast fades after frame 18
-    assert "Cine run of 24 frames" in out and 14 <= chosen_frame <= 19
-    assert f"Analysing frame {chosen_frame}." in out and "not used for FFR" in out
-    speed = float(re.search(r"Contrast transit: front ([\d.]+) px/frame", out).group(1))
+    assert "Cine run of 24 frames" in out and first <= chosen_frame <= last and last <= 20
+    assert f"Analysing frame {chosen_frame}." in out
+    speed = float(re.search(r"Contrast front ([\d.]+) px/frame", out).group(1))
     assert speed == pytest.approx(10.0, rel=0.15)
+    assert "Flow velocity not measured: no frame time in the run" in out
     chosen = CliRunner().invoke(app, args + ["--frame", "4"])
     assert chosen.exit_code == 0 and "outside the opacified frames" in chosen.output
     single = tmp_path / "one.png"

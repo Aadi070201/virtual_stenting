@@ -12,7 +12,7 @@ IEC 62304 §5.3.3–5.3.4 (SOUP requirements), §7.1.2–7.1.3 (SOUP anomalies),
 
 | Package | Version | Used in | Purpose | Relied on | Hazards | Anomaly review |
 |---|---|---|---|---|---|---|
-| numpy | 2.5.4 | app, data, imaging, inference, physics, planning, surrogate, uncertainty, validation | Arrays and numerics in every software item. | Correct IEEE-754 float64 arithmetic, indexing and reductions. | H-01, H-06, H-14 | Not yet reviewed. |
+| numpy | 2.5.4 | app, cli, data, imaging, inference, physics, planning, surrogate, uncertainty, validation | Arrays and numerics in every software item. | Correct IEEE-754 float64 arithmetic, indexing and reductions. | H-01, H-06, H-14 | Not yet reviewed. |
 | scipy | 1.18.1 | data, imaging, uncertainty, validation | Image filters and interpolation in QCA, least-squares fits (lumen model), statistics in the uncertainty and validation tools. | ndimage filters, interpolation, optimize.least_squares and stats as documented. | H-01, H-08 | Not yet reviewed. |
 | opencv-python-headless | 5.0.0.93 | app, data, imaging, validation | Image resizing and drawing (pre-processing, overlays, dataset masks). | Deterministic resize with the documented interpolation; correct drawing. | H-01, H-08 | Not yet reviewed. |
 | scikit-image | 0.26.0 | imaging | Skeletonisation of the vessel mask (centreline). | A one-pixel-wide, topology-preserving skeleton. | H-08 | Not yet reviewed. |

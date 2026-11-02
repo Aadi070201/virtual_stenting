@@ -31,7 +31,7 @@ from vstent.imaging.flow import (
     phasic_slope,
 )
 from vstent.imaging.image_io import read_run_bytes
-from vstent.imaging.motion import apply, track_affine
+from vstent.imaging.motion import _same_phase, apply, plateau, track_affine
 from vstent.imaging.synthetic_cine import (
     CineSynthConfig,
     ecg_waveform,
@@ -219,3 +219,73 @@ def test_cine_report_end_to_end(dark_seg_dir, tmp_path):
     c = cr.write_calibration([row], [9100], {"git_commit": "x", "git_dirty": False},
                              str(dark_seg_dir), tmp_path)  # fmt: skip
     assert (tmp_path / "cine_calibration.md").exists() and c["in_use"]["per_run"] == 0.38
+
+
+def test_plateau_and_same_phase_transforms():
+    assert plateau(np.array([0, 10, 80, 95, 88, 100, 92, 40, 0.0])) == (3, 6)
+    assert _same_phase(0, 10, 20, 12.0) == 12 and _same_phase(30, 10, 20, 12.0) == 18
+    assert _same_phase(2, 10, 14, 30.0) == 10  # no frame a whole beat away: the nearest
+    assert _same_phase(25, 10, 14, None) == 14
+
+
+def test_transit_with_tracking_ignores_partial_filling():
+    """Registering a partly filled vessel slides it along itself; only the plateau is
+    registered, so a still vessel keeps its true front speed."""
+    from vstent.imaging.centerline import trace_centerline
+    from vstent.imaging.cine import contrast_transit
+    from vstent.imaging.synthetic import render_cine, sine_centerline
+
+    pts, s = sine_centerline((64.0, 10.0), 110.0, amplitude_px=6.0, wavelength_px=120.0)
+    frames = render_cine((128, 128), [(pts, np.full(s.size, 4.0))], n_frames=24,
+                         arrival_frame=3.0, front_px_per_frame=10.0, washout_frame=18.0,
+                         background=0.6, blur_sigma=0.8, noise_std=0.01, mu_per_mm=0.2,
+                         motion_px=3.0)  # fmt: skip
+    probs = [(f < 0.6 * 255 - 25).astype(np.float32) for f in frames]
+    op = opacification(np.array([p.sum() for p in probs]))
+    ref = op.analysis_frame
+    cl = trace_centerline(probs[ref] >= 0.5, tuple(np.round(pts[2]).astype(int)),
+                          tuple(np.round(pts[-3]).astype(int)))  # fmt: skip
+    w = track_affine(probs, ref, window=plateau(op.smoothed), period=12.0)
+    assert contrast_transit(frames, cl, warps=w).px_per_frame == pytest.approx(10.0, rel=0.08)
+
+
+def test_cli_analyse_beating_heart_run_with_measured_flow(dark_seg_dir, tiny_export, tmp_path):
+    """``vstent analyse <run.dcm>``: ED frame from the R-wave pointer, measured velocity, and
+    ``--flow measured`` uses it."""
+    from typer.testing import CliRunner
+
+    from vstent.cli import app
+    from vstent.imaging import cine_report as cr
+    from vstent.imaging.run_analysis import analyse_frames
+    from vstent.imaging.synthetic_cine import render_run
+    from vstent.inference.onnx_runtime import SegmentationRunner
+
+    small = CineSynthConfig(
+        scene={"image_size": 256, "iso_pixel_mm": (0.45, 0.5), "background": (0.6, 0.64)},
+        fps_choices=(15.0,), plateau_beats=(1.5, 1.5), ecg_prob=1.0,
+    )  # fmt: skip
+    cc = sample_cine_case(9100, small)
+    frames = render_run(cc, 0, probs=False).frames
+    dcm = tmp_path / "run.dcm"
+    dcm.write_bytes(run_dicom(cc, 0, frames, small))
+    rf = analyse_frames(read_run_bytes(dcm.read_bytes(), "run.dcm"),
+                        SegmentationRunner.from_dir(dark_seg_dir).predict)  # fmt: skip
+    main = cc.case.curves[0]
+    inner = main[[len(main) // 10, (7 * len(main)) // 10]]  # inside the stand-in's mask
+    t_s = rf.analysis_frame / cc.runs[0].fps
+    start, end = np.round(cc.case.views[0].project(cc.position(0, t_s, inner))).astype(int)
+    args = ["analyse", str(dcm), "--start", *map(str, start), "--end", *map(str, end),
+            "--seg-model", str(dark_seg_dir),
+            "--surrogate-model", tiny_export["out_dir"]]  # fmt: skip
+    out = CliRunner().invoke(app, args)
+    assert out.exit_code == 0, out.output
+    assert (
+        "DICOM R-wave pointer" in out.output
+        and f"Analysis frame {rf.analysis_frame}:" in out.output
+    )
+    assert "Contrast flow velocity" in out.output and "Flow: fixed" in out.output
+    measured = CliRunner().invoke(app, [*args, "--flow", "measured"])
+    assert measured.exit_code == 0 and "Flow: measured velocity used" in measured.output
+    bad = CliRunner().invoke(app, [*args, "--flow", "guess"])
+    assert bad.exit_code == 2
+    assert cr.TARGETS["coverage"] == 0.85

@@ -1,5 +1,6 @@
 """Command-line interface: ``vstent <command>`` (research use only)."""
 
+import math
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -596,40 +597,54 @@ def export_seg(
 
 
 def _run_frame(run, segmenter, frame: int | None):
-    """The frame of a cine run to analyse: ``frame`` or the most completely opacified one."""
-    from vstent.imaging.cine import opacification, vessel_areas
+    """The frame of a cine run to analyse (``frame``, or the end-diastolic frame chosen by
+    :func:`~vstent.imaging.run_analysis.analyse_frames`), the run's analysis and the frame."""
+    from vstent.imaging.run_analysis import analyse_frames
 
-    op = opacification(vessel_areas(run.frames, segmenter.predict))
+    rf = analyse_frames(run, segmenter.predict)
+    op = rf.opacification
     first, last = op.window
     typer.echo(
         f"Cine run of {len(run)} frames: contrast arrival at frame {op.arrival}, opacified "
-        f"frames {first}–{last}, most opacified frame {op.analysis_frame} (0-based)."
+        f"frames {first}–{last} (0-based). {rf.ed.note}"
     )
-    t = op.analysis_frame if frame is None else frame
-    if frame is not None and not first <= frame <= last:
+    t = rf.analysis_frame if frame is None else frame
+    if frame is None:
+        typer.echo(f"Analysis frame {t}: {rf.frame_note}")
+    elif not first <= frame <= last:
         typer.echo(f"Warning: frame {frame} is outside the opacified frames.")
     typer.echo(f"Analysing frame {t}.")
-    return run.frame(t)
+    return run.frame(t), rf, t
 
 
-def _echo_transit(run, qca, mm_per_px: float | None) -> None:
-    """Contrast transit along the analysed centreline (px per frame; mm/s when the frame time
-    and the pixel size are known)."""
-    from vstent.imaging.cine import contrast_transit
+def _measure_flow(rf, frame: int, centerline, distance_m, *, single_view: bool,
+                  hyperemic_run: bool):  # fmt: skip
+    """Flow velocity along the analysed centreline of a cine run (P7), echoed."""
+    fv, tr = rf.velocity(centerline, frame, distance_m, single_view=single_view,
+                         hyperemic_run=hyperemic_run)  # fmt: skip
+    if tr is not None and tr.plausible and math.isnan(fv.cfv):  # not converted to m/s
+        lo, hi = tr.interval
+        typer.echo(f"Contrast front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f}).")
+    typer.echo(fv.note())
+    return fv
 
-    tr = contrast_transit(run.frames, qca.centerline)
-    if tr is None or not tr.plausible:
-        reason = "no arrival measured" if tr is None else "arrival does not advance steadily"
-        typer.echo(f"Contrast transit: not measurable along this path ({reason}).")
+
+def _echo_flow_ffr(fv, profile, params, chosen: bool, fixed_v: float) -> None:
+    """The distal FFR with the other velocity than the one used above (``fixed_v``: the
+    configured hyperemic velocity, m/s)."""
+    from vstent.physics.solver import solve_ffr
+
+    if not fv.accepted:
         return
-    lo, hi = tr.interval
-    text = f"Contrast transit: front {tr.px_per_frame:.1f} px/frame (95%: {lo:.1f}–{hi:.1f})"
-    if run.frame_time_ms and mm_per_px:
-        v = tr.velocity_mm_s(mm_per_px, run.frame_time_ms)
-        text += f", {v:.0f} mm/s at {mm_per_px:g} mm/px and {run.frame_time_ms:g} ms/frame"
+    if chosen:
+        other = solve_ffr(profile, params.model_copy(update={"v_hyp": fixed_v})).ffr[-1]
+        typer.echo(f"Flow: measured velocity used. With the fixed {fixed_v:g} m/s the "
+                   f"distal FFR (solver) would be {other:.3f}.")  # fmt: skip
     else:
-        text += " (mm/s needs the frame time and --mm-per-px)"
-    typer.echo(text + "; at rest, not hyperemic: not used for FFR.")
+        other = solve_ffr(profile, params.model_copy(update={"v_hyp": fv.v_hyp})).ffr[-1]
+        typer.echo(f"Flow: fixed {params.v_hyp:g} m/s used (the default). With the measured "
+                   f"velocity the distal FFR (solver) would be {other:.3f}; --flow measured "
+                   "uses it (not yet validated against real flow).")  # fmt: skip
 
 
 def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, outlet, figure,
@@ -736,9 +751,10 @@ def _analyse_tree_cli(prob, img, start, end, name, params, mm_per_px, stent, out
 
 def _analyse_two_views_cli(
     inputs, starts, ends, segmenter, physics, surrogate_model, figure, plan_paths, lumen,
-    uncertainty,
+    uncertainty, *, runs=None, flow="fixed", hyperemic_run=False,
 ) -> None:  # fmt: skip
-    """``vstent analyse --view2``: two-view QCA + FFR (P5)."""
+    """``vstent analyse --view2``: two-view QCA + FFR (P5); with two cine runs, their flow
+    velocity along the 3D path (P7)."""
     from vstent.config import load_config
     from vstent.inference.onnx_runtime import ONNX_FILE, SurrogateRunner
     from vstent.inference.pipeline import analyse_two_views
@@ -770,6 +786,28 @@ def _analyse_two_views_cli(
         typer.echo(f"Two-view analysis failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     rec = result.reconstruction
+    fv, fixed_v = None, params.v_hyp
+    if runs is not None:
+        import numpy as np
+
+        from vstent.imaging.flow import combine_runs
+
+        per = [
+            _measure_flow(rf, t, result.qca[k].centerline,
+                          lambda s, k=k: np.interp(s, rec.view_s[:, k], rec.s),
+                          single_view=False, hyperemic_run=hyperemic_run)
+            for k, (rf, t) in enumerate(runs)
+        ]  # fmt: skip
+        fv = combine_runs(per)
+        typer.echo("Both runs: " + fv.note())
+        if flow == "measured" and fv.accepted:
+            params = params.model_copy(update={"v_hyp": fv.v_hyp})
+            result = analyse_two_views(
+                tuple(segmenter.predict(img) for img in images), starts, ends,
+                tuple(i.geometry for i in inputs), params=params, surrogate=surrogate,
+                images=images, lumen=lumen,
+            )  # fmt: skip
+            rec = result.reconstruction
     single = result.single_view_lengths_mm
     typer.echo(DISCLAIMER)
     typer.echo(
@@ -795,6 +833,7 @@ def _analyse_two_views_cli(
         prof, params, result.solver.pa, result.solver.pv,
         measurement=Measurement(rec.geometries[0].iso_pixel_m * 1e3, False),
         config=ucfg.inputs, qca_error=qca_error,
+        v_hyp_range=fv.v_hyp_interval if fv and fv.accepted and flow == "measured" else None,
     )  # fmt: skip
     pre = assessment(ucfg.pre_pci_threshold, result.ffr_distal_solver,
                      result.ffr_distal_surrogate, result.model_interval, mc.pre_samples,
@@ -805,6 +844,8 @@ def _analyse_two_views_cli(
         typer.echo(f"Grey zone: {reason}")
     for w in result.warnings:
         typer.echo(f"Warning: {w}")
+    if fv is not None:
+        _echo_flow_ffr(fv, prof, params, flow == "measured" and fv.accepted, fixed_v)
     if plan_paths is not None:
         from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
 
@@ -934,11 +975,21 @@ def analyse(
         tuple[int, int] | None,
         typer.Option("--end2", help="With --view2: the end point in view 2: ROW COL (px)."),
     ] = None,
+    flow: Annotated[
+        str,
+        typer.Option("--flow", help="Cine runs: fixed (default) or measured flow velocity (P7)."),
+    ] = "fixed",
+    hyperemic_run: Annotated[
+        bool,
+        typer.Option("--hyperemic-run", help="The run was recorded under hyperemia (adenosine)."),
+    ] = False,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
-    A cine run (multi-frame DICOM or a folder of frames) is analysed on its most completely
-    opacified frame (or --frame), and the contrast's transit along the vessel is reported.
+    A cine run (multi-frame DICOM or a folder of frames) is analysed on its end-diastolic frame
+    (R-wave pointer, ECG or the images; or --frame), and the contrast's flow velocity along the
+    vessel is measured (P7). The fixed hyperemic velocity stays the default; --flow measured
+    uses the measured one (FAVOR Pilot conversion for resting runs; --hyperemic-run: as is).
 
     Without --start / --end the longest vessel path in the mask is used. With --plan the
     virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
@@ -973,7 +1024,7 @@ def analyse(
     try:  # the app's loader: the same pixels reach the segmentation model
         if is_run(image):
             run = read_run(image)
-            image_input = _run_frame(run, segmenter, frame)
+            image_input, run_frames, run_t = _run_frame(run, segmenter, frame)
         elif frame not in (None, 0):
             raise ValueError(f"--frame {frame}: a single image only has frame 0")
         else:
@@ -997,13 +1048,20 @@ def analyse(
             raise typer.Exit(code=2)
         try:
             run2 = read_run(view2) if is_run(view2) else None
-            input2 = _run_frame(run2, segmenter, None) if run2 else read_image_file(view2)
+            runs = None
+            if run2:
+                input2, run_frames2, run_t2 = _run_frame(run2, segmenter, None)
+                if run is not None:
+                    runs = ((run_frames, run_t), (run_frames2, run_t2))
+            else:
+                input2 = read_image_file(view2)
         except ValueError as exc:
             typer.echo(f"Cannot read {view2}: {exc}", err=True)
             raise typer.Exit(code=1) from exc
         _analyse_two_views_cli(
             (image_input, input2), (start, start2), (end, end2), segmenter, physics,
             surrogate_model, figure, (catalog, planner) if plan else None, lumen, uncertainty,
+            runs=runs, flow=flow, hyperemic_run=hyperemic_run,
         )  # fmt: skip
         return
     if tree and plan and stent is not None:
@@ -1014,6 +1072,9 @@ def analyse(
         raise typer.Exit(code=2)
     if lumen not in (None, "scaled", "edges", "model"):
         typer.echo("--lumen: use scaled, edges or model.", err=True)
+        raise typer.Exit(code=2)
+    if flow not in ("fixed", "measured"):
+        typer.echo("--flow: use fixed or measured.", err=True)
         raise typer.Exit(code=2)
     sur_dir = (
         None if tree else surrogate_model or _latest_model_dir(Path("models/surrogate"), ONNX_FILE)
@@ -1040,6 +1101,22 @@ def analyse(
         lumen=lumen,
     )  # fmt: skip
     q = result.qca
+    fv, fixed_v = None, params.v_hyp
+    if run is not None:
+        from vstent.imaging.run_analysis import pixel_distance
+
+        fv = _measure_flow(run_frames, run_t, q.centerline,
+                           None if q.calibration_assumed else pixel_distance(q.mm_per_px),
+                           single_view=True, hyperemic_run=hyperemic_run)  # fmt: skip
+        if flow == "measured" and fv.accepted:
+            params = params.model_copy(update={"v_hyp": fv.v_hyp})
+            result = analyse_vessel(
+                prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px,
+                image=img, lumen=lumen,
+            )  # fmt: skip
+            q = result.qca
+        elif flow == "measured":
+            typer.echo("--flow measured: the velocity was not accepted; the fixed one is used.")
     typer.echo(f"{DISCLAIMER}")
     typer.echo(
         f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
@@ -1063,6 +1140,7 @@ def analyse(
         measurement=Measurement(q.mm_per_px, q.calibration_assumed),
         config=ucfg.inputs,
         qca_error=qca_error,
+        v_hyp_range=fv.v_hyp_interval if fv and fv.accepted and flow == "measured" else None,
     )
     pre = assessment(
         ucfg.pre_pci_threshold,
@@ -1082,8 +1160,8 @@ def analyse(
         typer.echo(f"Grey zone: {reason}")
     for w in result.warnings:
         typer.echo(f"Warning: {w}")
-    if run is not None:
-        _echo_transit(run, q, mm_per_px)
+    if fv is not None:
+        _echo_flow_ffr(fv, q.profile, params, flow == "measured" and fv.accepted, fixed_v)
     if plan:
         from vstent.planning.optimizer import PlannerConfig, StentCatalog, plan_stents
 

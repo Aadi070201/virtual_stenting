@@ -8,7 +8,7 @@ Monte Carlo over the assumptions that matter most, for one case. Each draw pertu
   length measured on rendered tubes (``reports/qca_synthetic.json``); image cases only. The
   reference, a robust fit over the whole path, moves by the path mean of e;
 - ``v_hyp``: hyperemic reference velocity ± half its synthetic sampling range (m/s), which
-  recalibrates R_micro;
+  recalibrates R_micro; with a measured velocity (P7), uniform over its interval instead;
 - ``pa_pv``: Pa and Pv ± half their synthetic sampling ranges (mmHg; Pv ≥ 0).
 
 Distributions are uniform except the QCA error. Post-PCI draws reuse the same draws (common
@@ -121,6 +121,8 @@ class InputUncertainty:
         config: Monte Carlo settings.
         qca_error: QCA error model (image cases); ``None`` skips that source.
         sources: subset of :data:`SOURCES` to vary (default: all that apply).
+        v_hyp_range: (low, high) hyperemic velocity (m/s) of a measured velocity (P7), drawn
+            uniformly instead of ``params.v_hyp`` ± ``v_hyp_halfwidth``.
     """
 
     def __init__(
@@ -134,6 +136,7 @@ class InputUncertainty:
         config: InputUncertaintyConfig | None = None,
         qca_error: QCAErrorModel | None = None,
         sources: Collection[str] | None = None,
+        v_hyp_range: tuple[float, float] | None = None,
     ) -> None:
         cfg = config or InputUncertaintyConfig()
         allowed = applicable_sources(measurement, qca_error)
@@ -163,7 +166,13 @@ class InputUncertainty:
         self.r_ref = np.broadcast_to(r_ref * k[:, None], (n, m)).copy()
         self.s = k[:, None] * profile.s[None, :]
         self.ds = k * profile.ds
-        self.v_hyp = params.v_hyp + (cfg.v_hyp_halfwidth * u_v if "v_hyp" in self.sources else 0.0)
+        if v_hyp_range is not None and "v_hyp" in self.sources:
+            lo, hi = v_hyp_range
+            self.v_hyp = lo + 0.5 * (u_v + 1.0) * (hi - lo)
+        else:
+            self.v_hyp = params.v_hyp + (
+                cfg.v_hyp_halfwidth * u_v if "v_hyp" in self.sources else 0.0
+            )
         self.v_hyp = np.maximum(np.broadcast_to(self.v_hyp, (n,)), MIN_V_HYP)
         pa_mmhg = pa / mmhg_to_pa(1.0)
         pv_mmhg = pv / mmhg_to_pa(1.0)

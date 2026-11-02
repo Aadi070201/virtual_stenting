@@ -19,7 +19,7 @@ from vstent.imaging.cine import LEVEL, ContrastTransit, Opacification, contrast_
 from vstent.imaging.cine import opacification as opacification_curve
 from vstent.imaging.flow import FlowVelocity, flow_velocity
 from vstent.imaging.image_io import RunInput
-from vstent.imaging.motion import small_map, track_affine_maps
+from vstent.imaging.motion import plateau, small_map, track_affine_maps
 
 
 @dataclass(eq=False)
@@ -50,7 +50,10 @@ class RunFrames:
     def warps(self, frame: int) -> np.ndarray:
         """(T, 2, 3) transforms from ``frame``'s (row, col) to every frame's (cached)."""
         if frame not in self._warps:
-            self._warps[frame] = track_affine_maps(self.small, self.area, frame)
+            self._warps[frame] = track_affine_maps(
+                self.small, self.area, frame, window=plateau(self.opacification.smoothed),
+                period=self.ed.period_frames,
+            )  # fmt: skip
         return self._warps[frame]
 
     def transit(self, centerline: Centerline, frame: int) -> ContrastTransit | None:
