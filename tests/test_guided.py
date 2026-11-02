@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 from vstent.app import core, guided
@@ -95,6 +96,8 @@ def guided_env(monkeypatch, tiny_export, dark_seg_dir, tmp_path):
     monkeypatch.setenv(core.ENV_SURROGATE, tiny_export["out_dir"])
     monkeypatch.setenv(core.ENV_SEG, str(dark_seg_dir))
     monkeypatch.setattr(cadica, "RAW_DIR", tmp_path / "no_cadica")  # synthetic cases only
+    st.cache_resource.clear()  # the app's caches outlive one AppTest (library, models)
+    st.cache_data.clear()
 
 
 def test_guided_app_whole_flow(guided_env):
@@ -123,6 +126,12 @@ def test_guided_app_whole_flow(guided_env):
     at.toggle(key=own).set_value(True).run()
     assert not at.exception, [e.value for e in at.exception]
     assert "After the stent" in " ".join(m.value for m in at.markdown)
+    n_key = next(r.key for r in at.radio if r.key and r.key.startswith("n_"))
+    at.radio(key=n_key).set_value(2).run()  # two stents, each with its own controls
+    assert not at.exception, [e.value for e in at.exception]
+    dias = [s.key for s in at.selectbox if s.key and s.key.startswith("dia_")]
+    assert len(dias) == 2 and dias[0] != dias[1]
+    assert any("S2:" in c.value for c in at.caption)
     text = " ".join(m.value for m in at.markdown)
     assert "end-diastole" in text and "contrast" in text  # the frame's state is shown
     assert len(at.get("download_button")) == 2
@@ -151,6 +160,28 @@ def test_frame_states_and_no_plan_reasons():
         healthy, NS(lesions=[1]), catalog, cfg)  # fmt: skip
     big = VesselProfile(s, np.full_like(s, 0.0015), np.full_like(s, 0.0015))
     assert "end of the path" in guided.no_plan_reason(big, NS(lesions=[1]), catalog, cfg)
+
+
+def test_hand_placed_stents():
+    plan = [Stent(0.006, 0.038, 0.00275)]
+    m1 = guided.LesionMark(1, 0, 0, 60.0, 5.0, 1.2, 20.0, 18.0, 22.0)  # under the plan's stent
+    m2 = guided.LesionMark(2, 0, 0, 75.0, 4.0, 1.0, 80.0, 78.0, 82.0)
+    assert guided.own_stent_defaults(plan, [m1, m2], 1, 120.0) == [(2.75, 38.0, 6.0)]
+    two = guided.own_stent_defaults(plan, [m1, m2], 2, 120.0)
+    assert two[1] == (3.0, 18.0, 71.0)  # the uncovered lesion gets the second stent
+    three = guided.own_stent_defaults(plan, [m1, m2], 3, 120.0)
+    assert len(three) == 3 and three[2][2] == pytest.approx(91.0)  # 2 mm past the last
+    a, b = Stent(0.006, 0.038, 0.003), Stent(0.040, 0.018, 0.003)
+    assert guided.overlap_notes([a, b]) == ["S1 and S2 overlap by 4 mm."]
+    assert guided.overlap_notes([a, Stent(0.050, 0.018, 0.003)]) == []
+    assert guided.stent_text([a, b]).startswith("S1: 3.00 × 38 mm")
+    s = np.linspace(0.0, 0.1, 101)
+    diffuse = SimpleNamespace(s=s, solver=1.0 - 4.0 * s, distal_solver=0.6)  # a steady decline
+    assert "spread along the path" in guided.diffuse_note(diffuse, [m2])
+    focal = SimpleNamespace(s=s, solver=np.where(s < 0.081, 1.0, 0.6), distal_solver=0.6)
+    assert guided.diffuse_note(focal, [m2]) is None
+    good = SimpleNamespace(s=s, solver=1.0 - s, distal_solver=0.9)
+    assert guided.diffuse_note(good, [m2]) is None
 
 
 def test_target_path_and_detection_check():

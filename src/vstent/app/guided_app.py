@@ -115,11 +115,10 @@ def uncertainty(key: str, _profile, pa_mmhg: float, mm_per_px: float, assumed: b
 
 @st.cache_resource(max_entries=16, show_spinner="Trying stent sizes and positions…")
 def suggest(key: str, _profile, pa_mmhg: float):
+    # the solver, which gives every other number on the page (D64)
     p, cfg, catalog = _params(pa_mmhg), get_settings()[1], get_settings()[2]
-    runner = get_models().surrogate
-    if runner is None:
-        cfg = cfg.model_copy(update={"backend": "solver"})
-    return plan_stents(_profile, catalog=catalog, config=cfg, params=p, runner=runner)
+    cfg = cfg.model_copy(update={"backend": "solver"})
+    return plan_stents(_profile, catalog=catalog, config=cfg, params=p)
 
 
 # --- pieces ---------------------------------------------------------------------------------------
@@ -449,7 +448,7 @@ def main() -> None:
         st.session_state[pkey] = suggest(f"{vessel}:{pa_mmhg}", profile, pa_mmhg)
     own = c2.toggle("Adjust it myself", key=f"own_{vessel}")
     plans = st.session_state.get(pkey)
-    base = pick = None
+    pick = None
     stents: list[Stent] = []
     if plans is not None and plans.plans:
         pick = st.radio("Plans", range(len(plans.plans)), key=f"plan_{vessel}",
@@ -457,35 +456,38 @@ def main() -> None:
                                                                 plans.plans[k].ffr),
                         label_visibility="collapsed")  # fmt: skip
         stents = list(plans.plans[pick].stents)
-        base = stents[0]
         if not plans.plans[pick].meets_target:
-            st.warning(f"No plan reaches {plans.target:.2f}; the best one is shown. "
-                       "Check that the path covers the whole lesion.")  # fmt: skip
+            st.warning(f"No plan reaches {plans.target:.2f}; the best one is shown.")
     elif plans is not None:
         st.error(guided.no_plan_reason(profile, plans, catalog, planner_cfg))
     lengths = [x for x in catalog.lengths_mm if x <= length_mm]  # stents that fit the path
     if own and not lengths:
         st.info(f"Path {length_mm:.0f} mm: shorter than any stent.")
     elif own:
-        worst = max(guided.lesion_marks(q), key=lambda m: m.ds_pct, default=None)
-        d0 = m_to_mm(base.diameter) if base else 3.0
-        l0 = m_to_mm(base.length) if base else 18.0
-        s0 = m_to_mm(base.s_start) if base else max(0.0, (worst.at_mm if worst else 10.0) - 9.0)
         tag = f"{vessel}_{pick}"
-        k1, k2, k3 = st.columns(3)
+        n_own = st.radio("Stents", range(1, guided.MAX_OWN_STENTS + 1), horizontal=True,
+                         index=min(max(len(stents), 1), guided.MAX_OWN_STENTS) - 1,
+                         key=f"n_{tag}")  # fmt: skip
         dias = catalog.diameters_mm
-        dia = k1.selectbox("Diameter (mm)", dias, key=f"dia_{tag}",
-                           index=int(np.argmin(np.abs(np.array(dias) - d0))))  # fmt: skip
-        ln = k2.selectbox("Length (mm)", lengths, key=f"len_{tag}",
-                          index=int(np.argmin(np.abs(np.array(lengths) - l0))))  # fmt: skip
-        max_start = max(0.0, float(np.floor((length_mm - ln) * 2) / 2))
-        s_start = k3.slider("Start (mm)", 0.0, max(max_start, 0.5),
-                            float(min(max(s0, 0.0), max_start)), 0.5,
-                            key=f"start_{tag}")  # fmt: skip
-        own_stent = Stent(mm_to_m(min(s_start, max_start)), mm_to_m(ln), mm_to_m(dia))
-        stents = [own_stent, *stents[1:]]
+        own_stents = []
+        for k, (d0, l0, s0) in enumerate(
+            guided.own_stent_defaults(stents, guided.lesion_marks(q), n_own, length_mm)
+        ):
+            k0, k1, k2, k3 = st.columns([1, 3, 3, 5], vertical_alignment="bottom")
+            k0.markdown(f"**S{k + 1}**")
+            dia = k1.selectbox("Diameter (mm)", dias, key=f"dia_{tag}_{k}",
+                               index=int(np.argmin(np.abs(np.array(dias) - d0))))  # fmt: skip
+            ln = k2.selectbox("Length (mm)", lengths, key=f"len_{tag}_{k}",
+                              index=int(np.argmin(np.abs(np.array(lengths) - l0))))  # fmt: skip
+            max_start = max(0.0, float(np.floor((length_mm - ln) * 2) / 2))
+            s_start = k3.slider("Start (mm)", 0.0, max(max_start, 0.5),
+                                float(min(max(s0, 0.0), max_start)), 0.5,
+                                key=f"start_{tag}_{k}")  # fmt: skip
+            own_stents.append(Stent(mm_to_m(min(s_start, max_start)), mm_to_m(ln), mm_to_m(dia)))
+        stents = own_stents
+        for note in guided.overlap_notes(stents):
+            st.caption(note)
     post = None
-    stent = stents[0] if stents else None
     if stents:
         stented, post = core.stent_update(profile, stents, pre, params, params.pa, params.pv,
                                           None, edge=mm_to_m(planner_cfg.edge_mm))  # fmt: skip
@@ -508,6 +510,9 @@ def main() -> None:
             st.caption(guided.stent_text(stents))
             for w in core.stent_warnings(profile, stents, planner_cfg.max_diameter_ratio):
                 st.warning(w)
+            note = guided.diffuse_note(post, guided.lesion_marks(q))
+            if note:
+                st.info(note)
             st.plotly_chart(guided.ffr_chart(pre, post, guided.lesion_marks(q)),
                             key="ffr_after")  # fmt: skip
         with st.expander("Diameter along the path"):
@@ -516,7 +521,7 @@ def main() -> None:
     # 5 · report -------------------------------------------------------------------------------
     st.markdown("#### 5 · Report")
     state = core.CaseState(
-        "image", params, params.pa, params.pv, profile, pre, [stent] if stent else [], post, q,
+        "image", params, params.pa, params.pv, profile, pre, stents, post, q,
         run.frame(chosen.frame), [chosen.start, chosen.end],
         description=f"{run.name}, frame {chosen.frame}",
         warnings=list(chosen.analysis.warnings), uncertainty=mc, pre_assessment=pre_a,

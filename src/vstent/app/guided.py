@@ -336,10 +336,15 @@ def overlay(
     if qca is not None:
         pts = np.round(qca.centerline.points[:, ::-1]).astype(np.int32)
         cv2.polylines(out, [pts], False, PATH, scale, cv2.LINE_AA)
-        for st in stents or []:
+        for k, st in enumerate(stents or []):
             sel = (qca.s_mm >= m_to_mm(st.s_start)) & (qca.s_mm <= m_to_mm(st.s_end))
             if sel.sum() >= 2:
                 cv2.polylines(out, [pts[sel]], False, STENT, 4 * scale, cv2.LINE_AA)
+                if len(stents) > 1:  # S1, S2… beside each stent's mid-point
+                    mid = pts[sel][len(pts[sel]) // 2]
+                    at = (int(mid[0]) + 8 * scale, int(mid[1]) + 14 * scale)
+                    cv2.putText(out, f"S{k + 1}", at, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * scale,
+                                STENT, 2 * scale, cv2.LINE_AA)  # fmt: skip
     for m in lesions or []:
         cv2.circle(out, (m.col, m.row), 11 * scale, LESION, 2 * scale, cv2.LINE_AA)
         at = (m.col + 12 * scale, m.row - 8 * scale)
@@ -351,12 +356,63 @@ def overlay(
 
 
 def stent_text(stents: list[Stent], ffr_after: float | None = None) -> str:
-    """'3.00 × 18 mm from 25 to 43 mm' for each stent, with the FFR after."""
-    parts = [f"{m_to_mm(s.diameter):.2f} × {m_to_mm(s.length):.0f} mm stent from "
-             f"{m_to_mm(s.s_start):.0f} to {m_to_mm(s.s_end):.0f} mm along the path"
-             for s in stents]  # fmt: skip
+    """'3.00 × 18 mm from 25 to 43 mm' for each stent (numbered S1, S2… when several), with
+    the FFR after."""
+    parts = [f"{f'S{k + 1}: ' if len(stents) > 1 else ''}{m_to_mm(s.diameter):.2f} × "
+             f"{m_to_mm(s.length):.0f} mm stent from {m_to_mm(s.s_start):.0f} to "
+             f"{m_to_mm(s.s_end):.0f} mm along the path"
+             for k, s in enumerate(stents)]  # fmt: skip
     text = " + ".join(parts)
     return text if ffr_after is None else f"{text}: virtual FFR after stenting {ffr_after:.2f}"
+
+
+MAX_OWN_STENTS = 3  # stents the user can place by hand
+
+
+def own_stent_defaults(plan: list[Stent], lesions: list[LesionMark], n: int,
+                       length_mm: float) -> list[tuple[float, float, float]]:  # fmt: skip
+    """Starting (diameter, length, start) in mm for ``n`` hand-placed stents: the plan's
+    stents first, then one 18 mm stent on each marked lesion not yet covered (most severe
+    first), then 2 mm past the last stent."""
+    out = [(m_to_mm(s.diameter), m_to_mm(s.length), m_to_mm(s.s_start)) for s in plan[:n]]
+
+    def covered(at_mm: float) -> bool:
+        return any(s0 <= at_mm <= s0 + ln for _, ln, s0 in out)
+
+    for m in sorted(lesions, key=lambda m: -m.ds_pct):
+        if len(out) >= n:
+            break
+        if not covered(m.at_mm):
+            out.append((3.0, 18.0, max(0.0, m.at_mm - 9.0)))
+    while len(out) < n:
+        after = max((s0 + ln for _, ln, s0 in out), default=-2.0) + 2.0
+        out.append((3.0, 18.0, max(0.0, min(after, length_mm - 18.0))))
+    return out
+
+
+def overlap_notes(stents: list[Stent]) -> list[str]:
+    """'S1 and S2 overlap by 4 mm' for each pair of stents that overlap."""
+    out = []
+    for i in range(len(stents)):
+        for j in range(i + 1, len(stents)):
+            mm = m_to_mm(min(stents[i].s_end, stents[j].s_end)
+                         - max(stents[i].s_start, stents[j].s_start))  # fmt: skip
+            if mm > 0:
+                out.append(f"S{i + 1} and S{j + 1} overlap by {mm:.0f} mm.")
+    return out
+
+
+def diffuse_note(post, lesions: list[LesionMark]) -> str | None:
+    """Why stenting the marked lesions leaves the FFR low: most of the remaining pressure loss
+    is spread along the path. ``post``: :class:`~vstent.app.core.Curves` after stenting."""
+    if post is None or post.distal_solver > CUTOFF:
+        return None
+    share = loss_split(post, lesions)
+    if share is None or share > 0.5:
+        return None
+    return (f"After stenting, {100 * (1 - share):.0f}% of the remaining pressure loss is spread "
+            "along the path, not at the lesions: a stent cannot fix it. A path that runs into "
+            "thin distal branches adds such loss; try ending it earlier (Target).")  # fmt: skip
 
 
 def ffr_chart(pre, post=None, lesions: list[LesionMark] | None = None) -> go.Figure:

@@ -1266,3 +1266,26 @@ was evaluated):
 
 **Alternatives:** adopting on the test result, or relaxing the false-alarm limit after seeing
 it: both rejected.
+
+### D64 — Guided app: stent plans from the solver; each hand-placed stent has its own controls (2026-11-02)
+**Seen** (the user's screenshot, a CADICA run with two lesions):
+- The plan list showed a post-PCI FFR of 0.52, and the big number 0.61 for nearly the same plan.
+- "Adjust it myself" changed only the first of the plan's two stents.
+- The report kept only the first stent.
+
+**Cause:** the plans were ranked and labelled by the ONNX surrogate, while every other number on
+the page comes from the reduced-order solver. On a 250 mm real path the surrogate is outside
+its training range (synthetic vessels about 70 mm long), so the two disagree.
+
+**Decision:**
+- The guided app plans with the solver backend. It is also faster: 0.15 s vs 0.84 s for 5,000
+  candidates (`reports/planner_benchmark.md`). The research view keeps the surrogate option.
+- Hand placement offers 1–3 stents, each with its own diameter, length and start. Stents are
+  labelled S1, S2… on the image and in the text, and overlaps are noted.
+- When the FFR stays ≤ 0.80 after stenting and most of the remaining loss lies outside the
+  marked lesions, the app says so. A stent cannot fix diffuse loss; a path that runs into thin
+  distal branches adds such loss.
+- The report includes every stent.
+
+**Alternatives:** showing both FFRs in the plan list was rejected: two numbers for one plan
+confuse the guided view.
