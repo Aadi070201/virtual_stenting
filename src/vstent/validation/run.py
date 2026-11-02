@@ -182,7 +182,8 @@ def predict_case(
     def one_path(pr, im, start, end):
         return analyse_vessel(pr, start, end, params=pp, surrogate=surrogate,
                               mm_per_px=c.mm_per_px, image=im, lesion_reader=reader,
-                              wire=prod.wire)  # fmt: skip
+                              wire=prod.wire,
+                              lesion_min_ref_mm=prod.lesion_min_ref_mm)  # fmt: skip
 
     def one_tree(pr, im, start, end):
         return analyse_tree(pr, start, end, params=p, mm_per_px=c.mm_per_px, image=im)

@@ -68,7 +68,7 @@ def _arm_profile(profile, arm: str):
     return VesselProfile(profile.s[: k + 1], profile.r[: k + 1], r_ref[: k + 1])
 
 
-def lesion_task(img, prob, item, params_dict) -> dict[str, Any]:
+def lesion_task(img, prob, item, params_dict, min_ref_mm=None) -> dict[str, Any]:
     """One lesion through the product and the planner, for every arm."""
     from vstent.app.core import load_settings
     from vstent.app.guided import box_path
@@ -83,6 +83,8 @@ def lesion_task(img, prob, item, params_dict) -> dict[str, Any]:
     _, planner, catalog = load_settings()
     planner = planner.model_copy(update={"backend": "solver"})
     prod = product_config()
+    if min_ref_mm is not None:  # P4n: the pipeline arm with the thin-vessel guard
+        prod = prod.model_copy(update={"lesion_min_ref_mm": min_ref_mm})
     row: dict[str, Any] = {"track": track, "patient": patient, "category": category,
                            "pipeline": prod.model_dump()}  # fmt: skip
     try:
@@ -92,7 +94,8 @@ def lesion_task(img, prob, item, params_dict) -> dict[str, Any]:
         q = analyse_vessel(prob, path[0], path[1], params=params, image=img, wire=False).qca
         qp = analyse_vessel(prob, path[0], path[1], params=params, image=img,
                             lesion_reader=product_reader(prod.lesion_reader),
-                            wire=prod.wire).qca  # fmt: skip
+                            wire=prod.wire,
+                            lesion_min_ref_mm=prod.lesion_min_ref_mm).qca  # fmt: skip
         at = _deepest_in_box(q, box)
         if at is None:
             raise ValueError("the path does not enter the box")
@@ -125,6 +128,7 @@ def measure(
     *,
     workers: int = 1,
     progress: Callable[[int, int], None] | None = None,
+    min_ref_mm: float | None = None,
 ) -> list[dict[str, Any]]:
     """One row per lesion; segmentation here, the rest in ``workers`` processes."""
     from concurrent.futures import ProcessPoolExecutor
@@ -137,7 +141,7 @@ def measure(
         rows = []
         for k, it in enumerate(items):
             img = read_image_file(it[3].image).image
-            rows.append(lesion_task(img, segmenter.predict(img), it, pd))
+            rows.append(lesion_task(img, segmenter.predict(img), it, pd, min_ref_mm))
             if progress:
                 progress(k + 1, len(items))
         return rows
@@ -147,7 +151,8 @@ def measure(
         futs = []
         for it in items:
             img = read_image_file(it[3].image).image
-            futs.append(pool.submit(lesion_task, img, segmenter.predict(img), it, pd))
+            futs.append(pool.submit(lesion_task, img, segmenter.predict(img), it, pd,
+                                    min_ref_mm))  # fmt: skip
         rows = []
         for k, f in enumerate(futs):
             rows.append(f.result())

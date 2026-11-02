@@ -70,6 +70,12 @@ def _reader(learned: bool):
     return get_lesion_reader() if learned else product_reader(product_config().lesion_reader)
 
 
+def _min_ref() -> float | None:
+    from vstent.inference.product import product_config
+
+    return product_config().lesion_min_ref_mm
+
+
 def _wire(manual: bool) -> bool:
     from vstent.inference.product import product_config
 
@@ -109,7 +115,8 @@ def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg, learned=Fal
     # D68: the FFR where a wire would sit, except on a path whose ends the user set
     return analyse_vessel(_prob, start, end, params=_params(pa_mmhg), mm_per_px=mm_per_px,
                           image=_image, lesion_reader=_reader(learned),
-                          wire=_wire(manual))  # fmt: skip
+                          wire=_wire(manual),
+                          lesion_min_ref_mm=_min_ref())  # fmt: skip
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the other heartbeats…")
@@ -120,7 +127,8 @@ def heartbeats(key: str, _rf, frame: int, start, end, mm_per_px, pa_mmhg, _refer
 
     def one(p, im, a, b):
         return analyse_vessel(p, a, b, params=params, mm_per_px=mm_per_px, image=im,
-                              lesion_reader=reader, wire=_wire(manual))  # fmt: skip
+                              lesion_reader=reader, wire=_wire(manual),
+                          lesion_min_ref_mm=_min_ref())  # fmt: skip
 
     return run_consensus(_rf, frame, start, end, get_models().segmentation.predict, one,
                          reference_analysis=_reference)  # fmt: skip

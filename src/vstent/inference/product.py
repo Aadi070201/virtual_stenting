@@ -21,6 +21,7 @@ class ProductConfig(StrictModel):
     lesion_reader: str | None = None  # an exported reader directory (models/lesion/<run>)
     outflow: Literal["none", "murray"] = "none"
     wire: bool = True  # D68
+    lesion_min_ref_mm: float | None = None  # P4n: the learned depth only in vessels ≥ this
 
 
 @lru_cache(maxsize=4)

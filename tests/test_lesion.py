@@ -176,3 +176,31 @@ def test_version_2_intervals_and_training(tmp_path):
     run = lm.train_lesion(cfg, checkpoint_root=tmp_path / "ckpt")
     oof = json.loads((run / lm.OOF_FILE).read_text(encoding="utf-8"))["samples"]
     assert len(oof) == 36 and all(0 <= s["oof_ds"] <= 100 for s in oof)
+
+
+def test_thin_vessel_guard():
+    """P4n: with min_ref_mm, a candidate in a vessel thinner than that keeps the edges' depth."""
+    from vstent.imaging.qca import run_qca
+
+    prob = np.zeros((80, 460))
+    for c in range(10, 450):
+        half = 7.0 - 4.2 * (c - 10) / 440  # tapers 3.5 → 1.4 mm at 0.25 mm/px
+        if abs(c - 120) < 8 or abs(c - 380) < 8:
+            half *= 0.55  # a narrowing where the vessel is wide, and one where it is thin
+        prob[int(40 - half) : int(40 + half) + 1, c] = 1.0
+    q = run_qca(prob, (40, 15), (40, 445), mm_per_px=0.25)
+    img = np.full(prob.shape, 120, np.uint8)
+    cands = lp.candidates(q)
+    refs = sorted(c.ref_px * q.mm_per_px for c in cands)
+    assert len(cands) >= 2 and refs[0] < 2.0 <= refs[-1]
+
+    def deep(patches, scalars):
+        return np.full(len(patches), 95.0)
+
+    every, _ = lp.apply_learned(q, img, prob, deep)
+    guarded, _ = lp.apply_learned(q, img, prob, deep, min_ref_mm=2.0)
+    thin = min(cands, key=lambda c: c.ref_px)
+    wide = max(cands, key=lambda c: c.ref_px)
+    assert guarded.profile.r[wide.k] < q.profile.r[wide.k]  # the reader's depth
+    assert guarded.profile.r[thin.k] == pytest.approx(q.profile.r[thin.k])  # the edges' depth
+    assert every.profile.r[thin.k] < q.profile.r[thin.k]  # without the guard: deepened

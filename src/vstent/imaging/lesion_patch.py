@@ -142,9 +142,12 @@ def apply_learned(
     image: np.ndarray,
     prob: np.ndarray,
     predict: Callable[[np.ndarray, np.ndarray], np.ndarray],
+    min_ref_mm: float | None = None,
 ) -> tuple[QCAResult, list[tuple[Candidate, float]]]:
     """The QCA with every candidate's depth set to its predicted %DS (``predict``: patches
-    (n, 2, 64, 32), scalars (n, 3) → %DS (n,)); and the (candidate, prediction) pairs."""
+    (n, 2, 64, 32), scalars (n, 3) → %DS (n,)); and the (candidate, prediction) pairs. With
+    ``min_ref_mm`` (P4n), candidates whose reference diameter is smaller keep the edges'
+    depth."""
     cands = candidates(qca)
     if not cands:
         return qca, []
@@ -154,7 +157,10 @@ def apply_learned(
     profile = qca.profile
     m_per_px = qca.mm_per_px * qca.size_factor * 1e-3
     r = profile.r
+    mm_per_px = qca.mm_per_px * qca.size_factor
     for c, p in zip(cands, preds, strict=True):
+        if min_ref_mm is not None and c.ref_px * mm_per_px < min_ref_mm:
+            continue  # P4n: a thin vessel keeps the edges' depth
         r = rescale(VesselProfile(profile.s, r, profile.reference_radius()), c, float(p),
                     MIN_DIAMETER_PX * m_per_px / 2.0)  # fmt: skip
     new_profile = VesselProfile(profile.s, r, profile.reference_radius())

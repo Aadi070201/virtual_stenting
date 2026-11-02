@@ -164,6 +164,7 @@ def analyse_vessel(
     lumen: str | None = None,
     lesion_reader=None,
     wire: bool = True,
+    lesion_min_ref_mm: float | None = None,
 ) -> VesselAnalysis:
     """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
     ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
@@ -179,7 +180,8 @@ def analyse_vessel(
     if lesion_reader is not None and image is not None:
         from vstent.imaging.lesion_patch import apply_learned
 
-        qca, _ = apply_learned(qca, image, prob, lesion_reader.predict)
+        qca, _ = apply_learned(qca, image, prob, lesion_reader.predict,
+                               min_ref_mm=lesion_min_ref_mm)  # fmt: skip
     full_qca = None
     if wire:  # D68: the FFR where a pressure wire would sit
         cut, _ = at_wire(qca)
