@@ -1,0 +1,15 @@
+# Learned lesion reading (P4i), as pre-registered in docs/PLAN.md. Do not change without a new
+# pre-registration.
+name: lesion_cnn
+seed: 0
+folds: 5
+epochs: 40
+batch_size: 64
+lr: 0.001
+weight_decay: 0.0001
+huber_delta: 0.1
+bce_weight: 0.5
+dropout: 0.2
+data_dir: data/derived/lesion
+runs_dir: runs
+device: cpu

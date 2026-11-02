@@ -1715,6 +1715,91 @@ def lesion_data(
 
 
 @app.command()
+def train_lesion(
+    config: Annotated[
+        Path, typer.Option("--config", exists=True, dir_okay=False, help="Training YAML.")
+    ] = Path("configs/lesion.yaml"),
+    resume: Annotated[
+        str | None, typer.Option("--resume", help="Continue this run (name or folder).")
+    ] = None,
+) -> None:
+    """Train the learned lesion reader in 5 patient folds (P4i; stoppable: vstent stop <run>)."""
+    from vstent.config import load_config
+    from vstent.imaging.lesion_model import LesionTrainConfig, resume_lesion, train_lesion
+
+    typer.echo(DISCLAIMER)
+    if resume:
+        run_dir = resume_lesion(resume, log=typer.echo)
+    else:
+        run_dir = train_lesion(load_config(config, LesionTrainConfig), log=typer.echo)
+    typer.echo(f"Run folder: {run_dir}")
+
+
+@app.command()
+def export_lesion(
+    run: Annotated[Path, typer.Option("--run", exists=True, file_okay=False, help="Run folder.")],
+) -> None:
+    """Export the lesion reader (mean of the fold models) to ONNX with a parity check."""
+    from vstent.imaging.lesion_model import export_lesion as export
+
+    meta = export(run, log=typer.echo)
+    typer.echo(f"[{'PASS' if meta['parity_passed'] else 'FAIL'}] parity "
+               f"{meta['parity_max_abs_ds']:.1e}")  # fmt: skip
+    if not meta["parity_passed"]:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def lesion_report(
+    stage: Annotated[str, typer.Option("--stage", help="dev, then test (once).")],
+    model: Annotated[
+        Path, typer.Option("--model", exists=True, file_okay=False, help="models/lesion/<run>.")
+    ],
+    report_dir: Annotated[Path, typer.Option("--report-dir", help="Output folder.")] = Path(
+        "reports"
+    ),
+) -> None:
+    """The learned lesion reading (P4i): --stage dev applies the pre-registered rule on the
+    development data; --stage test (only after the dev decision is committed) runs the test."""
+    import json
+    import subprocess
+
+    from vstent.config import git_info
+    from vstent.inference.lesion_runtime import LesionRunner
+    from vstent.validation import lesion_reading as lr
+
+    typer.echo(DISCLAIMER)
+    git = git_info()
+    runner = LesionRunner.from_dir(model)
+    run_dir = Path("runs") / model.name
+    if stage == "dev":
+        d = lr.dev_stage(run_dir, runner)
+        lr.write_report(report_dir, lr.DEV_REPORT, "Learned lesion reading: development decision",
+                        lr.dev_sections(d), d, git, model.as_posix())  # fmt: skip
+        for k, v in d["rule"].items():
+            typer.echo(f"[{'PASS' if v else 'FAIL'}] {k}")
+        typer.echo(f"Decision: {'adopted' if d['adopted'] else 'not adopted'}. Commit "
+                   f"{report_dir / (lr.DEV_REPORT + '.md')} before --stage test.")  # fmt: skip
+        return
+    if stage != "test":
+        typer.echo("--stage: dev or test", err=True)
+        raise typer.Exit(code=2)
+    dev_file = report_dir / f"{lr.DEV_REPORT}.json"
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(dev_file)],
+                             capture_output=True).returncode == 0  # fmt: skip
+    if not tracked or git["git_dirty"]:
+        typer.echo("The development decision must be committed (and the tree clean) before the "
+                   "test stage.", err=True)  # fmt: skip
+        raise typer.Exit(code=1)
+    d = json.loads(dev_file.read_text(encoding="utf-8"))
+    t = lr.test_stage(runner)
+    lr.write_report(report_dir, lr.REPORT, "Learned lesion reading on real angiograms (P4i)",
+                    [*lr.dev_sections(d), "", *lr.test_sections(t)], {"dev": d, "test": t}, git,
+                    model.as_posix())  # fmt: skip
+    typer.echo(f"Wrote {report_dir / (lr.REPORT + '.md')}")
+
+
+@app.command()
 def consensus_report(
     rows: Annotated[
         Path, typer.Option("--rows", exists=True, dir_okay=False, help="From --rows-out.")

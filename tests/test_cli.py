@@ -33,6 +33,10 @@ COMMANDS = [
     "synth-angio",
     "sim-to-real-report",
     "cine-synthetic",
+    "lesion-data",
+    "train-lesion",
+    "export-lesion",
+    "lesion-report",
 ]
 
 
