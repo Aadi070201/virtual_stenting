@@ -794,11 +794,16 @@ diameter ≥ 2 mm, and a wire measures in the distal vessel, not in a terminal b
   still ≥ 2.0 mm. The path beyond it is shown but not used for the FFR.
 - **Physics unchanged:** `outflow: none`.
 - **Evaluation:** C's check, same sets and anchors, as a third arm.
-- [ ] **Adopt** for the product (automatic path, Target, expert-box path) only if both hold:
+- [x] **Adopt** for the product (automatic path, Target, expert-box path) only if both hold:
   - the lesion-free share moves closer to 13% than now;
   - the FAME distance does not grow by more than 10 points.
 
   Test patients reported.
+
+  **Result: adopted** (D68; `reports/p4k_wire_dev.md`).
+  - Lesion-free vessels ≤ 0.80: 52% → 37% (median FFR 0.73 → 0.86).
+  - By grade (50–70 / 70–90 / 90–98%): 88 / 78 / 81% → 53 / 60 / 69% (FAME 35 / 80 / 96%).
+  - FAME distance 23 → 22 points.
 
 ### C3. Learned lesion reading together with the physics, judged end to end (CPU; added 2026-11-02, before running)
 Why: C showed the FFR depends on how deep the lesions are measured. In the model a 3 mm

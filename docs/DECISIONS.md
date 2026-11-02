@@ -1361,3 +1361,23 @@ aa14e80 and 9de7e2b; CADICA development patients, product steps, pixel size assu
 
 **Alternatives:** measuring on the faint vessels was rejected until a pre-registered check
 supports it.
+
+### D68 — The FFR is read where a pressure wire would sit (2026-11-02)
+**Finding** (`reports/p4k_wire_dev.md`; pre-registered in docs/PLAN.md, P4k-C2, commit 526c0cd;
+CADICA development patients): the FFR is read at the last point of the path whose QCA
+reference diameter is ≥ 2.0 mm (FAVOR II's vessel size).
+- Lesion-free vessels read ≤ 0.80: 52% → 37% (De Bruyne anchor about 13%).
+- Lesions 50–70 / 70–90 / 90–98% read ≤ 0.80: 88 / 78 / 81% → 53 / 60 / 69% (FAME 35 / 80 / 96%).
+- FAME distance 23 → 22 points.
+
+**Decision:**
+- The product reads the FFR, plans stents and evaluates them on the vessel up to the wire
+  position. The path beyond it is still measured and shown.
+- Physics unchanged (`outflow: none`).
+
+**Still open:** lesion-free vessels are significant in 37%, nearly three times the anchor. The
+remaining gap is lesion depth and diffuse loss: P4k-A, C3, E.
+
+**Alternatives:** a different diameter limit chosen on the data was rejected (tuning). Murray
+outflow failed its own rule (D66).
+
