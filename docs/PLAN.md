@@ -1084,6 +1084,25 @@ nearest the middle of the lesion's boxes).
   - Neither meets the targets: the residual loss after stenting is the diffuse artefact and
     the under-read lesions (C, C3).
 
+## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
+
+Why (disclosed; found on development data after D69): in P4m's development run, about 8 of
+47 planned lesions had a pre-PCI FFR of 0.06–0.07 that no stent fixed. In the two cases
+inspected, reader v2 read a narrowing in a thin distal segment (reference about 1.6–1.9 mm)
+as 91–93% (lumen 0.17 mm), where the edges read 30–50%. FAVOR II measures vessels ≥ 2 mm;
+the planner cannot size a stent below 2.25 mm.
+
+- **Guard:** the learned reader sets a candidate's depth only where its reference diameter is
+  ≥ 2.0 mm; elsewhere the edges' depth stays (`apply_learned(..., min_ref_mm=2.0)`).
+- **Arms (development patients):**
+  - D69's pipeline (reader v2 + Murray outflow);
+  - the same with the guard.
+- [ ] **Adopt** the guard only if all hold on the development patients:
+  1. C3's rule still holds against the product before D69;
+  2. the combined distance (C3) grows by at most 0.02;
+  3. P4m: the share of planned lesions with post-PCI FFR ≤ 0.80 falls.
+- [ ] Test patients once for an adopted guard: C3 and P4m.
+
 ## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)
 
 Why: image-based ED frames are within ±1 frame for 75–79% of beats (synthetic, every frame
