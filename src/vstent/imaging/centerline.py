@@ -362,7 +362,14 @@ def main_trunk_endpoints(
     graph = vessel_graph(mask, min_spur_px)
     a, _ = longest_path_endpoints(mask, min_spur_px)
     width = distance_transform_edt(clean_mask(mask))
-    visited, cur, length = {a}, a, 0.0
+    return a, _walk_trunk(graph, width, a, {a}, max_length_px)
+
+
+def _walk_trunk(graph: nx.Graph, width: np.ndarray, start: Pixel, visited: set,
+                max_length_px: float | None, length: float = 0.0) -> Pixel:  # fmt: skip
+    """From ``start``, the widest branch at every fork (avoiding ``visited``) to a vessel end
+    or ``max_length_px`` of path in all; the last pixel."""
+    cur = start
     while max_length_px is None or length < max_length_px:
         nxt = [n for n in graph.neighbors(cur) if n not in visited]
         if not nxt:
@@ -371,4 +378,24 @@ def main_trunk_endpoints(
         length += float(graph[cur][n].get("weight", 1.0))
         visited.add(n)
         cur = n
-    return a, cur
+    return cur
+
+
+def target_endpoints(
+    mask: np.ndarray, point, max_length_px: float | None = None,
+    min_spur_px: float = MIN_SPUR_PX,
+) -> tuple[Pixel, Pixel]:  # fmt: skip
+    """A path to a chosen vessel: from the vessel tree's proximal (wider) end
+    (:func:`longest_path_endpoints`) through the skeleton pixel nearest ``point`` ((row, col)
+    px, which must lie on the vessel), then on along the widest branch to that vessel's end,
+    at most ``max_length_px`` in all. Raises ``ValueError`` off the vessel or without a
+    connection."""
+    graph = vessel_graph(mask, min_spur_px)
+    width = distance_transform_edt(clean_mask(mask))
+    node = snap_point(graph, point, width, "target")
+    a, _ = longest_path_endpoints(mask, min_spur_px)
+    try:
+        lengths, paths = nx.single_source_dijkstra(graph, a, node, weight="weight")
+    except nx.NetworkXNoPath as exc:
+        raise ValueError("the chosen vessel is not connected to the main vessel tree") from exc
+    return a, _walk_trunk(graph, width, node, set(paths), max_length_px, float(lengths))

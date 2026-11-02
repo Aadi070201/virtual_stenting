@@ -113,7 +113,7 @@ def test_guided_app_whole_flow(guided_env):
     cc, _ = guided.synthetic_case(guided.DEMO_SEED)
     main = cc.case.curves[0]
     inner = main[[len(main) // 10, (7 * len(main)) // 10]]
-    frame = next(s for s in at.select_slider).value
+    frame = at.slider[0].value  # the frame slider (every frame of the run)
     a, b = np.round(cc.case.views[0].project(cc.position(0, frame / cc.runs[0].fps, inner)))
     at.session_state["start"], at.session_state["end"] = tuple(map(int, a)), tuple(map(int, b))
     at.run()
@@ -123,4 +123,51 @@ def test_guided_app_whole_flow(guided_env):
     at.toggle(key=own).set_value(True).run()
     assert not at.exception, [e.value for e in at.exception]
     assert "After the stent" in " ".join(m.value for m in at.markdown)
+    text = " ".join(m.value for m in at.markdown)
+    assert "end-diastole" in text and "contrast" in text  # the frame's state is shown
     assert len(at.get("download_button")) == 2
+
+
+def test_frame_states_and_no_plan_reasons():
+    from types import SimpleNamespace as NS
+
+    from vstent.physics.geometry import VesselProfile
+
+    smoothed = np.array([0, 0, 5, 30, 80, 95, 100, 98, 92, 60, 20, 5], float)
+    rf = NS(opacification=NS(smoothed=smoothed, arrival=3, window=(3, 10)),
+            ed=NS(found=True, frames=(2, 6, 10)), analysis_frame=6)  # fmt: skip
+    assert guided.contrast_state(rf, 1)[0] == "no contrast yet"
+    assert guided.contrast_state(rf, 3)[0] == "filling"
+    assert guided.contrast_state(rf, 6) == ("full", 100.0)
+    assert guided.contrast_state(rf, 10)[0] == "washing out"
+    assert len(guided.frame_chart(rf, 6).data) == 3
+    s = np.linspace(0, 0.06, 61)
+    healthy = VesselProfile(s, np.full_like(s, 0.0008), np.full_like(s, 0.0008))
+    catalog = NS(diameters_mm=[2.25, 3.0])
+    cfg = NS(max_diameter_ratio=1.1)
+    assert "spread along the whole path" in guided.no_plan_reason(
+        healthy, NS(lesions=[]), catalog, cfg)  # fmt: skip
+    assert "smaller than the smallest stent" in guided.no_plan_reason(
+        healthy, NS(lesions=[1]), catalog, cfg)  # fmt: skip
+    big = VesselProfile(s, np.full_like(s, 0.0015), np.full_like(s, 0.0015))
+    assert "end of the path" in guided.no_plan_reason(big, NS(lesions=[1]), catalog, cfg)
+
+
+def test_target_path_and_detection_check():
+    from vstent.imaging.centerline import target_endpoints
+
+    mask = np.zeros((120, 260), bool)
+    mask[54:67, 10:250] = True  # main vessel, wider at the left
+    mask[50:71, 10:40] = True
+    for k in range(60):  # a thin branch leaving at column 120, going down-right
+        mask[66 + k : 66 + k + 1, 120 + k : 125 + k] = True
+    a, b = target_endpoints(mask, (100, 157))  # click on the branch
+    assert a[1] < 30 and b[0] > 110  # from the proximal end down to the branch's end
+    with pytest.raises(ValueError, match="not on the vessel"):
+        target_endpoints(mask, (10, 200))
+    m1 = guided.LesionMark(1, 60, 100, 70.0, 5.0, 0.8, 30.0, 28.0, 32.0)
+    m2 = guided.LesionMark(2, 60, 200, 55.0, 4.0, 1.2, 60.0, 58.0, 62.0)
+    checks, extra = guided.detection_check(None, [m1, m2], [(90, 50, 20, 20, "70–90%"),
+                                                            (10, 10, 5, 5, "50–70%")])  # fmt: skip
+    assert [c.status for c in checks] == ["found", "off the path"]
+    assert checks[0].letter == "A" and checks[0].lesion == 1 and extra == [m2]

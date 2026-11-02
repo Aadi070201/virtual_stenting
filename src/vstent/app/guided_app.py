@@ -141,28 +141,41 @@ def ffr_guide() -> None:
 
 @st.fragment
 def frame_picker(run, rf, sha: str, expert: frozenset) -> None:
-    """Scroll the run (fast: nothing is measured); "Analyse" commits the frame. ``expert``: the
-    frames with an expert lesion box (CADICA)."""
-    key = f"frame_{sha}"
+    """Slide through every frame (fast: nothing is measured), with each frame's contrast and
+    whether it is end-diastolic; "Analyse this frame" commits it. ``expert``: the frames with
+    an expert lesion box (CADICA)."""
+    key, skey = f"frame_{sha}", f"slide_{sha}"
     current = st.session_state.get(key, rf.analysis_frame)
-    every = st.toggle("All frames", key=f"every_{sha}",
-                      help="Every frame (★ best, ◆ expert box).")  # fmt: skip
-    eds = sorted(set(rf.ed.frames)) if rf.ed.found else []
-    options = (list(range(len(run))) if every or not eds else
-               sorted({*eds, *expert, rf.analysis_frame, current}))  # fmt: skip
-    f = st.select_slider("Frame", options, value=current if current in options else
-                         rf.analysis_frame, key=f"scroll_{sha}_{every}",
-                         format_func=lambda x: guided.frame_label(x, rf, every, expert),
-                         label_visibility="collapsed")  # fmt: skip
-    left, right = st.columns([4, 1])
+    eds = sorted(f for f in set(rf.ed.frames) if 0 <= f < len(run)) if rf.ed.found else []
+    if skey not in st.session_state:
+        st.session_state[skey] = current
+    f0 = st.session_state[skey]
+    b1, b2, b3, _ = st.columns([1, 1, 1, 4])
+    if b1.button("◀ ED", key=f"prev_{sha}", help="Previous end-diastolic frame",
+                 disabled=not any(e < f0 for e in eds)):  # fmt: skip
+        st.session_state[skey] = max(e for e in eds if e < f0)
+    if b2.button("ED ▶", key=f"next_{sha}", help="Next end-diastolic frame",
+                 disabled=not any(e > f0 for e in eds)):  # fmt: skip
+        st.session_state[skey] = min(e for e in eds if e > f0)
+    if b3.button("★", key=f"best_{sha}", help="The recommended frame"):
+        st.session_state[skey] = rf.analysis_frame
+    f = st.slider("Frame", 0, len(run) - 1, key=skey, label_visibility="collapsed")
+    st.plotly_chart(guided.frame_chart(rf, f), key=f"fchart_{sha}")
+    left, right = st.columns([4, 2])
     left.image(run.frames[f], width=IMAGE_WIDTH)
     with right:
-        st.markdown(f"**Frame {f}**" + (" ★" if f == rf.analysis_frame else ""))
+        state, pct = guided.contrast_state(rf, f)
+        marks = (" ★" if f == rf.analysis_frame else "") + (" ◆" if f in expert else "")
+        st.markdown(f"**Frame {f}**{marks}")
+        st.markdown(f"{'✓' if f in eds else '✗'} end-diastole")
+        st.markdown(f"{'✓' if state == 'full' else '⚠'} contrast {state} ({pct:.0f}%)")
         if f == current:
             st.success("Analysed below")
         elif st.button("Analyse this frame", type="primary", key=f"use_{sha}_{f}"):
             st.session_state[key] = f
             st.rerun()
+        st.caption("★ = the end-diastolic frame with full contrast and the most vessel. "
+                   "◆ = an expert marked a lesion.")  # fmt: skip
 
 
 def reset_study() -> None:
@@ -256,18 +269,28 @@ def main() -> None:
     img_col, side = st.columns([4, 2])
     with side:
         picking = st.session_state.get("picking")
-        if picking:
+        if picking == "target":
+            st.info("Click the **vessel** (or the lesion) to analyse.")
+            if st.button("Cancel", key="cancel"):
+                st.session_state.picking = None
+                st.rerun()
+        elif picking:
             st.info(f"Click the **{picking}** point on the image.")
             if st.button("Cancel", key="cancel"):
                 st.session_state.picking = None
                 st.rerun()
         else:
-            c1, c2, c3 = st.columns(3)
-            if c1.button("Change path", type="primary", key="change",
+            c0, c1, c2, c3 = st.columns(4)
+            if c0.button("Target", type="primary", key="target",
+                         help="Click one vessel or lesion: the path runs from the proximal "
+                         "start through it to that vessel's end."):  # fmt: skip
+                st.session_state.picking = "target"
+                st.rerun()
+            if c1.button("Change", key="change",
                          help="Click the start, then the end, on the image."):  # fmt: skip
                 st.session_state.picking = "start"
                 st.rerun()
-            if c2.button("Auto", key="auto", help="The automatic path again."):
+            if c2.button("Auto", key="auto", help="The main vessel, automatically."):
                 st.session_state.path_key = None
                 st.rerun()
             if c3.button("⇄", key="reverse", help="Swap start and end."):
@@ -290,7 +313,20 @@ def main() -> None:
         if q0 is not None and not lesions:
             st.markdown("No narrowing ≥ 50%")
         if boxes:
-            st.caption("Cyan: the experts' lesion box on this frame.")
+            checks, extra = guided.detection_check(q0, lesions, boxes)
+            found = sum(c.status == "found" for c in checks)
+            st.markdown(f"**Experts' lesions: {found} of {len(checks)} found**",
+                        help="Cyan boxes: lesions marked by the dataset's experts on this "
+                        "frame. Found = a marked lesion (≥ 50%) inside the box.")  # fmt: skip
+            for c in checks:
+                if c.status == "found":
+                    st.markdown(f"✓ {c.letter} ({c.grade}): lesion {c.lesion}, {c.ds:.0f}%")
+                elif c.status == "read mild":
+                    st.markdown(f"✗ {c.letter} ({c.grade}): read as {c.ds:.0f}%")
+                else:
+                    st.markdown(f"○ {c.letter} ({c.grade}): not on this path (use Target)")
+            for m in extra:
+                st.caption(f"Lesion {m.number} ({m.ds_pct:.0f}%): no expert box here")
         if analysis is not None and analysis.warnings:
             with st.expander("Notes"):
                 for w in analysis.warnings:
@@ -299,6 +335,16 @@ def main() -> None:
         rgb = (guided.overlay(image, prob, q0, lesions, points=[start, end], boxes=boxes) if show
                else guided.overlay(image, None))  # fmt: skip
         pt = click_image(rgb, image.shape, f"click_{sha}_{frame}")
+        if pt is not None and st.session_state.get("picking") == "target":
+            try:
+                a, b = guided.target_path(prob, pt, mm_px)
+                st.session_state.update(start=a, end=b, picking=None)
+            except ValueError as exc:
+                st.session_state.picking = None
+                st.session_state.target_error = str(exc)
+            st.rerun()
+        if st.session_state.pop("target_error", None):
+            st.warning("That point is not on a segmented vessel: click on the vessel itself.")
         if pt is not None and st.session_state.get("picking"):
             if st.session_state.picking == "start":
                 st.session_state.update(start=pt, picking="end")
@@ -336,6 +382,10 @@ def main() -> None:
                    help=stable_text)  # fmt: skip
         if not stable:
             st.warning("Heartbeats disagree about 0.80: check the frame and the path.")
+        share = guided.loss_split(pre, guided.lesion_marks(q))
+        if share is not None:
+            st.caption(f"Pressure loss: {100 * share:.0f}% at the marked lesions, "
+                       f"{100 * (1 - share):.0f}% along the rest of the path")  # fmt: skip
         if q.calibration_assumed:
             st.caption("Pixel size assumed (0.30 mm)", help="Set it under Settings.")
     with right:
@@ -347,25 +397,32 @@ def main() -> None:
     vessel = hashlib.sha1(profile.s.tobytes() + profile.r.tobytes()).hexdigest()[:12]
     catalog, planner_cfg = get_settings()[2], get_settings()[1]
     length_mm = m_to_mm(profile.length)
-    if guided.verdict(cons.ffr).color == "green":
+    pkey = f"plans_{vessel}"
+    significant = round(cons.ffr, 2) <= guided.CUTOFF
+    if significant and pkey not in st.session_state:  # a significant result gets a plan at once
+        st.session_state[pkey] = suggest(f"{vessel}:{pa_mmhg}", profile, pa_mmhg)
+    if not significant:
         st.success("Above 0.80: no stent needed. You can still try one.")
     c1, c2 = st.columns([1, 3])
-    if c1.button("Suggest a stent", type="primary", key="suggest"):
-        st.session_state[f"plans_{vessel}"] = suggest(f"{vessel}:{pa_mmhg}", profile, pa_mmhg)
+    if c1.button("Suggest a stent", type="primary" if not significant else "secondary",
+                 key="suggest"):  # fmt: skip
+        st.session_state[pkey] = suggest(f"{vessel}:{pa_mmhg}", profile, pa_mmhg)
     own = c2.toggle("Adjust it myself", key=f"own_{vessel}")
-    plans = st.session_state.get(f"plans_{vessel}")
+    plans = st.session_state.get(pkey)
     base = pick = None
+    stents: list[Stent] = []
     if plans is not None and plans.plans:
         pick = st.radio("Plans", range(len(plans.plans)), key=f"plan_{vessel}",
                         format_func=lambda k: guided.stent_text(list(plans.plans[k].stents),
                                                                 plans.plans[k].ffr),
                         label_visibility="collapsed")  # fmt: skip
-        base = plans.plans[pick].stents[0]
+        stents = list(plans.plans[pick].stents)
+        base = stents[0]
         if not plans.plans[pick].meets_target:
-            st.warning(f"No plan reaches {plans.target:.2f}: check the path.")
+            st.warning(f"No plan reaches {plans.target:.2f}; the best one is shown. "
+                       "Check that the path covers the whole lesion.")  # fmt: skip
     elif plans is not None:
-        st.warning(plans.message)
-    stent = base
+        st.error(guided.no_plan_reason(profile, plans, catalog, planner_cfg))
     lengths = [x for x in catalog.lengths_mm if x <= length_mm]  # stents that fit the path
     if own and not lengths:
         st.info(f"Path {length_mm:.0f} mm: shorter than any stent.")
@@ -385,10 +442,12 @@ def main() -> None:
         s_start = k3.slider("Start (mm)", 0.0, max(max_start, 0.5),
                             float(min(max(s0, 0.0), max_start)), 0.5,
                             key=f"start_{tag}")  # fmt: skip
-        stent = Stent(mm_to_m(min(s_start, max_start)), mm_to_m(ln), mm_to_m(dia))
+        own_stent = Stent(mm_to_m(min(s_start, max_start)), mm_to_m(ln), mm_to_m(dia))
+        stents = [own_stent, *stents[1:]]
     post = None
-    if stent is not None:
-        stented, post = core.stent_update(profile, [stent], pre, params, params.pa, params.pv,
+    stent = stents[0] if stents else None
+    if stents:
+        stented, post = core.stent_update(profile, stents, pre, params, params.pa, params.pv,
                                           None, edge=mm_to_m(planner_cfg.edge_mm))  # fmt: skip
         a_col, b_col = st.columns([3, 2])
         with a_col:
@@ -397,7 +456,7 @@ def main() -> None:
                 chosen.analysis.prob,
                 q,
                 guided.lesion_marks(q),
-                [stent],
+                stents,
                 [chosen.start, chosen.end],
             )
             st.image(rgb, width=IMAGE_WIDTH, caption=f"Frame {chosen.frame} · stent in orange")
@@ -406,13 +465,13 @@ def main() -> None:
             v_after = (guided.Verdict("Good result", "blue", "after the stent")
                        if after >= guided.POST_TARGET else guided.verdict(after))  # fmt: skip
             big_number(after, v_after, f"After the stent (now {pre.distal_solver:.2f})")
-            st.caption(guided.stent_text([stent]))
-            for w in core.stent_warnings(profile, [stent], planner_cfg.max_diameter_ratio):
+            st.caption(guided.stent_text(stents))
+            for w in core.stent_warnings(profile, stents, planner_cfg.max_diameter_ratio):
                 st.warning(w)
             st.plotly_chart(guided.ffr_chart(pre, post, guided.lesion_marks(q)),
                             key="ffr_after")  # fmt: skip
         with st.expander("Diameter along the path"):
-            st.plotly_chart(core.profile_figure(profile, stented, [stent]), key="diameters")
+            st.plotly_chart(core.profile_figure(profile, stented, stents), key="diameters")
 
     # 5 · report -------------------------------------------------------------------------------
     st.markdown("#### 5 · Report")

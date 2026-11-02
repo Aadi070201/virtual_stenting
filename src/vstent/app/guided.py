@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 import plotly.graph_objects as go
 
-from vstent.imaging.centerline import main_trunk_endpoints
+from vstent.imaging.centerline import main_trunk_endpoints, target_endpoints
 from vstent.imaging.image_io import RunInput, read_run, read_run_bytes
 from vstent.imaging.qca import QCAResult
 from vstent.imaging.segment import THRESHOLD
@@ -47,7 +47,7 @@ HEX = {"green": "#1baf7a", "orange": "#e08a00", "red": "#dc2626", "blue": "#2a78
 # CADICA runs in the library: severe lesions first; occlusions (no valid FFR) and runs without a
 # marked lesion last
 LIBRARY_ORDER = ("p90_98", "p99", "p70_90", "p50_70", "p20_50", "p0_20", "p100", None)
-AUTO_PATH_MM = 100.0  # an automatic path stops here: coronary arteries are rarely longer in 2D
+AUTO_PATH_MM = 250.0  # a safety cap: the main-trunk path normally ends at the vessel's end
 MARK_MIN_DS = 50.0  # narrowings marked on the image (milder ones are counted, not marked)
 
 # colours (RGB) on the angiogram
@@ -198,6 +198,14 @@ def thumbnail(image: np.ndarray, width: int = 160) -> np.ndarray:
     return cv2.resize(image, (width, max(1, round(h * width / w))), interpolation=cv2.INTER_AREA)
 
 
+def target_path(prob: np.ndarray, point, mm_per_px: float | None):
+    """The path to the vessel the user clicked (``point`` (row, col)): from the proximal end
+    through the click to the end of that vessel (:func:`~vstent.imaging.centerline.
+    target_endpoints`)."""
+    a, b = target_endpoints(prob >= THRESHOLD, point, AUTO_PATH_MM / (mm_per_px or 0.30))
+    return tuple(map(int, a)), tuple(map(int, b))
+
+
 def auto_path(prob: np.ndarray, mm_per_px: float | None) -> tuple[tuple[int, int], tuple[int, int]]:
     """An automatic path ((row, col) start, end): from the vessel tree's widest end along the
     main trunk, at most :data:`AUTO_PATH_MM` (at the pixel size; 0.30 mm assumed if unknown)."""
@@ -308,10 +316,10 @@ def overlay(
         rgb[mask] = 0.65 * rgb[mask] + 0.35 * VESSEL
     out = rgb.astype(np.uint8)
     scale = max(1, round(max(image.shape) / 512))
-    for x, y, w, h, grade in boxes or []:
+    for n, (x, y, w, h, grade) in enumerate(boxes or []):
         p0, p1 = (int(x), int(y)), (int(x + w), int(y + h))
         cv2.rectangle(out, p0, p1, EXPERT, scale, cv2.LINE_AA)
-        cv2.putText(out, f"expert {grade}", (p0[0], max(10, p0[1] - 4)),
+        cv2.putText(out, f"{chr(65 + n)} {grade}", (p0[0], max(10, p0[1] - 4)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4 * scale, EXPERT, scale, cv2.LINE_AA)  # fmt: skip
     if qca is not None:
         pts = np.round(qca.centerline.points[:, ::-1]).astype(np.int32)
@@ -389,3 +397,117 @@ def lesion_zoom(
             cv2.polylines(out, [xy], False, PATH, 1, cv2.LINE_AA)
         cv2.circle(out, (half * zoom, half * zoom), 3 * zoom, LESION, 1, cv2.LINE_AA)
     return out
+
+
+def contrast_state(rf, f: int) -> tuple[str, float]:
+    """How full of contrast frame ``f`` is: (state, % of the run's peak vessel area). States:
+    no contrast yet (before the arrival), filling, full (the opacification plateau, the frames
+    the multi-frame median uses), washing out."""
+    op = rf.opacification
+    pct = 100.0 * float(op.smoothed[f]) / max(float(op.smoothed.max()), 1.0)
+    lo, hi = opacified_frames(rf, None)
+    if f < op.arrival:
+        return "no contrast yet", pct
+    if lo <= f <= hi:
+        return "full", pct
+    return ("filling", pct) if f < lo else ("washing out", pct)
+
+
+def frame_chart(rf, frame: int) -> go.Figure:
+    """Contrast per frame (% of peak vessel area), the full-contrast frames shaded, the
+    end-diastolic frames (diamonds), the recommended one (★) and ``frame`` (line)."""
+    op = rf.opacification
+    t = np.arange(op.smoothed.size)
+    peak = max(float(op.smoothed.max()), 1.0)
+    lo, hi = opacified_frames(rf, None)
+    fig = go.Figure()
+    fig.add_vrect(x0=lo - 0.5, x1=hi + 0.5, fillcolor="rgba(27,175,122,0.10)", line_width=0,
+                  annotation_text="full contrast", annotation_position="top left")  # fmt: skip
+    fig.add_scatter(x=t, y=100 * op.smoothed / peak, name="contrast", hoverinfo="x+y",
+                    line={"color": HEX["blue"], "width": 2})  # fmt: skip
+    eds = [f for f in (rf.ed.frames if rf.ed.found else ()) if 0 <= f < t.size]
+    fig.add_scatter(x=eds, y=[100 * op.smoothed[f] / peak for f in eds], mode="markers",
+                    name="end-diastole", marker={"color": HEX["orange"], "symbol": "diamond",
+                                                 "size": 9})  # fmt: skip
+    r = rf.analysis_frame
+    fig.add_scatter(x=[r], y=[100 * op.smoothed[r] / peak], mode="markers+text", text=["★"],
+                    textposition="top center", name="recommended",
+                    marker={"color": HEX["green"], "size": 12})  # fmt: skip
+    fig.add_vline(x=frame, line={"color": "#52514e", "width": 1.5, "dash": "dash"})
+    fig.update_layout(template="plotly_white", height=190, showlegend=True,
+                      margin={"l": 40, "r": 10, "t": 10, "b": 30}, xaxis_title="frame",
+                      yaxis_title="contrast %", yaxis_range=[0, 110],
+                      legend={"orientation": "h", "y": 1.25, "x": 0})  # fmt: skip
+    return fig
+
+
+def loss_split(pre, lesions: list[LesionMark]) -> float | None:
+    """Share of the path's pressure loss (1 − distal FFR) that happens inside the marked
+    lesions (``pre``: :class:`~vstent.app.core.Curves`); ``None`` without a loss."""
+    total = 1.0 - float(pre.solver[-1])
+    if total <= 1e-6:
+        return None
+    s_mm = m_to_mm(pre.s)
+    focal = 0.0
+    for m in lesions:
+        a = float(np.interp(m.start_mm, s_mm, pre.solver))
+        b = float(np.interp(m.end_mm, s_mm, pre.solver))
+        focal += max(a - b, 0.0)
+    return min(focal / total, 1.0)
+
+
+def no_plan_reason(profile, plans, catalog, config) -> str:
+    """Why the planner proposed no stent, in plain words, with what to try."""
+    ref_mm = 2e3 * float(np.median(profile.reference_radius()))
+    smallest = min(catalog.diameters_mm)
+    if not plans.lesions:
+        return ("The pressure loss is spread along the whole path (a small or long vessel, or "
+                "diffuse disease), not at one narrowing, so no stent can fix it. Check that the "
+                "path stays in the main vessel (Change path) and that the pixel size is right "
+                "(Settings).")  # fmt: skip
+    if smallest > config.max_diameter_ratio * ref_mm:
+        return (f"The vessel measures {ref_mm:.1f} mm, smaller than the smallest stent "
+                f"({smallest:g} mm) allows. With an assumed pixel size this is often too small: "
+                "set the pixel size under Settings.")  # fmt: skip
+    return ("The narrowing reaches the end of the path, so there is no healthy vessel for the "
+            "stent to land on. Extend the path a little beyond the lesion "
+            "(Change path).")  # fmt: skip
+
+
+@dataclass(frozen=True)
+class BoxCheck:
+    """One expert box against the analysis: ``status`` "found" (a marked lesion inside it),
+    "read mild" (the path crosses it but reads < 50%) or "off the path"; ``ds``: our largest
+    %DS inside it (``None`` off the path)."""
+
+    letter: str
+    grade: str
+    status: str
+    ds: float | None
+    lesion: int | None
+
+
+def detection_check(
+    qca: QCAResult | None, lesions: list[LesionMark], boxes, margin_px: float = 4.0
+) -> tuple[list[BoxCheck], list[LesionMark]]:
+    """Every expert box (x, y, w, h, grade) checked against the analysed path and its marked
+    lesions; and the marked lesions inside no box (extra)."""
+    checks, inside_any = [], set()
+    pts = None if qca is None else qca.centerline.points
+    ds = None if qca is None else 100.0 * (1.0 - qca.profile.r / qca.profile.reference_radius())
+    for n, (x, y, w, h, grade) in enumerate(boxes):
+        x0, y0, x1, y1 = x - margin_px, y - margin_px, x + w + margin_px, y + h + margin_px
+        hit = [m for m in lesions if x0 <= m.col <= x1 and y0 <= m.row <= y1]
+        inside_any.update(m.number for m in hit)
+        on = None
+        if pts is not None:
+            on = (pts[:, 1] >= x0) & (pts[:, 1] <= x1) & (pts[:, 0] >= y0) & (pts[:, 0] <= y1)
+        best = float(ds[on].max()) if on is not None and on.any() else None
+        if hit:
+            top = max(hit, key=lambda m: m.ds_pct)
+            checks.append(BoxCheck(chr(65 + n), grade, "found", top.ds_pct, top.number))
+        elif best is not None:
+            checks.append(BoxCheck(chr(65 + n), grade, "read mild", max(best, 0.0), None))
+        else:
+            checks.append(BoxCheck(chr(65 + n), grade, "off the path", None, None))
+    return checks, [m for m in lesions if m.number not in inside_any]
