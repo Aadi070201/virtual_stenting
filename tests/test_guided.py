@@ -171,3 +171,15 @@ def test_target_path_and_detection_check():
                                                             (10, 10, 5, 5, "50–70%")])  # fmt: skip
     assert [c.status for c in checks] == ["found", "off the path"]
     assert checks[0].letter == "A" and checks[0].lesion == 1 and extra == [m2]
+
+
+def test_go_to_an_expert_frame(guided_env, monkeypatch):
+    """The jump to the experts' frames must not touch the slider after it is drawn."""
+    case = guided.Case("synthetic:9500", "Synthetic with boxes", "synthetic", seed=9500,
+                       boxes=((5, 100.0, 100.0, 30.0, 30.0, "70–90%"),))  # fmt: skip
+    monkeypatch.setattr(guided, "case_library", lambda *a, **k: [case])
+    at = AppTest.from_file(str(GUIDED_SCRIPT), default_timeout=300).run()
+    assert not at.exception, [e.value for e in at.exception]
+    at.button(key="to_expert").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert at.slider[0].value == 5

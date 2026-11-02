@@ -195,6 +195,12 @@ def frame_picker(run, rf, sha: str, expert: frozenset) -> None:
                    "◆ = an expert marked a lesion.")  # fmt: skip
 
 
+def go_to_frame(sha: str, frame: int) -> None:
+    """Analyse ``frame`` and show it on the slider (a button callback)."""
+    st.session_state[f"frame_{sha}"] = frame
+    st.session_state[f"slide_{sha}"] = frame
+
+
 def reset_study() -> None:
     for k in list(st.session_state):
         if k != "case":
@@ -342,11 +348,10 @@ def main() -> None:
             span = f"{expert_frames[0]}–{expert_frames[-1]}"
             st.markdown(f"**Experts' lesions** ({', '.join(grades)}) are marked on frames "
                         f"{span} (◆), not on this one.")  # fmt: skip
-            if st.button("Go to an expert frame", key="to_expert"):
-                target = min(expert_frames, key=lambda f: abs(f - rf.analysis_frame))
-                st.session_state[f"frame_{sha}"] = target
-                st.session_state[f"slide_{sha}"] = target
-                st.rerun()
+            target = min(expert_frames, key=lambda f: abs(f - rf.analysis_frame))
+            # a callback: it runs before the frame slider is drawn again
+            st.button("Go to an expert frame", key="to_expert", on_click=go_to_frame,
+                      args=(sha, target))  # fmt: skip
         if boxes:
             checks, extra = guided.detection_check(q0, lesions, boxes)
             found = sum(c.status == "found" for c in checks)
