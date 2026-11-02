@@ -1567,6 +1567,10 @@ def repeatability(
     report_dir: Annotated[
         Path, typer.Option("--report-dir", help="Where to write repeatability.md.")
     ] = Path("reports"),
+    rows_out: Annotated[
+        Path | None, typer.Option("--rows-out", help="Also save every box's row (JSON).")
+    ] = None,
+    report: Annotated[bool, typer.Option("--report/--no-report", help="Write the report.")] = True,
 ) -> None:
     """Frame-to-frame and operator-to-operator repeatability of %DS and FFR on CADICA's real
     angiograms → reports/repeatability.md (P4f)."""
@@ -1591,6 +1595,20 @@ def repeatability(
 
     params = load_config(Path("configs/physics.yaml"), PhysicsParams)
     rows = rp.measure(tracks, seg, params, workers=workers, progress=progress)
+    if rows_out is not None:
+        import json
+
+        from vstent.validation.stenosis_grading import patient_split
+
+        split = patient_split([t.patient for t in tracks])
+        rows_out.parent.mkdir(parents=True, exist_ok=True)
+        rows_out.write_text(json.dumps({"rows": [{**r, "split": split[r["patient"]]}
+                                                 for r in rows], "git": git,
+                                        "seg_model": Path(seg_dir).as_posix()}),
+                            encoding="utf-8")  # fmt: skip
+        typer.echo(f"Wrote {rows_out}")
+    if not report:
+        return
     s = rp.summarise(rows)
     rp.write_report(s, git, Path(seg_dir).as_posix(), report_dir)
     for t in s["targets"]:
