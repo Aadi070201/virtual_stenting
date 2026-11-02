@@ -1368,6 +1368,51 @@ def two_view_synthetic(
 
 
 @app.command()
+def cine_synthetic(
+    config: Annotated[Path, typer.Option("--config", help="Synthetic cine cases.")] = Path(
+        "configs/cine_synthetic.yaml"
+    ),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write cine_synthetic.md.")
+    ] = Path("reports"),
+    workers: Annotated[int, typer.Option("--workers", help="Parallel processes.")] = 1,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    calibrate: Annotated[
+        bool, typer.Option("--calibrate", help="Velocity intervals on the development seeds.")
+    ] = False,
+) -> None:
+    """End-diastolic frames and flow velocity on synthetic beating-heart runs against the
+    truth (P7) → reports/cine_synthetic.md; --calibrate → reports/cine_calibration.md."""
+    from vstent.config import git_info, load_config
+    from vstent.imaging import cine_report as cr
+    from vstent.imaging.synthetic_cine import CineSynthConfig
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+
+    typer.echo(DISCLAIMER)
+    git = git_info()  # before anything is written
+    cfg = load_config(config, CineSynthConfig)
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    if calibrate:
+        rows = cr.run_cases(cfg, cr.CALIBRATION_SEEDS, seg_dir, workers)
+        c = cr.write_calibration(rows, cr.CALIBRATION_SEEDS, git, seg_dir, report_dir)
+        typer.echo(f"Velocity half-widths ({c['level']:.0%}): one run {c['per_run']:.3f} "
+                   f"(n = {c['n_runs']}), mean of two runs {c['two_runs']:.3f} "
+                   f"(n = {c['n_cases']}); in use {c['in_use']}")  # fmt: skip
+        typer.echo(f"Wrote {report_dir / 'cine_calibration.md'}")
+        return
+    seeds = range(cfg.seed, cfg.seed + cfg.n_cases)
+    rows = cr.run_cases(cfg, seeds, seg_dir, workers)
+    s = cr.write_report(rows, cfg, seeds, git, seg_dir, report_dir)
+    for t in s["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']}")
+    typer.echo(f"Wrote {report_dir / 'cine_synthetic.md'}")
+    if not all(t["passed"] for t in s["targets"]):
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def mvp_report(
     report_dir: Annotated[
         Path, typer.Option("--report-dir", help="Folder with the generated reports.")

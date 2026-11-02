@@ -1,0 +1,31 @@
+# Synthetic beating-heart cine runs (docs/PLAN.md, P7). NOT clinical data.
+# `vstent cine-synthetic` writes reports/cine_synthetic.md on the held-out seeds below;
+# `--calibrate` writes reports/cine_calibration.md on development seeds 9124-9163.
+# Ranges are [low, high], sampled uniformly. Sampling choices may be tuned; methods and settings
+# were chosen on development seeds 9100-9163 only (D55). The physics comes from configs/physics.yaml.
+name: cine_synthetic
+seed: 9200                     # held-out: case i is seed 9200 + i (the report, run once)
+n_cases: 60
+
+scene: {}                      # trees, views and imaging chain: the P5 defaults (TwoViewSynthConfig)
+
+heart_rate_bpm: [50.0, 110.0]
+fps_choices: [7.5, 15.0, 15.0, 30.0]   # drawn with equal probability
+contraction: [0.08, 0.15]      # end-systolic radius reduction
+systole_s: [0.28, 0.34]        # R wave to end-systole
+twist_deg: [3.0, 8.0]
+breathing_mm: [0.0, 4.0]
+breathing_period_s: [3.0, 6.0]
+velocity_m_s: [0.10, 0.35]     # resting, cycle average
+diastolic_ratio: [1.5, 2.5]    # diastolic / systolic front speed (phasic flow)
+front_ramp_mm: [5.0, 15.0]
+arrival_s: [0.3, 1.0]
+plateau_beats: [1.5, 3.0]
+washout_s: [0.8, 1.5]
+tail_s: 0.3
+ecg_prob: 0.5
+ecg_fs_hz: 500.0
+ecg_noise_mv: 0.03
+frame_delay_ms: [0.0, 100.0]
+ecg_lead_ms: [0.0, 300.0]
+layout_tries: 30

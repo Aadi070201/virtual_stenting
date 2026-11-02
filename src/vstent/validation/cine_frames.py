@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 
 from vstent.data.cadica import SelectedRun
+from vstent.imaging.cardiac import ED_AREA_FRACTION, ed_analysis_frame, ed_from_spread
 from vstent.imaging.centerline import longest_path_endpoints, trace_centerline
 from vstent.imaging.cine import (
     LEVEL,
@@ -22,6 +23,7 @@ from vstent.imaging.cine import (
     contrast_transit,
     opacification,
     vessel_areas,
+    vessel_stats,
 )
 from vstent.imaging.image_io import read_run
 from vstent.validation.stats import cluster_bootstrap, wilson
@@ -56,17 +58,59 @@ def run_areas(
     return {run_key(r): cache[run_key(r)] for r in runs}
 
 
-def score_run(run: SelectedRun, areas: list[int], fraction: float = OPACIFIED_FRACTION) -> dict:
+def run_stats(
+    runs: list[SelectedRun],
+    segment: Callable[[np.ndarray], np.ndarray],
+    cache_file: str | Path,
+    progress: Callable[[int, int], None] | None = None,
+) -> dict[str, dict[str, list]]:
+    """Vessel pixels and vessel-tree spread (px; ``None`` where too few vessel pixels) per
+    frame of every run, cached like :func:`run_areas` (P7)."""
+    cache_file = Path(cache_file)
+    cache = json.loads(cache_file.read_text(encoding="utf-8")) if cache_file.exists() else {}
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    for k, run in enumerate(runs, 1):
+        key = run_key(run)
+        if key not in cache:
+            area, spread = vessel_stats(read_run(run.frames_dir).frames, segment)
+            cache[key] = {
+                "area": area.tolist(),
+                "spread": [None if not np.isfinite(x) else float(x) for x in spread],
+            }
+            cache_file.write_text(json.dumps(cache), encoding="utf-8")
+        if progress:
+            progress(k, len(runs))
+    return {run_key(r): cache[run_key(r)] for r in runs}
+
+
+def ed_frame(areas, spread, fraction: float = OPACIFIED_FRACTION,
+             area_fraction: float = ED_AREA_FRACTION) -> int:  # fmt: skip
+    """The end-diastolic rule's analysis frame (0-based; P7): image-based ED frames (CADICA
+    gives no frame time or ECG), the one in the opacified window with the largest area."""
+    op = opacification(np.asarray(areas), fraction)
+    s = np.array([np.nan if x is None else x for x in spread], float)
+    ed = ed_from_spread(s, op.smoothed, None, area_fraction=area_fraction)
+    return ed_analysis_frame(op, ed)[0]
+
+
+def score_run(
+    run: SelectedRun,
+    areas: list[int],
+    fraction: float = OPACIFIED_FRACTION,
+    analysis_frame: int | None = None,
+) -> dict:
     """The run's automatic analysis frame and window against the clinicians' frames (1-based).
 
     ``hit``: the analysis frame is one of the selected frames; ``in_span``: it lies between the
     first and last selected frame; ``iou``: overlap of the window with the selected frames
     (intersection / union of frame sets); ``arrival_before``: contrast arrival is not later than
-    the first selected frame."""
+    the first selected frame. ``analysis_frame`` (0-based) replaces the most opacified frame
+    (the P7 end-diastolic rule)."""
     op = opacification(np.asarray(areas), fraction)
     window = set(range(op.window[0] + 1, op.window[1] + 2))
     sel = set(run.selected)
-    analysis, arrival = op.analysis_frame + 1, op.arrival + 1
+    frame = op.analysis_frame if analysis_frame is None else analysis_frame
+    analysis, arrival = frame + 1, op.arrival + 1
     return {
         "patient": run.patient, "video": run.video, "lesion": run.lesion,
         "n_frames": len(areas), "selected_first": min(sel), "selected_last": max(sel),

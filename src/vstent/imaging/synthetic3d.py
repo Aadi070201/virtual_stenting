@@ -100,6 +100,7 @@ class TwoViewCase:
         views: the two projections.
         motion_m: (3,) shift of the heart in the second run (motion scenario) (m).
         imaging: contrast, blur, edge enhancement and noise settings.
+        centre_m: (3,) the heart sphere's centre (m); the branches lie on that sphere.
     """
 
     seed: int
@@ -109,6 +110,7 @@ class TwoViewCase:
     views: tuple[ProjectionGeometry, ProjectionGeometry]
     motion_m: np.ndarray
     imaging: dict[str, float]
+    centre_m: np.ndarray | None = None
 
     @property
     def main_length(self) -> float:
@@ -300,7 +302,7 @@ def sample_case(seed: int, cfg: TwoViewSynthConfig) -> TwoViewCase:
                         "noise_sd",
                     )
                 }
-                return TwoViewCase(seed, tree, curves, arcs, views, motion, imaging)
+                return TwoViewCase(seed, tree, curves, arcs, views, motion, imaging, centre)
     raise ValueError(
         f"seed {seed}: no layout fits the images in {cfg.max_trees} trees × {cfg.layout_tries} "
         "tries "

@@ -32,6 +32,7 @@ COMMANDS = [
     "two-view-synthetic",
     "synth-angio",
     "sim-to-real-report",
+    "cine-synthetic",
 ]
 
 

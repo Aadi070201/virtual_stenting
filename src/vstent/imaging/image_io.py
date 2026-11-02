@@ -18,6 +18,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from vstent.imaging.cardiac import EcgSignal, r_wave_pointer, read_ecg
 from vstent.imaging.projection import DicomProjection, ProjectionGeometry, read_projection
 
 
@@ -103,6 +104,8 @@ class RunInput:
     note: str = ""
     detector_spacing_mm: float | None = None
     geometry: ProjectionGeometry | None = None
+    r_wave_frames: tuple[int, ...] | None = None  # DICOM R-wave pointer (P7)
+    ecg: EcgSignal | None = None  # DICOM ECG waveform (P7)
 
     def __len__(self) -> int:
         return len(self.frames)
@@ -179,6 +182,17 @@ def read_run_bytes(data: bytes, name: str) -> RunInput:
     note = (
         proj.note if ms else f"DICOM without FrameTime / CineRate: frame time unknown. {proj.note}"
     )
+    pointer, ecg = r_wave_pointer(ds, len(arr)), read_ecg(ds)
+    if pointer or ecg is not None:
+        note += (
+            " Cardiac timing: "
+            + ", ".join(
+                x
+                for x, ok in (("R-wave pointer", pointer), ("ECG waveform", ecg is not None))
+                if ok
+            )
+            + "."
+        )
     return RunInput(to_uint8(arr), name, hashlib.sha256(data).hexdigest(), ms,
                     proj.iso_spacing_mm, note, proj.detector_spacing_mm,
-                    proj.geometry)  # fmt: skip
+                    proj.geometry, pointer, ecg)  # fmt: skip

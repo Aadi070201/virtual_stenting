@@ -12,7 +12,7 @@ are 0-based; lengths in px.
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.ndimage import gaussian_filter, map_coordinates, median_filter, minimum_filter
@@ -70,6 +70,18 @@ def vessel_areas(
     return np.array([int((segment(f) >= level).sum()) for f in frames])
 
 
+def vessel_stats(
+    frames: np.ndarray, segment: Callable[[np.ndarray], np.ndarray], level: float = LEVEL
+) -> tuple[np.ndarray, np.ndarray]:
+    """(T,) vessel pixels and (T,) vessel-tree spread (px, :func:`~vstent.imaging.cardiac.
+    tree_spread`) per frame, from one segmentation of each frame."""
+    from vstent.imaging.cardiac import tree_spread
+
+    masks = (segment(f) >= level for f in frames)
+    stats = [(int(m.sum()), tree_spread(m)) for m in masks]
+    return np.array([a for a, _ in stats]), np.array([s for _, s in stats], float)
+
+
 TRANSIT_SEARCH_PX = 6  # each point is searched this far in every frame (cardiac motion)
 TRANSIT_SMOOTH_PX = 1.0  # frames smoothed before the search
 TRANSIT_LEVEL = 0.5  # arrival: the frame the point reaches half its plateau contrast
@@ -90,6 +102,7 @@ class ContrastTransit:
             ``arrival``, over the longer side of the path from the inflow.
         interval: 95% interval of that slope.
         n_points: points used for the slope.
+        used: indices of those points (into ``s_px``).
     """
 
     s_px: np.ndarray
@@ -98,6 +111,7 @@ class ContrastTransit:
     px_per_frame: float
     interval: tuple[float, float]
     n_points: int
+    used: np.ndarray = field(default_factory=lambda: np.zeros(0, int))
 
     @property
     def plausible(self) -> bool:
@@ -112,13 +126,19 @@ class ContrastTransit:
 
 
 def contrast_transit(
-    frames: np.ndarray, centerline: Centerline, *, search_px: int = TRANSIT_SEARCH_PX
+    frames: np.ndarray,
+    centerline: Centerline,
+    *,
+    search_px: int = TRANSIT_SEARCH_PX,
+    warps: np.ndarray | None = None,
 ) -> ContrastTransit | None:
     """Contrast arrival along ``centerline`` (drawn on one frame of the run ``frames`` (T, H, W),
     vessels dark). In every frame each point takes the darkest value within ``search_px``; its
     contrast is its brightest such value over the run (no contrast) minus the current one, and
     its arrival the first frame at ``TRANSIT_LEVEL`` of its plateau, interpolated between
-    frames. ``None`` if fewer than ``MIN_TRANSIT_POINTS`` points show contrast."""
+    frames. ``warps`` (T, 2, 3), if given, move the points with the heart in each frame
+    (:func:`vstent.imaging.motion.track_affine`). ``None`` if fewer than
+    ``MIN_TRANSIT_POINTS`` points show contrast."""
     s_all = centerline.s
     s = np.arange(0.0, s_all[-1] + 1e-9, TRANSIT_STEP_PX)
     pts = np.stack([np.interp(s, s_all, centerline.points[:, k]) for k in range(2)], axis=1)
@@ -126,10 +146,12 @@ def contrast_transit(
     disk = yy**2 + xx**2 <= search_px**2
     imgs = np.asarray(frames, dtype=np.float32)
     imgs = imgs / 255.0 if imgs.max() > 1.0 else imgs
+    moved = [pts if warps is None else pts @ w[:, :2].T + w[:, 2]
+             for w in (warps if warps is not None else [None] * len(imgs))]  # fmt: skip
     dark = np.stack([
         map_coordinates(minimum_filter(gaussian_filter(f, TRANSIT_SMOOTH_PX), footprint=disk),
-                        [pts[:, 0], pts[:, 1]], order=1, mode="nearest")
-        for f in imgs
+                        [q[:, 0], q[:, 1]], order=1, mode="nearest")
+        for f, q in zip(imgs, moved, strict=True)
     ])  # fmt: skip  # (T, n)
     contrast = np.percentile(dark, 90, axis=0)[None, :] - dark
     plateau = np.percentile(contrast, 90, axis=0)
@@ -154,4 +176,4 @@ def contrast_transit(
     dist = np.abs(s[side] - s[first])
     slope, _, low, high = theilslopes(dist, arrival[side], alpha=0.95)
     return ContrastTransit(s, arrival, float(s[first]), float(slope), (float(low), float(high)),
-                           int(side.size))  # fmt: skip
+                           int(side.size), side)  # fmt: skip
