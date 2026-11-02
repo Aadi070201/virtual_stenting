@@ -664,6 +664,7 @@ class CaseState:
     image2: ImageInput | None = None
     points2: list[tuple[int, int]] | None = None
     flow: dict[str, Any] | None = None  # P7: the measured flow velocity (flow_dict)
+    consensus: dict[str, Any] | None = None  # P4g: Consensus.as_dict() of a cine run
 
 
 def _stent_dict(st: Stent) -> dict[str, float]:
@@ -767,6 +768,8 @@ def case_report(state: CaseState, models: Models) -> dict[str, Any]:
                 "note": state.image2.note,
             }
             report["input"]["points2_row_col"] = [list(map(int, p)) for p in state.points2 or []]
+    if state.consensus is not None:
+        report["consensus"] = state.consensus
     if state.flow is not None:
         report["flow"] = state.flow
         report["assumptions"]["hyperemic_velocity_m_s"] = state.params.v_hyp

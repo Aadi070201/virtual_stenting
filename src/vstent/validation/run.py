@@ -12,8 +12,12 @@ Two steps, so that the analysis can be locked before anyone sees the wire values
 
 The pipeline is the one of ``vstent analyse``: segmentation (or the case's mask), single-path
 QCA with the solver, the surrogate and the P1 grey-zone intervals, and tree QCA with the tree
-solver. Data and results must stay outside the repository's tracked files
-(:func:`vstent.validation.manifest.check_local_only`). Torch-free.
+solver. For a cine run measured with the segmentation model, the index tests are the
+multi-frame consensus the product reports (P4g, :mod:`vstent.inference.consensus`): the median
+over up to K end-diastolic frames, with the analyst's points following the heart. The
+analyst's frame alone is kept in the ``frame_*`` columns. Data and results must stay outside
+the repository's tracked files (:func:`vstent.validation.manifest.check_local_only`).
+Torch-free.
 """
 
 import csv
@@ -31,7 +35,9 @@ from pydantic import Field
 
 from vstent import DISCLAIMER, __version__
 from vstent.config import StrictModel, git_info
-from vstent.imaging.image_io import read_image_file
+from vstent.imaging.image_io import is_run, read_image_file, read_run
+from vstent.imaging.run_analysis import analyse_frames
+from vstent.inference.consensus import run_consensus, tree_values
 from vstent.inference.pipeline import Segmenter, analyse_tree, analyse_vessel
 from vstent.physics.solver import PhysicsParams
 from vstent.uncertainty.greyzone import UncertaintyConfig, assessment
@@ -70,7 +76,8 @@ PREDICTION_COLUMNS = (
     "tree_error", "single_solver", "single_surrogate", "tree_solver", "model_low", "model_high",
     "input_low", "input_high", "grey_zone", "length_mm", "mld_mm", "rvd_mm", "max_ds_pct",
     "ref_inlet_mm", "n_side_branches", "mm_per_px", "pixel_size_assumed", "mask_used",
-    "seconds", "warnings",
+    "frame_single_solver", "frame_tree_solver", "consensus_frames", "consensus_unstable",
+    "tree_consensus_frames", "tree_consensus_unstable", "seconds", "warnings",
 )  # fmt: skip
 
 
@@ -112,6 +119,24 @@ def _probability(c: CaseRow, base: Path, segmenter: Segmenter | None, use_masks:
     return segmenter.predict(image), False, image
 
 
+def _memo(segment: Callable[[np.ndarray], np.ndarray]) -> Callable[[np.ndarray], np.ndarray]:
+    """``segment`` that segments each distinct frame once (the single path and the tree
+    measure the same consensus frames)."""
+    cache: dict[str, np.ndarray] = {}
+
+    def run(img: np.ndarray) -> np.ndarray:
+        key = hashlib.sha1(np.ascontiguousarray(img).tobytes()).hexdigest()
+        if key not in cache:
+            cache[key] = segment(img)
+        return cache[key]
+
+    return run
+
+
+def _frames(cons) -> str:
+    return ";".join(str(f.frame) for f in cons.used)
+
+
 def predict_case(
     c: CaseRow,
     base: Path,
@@ -140,9 +165,32 @@ def predict_case(
         return row
     row["mask_used"] = mask_used
     image = None if mask_used else image  # analyst masks keep their own edges (D43)
+    rf = segment = None
+    if not mask_used and segmenter is not None and is_run(resolve(base, c.image)):
+        try:  # the multi-frame consensus (P4g); an analyst's mask covers one frame only
+            rf = analyse_frames(read_run(resolve(base, c.image)), segmenter.predict)
+            segment = _memo(segmenter.predict)
+        except Exception as exc:
+            warnings.append(f"cine run: {type(exc).__name__}: {exc}; one frame analysed")
+    reference = c.frame or 0
+
+    def one_path(pr, im, start, end):
+        return analyse_vessel(pr, start, end, params=p, surrogate=surrogate,
+                              mm_per_px=c.mm_per_px, image=im)  # fmt: skip
+
+    def one_tree(pr, im, start, end):
+        return analyse_tree(pr, start, end, params=p, mm_per_px=c.mm_per_px, image=im)
+
     try:
-        a = analyse_vessel(prob, c.start, c.end, params=p, surrogate=surrogate,
-                           mm_per_px=c.mm_per_px, image=image)  # fmt: skip
+        a = one_path(prob, image, c.start, c.end)
+        row["frame_single_solver"] = round(a.ffr_distal_solver, 4)
+        solver, sur = a.ffr_distal_solver, a.ffr_distal_surrogate
+        if rf is not None:
+            cs = run_consensus(rf, reference, c.start, c.end, segment, one_path)
+            a, solver, sur = cs.chosen.analysis, cs.ffr, cs.ffr_surrogate
+            row.update(consensus_frames=_frames(cs), consensus_unstable=cs.flagged)
+            warnings += [f"consensus: frame {f.frame} left out: {f.error}"
+                         for f in cs.frames if f.error]  # fmt: skip
         q = a.qca
         ref = q.profile.reference_radius()  # m; the inlet value sets the flow (M1)
         i_mld = int(np.argmin(q.profile.r))
@@ -156,9 +204,8 @@ def predict_case(
                          uncertainty.level)  # fmt: skip
         row.update(
             single_status="ok",
-            single_solver=round(a.ffr_distal_solver, 4),
-            single_surrogate="" if a.ffr_distal_surrogate is None
-            else round(a.ffr_distal_surrogate, 4),
+            single_solver=round(solver, 4),
+            single_surrogate="" if sur is None else round(sur, 4),
             model_low="" if pre.model is None else round(pre.model.low, 4),
             model_high="" if pre.model is None else round(pre.model.high, 4),
             input_low=round(pre.inputs.low, 4), input_high=round(pre.inputs.high, 4),
@@ -172,8 +219,15 @@ def predict_case(
     except Exception as exc:
         row.update(single_status="failed", single_error=f"{type(exc).__name__}: {exc}")
     try:
-        t = analyse_tree(prob, c.start, c.end, params=p, mm_per_px=c.mm_per_px, image=image)
-        row.update(tree_status="ok", tree_solver=round(float(t.result.ffr[0][-1]), 4),
+        t = one_tree(prob, image, c.start, c.end)
+        tree_ffr = float(t.result.ffr[0][-1])
+        row["frame_tree_solver"] = round(tree_ffr, 4)
+        if rf is not None:
+            ct = run_consensus(rf, reference, c.start, c.end, segment, one_tree,
+                               values=tree_values)  # fmt: skip
+            t, tree_ffr = ct.chosen.analysis, ct.ffr
+            row.update(tree_consensus_frames=_frames(ct), tree_consensus_unstable=ct.flagged)
+        row.update(tree_status="ok", tree_solver=round(tree_ffr, 4),
                    n_side_branches=t.qca.tree.n_branches - 1)  # fmt: skip
         warnings += [f"tree: {w}" for w in t.warnings]
     except Exception as exc:

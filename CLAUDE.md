@@ -114,7 +114,8 @@ vstent/
     inference/          # onnx_runtime.py (SurrogateRunner, SegmentationRunner; torch-free),
                         # benchmark.py (ONNX latency + INT8 check), pipeline.py (image → QCA →
                         # solver + surrogate, torch-free), figures.py (analysis figure),
-                        # gallery.py (QCA gallery on ARCADE stenosis images), models.py
+                        # gallery.py (QCA gallery on ARCADE stenosis images), consensus.py
+                        # (multi-frame median of a cine run, P4g), models.py
                         # (locate exported models), tree_runtime.py (TreeSurrogateRunner, P3)
     app/                # core.py (app logic, no Streamlit), tree_view.py (tree mode), streamlit_app.py (UI),
                         # latency.py (AppTest-driven update timing)
@@ -125,7 +126,8 @@ vstent/
                         # (CADICA expert grades, P4b), cine_frames.py (CADICA runs: analysis
                         # frame vs the clinicians' frames, contrast transit, P4d),
                         # physiology_real.py (model assumptions vs DEFINE-FLOW, P4e),
-                        # repeatability.py (frame / operator repeatability on CADICA, P4f)
+                        # repeatability.py (frame / operator repeatability on CADICA, P4f),
+                        # consensus.py (split-half repeatability of the K-frame median, P4g)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -203,11 +205,14 @@ uv run vstent lumen-synthetic     # P4c: lumen methods on rendered tight / eccen
 uv run vstent cine-frames         # P4d: CADICA runs, analysis frame vs clinicians' frames → reports/cine_frames.md
 uv run vstent cine-synthetic [--workers N] [--calibrate]
                                   # P7: ED frames + flow velocity on beating-heart runs → reports/cine_synthetic.md
-uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]
+uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run] [--consensus K]
                                   # P7: cine run on its ED frame; measured flow velocity (default: fixed)
+                                  # P4g: median over up to K ED frames (default 3; 1 = one frame)
 uv run vstent data define-flow    # P4e: open invasive physiology (CC0); also `data contrast`
 uv run vstent physiology-real     # P4e: model physiology vs DEFINE-FLOW → reports/physiology_real.md
 uv run vstent repeatability [--workers N]   # P4f: %DS and FFR repeatability on CADICA → reports/repeatability.md
+uv run vstent repeatability --workers N --no-report --rows-out data/derived/repeatability/rows.json
+uv run vstent consensus-report    # P4g: K-frame median, split halves on CADICA → reports/consensus.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
 uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms

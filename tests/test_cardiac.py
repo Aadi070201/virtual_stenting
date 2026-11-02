@@ -1,6 +1,7 @@
 """P7: end-diastolic frames (ECG, R-wave pointer, images), motion tracking, flow velocity."""
 
 import io
+import re
 from dataclasses import replace
 
 import numpy as np
@@ -291,6 +292,11 @@ def test_cli_analyse_beating_heart_run_with_measured_flow(dark_seg_dir, tiny_exp
         and f"Analysis frame {rf.analysis_frame}:" in out.output
     )
     assert "Contrast flow velocity" in out.output and "Flow: fixed" in out.output
+    assert re.search(r"Distal FFR(, median of \d end-diastolic frames| on one frame only)",
+                     out.output)  # P4g  # fmt: skip
+    one = CliRunner().invoke(app, [*args, "--consensus", "1", "--tree"])
+    assert one.exit_code == 0, one.output
+    assert "Main-path distal FFR (tree) on one frame only (one frame asked for)" in one.output
     measured = CliRunner().invoke(app, [*args, "--flow", "measured"])
     assert measured.exit_code == 0 and "Flow: measured velocity used" in measured.output
     bad = CliRunner().invoke(app, [*args, "--flow", "guess"])

@@ -21,7 +21,8 @@ Fractional flow reserve (FFR) measured with a pressure wire is the invasive refe
 functional significance of a coronary stenosis; FFR ≤ 0.80 is the conventional cut-off for
 ischaemia. Angiography-derived FFR estimates it from the angiogram alone.
 
-vstent computes FFR along a vessel from one angiographic frame:
+vstent computes FFR along a vessel from the angiogram. A single image is measured once; a
+cine run is measured on up to three end-diastolic frames and the median is reported (P4g):
 - **Measurement:** vessel segmentation, a centreline between two points, and 2D QCA.
 - **Physics:** a reduced-order flow model with a fixed hyperemic velocity. It models either a
   single path, or the path with its side branches (tree model).
@@ -49,6 +50,9 @@ measurements. **Its agreement with wire FFR is unknown**; this study measures it
 7. [Inter- and intra-observer reproducibility on a random [20]% subset analysed twice.]
 8. [Analysis time per vessel.]
 9. [Classification against iFR ≤ 0.89 where iFR was measured instead of FFR.]
+10. Exploratory, cine runs only: the multi-frame consensus against the analysed frame alone
+    (the `frame_*` columns of `predictions.csv`), and accuracy in vessels whose frames fall on
+    both sides of 0.80 (`consensus_unstable`, `tree_consensus_unstable`).
 
 ## 3. Design
 
@@ -99,6 +103,13 @@ by a reviewer blinded to the wire values, before the index test is run.
      at hyperemia.
   4. Optionally, correct the vessel contour, saved as a mask; corrected contours are recorded
      in the case list.
+  5. Nothing more is done by hand. For a cine run segmented by the software (no analyst
+     mask), the software measures the vessel on up to two further end-diastolic frames on
+     which the path is fully opacified, with the two points following the heart. The index
+     tests are the medians over the frames (P4g). `predictions.csv` records the frames used,
+     the instability flag (the frames on both sides of 0.80) and the analysed frame's own
+     values (`frame_single_solver`, `frame_tree_solver`). An analyst's mask covers one frame,
+     so such a vessel is measured on that frame only.
 - **Analysts:** [number, training]. They are blinded to the wire values and to the treatment
   decision.
 
@@ -195,8 +206,12 @@ mix; record the final numbers here.]
 These should be discussed in the report:
 - **Single view:** one angiographic projection, so the analysis is affected by foreshortening
   and overlap. Two-view 3D reconstruction is planned (P5).
-- **Fixed flow:** the hyperemic velocity is the same for every patient. Patient-specific flow
-  is planned (P7).
+- **Fixed flow:** the hyperemic velocity is the same for every patient. A measured flow
+  velocity (P7) exists but is not used by `vstent validate`.
+- **Frame-to-frame variability:** one automatic frame does not measure a lesion stably on
+  public angiograms (P4f, D57); the multi-frame median reduces this (P4g,
+  `reports/consensus.md`) but frames share the segmentation's habits, so a bias common to
+  all frames remains.
 - **Pixel size:** it is assumed when not calibrated.
 - **Model:** the physics is reduced-order; junction losses in the tree model are neglected.
 - **Segmentation data:** the segmentation model was trained on one public dataset (ARCADE).

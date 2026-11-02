@@ -36,6 +36,7 @@ from vstent.imaging.image_io import (  # noqa: E402
 )
 from vstent.imaging.run_analysis import analyse_frames, pixel_distance  # noqa: E402
 from vstent.imaging.segment import THRESHOLD  # noqa: E402
+from vstent.inference.consensus import run_consensus, tree_values  # noqa: E402
 from vstent.inference.pipeline import (  # noqa: E402
     AUTO_LUMEN,
     analyse_tree,
@@ -99,6 +100,31 @@ def run_velocity(key: str, _rf, _centerline, frame: int, mm_per_px, hyperemic: b
                             hyperemic_run=hyperemic)  # fmt: skip
     return _rf.velocity(_centerline, frame, lambda s: np.interp(s, _view_s, _s),
                         single_view=False, hyperemic_run=hyperemic)  # fmt: skip
+
+
+@st.cache_resource(max_entries=16, show_spinner="Measuring the other end-diastolic frames…")
+def consensus_cached(key: str, _rf, frame: int, start, end, mm_per_px, pa, pv, lumen,
+                     tree: bool, v_hyp=None, _reference=None):  # fmt: skip
+    """P4g: the vessel on up to K end-diastolic frames of the run, the points following the
+    heart; ``_reference``: the analysis already done on ``frame``."""
+    pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
+    params = get_settings()[0].model_copy(update=pressures | ({"v_hyp": v_hyp} if v_hyp else {}))
+    models = get_models()
+    if tree:
+
+        def one(p, im, a, b):
+            return analyse_tree(p, a, b, params=params, mm_per_px=mm_per_px, image=im,
+                                lumen=lumen)  # fmt: skip
+
+        return run_consensus(_rf, frame, start, end, models.segmentation.predict, one,
+                             values=tree_values, reference_analysis=_reference)  # fmt: skip
+
+    def one(p, im, a, b):
+        return analyse_vessel(p, a, b, params=params, surrogate=models.surrogate,
+                              mm_per_px=mm_per_px, image=im, lumen=lumen)  # fmt: skip
+
+    return run_consensus(_rf, frame, start, end, models.segmentation.predict, one,
+                         reference_analysis=_reference)  # fmt: skip
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel (QCA)…")
@@ -214,7 +240,9 @@ image_input2: ImageInput | None = None  # P5c: second view
 example: core.TwoViewExample | None = None
 prob = prob2 = qca = two = None
 rf = rf2 = None  # P7: the cine runs' analyses
+run = None
 run_t = run2_t = 0
+cons = None  # P4g: the multi-frame consensus of a cine run
 hyperemic = use_measured = False
 tree_mode = False
 tree_res = tree_post = tree_plans = None
@@ -242,7 +270,6 @@ if mode == "Synthetic vessel":
             f"{case.v_hyp:.2f} m/s come from the synthetic sampler."
         )
 else:
-    run = None
     with st.sidebar:
         sources = ["Upload"] + (["ARCADE example"] if examples else []) + [TWO_VIEW_SOURCE]
         source = st.radio("Image source", sources, key="source")
@@ -460,6 +487,12 @@ if mode == "Angiogram image":
             )
         except ValueError as exc:
             st.error(f"Could not trace the vessel tree: {exc}")
+        if tree_res is not None and rf is not None:
+            cons = consensus_cached(
+                f"tcons:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}:{lumen}",
+                rf, run_t, start, end, mm_per_px, pa, pv, lumen, True, None, tree_res,
+            )  # fmt: skip
+            tree_res = cons.chosen.analysis
     elif start and end:
         try:
             result = analyse(
@@ -478,6 +511,12 @@ if mode == "Angiogram image":
             if use_measured and fv.accepted:
                 result = analyse(image_input.sha256, start, end, mm_per_px, pa, pv, lumen, prob,
                                  image_input.image, v_hyp=fv.v_hyp)  # fmt: skip
+            v = fv.v_hyp if use_measured and fv.accepted else None
+            cons = consensus_cached(
+                f"cons:{image_input.sha256}:{start}:{end}:{mm_per_px}:{pa:.1f}:{pv:.1f}:{lumen}:"
+                f"{v}", rf, run_t, start, end, mm_per_px, pa, pv, lumen, False, v, result,
+            )  # fmt: skip
+            result = cons.chosen.analysis
         if result is not None:
             qca = result.qca
             used = fv is not None and use_measured and fv.accepted
@@ -500,6 +539,8 @@ if mode == "Angiogram image":
             )
             if fv is not None:
                 state.flow = core.flow_dict(fv, used, rf.ed)
+            if cons is not None:
+                state.consensus = cons.as_dict()
             state.uncertainty = input_mc(
                 img_key, qca.profile, pa, pv, case_params.v_hyp, qca.mm_per_px,
                 qca.calibration_assumed, fv.v_hyp_interval if used else None,
@@ -630,20 +671,40 @@ if tree_res is not None:
 if mode == "Angiogram image":
     with img_col:
         points = [p for p in (st.session_state.get("start"), st.session_state.get("end")) if p]
+        # P4g: when another end-diastolic frame is closest to the median, the results use it;
+        # the clicked frame keeps its own centreline and the stents are drawn on that frame.
+        moved = cons is not None and cons.chosen.frame != run_t
+        own = cons.frames[0].analysis if moved else None
         if tree_res is not None:
             overlay = tree_view.tree_overlay(
-                image_input.image, prob, tree_res.qca, tree_outlet, tree_stents, points
-            )
+                image_input.image, prob, own.qca if moved else tree_res.qca, tree_outlet,
+                [] if moved else tree_stents, points,
+            )  # fmt: skip
         elif image_input2 is not None:
             overlay = core.two_view_overlay(image_input.image, prob, 0, two, stents, points)
         else:
-            overlay = core.overlay_image(image_input.image, prob, qca, stents, points)
+            overlay = core.overlay_image(image_input.image, prob, own.qca if moved else qca,
+                                         [] if moved else stents, points)  # fmt: skip
         _click_points(overlay, image_input.image.shape, f"click_{image_input.sha256[:12]}",
                       ("start", "end"), "last_click")  # fmt: skip
         st.caption(
             f"{image_input.name}: blue = segmented vessel (p ≥ {THRESHOLD}), yellow = "
             "centreline, green dot = start, orange = end / stent."
         )
+        if moved:
+            c = cons.chosen
+            img_c = run.frames[c.frame]
+            st.image(
+                tree_view.tree_overlay(img_c, c.analysis.prob, tree_res.qca, tree_outlet,
+                                       tree_stents, [c.start, c.end])
+                if tree_res is not None else
+                core.overlay_image(img_c, c.analysis.prob, qca, stents, [c.start, c.end]),
+                width=DISPLAY_WIDTH,
+            )  # fmt: skip
+            st.caption(
+                f"Frame {c.frame}: the end-diastolic frame closest to the median FFR, with your "
+                "points moved here with the heart. The curves, intervals and plans use it."
+            )
         if image_input2 is not None:
             g1, g2 = image_input.geometry, image_input2.geometry
             guides = [core.epipolar_guide(g1, p, g2) for p in points]
@@ -670,6 +731,8 @@ if mode == "Angiogram image":
 if tree_res is not None:
     tree, pre_t = tree_res.qca.tree, tree_res.result
     st.subheader("Vessel tree")
+    if cons is not None:
+        (st.warning if cons.flagged else st.info)(cons.note("Main-path distal FFR (tree)"))
     m = st.columns(4)
     m[0].metric("Branches modelled", tree.n_branches)
     main_post = None if tree_post is None else float(tree_post.ffr[0][-1])
@@ -728,7 +791,7 @@ if tree_res is not None:
     st.download_button(
         "Download tree case report (JSON)",
         tree_view.tree_report_json(tree_res, tree_outlet, tree_stents, tree_post, tree_plans,
-                                   image_input.name),
+                                   image_input.name, None if cons is None else cons.as_dict()),
         file_name="vstent_tree_case.json", mime="application/json", key="tree_report",
     )  # fmt: skip
     st.stop()
@@ -755,6 +818,8 @@ m[4].metric(
     if post is None or post.surrogate is None
     else f"{post.distal_surrogate - pre.distal_surrogate:+.3f} after stent",
 )
+if cons is not None:
+    (st.warning if cons.flagged else st.info)(cons.note())
 if post is not None:
     st.success(
         f"Post-PCI distal FFR: solver **{post.distal_solver:.3f}**"

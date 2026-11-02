@@ -1014,6 +1014,14 @@ def analyse(
         bool,
         typer.Option("--hyperemic-run", help="The run was recorded under hyperemia (adenosine)."),
     ] = False,
+    consensus: Annotated[
+        int | None,
+        typer.Option(
+            "--consensus",
+            min=1,
+            help="Cine runs: end-diastolic frames in the median (default 3; 1 = one frame).",
+        ),
+    ] = None,
 ) -> None:
     """Segment an angiogram and compute QCA + FFR for one vessel (research use only).
 
@@ -1021,6 +1029,9 @@ def analyse(
     (R-wave pointer, ECG or the images; or --frame), and the contrast's flow velocity along the
     vessel is measured (P7). The fixed hyperemic velocity stays the default; --flow measured
     uses the measured one (FAVOR Pilot conversion for resting runs; --hyperemic-run: as is).
+    The vessel is then measured on up to --consensus end-diastolic frames, the points following
+    the heart, and the median FFR is reported with every frame's value (P4g). The frame closest
+    to the median gives the profile for the intervals and the plans.
 
     Without --start / --end the longest vessel path in the mask is used. With --plan the
     virtual stent planner proposes the shortest plan reaching the target FFR. Distal FFR is
@@ -1123,6 +1134,23 @@ def analyse(
             if plan
             else None
         )
+        if run is not None:
+            from vstent.inference.consensus import CONSENSUS_K, run_consensus, tree_values
+            from vstent.inference.pipeline import analyse_tree
+
+            def one_tree(p, im, a, b):
+                return analyse_tree(p, a, b, params=params, mm_per_px=mm_per_px, image=im,
+                                    lumen=lumen)  # fmt: skip
+
+            try:
+                cons = run_consensus(run_frames, run_t, start, end, segmenter.predict, one_tree,
+                                     k=consensus or CONSENSUS_K, values=tree_values)  # fmt: skip
+            except ValueError as exc:
+                typer.echo(f"Cannot trace the vessel tree: {exc}", err=True)
+                raise typer.Exit(code=1) from exc
+            typer.echo(cons.note("Main-path distal FFR (tree)"))
+            c = cons.chosen
+            prob, img, start, end = c.analysis.prob, run.frames[c.frame], c.start, c.end
         _analyse_tree_cli(prob, img, start, end, image.name, params, mm_per_px, stent, outlet,
                           figure, plan_cfg, lumen)  # fmt: skip
         return
@@ -1148,15 +1176,30 @@ def analyse(
             q = result.qca
         elif flow == "measured":
             typer.echo("--flow measured: the velocity was not accepted; the fixed one is used.")
+    cons, where = None, ""
+    if run is not None:
+        from vstent.inference.consensus import CONSENSUS_K, run_consensus
+
+        def one_frame(p, im, a, b):
+            return analyse_vessel(p, a, b, params=params, surrogate=surrogate,
+                                  mm_per_px=mm_per_px, image=im, lumen=lumen)  # fmt: skip
+
+        cons = run_consensus(run_frames, run_t, start, end, segmenter.predict, one_frame,
+                             k=consensus or CONSENSUS_K, reference_analysis=result)  # fmt: skip
+        result, img = cons.chosen.analysis, run.frames[cons.chosen.frame]
+        q = result.qca
+        where = f"Frame {cons.chosen.frame}: " if len(cons.used) > 1 else ""
     typer.echo(f"{DISCLAIMER}")
+    if cons is not None:
+        typer.echo(cons.note())
     typer.echo(
-        f"Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
+        f"{where}Path length {q.s_mm[-1]:.1f} mm at {q.mm_per_px:g} mm/px "
         f"({'assumed' if q.calibration_assumed else 'given'}); MLD {q.mld_mm:.2f} mm; "
         f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen: "
         f"{q.lumen_method}"
     )
     typer.echo(
-        f"Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
+        f"{where}Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
         f"{result.ffr_distal_surrogate:.3f}"
     )
     from vstent.uncertainty.greyzone import assessment, load_uncertainty, plan_assessments
@@ -1615,6 +1658,43 @@ def repeatability(
         typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']} "
                    f"(target {t['target']})")  # fmt: skip
     typer.echo(f"Wrote {report_dir / 'repeatability.md'}")
+
+
+@app.command()
+def consensus_report(
+    rows: Annotated[
+        Path, typer.Option("--rows", exists=True, dir_okay=False, help="From --rows-out.")
+    ] = Path("data/derived/repeatability/rows.json"),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write consensus.md.")
+    ] = Path("reports"),
+) -> None:
+    """Split-half repeatability of the K-frame median on CADICA, K chosen on the development
+    patients and tested once (P4g) → reports/consensus.md. Needs the rows saved by
+    `vstent repeatability --rows-out`."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.validation import consensus as cs
+    from vstent.validation import repeatability as rp
+
+    typer.echo(DISCLAIMER)
+    git = git_info()  # before anything is written
+    saved = json.loads(rows.read_text(encoding="utf-8"))
+    s = cs.summarise(saved["rows"])
+    f = rp.summarise(saved["rows"])["frames"]
+    s["single_frame"] = {"ds_cv": f["ds_cv"], "ffr_cv": f["ffr_cv"], "n_groups": f["n_groups"]}
+    cs.write_report(s, git, saved["seg_model"], saved["git"], report_dir)
+    typer.echo(f"Single frame (P4f, from these rows): %DS CV {f['ds_cv']:.1%}, FFR CV "
+               f"{f['ffr_cv']:.1%} ({f['n_groups']} lesions).")  # fmt: skip
+    for k, r in s["dev"].items():
+        typer.echo(f"  dev K = {k}: {r['n_lesions']} lesions, %DS CV {rp._pct(r['ds_cv'])}, "
+                   f"FFR CV {rp._pct(r['ffr_cv'])}")  # fmt: skip
+    typer.echo(f"Chosen K = {s['chosen_k']}: {s['reason']}.")
+    for t in s["targets"]:
+        typer.echo(f"[{'PASS' if t['passed'] else 'FAIL'}] {t['metric']}: {t['value']} "
+                   f"(target {t['target']})")  # fmt: skip
+    typer.echo(f"Wrote {report_dir / 'consensus.md'}")
 
 
 @app.command()

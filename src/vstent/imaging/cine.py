@@ -85,6 +85,7 @@ def vessel_stats(
 TRANSIT_SEARCH_PX = 6  # each point is searched this far in every frame (cardiac motion)
 TRANSIT_SMOOTH_PX = 1.0  # frames smoothed before the search
 TRANSIT_LEVEL = 0.5  # arrival: the frame the point reaches half its plateau contrast
+FILLED_LEVEL = 0.9  # filled: the frame the point reaches 90% of its plateau contrast (P4g)
 TRANSIT_STEP_PX = 2.0  # spacing of the sampled centreline points
 MIN_CONTRAST = 0.03  # plateau contrast (image in [0, 1]) below this: no arrival measured
 MIN_TRANSIT_POINTS = 10
@@ -103,6 +104,8 @@ class ContrastTransit:
         interval: 95% interval of that slope.
         n_points: points used for the slope.
         used: indices of those points (into ``s_px``).
+        filled: (n,) the frame each point reaches ``FILLED_LEVEL`` of its plateau contrast
+            (NaN where its arrival was not seen).
     """
 
     s_px: np.ndarray
@@ -112,6 +115,7 @@ class ContrastTransit:
     interval: tuple[float, float]
     n_points: int
     used: np.ndarray = field(default_factory=lambda: np.zeros(0, int))
+    filled: np.ndarray = field(default_factory=lambda: np.zeros(0))
 
     @property
     def plausible(self) -> bool:
@@ -156,6 +160,7 @@ def contrast_transit(
     contrast = np.percentile(dark, 90, axis=0)[None, :] - dark
     plateau = np.percentile(contrast, 90, axis=0)
     arrival = np.full(s.size, np.nan)
+    filled = np.full(s.size, np.nan)
     for i in np.where(plateau >= MIN_CONTRAST)[0]:
         c = contrast[:, i] / plateau[i]
         k = int(np.argmax(c >= TRANSIT_LEVEL))
@@ -163,6 +168,7 @@ def contrast_transit(
             continue  # opacified from the first frame: arrival not seen
         frac = (TRANSIT_LEVEL - c[k - 1]) / max(c[k] - c[k - 1], 1e-9)
         arrival[i] = k - 1 + float(np.clip(frac, 0.0, 1.0))
+        filled[i] = float(np.argmax(c >= FILLED_LEVEL))
     ok = np.isfinite(arrival)
     if ok.sum() < MIN_TRANSIT_POINTS:
         return None
@@ -176,4 +182,4 @@ def contrast_transit(
     dist = np.abs(s[side] - s[first])
     slope, _, low, high = theilslopes(dist, arrival[side], alpha=0.95)
     return ContrastTransit(s, arrival, float(s[first]), float(slope), (float(low), float(high)),
-                           int(side.size), side)  # fmt: skip
+                           int(side.size), side, filled)  # fmt: skip

@@ -140,8 +140,10 @@ def tree_report_json(
     post: TreeFFRResult | None,
     plans: TreePlanResult | None,
     image_name: str,
+    consensus: dict | None = None,
 ) -> str:
-    """Case report (JSON) of a tree analysis: inputs, assumptions, branches, stents, plans."""
+    """Case report (JSON) of a tree analysis: inputs, assumptions, branches, stents, plans;
+    ``consensus``: the multi-frame consensus of a cine run (P4g), if any."""
     tq, pre = analysis.qca, analysis.result
     report = {
         "disclaimer": DISCLAIMER,
@@ -164,6 +166,7 @@ def tree_report_json(
         "branches": branch_table(analysis, post),
         "main_path_single_vessel_ffr": round(float(analysis.single.ffr[-1]), 4),
         "side_paths_not_modelled": len(tq.dropped),
+        "consensus": consensus,
         "path_to": tq.tree.names[outlet],
         "stents": [
             {

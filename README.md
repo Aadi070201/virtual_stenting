@@ -186,6 +186,7 @@ Trainings can be paused and resumed exactly:
 | `vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]` | a cine run on its end-diastolic frame (R-wave pointer, ECG or images) with the contrast flow velocity; `--flow measured` uses it instead of the fixed hyperemic velocity | P7 |
 | `vstent data define-flow` / `vstent data contrast` | download and verify open invasive physiology data (DEFINE-FLOW, CONTRAST; CC0) | P4e |
 | `vstent physiology-real` | the model's physiology assumptions against DEFINE-FLOW's invasive measurements → `reports/physiology_real.md` | P4e |
+| `vstent consensus-report` | split-half repeatability of the median over K frames on CADICA (K chosen on development patients, tested once) → `reports/consensus.md`; needs `vstent repeatability --rows-out` | P4g |
 | `vstent repeatability [--workers N]` | frame-to-frame and operator-to-operator repeatability of %DS and FFR on CADICA's real angiograms → `reports/repeatability.md` | P4f |
 | `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
