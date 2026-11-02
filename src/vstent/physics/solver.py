@@ -18,6 +18,11 @@ from vstent.physics.geometry import VesselProfile
 from vstent.units import mmhg_to_pa
 
 FlowMode = Literal["resistance", "fixed_velocity"]
+Outflow = Literal["none", "murray"]
+
+OUTFLOW_EXPONENT = 3.0
+"""Side-branch outflow (P4k-C, pre-registered): the flow at s is φ(s)·Q_in with
+φ(s) = (min over s' ≤ s of r_ref(s') / r_ref(0))³, Murray's law as in μQFR."""
 
 R_MICRO_MIN_FRACTION = 0.01
 """Floor on R_micro as a fraction of (Pa − Pv)/Q_ref. A numerical safeguard for the spec's
@@ -43,6 +48,10 @@ class PhysicsParams(StrictModel):
     murray_exponent: float = Field(
         2.33, gt=0, description="vessel trees: healthy flow split ∝ diameter^k at junctions (-)"
     )
+    outflow: Outflow = Field(
+        "none", description="single vessel: 'murray' lets flow leave through side branches as "
+        "the reference tapers (P4k-C); 'none' carries the inflow to the end"
+    )  # fmt: skip
 
     @model_validator(mode="after")
     def _pa_above_pv(self) -> "PhysicsParams":
@@ -61,19 +70,39 @@ class PhysicsParams(StrictModel):
         return float(mmhg_to_pa(self.pv_mmhg))
 
 
-def viscous_coefficient(r: np.ndarray, ds, mu: float) -> np.ndarray:
-    """Cumulative Poiseuille coefficient a(s) = ∫ 8μ/(π r⁴) ds (Pa·s/m³), trapezoid rule.
+def outflow_fraction(r_ref: np.ndarray, outflow: Outflow = "murray") -> np.ndarray:
+    """φ(s) (-), shape of ``r_ref``: the share of the inflow still in the vessel at s. Never
+    increases along s; 1 everywhere for ``"none"`` or an untapered reference.
+
+    Args:
+        r_ref: reference radii (m), shape (..., N).
+        outflow: ``"murray"`` or ``"none"``.
+    """
+    r_ref = np.asarray(r_ref, dtype=float)
+    if outflow == "none":
+        return np.ones_like(r_ref)
+    if outflow != "murray":
+        raise ValueError(f"unknown outflow {outflow!r}")
+    smallest = np.minimum.accumulate(r_ref, axis=-1)
+    return (smallest / r_ref[..., :1]) ** OUTFLOW_EXPONENT
+
+
+def viscous_coefficient(r: np.ndarray, ds, mu: float, phi: np.ndarray | None = None) -> np.ndarray:
+    """Cumulative Poiseuille coefficient a(s) = ∫ 8μ·φ/(π r⁴) ds (Pa·s/m³), trapezoid rule.
 
     Args:
         r: radii (m), shape (..., N).
         ds: uniform point spacing (m), scalar or shape (...).
         mu: dynamic viscosity (Pa·s).
+        phi: outflow fraction φ(s) (-), shape of ``r`` (:func:`outflow_fraction`); default 1.
 
     Returns:
         a with shape (..., N) and a[..., 0] = 0.
     """
     r = np.asarray(r, dtype=float)
     inv_r4 = 1.0 / (r * r) ** 2
+    if phi is not None:
+        inv_r4 = inv_r4 * phi
     seg = (4.0 * mu / np.pi) * (inv_r4[..., :-1] + inv_r4[..., 1:])
     seg *= np.asarray(ds, dtype=float)[..., None]
     a = np.zeros_like(r)
@@ -81,19 +110,23 @@ def viscous_coefficient(r: np.ndarray, ds, mu: float) -> np.ndarray:
     return a
 
 
-def expansion_coefficient(r: np.ndarray, rho: float, kt: float, threshold: float) -> np.ndarray:
+def expansion_coefficient(
+    r: np.ndarray, rho: float, kt: float, threshold: float, phi: np.ndarray | None = None
+) -> np.ndarray:
     """Cumulative expansion (separation) loss coefficient b(s) (Pa·s²/m⁶).
 
     Every maximal diverging run (area non-decreasing between consecutive points) with
     A_max/A_min ≥ ``threshold`` contributes b_run = kt·ρ/2·(1/A_min − 1/A_max)², spread over
     the run's segments in proportion to their decrease of 1/A². Converging sections are
-    lossless.
+    lossless. With ``phi``, each segment's share is weighted by φ² (the loss scales with the
+    local flow squared).
 
     Args:
         r: radii (m), shape (..., N).
         rho: blood density (kg/m³).
         kt: expansion loss coefficient (-).
         threshold: minimum A_max/A_min for a run to count (-).
+        phi: outflow fraction φ(s) (-), shape of ``r``; default 1.
 
     Returns:
         b with shape (..., N) and b[..., 0] = 0.
@@ -126,17 +159,22 @@ def expansion_coefficient(r: np.ndarray, rho: float, kt: float, threshold: float
 
     contrib = np.zeros(div.size)
     contrib[div] = scale[ids] * d_inv2
+    if phi is not None:
+        f = np.asarray(phi, dtype=float).reshape(rows.shape)
+        contrib *= (0.25 * (f[:, :-1] + f[:, 1:]) ** 2).ravel()
     b = np.zeros_like(rows)
     b[:, 1:] = np.cumsum(contrib.reshape(rows.shape[0], -1), axis=1)
     return b.reshape(r.shape)
 
 
 def calibrate_microvascular_resistance(
-    r_ref: np.ndarray, ds, pa, pv, v_hyp, mu: float
+    r_ref: np.ndarray, ds, pa, pv, v_hyp, mu: float, phi: np.ndarray | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """R_micro such that the reference vessel carries Q_ref = v_hyp · π r_ref(0)².
 
     R_micro = (Pa − Pv)/Q_ref − a_ref(L), floored at R_MICRO_MIN_FRACTION · (Pa − Pv)/Q_ref.
+    With an outflow fraction ``phi``, a_ref carries φ and R_micro is the coefficient of the
+    inflow Q_in (the distal bed's resistance times φ(L)).
 
     Args:
         r_ref: reference radii (m), shape (..., N).
@@ -151,7 +189,7 @@ def calibrate_microvascular_resistance(
     r_ref = np.asarray(r_ref, dtype=float)
     q_ref = v_hyp * np.pi * r_ref[..., 0] ** 2
     r_total = (pa - pv) / q_ref
-    r_micro = r_total - viscous_coefficient(r_ref, ds, mu)[..., -1]
+    r_micro = r_total - viscous_coefficient(r_ref, ds, mu, phi)[..., -1]
     floor = R_MICRO_MIN_FRACTION * r_total
     clamped = r_micro < floor
     return q_ref, np.maximum(r_micro, floor), clamped
@@ -263,10 +301,11 @@ def solve_ffr_batch(
     if np.any(pv >= pa):
         raise ValueError("pv must be below pa")
 
-    a = viscous_coefficient(r, ds, params.mu)
-    b = expansion_coefficient(r, params.rho, params.kt, params.expansion_threshold)
+    phi = None if params.outflow == "none" else outflow_fraction(r_ref, params.outflow)
+    a = viscous_coefficient(r, ds, params.mu, phi)
+    b = expansion_coefficient(r, params.rho, params.kt, params.expansion_threshold, phi)
     q_ref, r_micro_cal, clamped = calibrate_microvascular_resistance(
-        r_ref, ds, pa, pv, v_hyp, params.mu
+        r_ref, ds, pa, pv, v_hyp, params.mu, phi
     )
     if r_micro is None:
         r_micro = r_micro_cal

@@ -7,6 +7,7 @@ runner = CliRunner()
 
 COMMANDS = [
     "physics-report",
+    "physics-check",
     "synth",
     "synth-tree",
     "tree-report",

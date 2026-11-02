@@ -217,3 +217,31 @@ def test_batch_throughput():
     solve_ffr_batch(r, s[1], r_ref, PARAMS)
     rate = n_batch / (time.perf_counter() - t0)
     assert rate >= 5_000
+
+
+def test_murray_outflow():
+    """P4k-C: flow leaves through side branches as the reference tapers (φ = (r_ref/r_ref0)³)."""
+    from vstent.physics.solver import outflow_fraction, solve_ffr_batch
+
+    s = np.linspace(0.0, 0.1, 401)
+    ds = s[1] - s[0]
+    flat = np.full_like(s, 1.5e-3)
+    r = flat.copy()
+    r[180:220] = 0.9e-3  # a lesion
+    none, murray = PhysicsParams(), PhysicsParams(outflow="murray")
+    a = solve_ffr_batch(r, ds, flat, none)
+    b = solve_ffr_batch(r, ds, flat, murray)
+    assert np.allclose(a.ffr, b.ffr) and np.allclose(a.q, b.q)  # no taper: unchanged
+    taper = np.linspace(1.75e-3, 0.6e-3, s.size)  # a long healthy vessel, 3.5 → 1.2 mm
+    phi = outflow_fraction(taper)
+    assert phi[0] == 1.0 and np.all(np.diff(phi) <= 0) and phi[-1] == pytest.approx(
+        (0.6 / 1.75) ** 3)  # fmt: skip
+    plain = solve_ffr_batch(taper, ds, taper, none).ffr_distal[0]
+    side = solve_ffr_batch(taper, ds, taper, murray)
+    assert side.ffr_distal[0] > plain  # less flow in the thin end: less loss
+    # the distal pressure drop is the integral of the local viscous gradient with Q(s) = φ·Q_in
+    grad = 8 * murray.mu * phi * side.q[0] / (np.pi * taper**4)
+    dp = np.sum(0.5 * (grad[1:] + grad[:-1])) * ds
+    assert side.dp[0, -1] == pytest.approx(dp, rel=1e-9)
+    # calibration: the reference vessel still carries v_hyp at its inlet
+    assert side.q[0] == pytest.approx(murray.v_hyp * np.pi * taper[0] ** 2, rel=1e-9)
