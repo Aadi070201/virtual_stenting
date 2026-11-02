@@ -66,6 +66,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P4b: Validation on public data (added 2026-10-31: no hospital partner, D41) (in progress)
 - P4c: Lesion-accurate QCA (added 2026-10-31: the weakest product link found in P4b) (done)
 - P4d: Cine runs on real angiograms (added 2026-10-31, revised 2026-11-01) (done)
+- P4e: Real coronary physiology (added 2026-11-02; pre-registered before the data were downloaded) (done)
 - P5: Projection geometry and two-view 3D reconstruction (done)
 - P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)
 - P5c: Two views in the app (added 2026-11-01) (done)
@@ -89,4 +90,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `cb3f600b79` | False | 2026-11-01T23:03:06+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `55fc56cdf1777640c7f865d38a120f272567609d` (dirty: False), vstent 0.1.0, 2026-11-02T07:45:56+00:00.
+This summary: commit `27ea9eb3ee8c251ef2fac7eeb3ee7b70c0a4763c` (dirty: False), vstent 0.1.0, 2026-11-02T08:06:38+00:00.
