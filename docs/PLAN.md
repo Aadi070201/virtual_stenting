@@ -818,6 +818,11 @@ diameter ≥ 2 mm, and a wire measures in the distal vessel, not in a terminal b
     path.
   - The development check is run again with it, under the same rule, and both runs are
     reported. The product follows only if the corrected run also meets the rule.
+  - **Corrected run** (`reports/p4k_wire_dev.md`; the first run's report is in
+    `reports/c2_first_run/`): the rule is met again, so the wire position is adopted.
+    - lesion-free vessels ≤ 0.80: 52% → 42% (median FFR 0.73 → 0.83);
+    - by grade: 74 / 74 / 81%;
+    - FAME distance 23 → 20 points.
 
 ### C3. Learned lesion reading together with the physics, judged end to end (CPU; added 2026-11-02, before running)
 Why: C showed the FFR depends on how deep the lesions are measured. In the model a 3 mm

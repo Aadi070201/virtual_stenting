@@ -1375,7 +1375,11 @@ reference diameter is ≥ 2.0 mm (FAVOR II's vessel size).
   position. The path beyond it is still measured and shown.
 - Physics unchanged (`outflow: none`).
 
-**Still open:** lesion-free vessels are significant in 37%, nearly three times the anchor. The
+**Corrected implementation** (the vessel cut at the wire point, as the plan's text says; the
+first run solved the whole path and read the FFR there): lesion-free 42%, FAME distance 20
+points. The rule is met again. The product uses the corrected rule (`qca.at_wire`).
+
+**Still open:** lesion-free vessels are significant in 42%, about three times the anchor. The
 remaining gap is lesion depth and diffuse loss: P4k-A, C3, E.
 
 **Alternatives:** a different diameter limit chosen on the data was rejected (tuning). Murray
