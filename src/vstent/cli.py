@@ -1963,7 +1963,11 @@ def physics_nozzle(
 @app.command()
 def stenosis_grading(
     edges: Annotated[
-        str, typer.Option("--edges", help="Comma-separated: probability, intensity, model.")
+        str,
+        typer.Option(
+            "--edges",
+            help="Comma-separated: probability, intensity, model, dense, dense_log, dense_linear.",
+        ),
     ] = "probability,intensity,model",
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
         "data/raw/cadica"

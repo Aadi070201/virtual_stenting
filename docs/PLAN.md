@@ -518,6 +518,19 @@ from the edges.
   - the absolute size is the scaled lumen's (P5b), so %DS comes from the shape alone.
 - No constant above is changed after this commit. The domain is the only choice, made by the
   rule below.
+- **Amendment 1** (2026-11-02, before any CADICA measurement with `dense`): after the IOD's
+  median over 3 points, a Gaussian along the vessel, σ = 3 px:
+  - **Why:** on development renders (seeds 5100+, not the report's 4100+), the contrast left in
+    a tight lesion was about the size of the image noise. The narrowest point then picked
+    noise dips, and circular 70% lesions read +18 points (many at the 0.5 px floor).
+  - **Rule, written before the variants were run:** the smallest σ in {0, 1, 2, 3} px with mean
+    |%DS error| ≤ 10 points for 70% lesions and ≤ 8 for vessels without a lesion.
+  - **Result:**
+    - σ = 0: +18.4 for 70% lesions, +6.2 without a lesion;
+    - σ = 1: +17.4, +6.1;
+    - σ = 2: +12.8, +6.1;
+    - σ = 3: +4.4, +6.1 (85% lesions −2.8, 95% −0.4).
+  - σ = 3 px is also the scale of the X-ray system's edge enhancement (1.5–3 px).
 
 **Development** (CADICA development patients, as split in P4b; rendered lesions,
 `vstent lumen-synthetic`):

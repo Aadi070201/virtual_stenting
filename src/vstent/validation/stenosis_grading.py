@@ -171,7 +171,9 @@ FRAME_COLUMNS = ("track", "patient", "video", "category", "split", "frame", "sta
 
 # method → (lumen measured on the image?, ``lumen`` option of qca_from_centerline)
 METHOD_ARGS = {"probability": (False, "edges"), "intensity": (True, "edges"),
-               "model": (True, "model")}  # fmt: skip
+               "model": (True, "model"), "dense": (True, "dense"),
+               "dense_log": (True, "dense_log"),
+               "dense_linear": (True, "dense_linear")}  # fmt: skip
 
 
 def _measure_frame(img, prob, items, split, methods) -> list[tuple[str, dict[str, Any]]]:
@@ -364,6 +366,9 @@ EDGE_METHODS = {
     "intensity": "intensity edges guided by the segmentation (the product's QCA, D43)",
     "model": "imaging-chain model fitted to the image (P4c; an option, not the default: lower "
     "development kappa and AUC, D44)",
+    "dense": "intensity edges narrowed by densitometry (P4h), the product's domain",
+    "dense_log": "intensity edges narrowed by densitometry (P4h), log domain",
+    "dense_linear": "intensity edges narrowed by densitometry (P4h), linear (grey-level) domain",
 }
 
 

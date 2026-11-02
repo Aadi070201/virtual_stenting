@@ -37,6 +37,7 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinat
 from scipy.stats import theilslopes
 
 from vstent.imaging.centerline import Centerline, trace_centerline
+from vstent.imaging.densitometry import DOMAIN, densitometric_diameter
 from vstent.imaging.lumen_model import ChainCalibration, LumenFit, fit_lumen, fit_windows
 from vstent.physics.geometry import Lesion, VesselProfile
 from vstent.units import m_to_mm, mm_to_m
@@ -66,8 +67,12 @@ LUMEN_METHOD_LABELS = {  # for reports
     "probability": "outline of the vessel mask",
     "model": "imaging-chain model fitted to the image (blur, edge enhancement; P4c)",
     "scaled": "image intensity edges, absolute size from the imaging-chain fit (P5b)",
+    "dense": "intensity edges narrowed by densitometry (integrated contrast, P4h), absolute "
+    "size from the imaging-chain fit",
 }
-LUMEN_OPTIONS = ("edges", "model", "scaled")
+# densitometric lumen (P4h): the product's domain, or one named for the comparison
+DENSE_DOMAINS = {"dense": None, "dense_log": "log", "dense_linear": "linear"}
+LUMEN_OPTIONS = ("edges", "model", "scaled", *DENSE_DOMAINS)
 # Scaled lumen (P5b): the size factor is accepted within SIZE_FACTOR_RANGE, from at least
 # SIZE_MIN_POINTS healthy points (set on development renders, D50)
 SIZE_FACTOR_RANGE = (1.0, 1.4)
@@ -498,9 +503,16 @@ def qca_from_centerline(
     ``lumen="scaled"`` (needs ``image``): edges, with the absolute size from the imaging-chain
     fit (:func:`size_factor_from_fit`). ``size_factor``: a known factor instead of the fit (a
     side branch takes its main vessel's).
+
+    ``lumen="dense"`` (needs ``image``; P4h): the scaled lumen, narrowed where the integrated
+    contrast shows less lumen than the edges (:mod:`vstent.imaging.densitometry`).
+    ``"dense_log"`` / ``"dense_linear"`` name the domain explicitly.
     """
     if lumen not in LUMEN_OPTIONS:
         raise ValueError(f"lumen must be one of {LUMEN_OPTIONS}, not {lumen!r}")
+    dense = lumen in DENSE_DOMAINS
+    if dense and image is None:
+        raise ValueError(f"the {lumen} lumen needs the image")
     if lumen in ("model", "scaled") and image is None and size_factor is None:
         raise ValueError(f"the {lumen} lumen needs the image")
     assumed = mm_per_px is None
@@ -526,6 +538,22 @@ def qca_from_centerline(
     if lumen == "scaled" and size_factor is None:
         factor, note = size_factor_from_image(image, centerline, diameters)
         method = "scaled" if not note else method
+    if dense:
+        if size_factor is None:
+            factor, note = size_factor_from_image(image, centerline, diameters)
+        domain = DENSE_DOMAINS[lumen] or DOMAIN
+        d_dens = densitometric_diameter(image, centerline, diameters.diameter_px, domain)
+        d_new = np.maximum(np.minimum(diameters.diameter_px, d_dens), MIN_DIAMETER_PX)
+        found = np.isfinite(diameters.left_px) & np.isfinite(diameters.right_px)
+        mid = np.where(found, (diameters.left_px + diameters.right_px) / 2, 0.0)
+        diameters = DiameterProfile(
+            diameter_px=d_new,
+            left_px=np.where(np.isfinite(diameters.left_px), mid - d_new / 2, np.nan),
+            right_px=np.where(np.isfinite(diameters.right_px), mid + d_new / 2, np.nan),
+            fallback=diameters.fallback,
+            branch=diameters.branch,
+        )
+        method = "dense"
     if lumen == "model":
         edge_ref = robust_reference(centerline.s, diameters.diameter_px)
         offset = (diameters.right_px + diameters.left_px) / 2.0
@@ -546,7 +574,7 @@ def qca_from_centerline(
     d_used = np.where(capped, REF_UPPER * d_ref, d)
     if size_factor is not None:
         factor = float(size_factor)
-        method = "scaled" if factor != 1.0 else method
+        method = "scaled" if factor != 1.0 and not dense else method
     profile = VesselProfile(
         s=mm_to_m(centerline.s * scale),
         r=mm_to_m(d_used * scale * factor) / 2.0,
