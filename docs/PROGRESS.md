@@ -1392,3 +1392,52 @@ external test. E remains the final word.
   pre-registered.
 - The clinician-style proximal path for measurement.
 - Frame choice without an ECG.
+
+## 2026-11-02/03 — P4k: lesion reading with physics, wire position, virtual stenting on real angiograms (D64–D69)
+
+**What was done**
+- **Guided app:**
+  - every stent has its own controls; plans come from the solver (D64);
+  - the path starts at the tree's widest end, not a branch tip (D65);
+  - QFR-style display: lumen contours, filled lesions (red ≥ 50%, amber 30–50%), a lesion
+    table, the FFR loss per mm, every vessel outlined, faint vessels from the vesselness filter
+    (D67);
+  - an FFR marker where the FFR is read.
+- **Pre-registered P4k A–J, P4l and P4m** before any training or evaluation.
+- **Data:**
+  - AngioCAD downloaded and verified (413 patients; 121,566 frames; three frames lost at
+    archive volume boundaries);
+  - its test protocol written before any model was run on it.
+- **Models:**
+  - lesion reader v2 (interval loss, normal-vessel negatives, clinician-style path);
+  - vessel identity (ARCADE SYNTAX, ResNet34; validation Dice 0.816);
+  - whole-image lesion detector (training, resumable; four more encoders queued, amendment 2);
+  - learned ED model (MobileNetV3-Small + temporal convolutions; its synthetic data being
+    generated);
+  - an ED labelling page (`vstent label-ed`).
+
+**Results (CADICA, no FFR; anchors De Bruyne 2001 and FAME)**
+- **P4k-C (Murray outflow alone):** not adopted. Lesion-free 52% → 6% ≤ 0.80, but lesions
+  under-read (D66).
+- **P4k-C2 (wire position):** adopted (D68). Lesion-free 52% → 42% (corrected run).
+- **P4k-C4 (velocity by artery):** RCA −9.1% in DEFINE-FLOW; the 10% rule did not fire.
+- **Reader v2:** not adopted at the patch level (false alarms 30% vs limit 19%).
+- **P4k-C3 (reader + physics, end to end):**
+  - reader v2 + Murray outflow adopted as the product's FFR pipeline (D69,
+    `configs/product.yaml`);
+  - development: lesion-free 19%; test, once: lesion-free 54% → 20%;
+  - 90–98% lesions read ≤ 0.80 in 52% on test (FAME 96%).
+- **P4m (virtual stenting, development):**
+  - with the pipeline, plans reaching 0.90 13% → 66%, median post-PCI FFR 0.91 (FFR-SEARCH
+    0.91), median stent 39 → 27 mm;
+  - a failure mode: about 8 cases where the reader reads a thin distal narrowing as ~92%
+    (lumen 0.17 mm), giving FFR ~0.06 that no stent fixes.
+
+**Open issues**
+- Severe lesions under-called (test).
+- The near-occlusion failure mode in thin distal vessels (P4n, pre-registered next).
+- Detector and vessel-identity encoder comparisons (GPU queue).
+- ED model (data generating).
+- AngioCAD external run (after the decisions).
+- Memory: 15 GB RAM. Jobs now run one per queue, with PID files (two crashes from leftover
+  queue loops, fixed).
