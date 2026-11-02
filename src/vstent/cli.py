@@ -1863,6 +1863,23 @@ def ed_data(
 
 
 @app.command()
+def train_ed(
+    config: Annotated[Path | None, typer.Option("--config", help="configs/ed.yaml")] = None,
+    resume: Annotated[str | None, typer.Option("--resume", help="Run name to continue.")] = None,
+) -> None:
+    """Train the learned ED-frame model (P4l, M2) on synthetic runs; stoppable, resumable."""
+    from vstent.config import load_config
+    from vstent.imaging.ed_model import EdTrainConfig, resume_ed, train_ed
+
+    if (config is None) == (resume is None):
+        raise typer.BadParameter("give --config or --resume")
+    typer.echo(DISCLAIMER)
+    run_dir = (resume_ed(resume, log=typer.echo) if resume
+               else train_ed(load_config(config, EdTrainConfig), log=typer.echo))  # fmt: skip
+    typer.echo(f"Run directory: {run_dir}")
+
+
+@app.command()
 def stent_check(
     stage: Annotated[str, typer.Option("--stage", help="dev, then test.")],
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,

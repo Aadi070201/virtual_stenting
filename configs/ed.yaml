@@ -1,0 +1,14 @@
+# Learned end-diastolic frames (docs/PLAN.md, P4l M2), as pre-registered. Do not change without
+# a new pre-registration. Data: `vstent ed-data` (synthetic, seeds 20000-20359).
+name: ed_mnv3
+seed: 0
+epochs: 30
+batch_runs: 4
+lr: 0.001
+weight_decay: 0.0001
+pos_weight: 5.0
+features: 64
+pretrained: true
+data_dir: data/derived/ed
+runs_dir: runs
+device: auto
