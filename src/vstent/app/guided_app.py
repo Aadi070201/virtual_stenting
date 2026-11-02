@@ -292,7 +292,7 @@ def main() -> None:
         st.warning("This path cannot be measured: press Change path and click two points on "
                    "the vessel.")  # fmt: skip
     q0 = None if analysis is None else analysis.qca
-    lesions = guided.lesion_marks(q0) if q0 is not None else []
+    lesions = guided.lesion_marks(q0, guided.MILD_MIN_DS) if q0 is not None else []
     boxes = [b[1:] for b in (case.boxes if case else ()) if b[0] == frame]
     img_col, side = st.columns([4, 2])
     with side:
@@ -390,11 +390,13 @@ def main() -> None:
             else:
                 st.session_state.update(end=pt, picking=None)
             st.rerun()
-    if lesions:
-        zooms = st.columns(min(len(lesions), 4))
-        for col, m in zip(zooms, lesions[:4], strict=False):
+    if lesions:  # close-ups, the most severe first (red ≥ 50%, amber 30–50%)
+        worst = sorted(lesions, key=lambda m: -m.ds_pct)[:4]
+        zooms = st.columns(len(worst))
+        for col, m in zip(zooms, worst, strict=True):
+            label = f"Lesion {m.number}: {m.ds_pct:.0f}%{'' if m.severe else ' (mild)'}"
             col.image(guided.lesion_zoom(image, q0, m, edges=show), width="stretch",
-                      caption=f"Lesion {m.number}: {m.ds_pct:.0f}% · yellow = edges")  # fmt: skip
+                      caption=f"{label} · yellow = edges")  # fmt: skip
     if analysis is None:
         st.stop()
 
@@ -421,15 +423,19 @@ def main() -> None:
                    help=stable_text)  # fmt: skip
         if not stable:
             st.warning("Heartbeats disagree about 0.80: check the frame and the path.")
-        share = guided.loss_split(pre, guided.lesion_marks(q))
+        share = guided.loss_split(pre, guided.lesion_marks(q, guided.MILD_MIN_DS))
         if share is not None:
             st.caption(f"Pressure loss: {100 * share:.0f}% at the marked lesions, "
                        f"{100 * (1 - share):.0f}% along the rest of the path")  # fmt: skip
         if q.calibration_assumed:
             st.caption("Pixel size assumed (0.30 mm)", help="Set it under Settings.")
     with right:
-        st.plotly_chart(guided.ffr_chart(pre, None, guided.lesion_marks(q)), key="ffr_now")
-    marks = guided.lesion_marks(q)
+        st.plotly_chart(guided.ffr_chart(pre, None, guided.lesion_marks(q, guided.MILD_MIN_DS)),
+                        key="ffr_now")  # fmt: skip
+    marks = guided.lesion_marks(q, guided.MILD_MIN_DS)
+    if not marks and round(cons.ffr, 2) <= guided.CUTOFF:
+        st.info("No narrowing of 30% or more on this path: the pressure is lost along the "
+                "vessel (see the loss per mm). Check the path and the frame.")  # fmt: skip
     if marks:
         st.dataframe(guided.lesion_table(q, pre, marks), hide_index=True, width="stretch")
 
@@ -500,7 +506,7 @@ def main() -> None:
                 run.frames[chosen.frame],
                 chosen.analysis.prob,
                 q,
-                guided.lesion_marks(q),
+                guided.lesion_marks(q, guided.MILD_MIN_DS),
                 stents,
                 [chosen.start, chosen.end],
             )
@@ -516,7 +522,7 @@ def main() -> None:
             note = guided.diffuse_note(post, guided.lesion_marks(q))
             if note:
                 st.info(note)
-            st.plotly_chart(guided.ffr_chart(pre, post, guided.lesion_marks(q)),
+            st.plotly_chart(guided.ffr_chart(pre, post, guided.lesion_marks(q, guided.MILD_MIN_DS)),
                             key="ffr_after")  # fmt: skip
         with st.expander("Diameter along the path"):
             st.plotly_chart(core.profile_figure(profile, stented, stents), key="diameters")

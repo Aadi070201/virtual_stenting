@@ -49,7 +49,8 @@ HEX = {"green": "#1baf7a", "orange": "#e08a00", "red": "#dc2626", "blue": "#2a78
 # marked lesion last
 LIBRARY_ORDER = ("p90_98", "p99", "p70_90", "p50_70", "p20_50", "p0_20", "p100", None)
 AUTO_PATH_MM = 250.0  # a safety cap: the main-trunk path normally ends at the vessel's end
-MARK_MIN_DS = 50.0  # narrowings marked on the image (milder ones are counted, not marked)
+MARK_MIN_DS = 50.0  # narrowings marked red (significant by diameter)
+MILD_MIN_DS = 30.0  # narrowings of 30–50% are marked amber (shown, so none is hidden)
 
 # colours (RGB) on the angiogram
 VESSEL = np.array([42, 120, 214], np.float32)
@@ -57,6 +58,7 @@ PATH = (255, 214, 10)
 STENT = (235, 104, 52)
 START = (27, 175, 122)
 LESION = (220, 38, 38)
+MILD = (245, 158, 11)
 EXPERT = (34, 211, 238)
 
 
@@ -242,6 +244,11 @@ class LesionMark:
     end_mm: float
 
     @property
+    def severe(self) -> bool:
+        """At least :data:`MARK_MIN_DS` % diameter stenosis (marked red; milder: amber)."""
+        return self.ds_pct >= MARK_MIN_DS
+
+    @property
     def severity(self) -> str:
         if self.ds_pct >= 70:
             return "severe"
@@ -321,16 +328,22 @@ def overlay(
     boxes: list[tuple[float, float, float, float, str]] | None = None,
     contours: bool = True,
 ) -> np.ndarray:
-    """RGB angiogram: vessels tinted blue; the path as its two measured lumen contours (yellow;
-    ``contours=False``: its centreline); lesions filled red between the contours, with ticks
-    at their ends and their numbers; stents orange; the start (green) and end (orange)
-    points; experts' boxes (x, y, w, h, grade) in cyan."""
+    """RGB angiogram: every segmented vessel tinted and outlined blue; the path as its two
+    measured lumen contours (yellow; ``contours=False``: its centreline); lesions filled
+    between the contours (red ≥ 50%, amber 30–50%), with ticks at their ends and their
+    numbers; stents orange; the start (green) and end (orange) points; experts' boxes
+    (x, y, w, h, grade) in cyan."""
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
+    scale = max(1, round(max(image.shape) / 512))
+    outline = None
     if prob is not None:
         mask = prob >= THRESHOLD
-        rgb[mask] = 0.65 * rgb[mask] + 0.35 * VESSEL
+        rgb[mask] = 0.75 * rgb[mask] + 0.25 * VESSEL
+        outline, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_LIST,
+                                      cv2.CHAIN_APPROX_NONE)  # fmt: skip
     out = rgb.astype(np.uint8)
-    scale = max(1, round(max(image.shape) / 512))
+    if outline:
+        cv2.drawContours(out, outline, -1, tuple(int(v) for v in VESSEL), 1, cv2.LINE_AA)
     for n, (x, y, w, h, grade) in enumerate(boxes or []):
         p0, p1 = (int(x), int(y)), (int(x + w), int(y + h))
         cv2.rectangle(out, p0, p1, EXPERT, scale, cv2.LINE_AA)
@@ -344,7 +357,8 @@ def overlay(
             for m in lesions or []:
                 sel = (qca.s_mm >= m.start_mm) & (qca.s_mm <= m.end_mm)
                 if sel.sum() >= 2:
-                    cv2.fillPoly(fill, [np.vstack([left[sel], right[sel][::-1]])], LESION)
+                    cv2.fillPoly(fill, [np.vstack([left[sel], right[sel][::-1]])],
+                                 LESION if m.severe else MILD)  # fmt: skip
                     for k in np.flatnonzero(sel)[[0, -1]]:  # ticks at the lesion's ends
                         cv2.line(out, tuple(map(int, left[k])), tuple(map(int, right[k])),
                                  (255, 255, 255), scale, cv2.LINE_AA)  # fmt: skip
@@ -363,10 +377,11 @@ def overlay(
                     cv2.putText(out, f"S{k + 1}", at, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * scale,
                                 STENT, 2 * scale, cv2.LINE_AA)  # fmt: skip
     for m in lesions or []:
+        color = LESION if m.severe else MILD
         if not (contours and qca is not None):
-            cv2.circle(out, (m.col, m.row), 11 * scale, LESION, 2 * scale, cv2.LINE_AA)
+            cv2.circle(out, (m.col, m.row), 11 * scale, color, 2 * scale, cv2.LINE_AA)
         at = (m.col + 12 * scale, m.row - 8 * scale)
-        cv2.putText(out, str(m.number), at, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, LESION,
+        cv2.putText(out, str(m.number), at, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, color,
                     2 * scale, cv2.LINE_AA)  # fmt: skip
     for k, (r, c) in enumerate(points or []):
         cv2.circle(out, (int(c), int(r)), 6 * scale, START if k == 0 else STENT, -1, cv2.LINE_AA)
@@ -613,7 +628,7 @@ def detection_check(
     ds = None if qca is None else 100.0 * (1.0 - qca.profile.r / qca.profile.reference_radius())
     for n, (x, y, w, h, grade) in enumerate(boxes):
         x0, y0, x1, y1 = x - margin_px, y - margin_px, x + w + margin_px, y + h + margin_px
-        hit = [m for m in lesions if x0 <= m.col <= x1 and y0 <= m.row <= y1]
+        hit = [m for m in lesions if m.severe and x0 <= m.col <= x1 and y0 <= m.row <= y1]
         inside_any.update(m.number for m in hit)
         on = None
         if pts is not None:
@@ -626,4 +641,4 @@ def detection_check(
             checks.append(BoxCheck(chr(65 + n), grade, "read mild", max(best, 0.0), None))
         else:
             checks.append(BoxCheck(chr(65 + n), grade, "off the path", None, None))
-    return checks, [m for m in lesions if m.number not in inside_any]
+    return checks, [m for m in lesions if m.severe and m.number not in inside_any]
