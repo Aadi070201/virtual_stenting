@@ -1,0 +1,5 @@
+# The product's FFR pipeline (src/vstent/inference/product.py). Each setting changes only
+# through a pre-registered decision in docs/DECISIONS.md.
+lesion_reader: null      # P4i/P4k-A readers: not adopted (D63; P4k-A); P4k-C3 decides end to end
+outflow: none            # P4k-C (D66): not adopted on its own; P4k-C3 decides with a reader
+wire: true               # D68: the FFR where a pressure wire would sit

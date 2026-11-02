@@ -1206,9 +1206,14 @@ def analyse(
                           figure, plan_cfg, lumen)  # fmt: skip
         return
     surrogate = SurrogateRunner.from_dir(sur_dir)
+    from vstent.inference.product import product_config, product_params, product_reader
+
+    prod = product_config()  # the product's FFR pipeline (configs/product.yaml)
+    params = product_params(params, prod)
+    reader = product_reader(prod.lesion_reader)
     result = analyse_vessel(
         prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px, image=img,
-        lumen=lumen,
+        lumen=lumen, lesion_reader=reader, wire=prod.wire,
     )  # fmt: skip
     q = result.qca
     fv, fixed_v = None, params.v_hyp
@@ -1222,7 +1227,7 @@ def analyse(
             params = params.model_copy(update={"v_hyp": fv.v_hyp})
             result = analyse_vessel(
                 prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px,
-                image=img, lumen=lumen,
+                image=img, lumen=lumen, lesion_reader=reader, wire=prod.wire,
             )  # fmt: skip
             q = result.qca
         elif flow == "measured":
@@ -1233,7 +1238,8 @@ def analyse(
 
         def one_frame(p, im, a, b):
             return analyse_vessel(p, a, b, params=params, surrogate=surrogate,
-                                  mm_per_px=mm_per_px, image=im, lumen=lumen)  # fmt: skip
+                                  mm_per_px=mm_per_px, image=im, lumen=lumen,
+                                  lesion_reader=reader, wire=prod.wire)  # fmt: skip
 
         cons = run_consensus(run_frames, run_t, start, end, segmenter.predict, one_frame,
                              k=consensus or CONSENSUS_K, reference_analysis=result)  # fmt: skip

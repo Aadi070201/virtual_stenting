@@ -174,9 +174,15 @@ def predict_case(
             warnings.append(f"cine run: {type(exc).__name__}: {exc}; one frame analysed")
     reference = c.frame or 0
 
+    from vstent.inference.product import product_config, product_params, product_reader
+
+    prod = product_config()  # the product's FFR pipeline (configs/product.yaml)
+    pp, reader = product_params(p, prod), product_reader(prod.lesion_reader)
+
     def one_path(pr, im, start, end):
-        return analyse_vessel(pr, start, end, params=p, surrogate=surrogate,
-                              mm_per_px=c.mm_per_px, image=im)  # fmt: skip
+        return analyse_vessel(pr, start, end, params=pp, surrogate=surrogate,
+                              mm_per_px=c.mm_per_px, image=im, lesion_reader=reader,
+                              wire=prod.wire)  # fmt: skip
 
     def one_tree(pr, im, start, end):
         return analyse_tree(pr, start, end, params=p, mm_per_px=c.mm_per_px, image=im)
