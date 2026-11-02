@@ -724,7 +724,12 @@ optimiser, 40 epochs, 5 development folds, seed 0, and how the product uses the 
    - from the vessel tree's proximal end through the box to the vessel's end
      (`guided.box_path`), so the healthy proximal vessel sets the reference;
    - otherwise, the P4b path.
-- [ ] **Development:** adopt only if all of P4i's conditions hold (unchanged).
+- [x] **Development:** adopt only if all of P4i's conditions hold (unchanged).
+  **Result: not adopted** (`reports/lesion_reading_v2_dev.md`).
+  - Met: kappa 0.33 vs 0.22; AUC 0.84 vs 0.79; median of 0–20% lesions 18%; ARCADE val
+    stenoses read ≥ 50% in 80% vs 40%.
+  - Not met: distant candidates read ≥ 50% in 30% vs 9% (limit 19%); v1 had 46%.
+  - C3 judges it end to end next, as pre-registered.
 - [ ] **Test:**
   - P4i's sets with P4i's targets (a second look);
   - **fresh:** candidates on the CADICA test patients' lesion-free runs read ≥ 50%
