@@ -565,8 +565,14 @@ def train_seg(
     resume: Annotated[
         str | None, typer.Option("--resume", help="Continue a stopped run (name or path).")
     ] = None,
+    workers: Annotated[
+        int | None,
+        typer.Option("--workers", min=0, help="DataLoader processes (memory; results unchanged)."),
+    ] = None,
 ) -> None:
-    """Train the vessel segmentation model (new run with --config, or continue with --resume)."""
+    """Train the vessel segmentation model (new run with --config, or continue with --resume).
+    ``--workers`` overrides the config's DataLoader processes: each holds a copy of the images,
+    and augmentations depend only on the saved generator, so the results do not change."""
     from vstent.config import load_config
     from vstent.imaging.seg_train import SegConfig, resume_seg, train_seg
 
@@ -574,9 +580,13 @@ def train_seg(
         typer.echo("Give exactly one of --config (new run) or --resume (continue).", err=True)
         raise typer.Exit(code=2)
     if resume is not None:
-        run_dir = resume_seg(resume, log=typer.echo)
+        run_dir = resume_seg(resume, log=typer.echo, workers=workers)
     else:
-        run_dir = train_seg(load_config(config, SegConfig), log=typer.echo)
+        cfg = load_config(config, SegConfig)
+        if workers is not None:
+            cfg = cfg.model_copy(update={"train": cfg.train.model_copy(
+                update={"workers": workers})})  # fmt: skip
+        run_dir = train_seg(cfg, log=typer.echo)
     typer.echo(f"Run directory: {run_dir}")
 
 

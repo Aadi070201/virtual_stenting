@@ -339,13 +339,16 @@ def overlay(
     boxes: list[tuple[float, float, float, float, str]] | None = None,
     contours: bool = True,
     faint: np.ndarray | None = None,
+    beyond: QCAResult | None = None,
 ) -> np.ndarray:
     """RGB angiogram: every segmented vessel tinted and outlined blue; the path as its two
     measured lumen contours (yellow; ``contours=False``: its centreline); lesions filled
     between the contours (red ≥ 50%, amber 30–50%), with ticks at their ends and their
     numbers; stents orange; the start (green) and end (orange) points; experts' boxes
     (x, y, w, h, grade) in cyan. ``faint``: further vessels from the vesselness filter (bool
-    (H, W); :func:`faint_vessels`), outlined light blue for display only."""
+    (H, W); :func:`faint_vessels`), outlined light blue for display only. ``beyond``: the whole
+    measured path when ``qca`` was cut at the wire position (D68); its rest is drawn dashed and
+    the point where the FFR is read is marked white."""
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
     scale = max(1, round(max(image.shape) / 512))
     outline = None
@@ -392,9 +395,20 @@ def overlay(
                     at = (int(mid[0]) + 8 * scale, int(mid[1]) + 14 * scale)
                     cv2.putText(out, f"S{k + 1}", at, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * scale,
                                 STENT, 2 * scale, cv2.LINE_AA)  # fmt: skip
+    if qca is not None and beyond is not None:  # D68: the path beyond the wire position
+        rest = np.round(beyond.centerline.points[len(qca.centerline.points) - 1 :, ::-1])
+        rest = rest.astype(np.int32)
+        for i in range(0, len(rest) - 1, 6):  # dashes
+            cv2.polylines(out, [rest[i : i + 4]], False, PATH, scale, cv2.LINE_AA)
+        end = tuple(int(v) for v in np.round(qca.centerline.points[-1, ::-1]))
+        cv2.circle(out, end, 5 * scale, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.putText(out, "FFR", (end[0] + 7 * scale, end[1] + 4 * scale),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45 * scale, (255, 255, 255), scale,
+                    cv2.LINE_AA)  # fmt: skip
     for m in lesions or []:
         color = LESION if m.severe else MILD
-        if not (contours and qca is not None):
+        past = qca is not None and m.at_mm > float(qca.s_mm[-1])  # beyond the FFR point
+        if not (contours and qca is not None) or past:
             cv2.circle(out, (m.col, m.row), 11 * scale, color, 2 * scale, cv2.LINE_AA)
         at = (m.col + 12 * scale, m.row - 8 * scale)
         cv2.putText(out, str(m.number), at, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, color,

@@ -82,7 +82,7 @@ def lesion_task(img, prob, item, params_dict) -> dict[str, Any]:
         path = box_path(prob, box)
         if path is None:
             raise ValueError("no vessel in the box")
-        q = analyse_vessel(prob, path[0], path[1], params=params, image=img).qca
+        q = analyse_vessel(prob, path[0], path[1], params=params, image=img, wire=False).qca
         at = _deepest_in_box(q, box)
         if at is None:
             raise ValueError("the path does not enter the box")

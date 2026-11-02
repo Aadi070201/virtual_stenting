@@ -284,14 +284,21 @@ def resume_seg(
     *,
     checkpoint_root: str | Path = CHECKPOINTS_DIR,
     log: Callable[[str], None] | None = None,
+    workers: int | None = None,
 ) -> Path:
-    """Continue a stopped or interrupted segmentation run from its last completed epoch."""
+    """Continue a stopped or interrupted segmentation run from its last completed epoch.
+    ``workers``: DataLoader processes for this session only (augmentations depend on the saved
+    generator, not on the number of workers, so results do not change); the run's config is
+    kept."""
     ckpt_dir = resolve_checkpoint(name_or_path, checkpoint_root)
     status = read_status(ckpt_dir)
     if status.get("kind") != KIND:
         raise ValueError(f"{ckpt_dir} is a {status.get('kind')!r} checkpoint, not {KIND!r}")
     run_dir = Path(status["run_dir"])
     config = load_config(run_dir / CONFIG_FILENAME, SegConfig)
+    if workers is not None:
+        config = config.model_copy(update={"train": config.train.model_copy(
+            update={"workers": workers})})  # fmt: skip
     return _fit(config, run_dir, ckpt_dir, log or (lambda _msg: None), resume=True)
 
 

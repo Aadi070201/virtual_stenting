@@ -92,20 +92,23 @@ def faint(key: str, _image: np.ndarray, _prob: np.ndarray) -> np.ndarray:
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel…")
-def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg, learned=False):
+def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg, learned=False,
+            manual=False):  # fmt: skip
+    # D68: the FFR where a wire would sit, except on a path whose ends the user set
     return analyse_vessel(_prob, start, end, params=_params(pa_mmhg), mm_per_px=mm_per_px,
-                          image=_image, lesion_reader=_reader(learned))  # fmt: skip
+                          image=_image, lesion_reader=_reader(learned),
+                          wire=not manual)  # fmt: skip
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the other heartbeats…")
 def heartbeats(key: str, _rf, frame: int, start, end, mm_per_px, pa_mmhg, _reference,
-               learned=False):  # fmt: skip
+               learned=False, manual=False):  # fmt: skip
     params = _params(pa_mmhg)
     reader = _reader(learned)
 
     def one(p, im, a, b):
         return analyse_vessel(p, a, b, params=params, mm_per_px=mm_per_px, image=im,
-                              lesion_reader=reader)  # fmt: skip
+                              lesion_reader=reader, wire=not manual)  # fmt: skip
 
     return run_consensus(_rf, frame, start, end, get_models().segmentation.predict, one,
                          reference_analysis=_reference)  # fmt: skip
@@ -287,17 +290,21 @@ def main() -> None:
         except ValueError:
             st.error("No vessel found on this frame: pick another one.")
             st.stop()
-        st.session_state.update(path_key=frame_key, start=a, end=b, picking=None)
+        st.session_state.update(path_key=frame_key, start=a, end=b, picking=None, manual=False)
     start, end = st.session_state.start, st.session_state.end
+    manual = bool(st.session_state.get("manual"))
     analysis = None
     try:
-        analysis = measure(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}", prob,
-                           image, start, end, mm_px, pa_mmhg, learned)  # fmt: skip
+        analysis = measure(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}:{manual}",
+                           prob, image, start, end, mm_px, pa_mmhg, learned, manual)  # fmt: skip
     except ValueError:
         st.warning("This path cannot be measured: press Change path and click two points on "
                    "the vessel.")  # fmt: skip
     q0 = None if analysis is None else analysis.qca
-    lesions = guided.lesion_marks(q0, guided.MILD_MIN_DS) if q0 is not None else []
+    whole = None if analysis is None else (analysis.full_qca or analysis.qca)
+    # marks along the whole path, those beyond the FFR point included (nothing hidden)
+    lesions = guided.lesion_marks(whole, guided.MILD_MIN_DS) if whole is not None else []
+    ffr_end_mm = float(q0.s_mm[-1]) if q0 is not None else None
     boxes = [b[1:] for b in (case.boxes if case else ()) if b[0] == frame]
     img_col, side = st.columns([4, 2])
     with side:
@@ -337,7 +344,7 @@ def main() -> None:
                 if ends is None:
                     st.warning("No segmented vessel crosses the expert boxes.")
                 else:
-                    st.session_state.update(start=ends[0], end=ends[1])
+                    st.session_state.update(start=ends[0], end=ends[1], manual=False)
                     st.rerun()
         show = st.toggle("Overlays", value=True, key="overlays",
                          help="Off: the plain angiogram.")  # fmt: skip
@@ -357,7 +364,7 @@ def main() -> None:
             st.button("Go to an expert frame", key="to_expert", on_click=go_to_frame,
                       args=(sha, target))  # fmt: skip
         if boxes:
-            checks, extra = guided.detection_check(q0, lesions, boxes)
+            checks, extra = guided.detection_check(whole, lesions, boxes)
             found = sum(c.status == "found" for c in checks)
             st.markdown(f"**Experts' lesions: {found} of {len(checks)} found**",
                         help="Cyan boxes: lesions marked by the dataset's experts on this "
@@ -377,13 +384,14 @@ def main() -> None:
                     st.caption(w)
     with img_col:
         rgb = (guided.overlay(image, prob, q0, lesions, points=[start, end], boxes=boxes,
-                              faint=faint(frame_key, image, prob)) if show
+                              faint=faint(frame_key, image, prob),
+                              beyond=analysis.full_qca if analysis else None) if show
                else guided.overlay(image, None))  # fmt: skip
         pt = click_image(rgb, image.shape, f"click_{sha}_{frame}")
         if pt is not None and st.session_state.get("picking") == "target":
             try:
                 a, b = guided.target_path(prob, pt, mm_px)
-                st.session_state.update(start=a, end=b, picking=None)
+                st.session_state.update(start=a, end=b, picking=None, manual=False)
             except ValueError as exc:
                 st.session_state.picking = None
                 st.session_state.target_error = str(exc)
@@ -394,13 +402,15 @@ def main() -> None:
             if st.session_state.picking == "start":
                 st.session_state.update(start=pt, picking="end")
             else:
-                st.session_state.update(end=pt, picking=None)
+                st.session_state.update(end=pt, picking=None, manual=True)
             st.rerun()
     if lesions:  # close-ups, the most severe first (red ≥ 50%, amber 30–50%)
         worst = sorted(lesions, key=lambda m: -m.ds_pct)[:4]
         zooms = st.columns(len(worst))
         for col, m in zip(zooms, worst, strict=True):
             label = f"Lesion {m.number}: {m.ds_pct:.0f}%{'' if m.severe else ' (mild)'}"
+            if ffr_end_mm is not None and m.at_mm > ffr_end_mm:
+                label += " · beyond the FFR point (vessel < 2 mm)"
             col.image(guided.lesion_zoom(image, q0, m, edges=show), width="stretch",
                       caption=f"{label} · yellow = edges")  # fmt: skip
     if analysis is None:
@@ -408,8 +418,8 @@ def main() -> None:
 
     # 3 · virtual FFR --------------------------------------------------------------------------
     st.markdown("#### 3 · Virtual FFR")
-    cons = heartbeats(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}", rf, frame,
-                      start, end, mm_px, pa_mmhg, analysis, learned)  # fmt: skip
+    cons = heartbeats(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}:{manual}", rf,
+                      frame, start, end, mm_px, pa_mmhg, analysis, learned, manual)  # fmt: skip
     chosen = cons.chosen
     q = chosen.analysis.qca
     params = _params(pa_mmhg)
@@ -515,6 +525,7 @@ def main() -> None:
                 guided.lesion_marks(q, guided.MILD_MIN_DS),
                 stents,
                 [chosen.start, chosen.end],
+                beyond=chosen.analysis.full_qca,
             )
             st.image(rgb, width=IMAGE_WIDTH, caption=f"Frame {chosen.frame} · stent in orange")
         with b_col:

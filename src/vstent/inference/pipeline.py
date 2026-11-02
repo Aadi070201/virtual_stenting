@@ -30,6 +30,7 @@ from vstent.imaging.qca import (
     LEVEL,
     NO_LUMEN_PX,
     QCAResult,
+    at_wire,
     qca_from_centerline,
     run_qca,
 )
@@ -68,6 +69,9 @@ class VesselAnalysis:
         warnings: plain-language caveats for this analysis.
         surrogate_std: ensemble SD along ``surrogate_s`` (``None`` for a single model).
         model_interval: calibrated interval of the surrogate's distal FFR, if available.
+        full_qca: the whole measured path when ``qca`` was cut at the wire position (D68:
+            the last point with a reference diameter ≥ 2 mm); ``None`` when nothing was cut.
+            Shown, not used for the FFR.
     """
 
     prob: np.ndarray
@@ -79,6 +83,7 @@ class VesselAnalysis:
     warnings: list[str] = field(default_factory=list)
     surrogate_std: np.ndarray | None = None
     model_interval: Interval | None = None
+    full_qca: QCAResult | None = None
 
     @property
     def ffr_distal_solver(self) -> float:
@@ -158,13 +163,16 @@ def analyse_vessel(
     image: np.ndarray | None = None,
     lumen: str | None = None,
     lesion_reader=None,
+    wire: bool = True,
 ) -> VesselAnalysis:
     """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
     ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
     ``None`` when ``prob`` is an analyst's mask. ``lumen``: ``"edges"`` or ``"model"`` (needs
     ``image``); default :data:`AUTO_LUMEN` with an image, edges without. ``lesion_reader``:
     a :class:`~vstent.inference.lesion_runtime.LesionRunner` whose predicted %DS sets each
-    candidate lesion's depth (P4i; a research option, not adopted, D63)."""
+    candidate lesion's depth (P4i; a research option, not adopted, D63). ``wire``: read the
+    FFR where a pressure wire would sit (D68; the vessel cut at the last point with a reference
+    diameter ≥ 2 mm, the whole path kept in ``full_qca``)."""
     params = params or PhysicsParams()
     qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image,
                   lumen=_lumen(image, lumen))  # fmt: skip
@@ -172,6 +180,10 @@ def analyse_vessel(
         from vstent.imaging.lesion_patch import apply_learned
 
         qca, _ = apply_learned(qca, image, prob, lesion_reader.predict)
+    full_qca = None
+    if wire:  # D68: the FFR where a pressure wire would sit
+        cut, _ = at_wire(qca)
+        full_qca, qca = (qca, cut) if cut is not qca else (None, qca)
     solver = solve_ffr(qca.profile, params)
     warnings = []
     if qca.calibration_assumed:
@@ -205,7 +217,13 @@ def analyse_vessel(
                 f"Surrogate FFR reaches {ffr.min():.2f}, below the physical minimum "
                 f"Pv/Pa = {floor:.2f}: the input is far outside what it was trained on"
             )
-    return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings, std, interval)
+    if full_qca is not None:
+        warnings.append(
+            f"The virtual FFR is read {qca.s_mm[-1]:.0f} mm along the path, where the vessel "
+            "is still ≥ 2 mm wide (as a pressure wire would be); the thinner rest is shown only"
+        )
+    return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings, std, interval,
+                          full_qca)  # fmt: skip
 
 
 @dataclass(frozen=True, eq=False)

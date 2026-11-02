@@ -276,3 +276,23 @@ def test_faint_vessels_are_outlined_not_measured():
     a = guided.overlay(img, prob)
     b = guided.overlay(img, prob, faint=np.pad(np.ones((10, 10), bool), ((5, 65), (5, 105))))
     assert not np.array_equal(a, b)
+
+
+def test_ffr_read_where_a_wire_would_sit():
+    """D68: the product cuts the vessel where its reference falls below 2 mm, keeps the whole
+    path for display; a user's own path (wire=False) is not cut."""
+    from vstent.inference.pipeline import analyse_vessel
+
+    prob = np.zeros((100, 420))
+    for c in range(10, 410):
+        half = 7.0 - 4.5 * (c - 10) / 400  # 3.5 mm → 1.25 mm at 0.25 mm/px
+        prob[int(50 - half) : int(50 + half) + 1, c] = 1.0
+    a = analyse_vessel(prob, (50, 15), (50, 405), mm_per_px=0.25)
+    assert a.full_qca is not None and a.qca.s_mm[-1] < a.full_qca.s_mm[-1]
+    assert any("pressure wire" in w for w in a.warnings)
+    b = analyse_vessel(prob, (50, 15), (50, 405), mm_per_px=0.25, wire=False)
+    assert b.full_qca is None and b.solver.ffr[-1] < a.solver.ffr[-1]  # the thin end adds loss
+    img = np.full(prob.shape, 120, np.uint8)
+    plain = guided.overlay(img, prob, a.qca)
+    shown = guided.overlay(img, prob, a.qca, beyond=a.full_qca)
+    assert not np.array_equal(plain, shown)  # the dashed rest and the FFR marker

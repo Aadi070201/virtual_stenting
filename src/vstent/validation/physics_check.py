@@ -102,7 +102,7 @@ def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams,
 
         def one(p, im, a, b):
             return analyse_vessel(p, a, b, params=params, mm_per_px=run.pixel_spacing_mm,
-                                  image=im, lesion_reader=reader)  # fmt: skip
+                                  image=im, lesion_reader=reader, wire=False)  # fmt: skip
 
         cons = run_consensus(rf, frame, start, end, segmenter.predict, one,
                              reference_analysis=one(prob, image, start, end))  # fmt: skip
@@ -130,7 +130,7 @@ def _box_task(img, prob, items, params_dict, reader_dir=None) -> list[dict[str, 
             if path is None:
                 raise ValueError("no vessel in the box")
             analysis = analyse_vessel(prob, path[0], path[1], params=params, image=img,
-                                      lesion_reader=reader)  # fmt: skip
+                                      lesion_reader=reader, wire=False)  # fmt: skip
             row.update({f"ffr_{o}": v for o, v in distal_ffr(analysis.qca.profile, params).items()})
         except Exception as exc:  # noqa: BLE001
             row["error"] = f"{type(exc).__name__}: {exc}"
