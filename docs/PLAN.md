@@ -786,6 +786,20 @@ path, K = 5 consensus, pixel size assumed):
   Reason: the lesions' own pressure loss depends on their measured depth, which the edges
   under-read (D63).
 
+### C2. The path ends where a pressure wire would sit (CPU; added 2026-11-02, before running)
+Why: the user's RCA case. After two stents the FFR stays above 0.90 until the last ~15 mm,
+then falls to 0.72 inside a thin terminal branch. FAVOR II enrolled vessels with a reference
+diameter ≥ 2 mm, and a wire measures in the distal vessel, not in a terminal branch.
+- **Rule:** the FFR is read at the last point of the path where the QCA reference diameter is
+  still ≥ 2.0 mm. The path beyond it is shown but not used for the FFR.
+- **Physics unchanged:** `outflow: none`.
+- **Evaluation:** C's check, same sets and anchors, as a third arm.
+- [ ] **Adopt** for the product (automatic path, Target, expert-box path) only if both hold:
+  - the lesion-free share moves closer to 13% than now;
+  - the FAME distance does not grow by more than 10 points.
+
+  Test patients reported.
+
 ### D. Display like a clinical QFR tool (no measurement change)
 - The lumen contours along the whole path.
 - Lesions as shaded segments labelled A, B…
