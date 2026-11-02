@@ -1800,6 +1800,62 @@ def lesion_report(
 
 
 @app.command()
+def vessel_coverage(
+    stage: Annotated[str, typer.Option("--stage", help="dev, then test (once).")],
+    workers: Annotated[
+        int, typer.Option("--workers", min=1, help="Processes for the measurements.")
+    ] = 1,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    report_dir: Annotated[Path, typer.Option("--report-dir", help="Output folder.")] = Path(
+        "reports"
+    ),
+) -> None:
+    """Does the segmentation reach the experts' lesions? Model vs hybrid (P4j): --stage dev
+    chooses the threshold and decides; --stage test (after the dev decision is committed)."""
+    import json
+    import subprocess
+
+    from vstent.config import git_info
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+    from vstent.validation import vessel_coverage as vc
+
+    typer.echo(DISCLAIMER)
+    git = git_info()
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    seg = SegmentationRunner.from_dir(seg_dir, hybrid_threshold=None)
+    model = Path(seg_dir).as_posix()
+    if stage == "dev":
+        d = vc.run_dev(seg, workers, typer.echo)
+        vc.write_report(report_dir, vc.DEV_REPORT, "Vessel coverage: development decision",
+                        vc.dev_sections(d), d, git, model)  # fmt: skip
+        c = d["choice"]
+        typer.echo(f"Threshold {c['threshold']}; {c['reason']}; "
+                   f"{'adopted' if c['adopted'] else 'not adopted'}.")  # fmt: skip
+        return
+    if stage != "test":
+        typer.echo("--stage: dev or test", err=True)
+        raise typer.Exit(code=2)
+    dev_file = report_dir / f"{vc.DEV_REPORT}.json"
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(dev_file)],
+                             capture_output=True).returncode == 0  # fmt: skip
+    if not tracked or git["git_dirty"]:
+        typer.echo("Commit the development decision (clean tree) before the test.", err=True)
+        raise typer.Exit(code=1)
+    d = json.loads(dev_file.read_text(encoding="utf-8"))
+    threshold = d["choice"]["threshold"]
+    if threshold is None:
+        typer.echo("No threshold was eligible on the development data: nothing to test.")
+        return
+    t = vc.run_test(seg, threshold, workers, typer.echo)
+    vc.write_report(report_dir, vc.REPORT, "Vessel coverage on real angiograms (P4j)",
+                    [*vc.dev_sections(d), "", *vc.test_sections(t, threshold)],
+                    {"dev": d, "test": t}, git, model)  # fmt: skip
+    typer.echo(f"Wrote {report_dir / (vc.REPORT + '.md')}")
+
+
+@app.command()
 def consensus_report(
     rows: Annotated[
         Path, typer.Option("--rows", exists=True, dir_okay=False, help="From --rows-out.")

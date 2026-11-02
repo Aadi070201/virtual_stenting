@@ -229,6 +229,9 @@ class SegmentationRunner:
         model_path: the ``seg.onnx`` file (input ``image`` (B, 1, S, S), output ``prob``).
         intra_op_threads: ONNX Runtime threads; ``None`` = ONNX Runtime default.
         providers: ONNX Runtime execution providers.
+        hybrid_threshold: add the vesselness vessels that connect to the model's mask
+            (:mod:`vstent.imaging.vesselness`, P4j); ``"product"``: the product's setting
+            (``HYBRID_T``); ``None``: the model alone.
     """
 
     def __init__(
@@ -237,8 +240,12 @@ class SegmentationRunner:
         *,
         intra_op_threads: int | None = None,
         providers: Sequence[str] = ("CPUExecutionProvider",),
+        hybrid_threshold: float | str | None = "product",
     ) -> None:
+        from vstent.imaging.vesselness import HYBRID_T
+
         self.model_path = Path(model_path)
+        self.hybrid_threshold = HYBRID_T if hybrid_threshold == "product" else hybrid_threshold
         opts = ort.SessionOptions()
         opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         if intra_op_threads is not None:
@@ -254,8 +261,18 @@ class SegmentationRunner:
         """Load ``seg.onnx`` from a model directory."""
         return cls(Path(model_dir) / SEG_ONNX_FILE, **kwargs)
 
-    def predict(self, image: np.ndarray) -> np.ndarray:
-        """Vessel probability (H, W) float32 in [0, 1] for a greyscale image (H, W)."""
+    def predict_model(self, image: np.ndarray) -> np.ndarray:
+        """The model's vessel probability (H, W) float32 in [0, 1] for a greyscale image."""
         x = preprocess_image(image, self.image_size)[None]
         prob = self.session.run([SEG_OUTPUT], {SEG_INPUT: x})[0][0, 0]
         return probability_to_image(prob, np.asarray(image).shape[:2])
+
+    def predict(self, image: np.ndarray) -> np.ndarray:
+        """Vessel probability (H, W) float32 in [0, 1]: the model's, with the connected
+        vesselness vessels added when ``hybrid_threshold`` is set (P4j)."""
+        prob = self.predict_model(image)
+        if self.hybrid_threshold is None:
+            return prob
+        from vstent.imaging.vesselness import hybrid_probability
+
+        return hybrid_probability(image, prob, float(self.hybrid_threshold))

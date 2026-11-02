@@ -37,6 +37,7 @@ COMMANDS = [
     "train-lesion",
     "export-lesion",
     "lesion-report",
+    "vessel-coverage",
 ]
 
 
