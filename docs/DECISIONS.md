@@ -1410,7 +1410,9 @@ It stays an option (`wire: true`).
 **Still open:**
 - Severe lesions are under-called: 70–90% → 52% and 90–98% → 66% read ≤ 0.80, against
   FAME's 80% and 96%. Lesion depth is still under-read.
-- Test patients once, as pre-registered (C3).
+- **Test patients** (run once): lesion-free 54% → 20%; 50–70 / 70–90 / 90–98% → 36 / 40 /
+  52% (FAME 35 / 80 / 96%); FAME distance 22 → 28 points. The rule still holds, but severe
+  lesions are under-called: the weakest point of the product.
 - The virtual stenting check (P4m) re-run with this pipeline.
 
 **Alternatives:**

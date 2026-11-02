@@ -869,6 +869,12 @@ three-arm run is in `reports/c3_v1_three_arms/`). Three combinations qualify:
 
 - [x] **Adopted: reader v2 with Murray outflow on the whole path** (D69): the smallest
   combined distance.
+- [x] **Test, once** (CADICA test patients, `reports/p4k_reader_lesion_cnn_v2-20261102-194645.md`).
+  The chosen combination still meets the rule.
+  - Lesion-free vessels ≤ 0.80: 54% (product before) → 20%.
+  - 50–70 / 70–90 / 90–98% ≤ 0.80: 36 / 40 / 52%, against FAME's 35 / 80 / 96%.
+  - FAME distance 22 → 28 points (+6, limit +10).
+  - Severe lesions are under-called on test: about half of the 90–98% lesions read > 0.80.
 
 **Amendment (2026-11-02, before running it):** a fourth arm, Murray outflow on the vessel
 cut at the wire position (`murray_wire`), is added for every reader, under the same rule.
