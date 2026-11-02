@@ -1,0 +1,40 @@
+# Vessel identity: RCA, left main, LAD, LCx from ARCADE SYNTAX segments (docs/PLAN.md, P4k-G).
+# As configs/seg.yaml (M5) with 5 output classes; pre-registered.
+name: vessel_id_effb4
+raw_dir: data/raw/arcade
+runs_dir: runs
+seed: 0
+
+model:
+  encoder: efficientnet-b4
+  encoder_weights: imagenet
+  image_size: 512
+  classes: 5
+
+train:
+  epochs: 60
+  batch_size: 8
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  dice_weight: 1.0
+  patience: 15
+  grad_clip: 1.0
+  amp: true
+  device: auto
+  workers: 2
+  eval_batch_size: 16
+  max_train_images: null
+  max_val_images: null
+
+augment:
+  rotation_deg: 15.0
+  scale: [0.9, 1.1]
+  brightness: 0.1
+  contrast: [0.8, 1.2]
+  gamma: [0.8, 1.25]
+  noise_std: [0.0, 0.03]
+  p_noise: 0.5
+  p_clahe: 0.3
+  clahe_clip: 2.0
+
+labels: vessel_id

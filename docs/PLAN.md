@@ -820,6 +820,25 @@ path, K = 5 consensus, pixel size assumed):
     half (all second looks, except Kemerovo's half, which was a P4i test once);
   - false alarms per lesion-free frame of the CADICA test patients (fresh).
 
+### Amendment 2 (2026-11-02, before any E or G model was evaluated): architectures
+The user asked for other architectures. E and G each compare five encoders in the same U-Net,
+with the same data and training settings (ImageNet start):
+- ResNet34 (as registered);
+- MiT-B2 (SegFormer's transformer encoder);
+- DenseNet121;
+- MobileNetV3-Large;
+- EfficientNet-B4.
+
+The choice uses validation data only:
+- **E:** each encoder at its own operating point (95% validation sensitivity). The fewest
+  detections per lesion-free validation frame wins. Within 0.05 of each other, the higher
+  sensitivity wins. The mean of the five probability maps is a sixth candidate. If no
+  candidate reaches 95%, the highest sensitivity at t = 0.5 wins.
+- **G:** the highest validation mean vessel Dice.
+
+The chosen model alone goes to E's or G's rule and test. Every candidate's validation numbers
+are reported.
+
 ### F. End-diastolic frames from the images (needs data with ECG) [needs human]
 - **Method to follow:** Ciusdel et al. 2020 (Comput Med Imaging Graph). Spatial and temporal
   convolutions, trained against the ECG: precision 97.4% and recall 96.9% for ED frames
