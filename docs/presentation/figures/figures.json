@@ -1,0 +1,31 @@
+{
+ "synthetic": {
+  "case": "Synthetic 1 \u00b7 beating heart with ECG",
+  "frame": 22,
+  "ffr": 0.405,
+  "heartbeats": [
+   0.409,
+   0.405,
+   0.405,
+   0.413,
+   0.279
+  ],
+  "lesions": [
+   "Lesion 1: 71% narrowing (severe), 6 mm long, 47 mm from the start; narrowest 0.97 mm"
+  ],
+  "stent": "3.25 \u00d7 12 mm stent from 40 to 52 mm along the path: virtual FFR after stenting 0.95"
+ },
+ "cadica": {
+  "case": "CADICA p11 run 16 \u00b7 right coronary \u00b7 worst lesion 90\u201398%",
+  "frame": 20,
+  "ffr": 0.956,
+  "heartbeats": [
+   0.961,
+   0.937,
+   0.951,
+   0.979
+  ],
+  "lesions": [],
+  "stent": "4.00 \u00d7 8 mm stent from 6 to 14 mm along the path: virtual FFR after stenting 0.99"
+ }
+}
