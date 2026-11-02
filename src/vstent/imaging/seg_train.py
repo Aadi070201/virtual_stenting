@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import cv2
 import numpy as np
@@ -60,11 +60,13 @@ SUMMARY = "summary.json"
 
 
 class SegModelConfig(StrictModel):
-    """U-Net from segmentation-models-pytorch with one input channel and one output class."""
+    """U-Net from segmentation-models-pytorch with one input channel; one output class (vessel
+    probability) or ``classes`` > 1 (softmax over classes, e.g. vessel identity, P4k-G)."""
 
     encoder: str = "resnet34"
     encoder_weights: str | None = "imagenet"
     image_size: int = Field(IMAGE_SIZE, ge=32)
+    classes: int = Field(1, ge=1)
 
 
 class SegTrainConfig(StrictModel):
@@ -103,6 +105,7 @@ class SegConfig(StrictModel):
     train: SegTrainConfig = SegTrainConfig()
     augment: AugmentConfig = AugmentConfig()
     synthetic: SegSyntheticData | None = None  # P8: rendered training images
+    labels: Literal["vessel", "vessel_id"] = "vessel"  # P4k-G: ARCADE SYNTAX vessel classes
 
 
 def resolve_device(spec: str = "auto") -> torch.device:
@@ -118,7 +121,7 @@ def build_model(cfg: SegModelConfig, *, pretrained: bool = True) -> torch.nn.Mod
         encoder_name=cfg.encoder,
         encoder_weights=cfg.encoder_weights if pretrained else None,
         in_channels=1,
-        classes=1,
+        classes=cfg.classes,
     )
 
 
@@ -188,6 +191,45 @@ def seg_loss(logits: torch.Tensor, target: torch.Tensor, dice_weight: float) -> 
     return F.binary_cross_entropy_with_logits(logits, target) + dice_weight * dice
 
 
+def class_loss(logits: torch.Tensor, target: torch.Tensor, dice_weight: float) -> torch.Tensor:
+    """Cross-entropy + ``dice_weight`` × the mean soft Dice loss of the foreground classes
+    (batch-level), in float32. ``target``: (B, 1, H, W) class indices as floats."""
+    logits = logits.float()
+    labels = target[:, 0].long()
+    prob = torch.softmax(logits, dim=1)
+    onehot = F.one_hot(labels, logits.shape[1]).permute(0, 3, 1, 2).float()
+    inter = (prob * onehot).sum(dim=(0, 2, 3))[1:]
+    total = (prob.sum(dim=(0, 2, 3)) + onehot.sum(dim=(0, 2, 3)))[1:]
+    dice = 1.0 - ((2.0 * inter + 1.0) / (total + 1.0)).mean()
+    return F.cross_entropy(logits, labels) + dice_weight * dice
+
+
+def class_dice(pred: np.ndarray, target: np.ndarray, n_classes: int) -> np.ndarray:
+    """Dice of each foreground class (n_classes − 1,), pooled over all images; NaN for a class
+    absent from both."""
+    out = []
+    for k in range(1, n_classes):
+        p, t = pred == k, target == k
+        denom = int(p.sum()) + int(t.sum())
+        out.append(np.nan if denom == 0 else 2.0 * int((p & t).sum()) / denom)
+    return np.array(out)
+
+
+@torch.no_grad()
+def predict_labels(
+    model: torch.nn.Module, x: torch.Tensor, batch_size: int, device: torch.device, amp: bool
+) -> np.ndarray:
+    """Class indices (N, H, W) uint8 (argmax) for standardised inputs ``x`` (N, 1, H, W)."""
+    model.eval()
+    out = []
+    for i in range(0, x.shape[0], batch_size):
+        xb = x[i : i + batch_size].to(device)
+        with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
+            logits = model(xb)
+        out.append(logits.float().argmax(dim=1).to(torch.uint8).cpu().numpy())
+    return np.concatenate(out)
+
+
 @torch.no_grad()
 def predict_probs(
     model: torch.nn.Module, x: torch.Tensor, batch_size: int, device: torch.device, amp: bool
@@ -211,12 +253,13 @@ def load_checkpoint(run_dir: str | Path, device: torch.device | str = "cpu") -> 
     return model.to(device).eval()
 
 
-def validation_tensors(images: np.ndarray, masks: np.ndarray, size: int):
-    """Un-augmented standardised inputs (N, 1, size, size) and binary targets (N, size, size)."""
+def validation_tensors(images: np.ndarray, masks: np.ndarray, size: int, binary: bool = True):
+    """Un-augmented standardised inputs (N, 1, size, size) and targets (N, size, size): binary,
+    or class indices (uint8) with ``binary=False``."""
     pairs = [prepare_pair(im, m, size, None) for im, m in zip(images, masks, strict=True)]
     x = torch.from_numpy(np.stack([p[0] for p in pairs]))
-    y = np.stack([p[1][0] for p in pairs]).astype(bool)
-    return x, y
+    y = np.stack([p[1][0] for p in pairs])
+    return x, (y.astype(bool) if binary else y.astype(np.uint8))
 
 
 def train_seg(
@@ -263,9 +306,19 @@ def _fit(
     device = resolve_device(tc.device)
     use_amp = tc.amp and device.type == "cuda"
 
-    train_split = load_split(config.raw_dir, "syntax", "train", tc.max_train_images)
-    val_split = load_split(config.raw_dir, "syntax", "val", tc.max_val_images)
-    images, masks = train_split.images, train_split.masks
+    multi = config.labels == "vessel_id"
+    if multi:  # P4k-G: vessel classes from the SYNTAX segments
+        from vstent.data.vessel_id import N_CLASSES, load_labels
+
+        if config.model.classes != N_CLASSES or config.synthetic is not None:
+            raise ValueError(f"vessel_id needs model.classes = {N_CLASSES} and no synthetic data")
+        images, masks = load_labels(config.raw_dir, "train", tc.max_train_images)
+        val_images, val_masks = load_labels(config.raw_dir, "val", tc.max_val_images)
+    else:
+        train_split = load_split(config.raw_dir, "syntax", "train", tc.max_train_images)
+        val_split = load_split(config.raw_dir, "syntax", "val", tc.max_val_images)
+        images, masks = train_split.images, train_split.masks
+        val_images, val_masks = val_split.images, val_split.masks
     if config.synthetic is not None:
         from vstent.data.synth_angio import load_synth_split
 
@@ -274,7 +327,7 @@ def _fit(
         images, masks = np.concatenate([images, syn_images]), np.concatenate([masks, syn_masks])
         log(f"Training images: {len(train_split.images)} ARCADE + {len(syn_images)} rendered")
     train = SegDataset(images, masks, size, config.augment)
-    x_val, y_val = validation_tensors(val_split.images, val_split.masks, size)
+    x_val, y_val = validation_tensors(val_images, val_masks, size, binary=not multi)
 
     # ImageNet weights are only downloaded for a new run; a resumed run loads its own state.
     model = build_model(config.model, pretrained=not resume).to(device)
@@ -390,7 +443,7 @@ def _fit(
             optimizer.zero_grad(set_to_none=True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=use_amp):
                 logits = model(xb)
-            loss = seg_loss(logits, yb, tc.dice_weight)
+            loss = (class_loss if multi else seg_loss)(logits, yb, tc.dice_weight)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), tc.grad_clip)
@@ -400,8 +453,13 @@ def _fit(
             loss_sum += loss.detach() * yb.shape[0]
             n_seen += yb.shape[0]
 
-        prob = predict_probs(model, x_val, tc.eval_batch_size, device, use_amp)
-        dice = dice_score(prob >= THRESHOLD, y_val)
+        if multi:  # the mean Dice of the vessel classes (pooled over images)
+            pred = predict_labels(model, x_val, tc.eval_batch_size, device, use_amp)
+            per_class = class_dice(pred, y_val, config.model.classes)
+            dice = np.array([np.nanmean(per_class)])
+        else:
+            prob = predict_probs(model, x_val, tc.eval_batch_size, device, use_amp)
+            dice = dice_score(prob >= THRESHOLD, y_val)
         row = {
             "epoch": epoch,
             "train_loss": float(loss_sum) / max(n_seen, 1),
