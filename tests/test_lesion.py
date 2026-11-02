@@ -118,3 +118,23 @@ def test_lesion_reading_stages(tmp_path):
     git = {"git_commit": "c", "git_dirty": False}
     lread.write_report(tmp_path, lread.REPORT, "x", sections, {"dev": d, "test": t}, git, "m")
     assert "Decision" in (tmp_path / "lesion_reading.md").read_text(encoding="utf-8")
+
+
+def test_analyse_vessel_with_a_lesion_reader():
+    from vstent.inference.pipeline import analyse_vessel
+
+    case = lr.render_lesion(12.0, 0.7, "circular", 6300)
+    pts = case["points"]
+    start, end = tuple(map(int, np.round(pts[5]))), tuple(map(int, np.round(pts[-6])))
+
+    class Reader:
+        def predict(self, patches, scalars):
+            return np.full(len(patches), 90.0)
+
+    plain = analyse_vessel(case["mask"].astype(np.float32), start, end, image=case["image"],
+                           mm_per_px=0.25, lumen="edges")  # fmt: skip
+    deep = analyse_vessel(case["mask"].astype(np.float32), start, end, image=case["image"],
+                          mm_per_px=0.25, lumen="edges", lesion_reader=Reader())  # fmt: skip
+    assert deep.qca.lumen_method == "learned"
+    assert deep.qca.max_percent_stenosis > plain.qca.max_percent_stenosis
+    assert deep.ffr_distal_solver < plain.ffr_distal_solver

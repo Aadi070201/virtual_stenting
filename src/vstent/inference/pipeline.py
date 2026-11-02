@@ -157,14 +157,21 @@ def analyse_vessel(
     sampling: SamplingConfig | None = None,
     image: np.ndarray | None = None,
     lumen: str | None = None,
+    lesion_reader=None,
 ) -> VesselAnalysis:
     """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
     ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
     ``None`` when ``prob`` is an analyst's mask. ``lumen``: ``"edges"`` or ``"model"`` (needs
-    ``image``); default :data:`AUTO_LUMEN` with an image, edges without."""
+    ``image``); default :data:`AUTO_LUMEN` with an image, edges without. ``lesion_reader``:
+    a :class:`~vstent.inference.lesion_runtime.LesionRunner` whose predicted %DS sets each
+    candidate lesion's depth (P4i; a research option, not adopted, D63)."""
     params = params or PhysicsParams()
     qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image,
                   lumen=_lumen(image, lumen))  # fmt: skip
+    if lesion_reader is not None and image is not None:
+        from vstent.imaging.lesion_patch import apply_learned
+
+        qca, _ = apply_learned(qca, image, prob, lesion_reader.predict)
     solver = solve_ffr(qca.profile, params)
     warnings = []
     if qca.calibration_assumed:

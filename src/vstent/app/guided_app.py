@@ -53,6 +53,20 @@ def library() -> list[guided.Case]:
     return guided.case_library()
 
 
+@st.cache_resource
+def get_lesion_reader():
+    """The newest exported lesion reader (P4i), if any."""
+    from vstent.inference.lesion_runtime import LESION_MODELS, ONNX_FILE, LesionRunner
+    from vstent.inference.models import latest_model_dir
+
+    d = latest_model_dir(LESION_MODELS, ONNX_FILE)
+    return None if d is None else LesionRunner.from_dir(d)
+
+
+def _reader(learned: bool):
+    return get_lesion_reader() if learned else None
+
+
 @st.cache_resource(max_entries=3, show_spinner="Loading the case…")
 def load(key: str, _case: guided.Case):
     return guided.load_case(_case)
@@ -73,17 +87,20 @@ def _params(pa_mmhg: float):
 
 
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel…")
-def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg):
+def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg, learned=False):
     return analyse_vessel(_prob, start, end, params=_params(pa_mmhg), mm_per_px=mm_per_px,
-                          image=_image)  # fmt: skip
+                          image=_image, lesion_reader=_reader(learned))  # fmt: skip
 
 
 @st.cache_resource(max_entries=16, show_spinner="Measuring the other heartbeats…")
-def heartbeats(key: str, _rf, frame: int, start, end, mm_per_px, pa_mmhg, _reference):
+def heartbeats(key: str, _rf, frame: int, start, end, mm_per_px, pa_mmhg, _reference,
+               learned=False):  # fmt: skip
     params = _params(pa_mmhg)
+    reader = _reader(learned)
 
     def one(p, im, a, b):
-        return analyse_vessel(p, a, b, params=params, mm_per_px=mm_per_px, image=im)
+        return analyse_vessel(p, a, b, params=params, mm_per_px=mm_per_px, image=im,
+                              lesion_reader=reader)  # fmt: skip
 
     return run_consensus(_rf, frame, start, end, get_models().segmentation.predict, one,
                          reference_analysis=_reference)  # fmt: skip
@@ -216,6 +233,12 @@ def main() -> None:
                                help="E.g. from catheter calibration; otherwise the file's, or "
                                "0.30 mm assumed.")  # fmt: skip
             px_value = st.number_input("mm per pixel", 0.05, 1.0, 0.30, 0.01, disabled=not own_px)
+            learned = st.toggle(
+                "Learned lesion reading (research)", key="learned",
+                disabled=get_lesion_reader() is None,
+                help="Lesion depths from the model trained on real angiograms (P4i). It reads "
+                "severe lesions far better but raises false alarms; not the default (D63).",
+            )  # fmt: skip
         st.markdown("### FFR guide")
         ffr_guide()
 
@@ -258,8 +281,8 @@ def main() -> None:
     start, end = st.session_state.start, st.session_state.end
     analysis = None
     try:
-        analysis = measure(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}", prob, image, start,
-                           end, mm_px, pa_mmhg)  # fmt: skip
+        analysis = measure(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}", prob,
+                           image, start, end, mm_px, pa_mmhg, learned)  # fmt: skip
     except ValueError:
         st.warning("This path cannot be measured: press Change path and click two points on "
                    "the vessel.")  # fmt: skip
@@ -373,8 +396,8 @@ def main() -> None:
 
     # 3 · virtual FFR --------------------------------------------------------------------------
     st.markdown("#### 3 · Virtual FFR")
-    cons = heartbeats(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}", rf, frame, start, end,
-                      mm_px, pa_mmhg, analysis)  # fmt: skip
+    cons = heartbeats(f"{frame_key}:{start}:{end}:{mm_px}:{pa_mmhg}:{learned}", rf, frame,
+                      start, end, mm_px, pa_mmhg, analysis, learned)  # fmt: skip
     chosen = cons.chosen
     q = chosen.analysis.qca
     params = _params(pa_mmhg)

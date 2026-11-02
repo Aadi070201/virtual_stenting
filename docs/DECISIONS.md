@@ -1221,3 +1221,48 @@ short path has the same weakness; a pre-registered comparison follows.
 **Alternatives:**
 - Relaxing the guard after the result: rejected.
 - Adopting the hybrid for display only: possible later, as an option.
+
+### D63 — Learned lesion reading: much better on severe lesions, too many false alarms; an option, not the default (2026-11-02)
+**Finding** (`reports/lesion_reading.md`; pre-registered in docs/PLAN.md, P4i, commit 5bf07b2;
+amendment 2: P4j did not adopt the hybrid segmentation, so the run on the model's segmentation
+was evaluated):
+
+| | Edges | Learned |
+|---|---:|---:|
+| **Development (out-of-fold)** | | |
+| Weighted kappa | 0.21 | 0.39 |
+| AUC for ≥ 70% lesions | 0.82 | 0.84 |
+| Median %DS of lesions graded 70–90% / 90–98% | 39 / 46 | 51 / 63 |
+| ARCADE val stenoses read ≥ 50% | 36% | 79% |
+| ARCADE val distant candidates read ≥ 50% | 7% | 46% |
+| **Test (once)** | | |
+| CADICA test: kappa | 0.13 | 0.32 |
+| CADICA test: AUC for ≥ 70% lesions | 0.71 | 0.82 |
+| CADICA test: median %DS 70–90% / 90–98% / 0–20% | 44 / 40 / 18 | 53 / 65 / 11 |
+| ARCADE test: stenoses read ≥ 50% | 29% | 73% |
+| ARCADE test: distant candidates read ≥ 50% | 4% | 29% |
+| Kemerovo (external): significant lesions read ≥ 50% | 18% | 54% |
+
+- The development rule failed on one condition, the false alarms (46% against a limit of 17%):
+  **not adopted**.
+- The improvement on severe lesions is large and consistent across the CADICA test patients,
+  ARCADE and a third hospital (Kemerovo).
+- **Likely cause of the false alarms:** the %DS head learned only from expert boxes (CADICA
+  lesions at every grade). It never had a %DS target at an ordinary vessel point, so it
+  over-reads unmarked narrowings. The significance head, which saw ARCADE's distant candidates
+  as negatives, is not used for %DS.
+
+**Decision:**
+- The product's lumen is unchanged.
+- The reader is a research option: `analyse_vessel(..., lesion_reader=...)`, and the guided
+  app's "Learned lesion reading (research)" switch.
+- A second version needs its own pre-registration. Candidates:
+  - a %DS target on non-lesion candidates;
+  - the significance head as a gate;
+  - the clinician-style path from the proximal vessel (D62).
+
+  The test sets used here (CADICA test, ARCADE test, Kemerovo) have now been seen once. A
+  fresh external set would make the next test credible.
+
+**Alternatives:** adopting on the test result, or relaxing the false-alarm limit after seeing
+it: both rejected.

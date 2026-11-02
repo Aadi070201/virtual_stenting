@@ -1360,3 +1360,35 @@ most likely first:
 
 Recommendation: C now (the product needs it in any case), then A with Kemerovo as the
 external test. E remains the final word.
+
+## 2026-11-02 — P4i / P4j: lesion reading learned from real angiograms; hybrid segmentation (D62, D63)
+
+**What was done**
+- Kemerovo dataset (100 patients, CC BY 4.0) downloaded and verified (`vstent data
+  kemerovo`): an external test.
+- Lesion patches from CADICA, ARCADE and Kemerovo (`vstent lesion-data`): one patch function
+  for training and the product.
+- A CNN lesion reader trained in 5 patient folds (`vstent train-lesion`, resumable), exported
+  to ONNX (`vstent export-lesion`) and evaluated in two stages (`vstent lesion-report`).
+- Hybrid segmentation (vesselness grown from the model's mask) evaluated with
+  `vstent vessel-coverage`.
+- Guided app:
+  - every frame on the slider, with its contrast state;
+  - an automatic stent plan when significant, and reasons when no plan is possible;
+  - Target paths, and a detection check against the experts' boxes;
+  - jumps to the experts' frames;
+  - the expert-box path starts proximally;
+  - a learned-reading switch.
+
+**Results**
+- P4j: not adopted. The model already crosses 95% of the development boxes, and the added
+  vessels failed the near-annotation guard.
+- P4i: not adopted (false alarms). On test, severe lesions (90–98%) read at a median 65%
+  instead of 40%, kappa 0.32 instead of 0.13, and Kemerovo's significant lesions read ≥ 50% in
+  54% instead of 18%. But 29% of ARCADE's unmarked narrowings were read ≥ 50% (edges 4%).
+
+**Open issues**
+- A second learned reader (%DS targets at non-lesion points, or a significance gate),
+  pre-registered.
+- The clinician-style proximal path for measurement.
+- Frame choice without an ECG.

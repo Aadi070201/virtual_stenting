@@ -617,7 +617,7 @@ product):**
 - Everything after (physics, multi-frame median, planner) is unchanged.
 
 **Development** (CADICA development patients, out-of-fold; ARCADE val):
-- [ ] **Adopt** `learned` only if all of these hold:
+- [x] **Adopt** `learned` only if all of these hold:
   - weighted kappa and AUC for ≥ 70% lesions both higher than the intensity edges' (the
     D43 / D44 / D61 rule; development edges: kappa 0.214, AUC 0.818);
   - median %DS of 0–20% lesions ≤ 30%;
@@ -626,19 +626,26 @@ product):**
 
   Otherwise `learned` stays an option and nothing changes.
 
+  **Result: not adopted** (D63).
+  - Met: kappa 0.39 vs 0.21; AUC 0.84 vs 0.82; median of 0–20% lesions 13%; ARCADE val
+    stenoses read ≥ 50% in 79% vs 36%.
+  - Not met: distant candidates read ≥ 50% in 46% vs 7%.
+
 **Test** (once; every method reported whatever it shows):
-- [ ] CADICA test patients: weighted kappa (target ≥ 0.40); median %DS by grade (targets
-  70–90% ≥ 60%, 90–98% ≥ 70%, 0–20% ≤ 30%). The test half was used before (P4b, D44, P4f,
+- [x] CADICA test patients: weighted kappa (target ≥ 0.40); median %DS by grade (targets
+  70–90% ≥ 60%, 90–98% ≥ 70%, 0–20% ≤ 30%). **Result:** kappa 0.32 (edges 0.13); 53%, 65%
+  and 11% (edges 44%, 40%, 18%). Only the 0–20% target was met. The test half was used before (P4b, D44, P4f,
   P4g, P4h) but never for training.
-- [ ] ARCADE test: the share of stenosis boxes read ≥ 50% (target ≥ 70%); distant
-  candidates read ≥ 50% (target ≤ 20%).
-- [ ] Kemerovo (external: another hospital and other X-ray systems; every box a significant
+- [x] ARCADE test: the share of stenosis boxes read ≥ 50% (target ≥ 70%); distant
+  candidates read ≥ 50% (target ≤ 20%). **Result:** 73% (edges 29%), met; 29% (edges 4%),
+  not met.
+- [x] Kemerovo (external: another hospital and other X-ray systems; every box a significant
   lesion, `docs/DATA.md`): the share of lesions read ≥ 50% (target ≥ 70%), a lesion being
-  a patient's run (median over its boxes).
-- [ ] If adopted: the P4f measurements re-made with the new lumen. Then the share of lesions
+  a patient's run (median over its boxes). **Result:** 54% (edges 18%), not met.
+- [x] If adopted: the P4f measurements re-made with the new lumen. Then the share of lesions
   whose segment FFR (median of up to 5 keyframes) is ≤ 0.80, by grade (targets: 70–98% ≥ 50%;
-  0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported).
-- [ ] Report: `vstent lesion-report` → `reports/lesion_reading.md`.
+  0–50% ≤ 10%), and the P4g repeatability with K = 5 (reported). **Not run:** not adopted.
+- [x] Report: `vstent lesion-report` → `reports/lesion_reading.md`.
 - **Amendment 2** (2026-11-02, before any development result of P4i was computed): if P4j
   adopts the hybrid segmentation, the lesion samples are re-extracted with it and the reader
   is retrained with the same configuration, and the run trained on the model-only
