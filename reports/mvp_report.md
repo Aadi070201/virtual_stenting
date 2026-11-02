@@ -70,7 +70,7 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 - P5b: Absolute lumen size and two-view reliability (added 2026-11-01) (done)
 - P5c: Two views in the app (added 2026-11-01) (done)
 - P6: 3D CFD labels and multi-fidelity training [needs human: data registration, compute] (not started)
-- P7: Cine angiography (not started)
+- P7: Cine angiography (done)
 - P8: Sim-to-real angiograms and regulatory groundwork [needs human: regulatory review] (in progress)
 
 ## Sources and provenance
@@ -89,4 +89,4 @@ Angiogram → vessel segmentation (U-Net, ONNX) → centreline and 2D QCA → FF
 | [App latency](app_latency.md) | `cb3f600b79` | False | 2026-11-01T23:03:06+00:00 |
 | [Demo](demo/demo.md) | `413b3d9304` | False | 2026-10-30T16:16:15+00:00 |
 
-This summary: commit `dd07ea833d68431bd604d30d3640f34483fa8a3c` (dirty: False), vstent 0.1.0, 2026-11-01T23:07:19+00:00.
+This summary: commit `eb0c71acd2f9528106231b6a0a13f1247a0ab78d` (dirty: False), vstent 0.1.0, 2026-11-02T02:57:58+00:00.
