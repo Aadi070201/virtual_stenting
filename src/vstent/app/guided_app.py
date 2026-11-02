@@ -86,6 +86,11 @@ def _params(pa_mmhg: float):
     return get_settings()[0].model_copy(update={"pa_mmhg": pa_mmhg})
 
 
+@st.cache_resource(max_entries=32, show_spinner="Finding faint vessels…")
+def faint(key: str, _image: np.ndarray, _prob: np.ndarray) -> np.ndarray:
+    return guided.faint_vessels(_image, _prob)
+
+
 @st.cache_resource(max_entries=32, show_spinner="Measuring the vessel…")
 def measure(key: str, _prob, _image, start, end, mm_per_px, pa_mmhg, learned=False):
     return analyse_vessel(_prob, start, end, params=_params(pa_mmhg), mm_per_px=mm_per_px,
@@ -371,7 +376,8 @@ def main() -> None:
                 for w in analysis.warnings:
                     st.caption(w)
     with img_col:
-        rgb = (guided.overlay(image, prob, q0, lesions, points=[start, end], boxes=boxes) if show
+        rgb = (guided.overlay(image, prob, q0, lesions, points=[start, end], boxes=boxes,
+                              faint=faint(frame_key, image, prob)) if show
                else guided.overlay(image, None))  # fmt: skip
         pt = click_image(rgb, image.shape, f"click_{sha}_{frame}")
         if pt is not None and st.session_state.get("picking") == "target":

@@ -263,3 +263,16 @@ def test_path_starts_at_the_left_main_not_a_branch_tip():
 
     a2, b2 = target_endpoints(mask, (40, 160))  # click on the branch
     assert a2 == a and b2[0] < 40
+
+
+def test_faint_vessels_are_outlined_not_measured():
+    img = np.full((80, 120), 150, np.uint8)
+    img[38:43, 10:110] = 60  # a dark vessel
+    img[20:60, 70:73] = 70  # a fainter crossing branch
+    prob = np.zeros(img.shape)
+    prob[38:43, 10:110] = 1.0  # the model found only the first
+    faint = guided.faint_vessels(img, prob)
+    assert faint.dtype == bool and faint.shape == img.shape and not faint[39, 50]
+    a = guided.overlay(img, prob)
+    b = guided.overlay(img, prob, faint=np.pad(np.ones((10, 10), bool), ((5, 65), (5, 105))))
+    assert not np.array_equal(a, b)

@@ -59,6 +59,8 @@ STENT = (235, 104, 52)
 START = (27, 175, 122)
 LESION = (220, 38, 38)
 MILD = (245, 158, 11)
+FAINT = (150, 190, 235)
+FAINT_T = 0.15  # display only: vesselness vessels joined to the model's (D62; not measured)
 EXPERT = (34, 211, 238)
 
 
@@ -260,6 +262,15 @@ class LesionMark:
                 f"{self.mld_mm:.2f} mm")  # fmt: skip
 
 
+def faint_vessels(image: np.ndarray, prob: np.ndarray) -> np.ndarray:
+    """Vessels the segmentation model left out: Frangi vesselness components joined to its mask
+    (:func:`~vstent.imaging.vesselness.added_mask`, :data:`FAINT_T`). Shown, never measured: as
+    a measurement change they were not adopted (D62)."""
+    from vstent.imaging.vesselness import added_mask, vesselness
+
+    return added_mask(prob, vesselness(image), FAINT_T)
+
+
 def lesion_marks(qca: QCAResult, min_ds: float = MARK_MIN_DS) -> list[LesionMark]:
     """The path's lesions (:meth:`VesselProfile.lesions`) with at least ``min_ds`` % diameter
     stenosis, numbered from the start."""
@@ -327,12 +338,14 @@ def overlay(
     points: list[tuple[int, int]] | None = None,
     boxes: list[tuple[float, float, float, float, str]] | None = None,
     contours: bool = True,
+    faint: np.ndarray | None = None,
 ) -> np.ndarray:
     """RGB angiogram: every segmented vessel tinted and outlined blue; the path as its two
     measured lumen contours (yellow; ``contours=False``: its centreline); lesions filled
     between the contours (red ≥ 50%, amber 30–50%), with ticks at their ends and their
     numbers; stents orange; the start (green) and end (orange) points; experts' boxes
-    (x, y, w, h, grade) in cyan."""
+    (x, y, w, h, grade) in cyan. ``faint``: further vessels from the vesselness filter (bool
+    (H, W); :func:`faint_vessels`), outlined light blue for display only."""
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
     scale = max(1, round(max(image.shape) / 512))
     outline = None
@@ -342,6 +355,9 @@ def overlay(
         outline, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_LIST,
                                       cv2.CHAIN_APPROX_NONE)  # fmt: skip
     out = rgb.astype(np.uint8)
+    if faint is not None and faint.any():
+        extra, _ = cv2.findContours(faint.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        cv2.drawContours(out, extra, -1, FAINT, 1, cv2.LINE_AA)
     if outline:
         cv2.drawContours(out, outline, -1, tuple(int(v) for v in VESSEL), 1, cv2.LINE_AA)
     for n, (x, y, w, h, grade) in enumerate(boxes or []):

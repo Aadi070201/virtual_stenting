@@ -1342,3 +1342,22 @@ aa14e80 and 9de7e2b; CADICA development patients, product steps, pixel size assu
 - Adopting `murray` for its lesion-free result alone: rejected by the rule.
 - A partial outflow exponent tuned to the anchors: rejected (tuning physics constants to
   data).
+
+### D67 — Guided app display: every vessel outlined, faint vessels from the vesselness filter, mild narrowings amber (2026-11-02)
+**Seen** (the user's feedback):
+- Contours should cover every vessel as well as the target vessel.
+- A stent was sometimes advised without any lesion marked.
+
+**Decision (display only; no measurement changes):**
+- **Outlines:** every vessel the model segments is outlined.
+- **Faint vessels:** the Frangi vesselness components joined to the model's mask (T = 0.15,
+  P4j's middle candidate) are outlined light blue. They are never measured; as a measurement
+  change they failed P4j's guard (D62).
+- **Lesion marks:**
+  - narrowings of 30–50% are filled amber, with close-ups;
+  - ≥ 50% stays red, and only red counts as "found" in the expert-box check;
+  - when the FFR is ≤ 0.80 without any narrowing ≥ 30%, the app says the loss is spread
+    along the vessel.
+
+**Alternatives:** measuring on the faint vessels was rejected until a pre-registered check
+supports it.
