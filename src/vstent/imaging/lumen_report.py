@@ -50,7 +50,12 @@ RANGES = {"mm_per_px": (0.22, 0.30), "mu_per_mm": (0.04, 0.08), "background": (0
           "noise_sd": (0.012, 0.022)}  # fmt: skip
 TARGET_TIGHT_ERROR = 10.0  # model, circular lesions ≥ 85%: mean |%DS error| (points)
 TARGET_ECCENTRIC_ERROR = 10.0  # model, eccentric lumens: mean |%DS error| (points)
-METHODS = ("edges", "model")
+# P4h (pre-registered in docs/PLAN.md): the densitometric lumen in the product's domain
+TARGET_DENSE_TIGHT_ERROR = 10.0  # circular lesions ≥ 85%: mean |%DS error| (points)
+TARGET_DENSE_HEALTHY_ERROR = 8.0  # vessels without a lesion: mean |%DS error| (points)
+METHODS = ("edges", "model", "dense")
+LABELS = {"edges": "intensity edges", "model": "imaging-chain model",
+          "dense": "edges + densitometry (P4h)"}  # fmt: skip
 
 
 def render_lesion(ref_px: float, severity: float, kind: str, seed: int) -> dict[str, Any]:
@@ -137,6 +142,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
              for g, f in groups.items()}  # fmt: skip
     tight = table["circular, true ≥ 85% DS"]
     ecc = table["eccentric (area-equivalent 29% DS)"]
+    healthy = table["no lesion"]
     targets = [
         {"metric": "Model, circular lesions ≥ 85%: mean |%DS error|",
          "value": f"{tight['model']['ds']:.1f} points (edges {tight['edges']['ds']:.1f})",
@@ -146,27 +152,42 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
          "value": f"{ecc['model']['ds']:.1f} points (edges {ecc['edges']['ds']:.1f})",
          "target": f"≤ {TARGET_ECCENTRIC_ERROR:g} points",
          "passed": ecc["model"]["ds"] <= TARGET_ECCENTRIC_ERROR},
+        {"metric": "Densitometry (P4h), circular lesions ≥ 85%: mean |%DS error|",
+         "value": f"{tight['dense']['ds']:.1f} points (edges {tight['edges']['ds']:.1f})",
+         "target": f"≤ {TARGET_DENSE_TIGHT_ERROR:g} points",
+         "passed": tight["dense"]["ds"] <= TARGET_DENSE_TIGHT_ERROR},
+        {"metric": "Densitometry (P4h), no lesion: mean |%DS error|",
+         "value": f"{healthy['dense']['ds']:.1f} points (edges {healthy['edges']['ds']:.1f})",
+         "target": f"≤ {TARGET_DENSE_HEALTHY_ERROR:g} points",
+         "passed": healthy["dense"]["ds"] <= TARGET_DENSE_HEALTHY_ERROR},
     ]  # fmt: skip
     return {"groups": table, "targets": targets, "targets_met": all(t["passed"] for t in targets)}
 
 
 def _figure(rows: list[dict[str, Any]], path: Path) -> None:
-    from vstent.plotting import INK_MUTED, SERIES_1, SERIES_3, new_figure, save_figure, style_axes
+    from vstent.plotting import (
+        INK_MUTED,
+        SERIES_1,
+        SERIES_2,
+        SERIES_3,
+        new_figure,
+        save_figure,
+        style_axes,
+    )
 
     fig = new_figure(10.0, 4.4, "Lumen measurement on rendered vessels with known lumens",
                      "Mask smoothed over the lesion; ARCADE-like blur and edge enhancement; "
                      "dots = cases, diagonal = truth")  # fmt: skip
     ax_ds, ax_ffr = fig.subplots(1, 2, gridspec_kw={"wspace": 0.28})
     fig.subplots_adjust(left=0.08, right=0.98, top=0.80, bottom=0.2)
-    labels = {"edges": "intensity edges", "model": "imaging-chain model"}
     for ax, key, lim, name in ((ax_ds, "ds", (-2, 100), "%DS"), (ax_ffr, "ffr", (0.0, 1.02),
                                                                   "distal FFR")):  # fmt: skip
         style_axes(ax)
         truth = "true_ds" if key == "ds" else "true_ffr"
         ax.plot(lim, lim, color=INK_MUTED, lw=1, zorder=1)
-        for method, color in (("edges", SERIES_1), ("model", SERIES_3)):
+        for method, color in (("edges", SERIES_1), ("model", SERIES_3), ("dense", SERIES_2)):
             ax.scatter([r[truth] for r in rows], [r[method][key] for r in rows], s=14, lw=0,
-                       alpha=0.75, color=color, label=labels[method], zorder=3)  # fmt: skip
+                       alpha=0.75, color=color, label=LABELS[method], zorder=3)  # fmt: skip
         ax.set_xlim(*lim)
         ax.set_ylim(*lim)
         ax.set_xlabel(f"True {name}", fontsize=8)
@@ -192,7 +213,8 @@ def write_lumen_report(report_dir: str | Path = "reports") -> dict[str, Any]:
         return "–" if v is None else f"{v:.{digits}f}"
 
     lines = [
-        "# Lumen measurement on rendered vessels: intensity edges vs the imaging-chain model",
+        "# Lumen measurement on rendered vessels: intensity edges, the imaging-chain model and "
+        "densitometry",
         "",
         f"> **{DISCLAIMER}**",
         "",
@@ -217,19 +239,21 @@ def write_lumen_report(report_dir: str | Path = "reports") -> dict[str, Any]:
         "",
         "Mean absolute error by lesion group:",
         "",
-        "| Lesions | %DS, edges | %DS, model | FFR, edges | FFR, model |",
-        "|---|---:|---:|---:|---:|",
+        "| Lesions | %DS, edges | %DS, model | %DS, densitometry | FFR, edges | FFR, model | "
+        "FFR, densitometry |",
+        "|---|---:|---:|---:|---:|---:|---:|",
         *(f"| {g} | {fmt(v['edges']['ds'], 1)} | {fmt(v['model']['ds'], 1)} | "
-          f"{fmt(v['edges']['ffr'], 3)} | {fmt(v['model']['ffr'], 3)} |"
+          f"{fmt(v['dense']['ds'], 1)} | {fmt(v['edges']['ffr'], 3)} | "
+          f"{fmt(v['model']['ffr'], 3)} | {fmt(v['dense']['ffr'], 3)} |"
           for g, v in summary["groups"].items()),
         "",
         "![Measured vs true %DS and FFR](figures/lumen_synthetic.png)",
         "",
         "Means per case (over seeds):",
         "",
-        "| Reference (px) | Lesion | True %DS | Edges %DS | Model %DS | True FFR | Edges FFR "
-        "| Model FFR |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|",
+        "| Reference (px) | Lesion | True %DS | Edges %DS | Model %DS | Dense %DS | True FFR "
+        "| Edges FFR | Model FFR | Dense FFR |",
+        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]  # fmt: skip
     for ref in REFERENCES_PX:
         for severity, kind in LESIONS:
@@ -241,8 +265,8 @@ def write_lumen_report(report_dir: str | Path = "reports") -> dict[str, Any]:
 
             lines.append(
                 f"| {ref:g} | {kind} {severity:.0%} | {m('true_ds'):.0f} | {m('ds', 'edges'):.0f} "
-                f"| {m('ds', 'model'):.0f} | {m('true_ffr'):.2f} | {m('ffr', 'edges'):.2f} "
-                f"| {m('ffr', 'model'):.2f} |"
+                f"| {m('ds', 'model'):.0f} | {m('ds', 'dense'):.0f} | {m('true_ffr'):.2f} "
+                f"| {m('ffr', 'edges'):.2f} | {m('ffr', 'model'):.2f} | {m('ffr', 'dense'):.2f} |"
             )
     lines += ["", f"Commit `{provenance['git_commit']}` (dirty: {provenance['git_dirty']}), "
               f"created {provenance['created_utc']}.", ""]  # fmt: skip

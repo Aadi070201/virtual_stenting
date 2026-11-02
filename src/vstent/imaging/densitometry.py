@@ -39,7 +39,7 @@ BACKGROUND_MEDIAN_POINTS = 9
 IOD_MEDIAN_POINTS = 3
 IOD_SIGMA_PX = 3.0  # then a Gaussian along the vessel (P4h amendment 1)
 DOMAINS = ("log", "linear")
-DOMAIN = "log"  # the product's domain: set by the P4h rule (D61)
+DOMAIN = "log"  # chosen by the P4h rule on the development patients (D61)
 _SCALE = 10.0  # √IOD is brought to diameter-like magnitudes for robust_reference's floor
 
 
