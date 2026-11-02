@@ -80,8 +80,13 @@ P4e checks the model's physiology against real invasive measurements of 455 lesi
 P4f measures repeatability on real angiograms (CADICA). One lesion measured on different
 frames of its run varies by 10 %DS points and 0.12 in FFR (SD), about twice the inter-observer
 variability of accepted tools. The single-frame automatic measurement is therefore not yet
-stable enough. Measuring on several frames and taking the median is the next step
-([reports/repeatability.md](reports/repeatability.md)).
+stable enough ([reports/repeatability.md](reports/repeatability.md)).
+
+P4g measures a cine run on up to five end-diastolic frames, with the points following the
+heart, and reports the median FFR with every frame's value. On CADICA's test patients, the
+median of five frames repeats with an FFR CV of 5.1%, below QFR's inter-observer 9.4% (one
+frame: 18.7%). %DS is still not repeatable enough (CV 27%). A result whose frames fall on
+both sides of 0.80 is flagged ([reports/consensus.md](reports/consensus.md)).
 
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):

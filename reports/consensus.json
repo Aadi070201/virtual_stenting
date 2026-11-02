@@ -1,0 +1,286 @@
+{
+ "summary": {
+  "n_boxes": 5894,
+  "n_lesions_measured": 456,
+  "n_patients": {
+   "dev": 21,
+   "test": 21
+  },
+  "dev": {
+   "1": {
+    "k": 1,
+    "n_lesions": 226,
+    "n_patients": 21,
+    "ds_cv": 0.38693930912930313,
+    "ds_cv_ci": [
+     0.322746210961496,
+     0.44546295525743945
+    ],
+    "ffr_cv": 0.2308781311866787,
+    "ffr_cv_ci": [
+     0.15740835539183035,
+     0.2879153018859702
+    ],
+    "ffr_sd_within": 0.12928804807142544,
+    "agree_080": 0.8893805309734514,
+    "flagged_share": 0.0,
+    "n_disagree": 25,
+    "disagree_flagged": 0.0,
+    "n_agree": 201,
+    "agree_unflagged": 1.0
+   },
+   "2": {
+    "k": 2,
+    "n_lesions": 202,
+    "n_patients": 21,
+    "ds_cv": 0.2503577776780078,
+    "ds_cv_ci": [
+     0.20416467437421645,
+     0.3040104061703446
+    ],
+    "ffr_cv": 0.12670860461124964,
+    "ffr_cv_ci": [
+     0.0770484944984147,
+     0.16997406483233155
+    ],
+    "ffr_sd_within": 0.0781195679178006,
+    "agree_080": 0.8762376237623762,
+    "flagged_share": 0.14108910891089108,
+    "n_disagree": 25,
+    "disagree_flagged": 0.92,
+    "n_agree": 177,
+    "agree_unflagged": 0.8587570621468926
+   },
+   "3": {
+    "k": 3,
+    "n_lesions": 180,
+    "n_patients": 21,
+    "ds_cv": 0.29731436257278726,
+    "ds_cv_ci": [
+     0.22954781276504632,
+     0.3657841018265471
+    ],
+    "ffr_cv": 0.14565032769628095,
+    "ffr_cv_ci": [
+     0.07148925061507805,
+     0.19461427992896332
+    ],
+    "ffr_sd_within": 0.09014275543277608,
+    "agree_080": 0.9,
+    "flagged_share": 0.18888888888888888,
+    "n_disagree": 18,
+    "disagree_flagged": 1.0,
+    "n_agree": 162,
+    "agree_unflagged": 0.8024691358024691
+   },
+   "4": {
+    "k": 4,
+    "n_lesions": 165,
+    "n_patients": 21,
+    "ds_cv": 0.244216825534659,
+    "ds_cv_ci": [
+     0.16325539977223294,
+     0.3326609652677007
+    ],
+    "ffr_cv": 0.12353051600715814,
+    "ffr_cv_ci": [
+     0.056775274815229766,
+     0.17677534134270065
+    ],
+    "ffr_sd_within": 0.07807442531154007,
+    "agree_080": 0.9272727272727272,
+    "flagged_share": 0.23333333333333334,
+    "n_disagree": 12,
+    "disagree_flagged": 1.0,
+    "n_agree": 153,
+    "agree_unflagged": 0.7189542483660131
+   },
+   "5": {
+    "k": 5,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.21704791232174744,
+    "ds_cv_ci": [
+     0.14744653370034383,
+     0.3041971182080012
+    ],
+    "ffr_cv": 0.11987196355190068,
+    "ffr_cv_ci": [
+     0.047059681882831716,
+     0.18462858103065086
+    ],
+    "ffr_sd_within": 0.07879273623035639,
+    "agree_080": 0.9097744360902256,
+    "flagged_share": 0.2593984962406015,
+    "n_disagree": 12,
+    "disagree_flagged": 1.0,
+    "n_agree": 121,
+    "agree_unflagged": 0.6859504132231405
+   }
+  },
+  "chosen_k": 5,
+  "reason": "no K met both targets on the development patients: the lowest FFR CV",
+  "test": {
+   "k": 5,
+   "n_lesions": 111,
+   "n_patients": 20,
+   "ds_cv": 0.2699791667990509,
+   "ds_cv_ci": [
+    0.20062929472838234,
+    0.32513777513257847
+   ],
+   "ffr_cv": 0.05058206878832361,
+   "ffr_cv_ci": [
+    0.03413273748693786,
+    0.06780400812630467
+   ],
+   "ffr_sd_within": 0.040188885088732834,
+   "agree_080": 0.9099099099099099,
+   "flagged_share": 0.3153153153153153,
+   "n_disagree": 10,
+   "disagree_flagged": 1.0,
+   "n_agree": 101,
+   "agree_unflagged": 0.6237623762376238
+  },
+  "common_dev": {
+   "1": {
+    "k": 1,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.3305373709541084,
+    "ds_cv_ci": [
+     0.2685700079278375,
+     0.3987767075894117
+    ],
+    "ffr_cv": 0.17853746398668485,
+    "ffr_cv_ci": [
+     0.08319549845314317,
+     0.2489168427206469
+    ],
+    "ffr_sd_within": 0.10775876314282028,
+    "agree_080": 0.9022556390977443,
+    "flagged_share": 0.0,
+    "n_disagree": 13,
+    "disagree_flagged": 0.0,
+    "n_agree": 120,
+    "agree_unflagged": 1.0
+   },
+   "2": {
+    "k": 2,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.24779255037937647,
+    "ds_cv_ci": [
+     0.19283803254874102,
+     0.3231388077091838
+    ],
+    "ffr_cv": 0.12291030401594885,
+    "ffr_cv_ci": [
+     0.07264754760419062,
+     0.169123654508322
+    ],
+    "ffr_sd_within": 0.07911451445048129,
+    "agree_080": 0.8646616541353384,
+    "flagged_share": 0.12406015037593984,
+    "n_disagree": 18,
+    "disagree_flagged": 0.8888888888888888,
+    "n_agree": 115,
+    "agree_unflagged": 0.8956521739130435
+   },
+   "3": {
+    "k": 3,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.2778443336486299,
+    "ds_cv_ci": [
+     0.2037638431697441,
+     0.3676475379175253
+    ],
+    "ffr_cv": 0.1596216143601952,
+    "ffr_cv_ci": [
+     0.06243000333274367,
+     0.22290572230203878
+    ],
+    "ffr_sd_within": 0.09477737665147196,
+    "agree_080": 0.9022556390977443,
+    "flagged_share": 0.19172932330827067,
+    "n_disagree": 13,
+    "disagree_flagged": 1.0,
+    "n_agree": 120,
+    "agree_unflagged": 0.8
+   },
+   "4": {
+    "k": 4,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.22237797804880594,
+    "ds_cv_ci": [
+     0.15833466966650941,
+     0.3103985044895185
+    ],
+    "ffr_cv": 0.13444207052923088,
+    "ffr_cv_ci": [
+     0.055534250696701454,
+     0.20704800007726945
+    ],
+    "ffr_sd_within": 0.08388460223238683,
+    "agree_080": 0.924812030075188,
+    "flagged_share": 0.21804511278195488,
+    "n_disagree": 10,
+    "disagree_flagged": 1.0,
+    "n_agree": 123,
+    "agree_unflagged": 0.7317073170731707
+   },
+   "5": {
+    "k": 5,
+    "n_lesions": 133,
+    "n_patients": 21,
+    "ds_cv": 0.21704791232174744,
+    "ds_cv_ci": [
+     0.14744653370034383,
+     0.3041971182080012
+    ],
+    "ffr_cv": 0.11987196355190068,
+    "ffr_cv_ci": [
+     0.047059681882831716,
+     0.18462858103065086
+    ],
+    "ffr_sd_within": 0.07879273623035639,
+    "agree_080": 0.9097744360902256,
+    "flagged_share": 0.2593984962406015,
+    "n_disagree": 12,
+    "disagree_flagged": 1.0,
+    "n_agree": 121,
+    "agree_unflagged": 0.6859504132231405
+   }
+  },
+  "targets": [
+   {
+    "metric": "Test, K = 5: %DS CV",
+    "value": "27.0%",
+    "target": "\u2264 11.9%",
+    "passed": false
+   },
+   {
+    "metric": "Test, K = 5: FFR CV",
+    "value": "5.1%",
+    "target": "\u2264 9.4%",
+    "passed": true
+   }
+  ],
+  "single_frame": {
+   "ds_cv": 0.4456369254089019,
+   "ffr_cv": 0.1871879089183047,
+   "n_groups": 414
+  }
+ },
+ "provenance": {
+  "git_commit": "ffd688f59c911ebb82b1a02e22c46b489f002b39",
+  "git_dirty": false,
+  "vstent_version": "0.1.0",
+  "seg_model": "models/seg/seg_unet_r34_synth-20261101-182811",
+  "measurements_commit": "f27a9ea3b081a18b1f2ad5108ee3c1b1734c1246",
+  "measurements_dirty": false,
+  "created_utc": "2026-11-02T11:53:19+00:00"
+ }
+}

@@ -156,6 +156,7 @@ def test_validate_reports_the_consensus_on_a_run(beating_run, tmp_path):
                        uncertainty=FAST_UNCERTAINTY, qca_error=None)  # fmt: skip
     assert row["single_status"] == "ok" and row["tree_status"] == "ok", row
     frames = [int(f) for f in row["consensus_frames"].split(";")]
-    assert frames[0] == ref and len(frames) == 3 and row["tree_consensus_frames"]
+    assert frames[0] == ref and 3 <= len(frames) <= pc.CONSENSUS_K
+    assert row["tree_consensus_frames"]
     assert row["frame_single_solver"] != "" and row["frame_tree_solver"] != ""
     assert isinstance(row["consensus_unstable"], bool)

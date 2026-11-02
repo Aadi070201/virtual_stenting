@@ -1011,3 +1011,62 @@ on open stenosis annotations (AngioCAD, CARDIAG).
 **Alternatives:** retune the pass marks (rejected: they were set from accepted methods before
 measuring); claim the lower operator variability only (rejected: the frame-to-frame result is
 the one a user meets).
+
+### D58 — Multi-frame consensus: K = 5; FFR repeatability near QFR's, %DS not (2026-11-02)
+**Finding** (`reports/consensus.md`; rules pre-registered in docs/PLAN.md, P4g, commit 4ecbd0b,
+before any consensus was computed). Data: P4f's CADICA measurements, re-made with the rows
+saved; the single-frame result reproduced exactly (%DS CV 44.6%, FFR CV 18.7%).
+- **Development patients:** no K in 1–5 met both targets. The rule took the lowest FFR CV:
+  **K = 5** (FFR CV 12.0%, 95% 4.7–18.5%; %DS CV 21.7%). One frame: FFR CV 23.1%.
+- **Test patients, once, K = 5** (111 lesions, 20 patients):
+  - FFR CV **5.1%** (95% 3.4–6.8%): **met** (≤ 9.4%, QFR's inter-observer CV in QREP);
+    within-lesion FFR SD 0.040, against 0.124 for one frame;
+  - %DS CV **27.0%** (95% 20.1–32.5%): **not met** (≤ 11.9%);
+  - the two medians agree on the side of 0.80 in 91%.
+- **How to read it:**
+  - Development and test differ (12.0% vs 5.1%). The development interval is wide and holds
+    both, because a root-mean-square CV is driven by a few lesions with a large spread. The
+    5-frame median brings segment-FFR repeatability to about QFR's inter-observer level; that
+    it is below that level is not established.
+  - A CV depends on the mean: FFR sits near 1 and %DS near 40%, so equal noise gives FFR a
+    smaller CV. The SD (0.040) is the more direct number.
+  - CADICA's keyframes span heart phases. The product's end-diastolic frames should differ
+    less, but CADICA has no ECG, so this is untested on real ED-only frames.
+- **Flag** (frames on both sides of 0.80): all 10 test lesions whose medians disagreed were
+  flagged, but 31.5% of consensus sets were flagged and 38% of concordant lesions too. It is
+  sensitive, not specific.
+
+**Decision:**
+- **Product K = 5** (`inference/consensus.py`, `CONSENSUS_K`). A cine run is measured on up
+  to five end-diastolic frames, with the user's points following the heart. The report gives
+  the median distal FFR with every frame's value, and the flag. The frame closest to the
+  median gives the profile for the intervals, the plans and the figures. One function serves
+  `vstent analyse` (single path and tree), the app and `vstent validate`.
+- **Validation (before any real data):**
+  - the index tests of a cine run are the medians, as the product reports them;
+  - the analysed frame alone is kept in the `frame_*` columns as an exploratory comparison
+    (PROTOCOL updated);
+  - an analyst's mask covers one frame, so such vessels are measured once.
+- **Two rules beyond the pre-registered text, set on principle before anything was measured
+  with them:**
+  1. Only frames on which the contrast has filled the analysed path: 95% of its points at 90%
+     of their plateau contrast (the P7 transit), up to the end of the opacification plateau.
+     A frame before filling cannot show the lumen. On the first synthetic run it changed
+     nothing.
+  2. A frame whose traced path differs by more than 30% in length from the reference frame's
+     is left out, with the reason: the moved points probably found another vessel.
+- **On a synthetic beating-heart run** (breathing 3–4 mm):
+  - the moved points were within 1 px of the true vessel position, also from a systolic
+    reference frame;
+  - one end-diastolic frame read the lesion's MLD as 0.41 mm against 1.16 mm on the others
+    (FFR 0.35 vs 0.92); the median kept 0.92 and the flag fired. This is the single-frame
+    failure P4f measured.
+
+**Alternatives:**
+- K = 3 (the value assumed while building): replaced by the rule's choice.
+- The mean: not robust to such outlier frames.
+- A flag on the frames' spread instead of the 0.80 straddle: it would need its own
+  pre-registration.
+
+**Not solved:** %DS repeatability; the severity compression every frame shares (D44); accuracy
+against wire FFR.

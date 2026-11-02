@@ -46,8 +46,8 @@ A: acceptable, R: reduce, U: unacceptable.
 
 | ID | Hazard | S | P before | Risk before | Controls | P after | Risk after |
 |---|---|---|---|---|---|---|---|
-| H-01 | Stenosis severity underestimated | 4 | 5 | 20 unacceptable | SR-10, SR-11, SR-12, SR-23, SR-24, SR-02, SR-01 | 5 | 20 unacceptable |
-| H-02 | Stenosis severity overestimated | 4 | 4 | 16 unacceptable | SR-10, SR-06, SR-13, SR-24, SR-01 | 4 | 16 unacceptable |
+| H-01 | Stenosis severity underestimated | 4 | 5 | 20 unacceptable | SR-10, SR-11, SR-12, SR-23, SR-24, SR-47, SR-02, SR-01 | 5 | 20 unacceptable |
+| H-02 | Stenosis severity overestimated | 4 | 4 | 16 unacceptable | SR-10, SR-06, SR-13, SR-24, SR-47, SR-01 | 4 | 16 unacceptable |
 | H-03 | Wrong pixel size | 4 | 5 | 20 unacceptable | SR-40, SR-41, SR-09, SR-02, SR-23, SR-26 | 3 | 12 unacceptable |
 | H-04 | Total occlusion read as open | 4 | 5 | 20 unacceptable | SR-12, SR-02, SR-01 | 5 | 20 unacceptable |
 | H-05 | Lesion length underestimated | 3 | 5 | 15 unacceptable | SR-41, SR-13, SR-01 | 4 | 12 unacceptable |
@@ -75,9 +75,9 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Hazardous situation:** The FFR shown is too high (above 0.80) for a haemodynamically significant lesion.
 - **Harm:** Revascularisation deferred for an ischaemic lesion: angina, myocardial infarction, urgent revascularisation.
 - **Before controls:** S4 Critical × P5 Frequent = 20 unacceptable. Measured. CADICA test patients, intensity edges (the product default) with the D53 segmenter: weighted kappa 0.13 against expert grades (0.14 with M5), median measured %DS 44% for lesions graded 70–90%. Rendered vessels: edges read 95% lesions as 37–59% DS.
-- **Controls:** SR-10 Lumen edges from the image intensity; SR-11 QCA accuracy on rendered vessels; SR-12 Segmentation gaps and unmeasurable lumens; SR-23 Input interval (Monte Carlo); SR-24 Grey-zone flag; SR-02 Plain-language warnings with every result; SR-01 Research-use notice everywhere
+- **Controls:** SR-10 Lumen edges from the image intensity; SR-11 QCA accuracy on rendered vessels; SR-12 Segmentation gaps and unmeasurable lumens; SR-23 Input interval (Monte Carlo); SR-24 Grey-zone flag; SR-47 Multi-frame consensus for cine runs; SR-02 Plain-language warnings with every result; SR-01 Research-use notice everywhere
 - **After controls:** P5 Frequent = 20 unacceptable. Measured with the controls in place (the CADICA result is the product's own method). Intervals and warnings inform the user but do not correct the compression.
-- **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md), [lumen_synthetic.md](../../reports/lumen_synthetic.md), [repeatability.md](../../reports/repeatability.md)
+- **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md), [lumen_synthetic.md](../../reports/lumen_synthetic.md), [repeatability.md](../../reports/repeatability.md), [consensus.md](../../reports/consensus.md)
 - **Needed:** Lesion-accurate QCA on real angiograms (agreement with expert or core-lab QCA), then agreement with invasive FFR (ICADD or a clinical study).
 
 ### H-02: Stenosis severity overestimated
@@ -86,10 +86,10 @@ A: acceptable, R: reduce, U: unacceptable.
 - **Hazardous situation:** The FFR shown is too low (0.80 or below) for a lesion that is not significant.
 - **Harm:** Unnecessary PCI: dissection, perforation, peri-procedural myocardial infarction, bleeding on antiplatelet therapy, later stent thrombosis or restenosis.
 - **Before controls:** S4 Critical × P4 Probable = 16 unacceptable. Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 219 measured with the D53 segmenter; 0 of 223 with M5); smaller overestimates were not quantified, and nothing is measured against FFR. Repeatability on CADICA (D57): one lesion on different keyframes varies by 10 %DS points and 0.12 in segment FFR (SD); 15% of keyframe pairs fall on opposite sides of 0.80.
-- **Controls:** SR-10 Lumen edges from the image intensity; SR-06 End-diastolic analysis frame in the opacified phase; SR-13 Analysed path shown on the image; SR-24 Grey-zone flag; SR-01 Research-use notice everywhere
-- **After controls:** P4 Probable = 16 unacceptable. Not measured after the controls; unchanged.
-- **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md), [repeatability.md](../../reports/repeatability.md)
-- **Needed:** Agreement with invasive FFR; false-positive rate in vessels with FFR > 0.80; repeatable measurement across frames (multi-frame consensus, D57).
+- **Controls:** SR-10 Lumen edges from the image intensity; SR-06 End-diastolic analysis frame in the opacified phase; SR-13 Analysed path shown on the image; SR-24 Grey-zone flag; SR-47 Multi-frame consensus for cine runs; SR-01 Research-use notice everywhere
+- **After controls:** P4 Probable = 16 unacceptable. Not measured against FFR after the controls; unchanged. The multi-frame median (SR-47, D58) repeats better: on CADICA test patients the median of 5 frames has a segment-FFR CV of 5.1% (one frame 18.7%), and two medians agree at 0.80 in 91%; %DS is still not repeatable (CV 27%). A result whose frames straddle 0.80 is flagged.
+- **Evidence:** [stenosis_grading.md](../../reports/stenosis_grading.md), [repeatability.md](../../reports/repeatability.md), [consensus.md](../../reports/consensus.md)
+- **Needed:** Agreement with invasive FFR; false-positive rate in vessels with FFR > 0.80; repeatability on real end-diastolic frames with ECG.
 
 ### H-03: Wrong pixel size
 

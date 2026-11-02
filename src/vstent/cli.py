@@ -1019,7 +1019,7 @@ def analyse(
         typer.Option(
             "--consensus",
             min=1,
-            help="Cine runs: end-diastolic frames in the median (default 3; 1 = one frame).",
+            help="Cine runs: end-diastolic frames in the median (default 5; 1 = one frame).",
         ),
     ] = None,
 ) -> None:

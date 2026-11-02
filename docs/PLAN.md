@@ -460,27 +460,31 @@ the median %DS and the median FFR over K frames of the same lesion. Data: the sa
 per-keyframe measurements as P4f (re-measured with the rows saved; the method is unchanged).
 Patients split as in P4b: 21 development, 21 test.
 
-- [ ] **Repeatability of a K-frame consensus:** for each lesion with ≥ 2K measured keyframes,
+- [x] **Repeatability of a K-frame consensus:** for each lesion with ≥ 2K measured keyframes,
   two disjoint sets of K frames (alternate keyframes in time order: the 1st, 3rd, … and the
   2nd, 4th, …, the first K of each); the median of each set; the CV between the two medians
   (root mean square over lesions, as in P4f).
-- [ ] **K, chosen on the development patients only:** the smallest K in 1–5 whose FFR CV is
+- [x] **K, chosen on the development patients only:** the smallest K in 1–5 whose FFR CV is
   ≤ 9.4% and whose %DS CV is ≤ 11.9% (P4f's targets). If none qualifies, the K with the
-  lowest FFR CV.
-- [ ] **Test patients, once, with the chosen K:** FFR CV ≤ 9.4% and %DS CV ≤ 11.9% (the same
-  targets), plus the two medians' agreement on the side of 0.80 (reported).
-- [ ] **Instability flag:** a consensus is flagged when its K frames' FFR values lie on both
+  lowest FFR CV. **Result:** none qualified; **K = 5** (FFR CV 12.0%, %DS CV 21.7%).
+- [x] **Test patients, once, with the chosen K:** FFR CV ≤ 9.4% and %DS CV ≤ 11.9% (the same
+  targets), plus the two medians' agreement on the side of 0.80 (reported). **Result:** FFR CV
+  **5.1%, met**; %DS CV **27.0%, not met**; 91% agree at 0.80 (D58).
+- [x] **Instability flag:** a consensus is flagged when its K frames' FFR values lie on both
   sides of 0.80. On the test patients, reported: the share flagged; among lesions whose two
   medians disagree at 0.80, the share flagged in either set (sensitivity); among those that
-  agree, the share flagged in neither.
-- [ ] **Product:** for a cine run, the analysis is repeated on up to K end-diastolic frames in
+  agree, the share flagged in neither. **Result:** 31.5% of sets flagged; all 10 discordant
+  lesions flagged; 62% of concordant lesions flagged in neither set.
+- [x] **Product:** for a cine run, the analysis is repeated on up to K end-diastolic frames in
   the opacified window (the user's points move to each frame with the heart, P7). The median
   FFR is reported with every frame's value; the planner uses the profile of the frame
   closest to the median; the flag is shown. `vstent analyse`, the app and `vstent validate`
-  use the same function. A single image is still measured once.
-- [ ] Tests on a synthetic beating-heart run: the points follow the heart, and the median and
+  use the same function. A single image is still measured once. Done (D58), with two rules
+  set on principle: only frames on which the contrast has filled the analysed path, up to the
+  end of the opacification plateau; a frame whose path length differs by > 30% is left out.
+- [x] Tests on a synthetic beating-heart run: the points follow the heart, and the median and
   the flag are computed as specified.
-- [ ] Report: `vstent consensus-report` → `reports/consensus.md`.
+- [x] Report: `vstent consensus-report` → `reports/consensus.md`.
 
 **Done when:** the report exists with the test result, and the product uses the consensus.
 

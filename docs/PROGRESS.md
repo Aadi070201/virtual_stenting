@@ -1238,3 +1238,38 @@ qualified person, not regulatory advice.
 - Multi-frame consensus (median over frames), pre-registered before it is tried: frame count
   chosen on CADICA development patients, reported on test patients.
 - Contour editing in the app; a lesion-measurement model trained on AngioCAD / CARDIAG.
+
+## 2026-11-02 — P4g: Multi-frame consensus (done; FFR target met, %DS not)
+
+**What was done**
+- Plan and rules pre-registered (commit 4ecbd0b). P4f's CADICA measurements re-made with
+  every row saved (`vstent repeatability --rows-out`); the single-frame result reproduced
+  exactly.
+- `vstent consensus-report` (`validation/consensus.py`): split halves of alternate keyframes,
+  the median of K frames each, CV between the medians; K chosen on development patients and
+  tested once.
+- Product (`inference/consensus.py`):
+  - for a cine run, the vessel is measured on up to K end-diastolic frames on which the path
+    is fully opacified, the points following the heart;
+  - the output is the median FFR, every frame's value and the instability flag; the profile
+    for intervals and plans is the frame closest to the median;
+  - single path and tree, in `vstent analyse` (`--consensus K`), the app (the chosen frame
+    shown with its stents) and `vstent validate` (the medians as index tests, `frame_*`
+    columns, PROTOCOL updated).
+- The P7 transit now also records when each point is filled (90% of its plateau contrast).
+
+**Results** (`reports/consensus.md`)
+- Development: no K met both targets; K = 5 by the rule (FFR CV 12.0%, %DS CV 21.7%).
+- Test, K = 5 (111 lesions, 20 patients):
+  - FFR CV 5.1% (95% 3.4–6.8%), met (≤ 9.4%); within-lesion SD 0.040 (one frame: 0.124);
+  - %DS CV 27.0%, not met;
+  - 91% of the medians agree at 0.80.
+- Flag: all 10 discordant lesions flagged, but 31.5% of sets flagged.
+- Synthetic beating heart: moved points within 1 px of the truth; an outlier frame
+  (FFR 0.35 vs 0.92) was absorbed by the median and flagged.
+
+**Open issues**
+- %DS repeatability and the severity compression common to all frames (D44).
+- The flag's specificity.
+- ED-only frames on real runs are untested (CADICA has no ECG).
+- Accuracy against wire FFR.

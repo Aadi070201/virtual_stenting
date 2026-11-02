@@ -29,7 +29,7 @@ from vstent.imaging.motion import apply, plateau
 from vstent.imaging.run_analysis import RunFrames
 from vstent.inference.pipeline import TreeAnalysis, VesselAnalysis
 
-CONSENSUS_K = 3  # frames; set from the P4g development result (D58)
+CONSENSUS_K = 5  # frames: the pre-registered rule on the CADICA development patients (D58)
 THRESHOLD = 0.80
 # A frame whose traced path is this much longer or shorter than on the reference frame has
 # most likely followed another vessel: it is listed with the reason and left out.

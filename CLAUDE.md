@@ -207,7 +207,7 @@ uv run vstent cine-synthetic [--workers N] [--calibrate]
                                   # P7: ED frames + flow velocity on beating-heart runs → reports/cine_synthetic.md
 uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run] [--consensus K]
                                   # P7: cine run on its ED frame; measured flow velocity (default: fixed)
-                                  # P4g: median over up to K ED frames (default 3; 1 = one frame)
+                                  # P4g: median over up to K ED frames (default 5; 1 = one frame)
 uv run vstent data define-flow    # P4e: open invasive physiology (CC0); also `data contrast`
 uv run vstent physiology-real     # P4e: model physiology vs DEFINE-FLOW → reports/physiology_real.md
 uv run vstent repeatability [--workers N]   # P4f: %DS and FFR repeatability on CADICA → reports/repeatability.md

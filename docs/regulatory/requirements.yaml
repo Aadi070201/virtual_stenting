@@ -178,6 +178,32 @@ requirements:
       - reports/cine_synthetic.md
       - reports/cine_calibration.md
 
+  - id: SR-47
+    title: Multi-frame consensus for cine runs
+    kind: imaging
+    text: >-
+      For a cine run the vessel is measured on up to five end-diastolic frames on which the
+      contrast has filled the analysed path, before the washout, with the user's points
+      following the heart. The median distal FFR is reported with every frame's value; the
+      frame closest to the median gives the profile for intervals and plans; a frame whose
+      path length differs by more than 30% is left out with the reason; the result is flagged
+      when the frames fall on both sides of 0.80. vstent analyse, the app and vstent validate
+      use the same function (P4g).
+    code:
+      - src/vstent/inference/consensus.py::run_consensus
+      - src/vstent/inference/consensus.py::consensus_frames
+      - src/vstent/inference/consensus.py::Consensus
+      - src/vstent/imaging/cine.py::contrast_transit
+      - src/vstent/validation/run.py::predict_case
+    tests:
+      - tests/test_consensus.py::test_run_consensus_follows_the_heart
+      - tests/test_consensus.py::test_consensus_median_choice_and_flag
+      - tests/test_consensus.py::test_consensus_frames_on_the_fully_opacified_path
+      - tests/test_consensus.py::test_validate_reports_the_consensus_on_a_run
+      - tests/test_cardiac.py::test_cli_analyse_beating_heart_run_with_measured_flow
+    reports:
+      - reports/consensus.md
+
   # --- Segmentation and QCA ------------------------------------------------------------------
   - id: SR-07
     title: Segmentation in ONNX Runtime with the training pre-processing
