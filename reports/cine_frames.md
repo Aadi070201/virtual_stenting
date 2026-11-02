@@ -24,6 +24,17 @@ Test patients by run type:
 
 ![Opacification curves](figures/cine_frames.png)
 
+## End-diastolic rule (P7)
+
+The product's rule since P7: image-based end-diastolic frames (the vessel tree's spread, largest at end-diastole; CADICA gives no ECG or frame time), and the analysis frame is the end-diastolic frame in the opacified window with the most vessel. The run's curves count pixels at probability ≥ 0.9, a setting chosen on the development runs (D55). The clinicians' frames are lesion keyframes, not end-diastolic frames, so this checks that the rule picks a usable, well-opacified frame; it cannot show that the frame is end-diastolic. This is the first use of the test patients for this rule.
+
+| Runs | Runs (patients) | Analysis frame among the selected frames | Within their span | Window overlap (IoU), median (IQR; 95% CI) | Contrast arrival ≤ first selected frame |
+|---|---:|---:|---:|---:|---:|
+| test patients | 177 (21) | 132 / 177 (75%; 68–80%) | 149 / 177 (84%; 78–89%) | 0.61 (0.38–0.75; 0.56–0.68) | 165 / 177 (93%; 89–96%) |
+| development patients | 205 (21) | 157 / 205 (77%; 70–82%) | 171 / 205 (83%; 78–88%) | 0.57 (0.36–0.73; 0.50–0.63) | 196 / 205 (96%; 92–98%) |
+
+**Pre-registered target** (docs/PLAN.md): the analysis frame within the span in ≥ 83% of the test runs. **Met: 149 / 177 (84%; 78–89%).**
+
 ## Contrast transit (feasibility; no reference)
 
 Along the longest vessel path of each run's analysis frame: the frame in which the contrast arrives at each point (the darkest value within 6 px, for cardiac motion), and the front speed, the Theil–Sen slope of the distance from the inflow on the arrival frame. A speed counts only if it and the lower end of its 95% interval are positive (a front that advances); otherwise the product reports the transit as not measurable. CADICA gives no pixel size, so speeds are in px per frame; without a flow reference this shows only how often the measurement is possible and how precise it is.
@@ -32,4 +43,4 @@ Along the longest vessel path of each run's analysis frame: the frame in which t
 - Front speed, px per frame, median (IQR): all runs 17.6 (10.9–28.2); left coronary 17.6 (10.9–27.4); right coronary 21.0 (11.2–32.6).
 - Width of the speed's 95% interval relative to the speed, %, median (IQR): 40.3 (27.1–73.3).
 
-Segmentation model `models/seg/seg_unet_r34_synth-20261101-182811`. Commit `acd6a5cfddcc186ebf7753e7990ca708e5adf70e` (dirty: False). Per-run values: `cine_frames.json`.
+Segmentation model `models/seg/seg_unet_r34_synth-20261101-182811`. Commit `47409d8c0ea4a59a524d3ae6eece3d531b22f5a6` (dirty: False). Per-run values: `cine_frames.json`.
