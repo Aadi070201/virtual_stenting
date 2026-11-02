@@ -821,6 +821,21 @@ FFR ≤ 0.80.
   end-to-end rule is the stricter clinical test. Test patients once, for the chosen one.
 - P4m is then re-run with it as an arm.
 
+### C4. Hyperemic velocity by artery from real Doppler data (CPU; added 2026-11-02, before the per-artery numbers were looked at)
+Why: the user asked whether the vessel (LAD, LCx, RCA) makes a difference. The model uses one
+velocity, 0.35 m/s, for every artery. DEFINE-FLOW has Doppler velocities measured in real
+patients, with each lesion's artery (P4e). An input measured in patients is not a constant
+tuned to the anchors.
+- **Estimate:** per artery (left coronary = LAD + LCx, and RCA), the median stenosis-free
+  hyperemic mean velocity (k = 0.8, P4e's definition).
+  - For LAD vs LCx separately, only if G is used in the product.
+- **Use:** only if an artery's median differs from the pooled median by ≥ 10%. Otherwise
+  0.35 m/s stays.
+- **Arm:** per-artery velocity, with the artery from CADICA's left / right label (in the
+  product: the user's choice, or G). Judged on C's data with C3's rule: alone, and with the
+  best C3 combination.
+- Test patients once, for an adopted arm.
+
 ### D. Display like a clinical QFR tool (no measurement change)
 - The lumen contours along the whole path.
 - Lesions as shaded segments labelled A, B…
