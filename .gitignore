@@ -28,3 +28,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# presentations made from docs/presentation (local; the brief and figures are tracked)
+docs/presentation/*.pptx

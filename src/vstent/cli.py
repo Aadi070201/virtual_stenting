@@ -1684,6 +1684,37 @@ def repeatability(
 
 
 @app.command()
+def lesion_data(
+    workers: Annotated[
+        int, typer.Option("--workers", min=1, help="Processes for the measurements.")
+    ] = 1,
+    seg_model: Annotated[
+        Path | None, typer.Option("--seg-model", help="Default: newest in models/seg/.")
+    ] = None,
+    kemerovo_dir: Annotated[
+        Path, typer.Option("--kemerovo", help="Kemerovo folder (used if present).")
+    ] = Path("data/raw/kemerovo"),
+    sources: Annotated[
+        str, typer.Option("--sources", help="Comma-separated: cadica, arcade, kemerovo.")
+    ] = "cadica,arcade,kemerovo",
+) -> None:
+    """Lesion patches from real angiograms (CADICA, ARCADE stenosis, Kemerovo) for the learned
+    lesion reading (P4i) → data/derived/lesion/."""
+    from vstent.config import git_info
+    from vstent.data.lesion_data import build
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+
+    typer.echo(DISCLAIMER)
+    git = git_info()
+    seg_dir = seg_model or _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    counts = build(SegmentationRunner.from_dir(seg_dir), workers=workers,
+                   sources=tuple(s.strip() for s in sources.split(",") if s.strip()),
+                   kemerovo_dir=kemerovo_dir, git={**git, "seg_model": Path(seg_dir).as_posix()},
+                   log=typer.echo)  # fmt: skip
+    typer.echo(f"Samples: {counts}")
+
+
+@app.command()
 def consensus_report(
     rows: Annotated[
         Path, typer.Option("--rows", exists=True, dir_okay=False, help="From --rows-out.")

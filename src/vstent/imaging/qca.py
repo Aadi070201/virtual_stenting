@@ -69,6 +69,7 @@ LUMEN_METHOD_LABELS = {  # for reports
     "scaled": "image intensity edges, absolute size from the imaging-chain fit (P5b)",
     "dense": "intensity edges narrowed by densitometry (integrated contrast, P4h), absolute "
     "size from the imaging-chain fit",
+    "learned": "lesion depths learned from real angiograms (P4i) on the intensity edges",
 }
 # densitometric lumen (P4h): the product's domain, or one named for the comparison
 DENSE_DOMAINS = {"dense": None, "dense_log": "log", "dense_linear": "linear"}
