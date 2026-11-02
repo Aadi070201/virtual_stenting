@@ -254,6 +254,149 @@
     "agree_unflagged": 0.6859504132231405
    }
   },
+  "sensitivity": {
+   "n_tracks": 16,
+   "n_rows": 601,
+   "by_split": {
+    "dev": 9,
+    "test": 7
+   },
+   "dev": {
+    "1": {
+     "k": 1,
+     "n_lesions": 217,
+     "n_patients": 21,
+     "ds_cv": 0.3922294590747307,
+     "ds_cv_ci": [
+      0.3274720706223162,
+      0.45087768096703645
+     ],
+     "ffr_cv": 0.23459397850712221,
+     "ffr_cv_ci": [
+      0.15996622477136563,
+      0.2910085574693065
+     ],
+     "ffr_sd_within": 0.1308575188161983,
+     "agree_080": 0.8894009216589862,
+     "flagged_share": 0.0,
+     "n_disagree": 24,
+     "disagree_flagged": 0.0,
+     "n_agree": 193,
+     "agree_unflagged": 1.0
+    },
+    "2": {
+     "k": 2,
+     "n_lesions": 193,
+     "n_patients": 21,
+     "ds_cv": 0.2511965041681656,
+     "ds_cv_ci": [
+      0.20161553300286514,
+      0.30703398324529624
+     ],
+     "ffr_cv": 0.12928244956578708,
+     "ffr_cv_ci": [
+      0.07929754450991112,
+      0.17262128705759627
+     ],
+     "ffr_sd_within": 0.07955966289808832,
+     "agree_080": 0.8808290155440415,
+     "flagged_share": 0.13471502590673576,
+     "n_disagree": 23,
+     "disagree_flagged": 0.9130434782608695,
+     "n_agree": 170,
+     "agree_unflagged": 0.8647058823529412
+    },
+    "3": {
+     "k": 3,
+     "n_lesions": 171,
+     "n_patients": 21,
+     "ds_cv": 0.3032196186951603,
+     "ds_cv_ci": [
+      0.2331739359660856,
+      0.37329653499720206
+     ],
+     "ffr_cv": 0.14883533102022486,
+     "ffr_cv_ci": [
+      0.07288699360668818,
+      0.19764901683729189
+     ],
+     "ffr_sd_within": 0.09176477725918607,
+     "agree_080": 0.9064327485380117,
+     "flagged_share": 0.18421052631578946,
+     "n_disagree": 16,
+     "disagree_flagged": 1.0,
+     "n_agree": 155,
+     "agree_unflagged": 0.8064516129032258
+    },
+    "4": {
+     "k": 4,
+     "n_lesions": 156,
+     "n_patients": 21,
+     "ds_cv": 0.24853957648212086,
+     "ds_cv_ci": [
+      0.16480949662730746,
+      0.3391868698861016
+     ],
+     "ffr_cv": 0.12678796871316061,
+     "ffr_cv_ci": [
+      0.05833691985693276,
+      0.17970633328959862
+     ],
+     "ffr_sd_within": 0.07997294786599692,
+     "agree_080": 0.9230769230769231,
+     "flagged_share": 0.22756410256410256,
+     "n_disagree": 12,
+     "disagree_flagged": 1.0,
+     "n_agree": 144,
+     "agree_unflagged": 0.7361111111111112
+    },
+    "5": {
+     "k": 5,
+     "n_lesions": 124,
+     "n_patients": 21,
+     "ds_cv": 0.22093866306783072,
+     "ds_cv_ci": [
+      0.14882179744278556,
+      0.30967761679542305
+     ],
+     "ffr_cv": 0.12291613957232667,
+     "ffr_cv_ci": [
+      0.04673197765516703,
+      0.18915452812671565
+     ],
+     "ffr_sd_within": 0.0802654374049445,
+     "agree_080": 0.9193548387096774,
+     "flagged_share": 0.2540322580645161,
+     "n_disagree": 10,
+     "disagree_flagged": 1.0,
+     "n_agree": 114,
+     "agree_unflagged": 0.6929824561403509
+    }
+   },
+   "chosen_k": 5,
+   "test": {
+    "k": 5,
+    "n_lesions": 106,
+    "n_patients": 20,
+    "ds_cv": 0.24595662960536213,
+    "ds_cv_ci": [
+     0.17569416253047526,
+     0.31218054653715854
+    ],
+    "ffr_cv": 0.049428537657455966,
+    "ffr_cv_ci": [
+     0.03149898731706598,
+     0.06744765135124989
+    ],
+    "ffr_sd_within": 0.03909168696609835,
+    "agree_080": 0.9150943396226415,
+    "flagged_share": 0.3113207547169811,
+    "n_disagree": 9,
+    "disagree_flagged": 1.0,
+    "n_agree": 97,
+    "agree_unflagged": 0.6288659793814433
+   }
+  },
   "targets": [
    {
     "metric": "Test, K = 5: %DS CV",
@@ -275,12 +418,12 @@
   }
  },
  "provenance": {
-  "git_commit": "ffd688f59c911ebb82b1a02e22c46b489f002b39",
+  "git_commit": "62fc84632e64ad7d6ed2f105278daeabd6ec9891",
   "git_dirty": false,
   "vstent_version": "0.1.0",
   "seg_model": "models/seg/seg_unet_r34_synth-20261101-182811",
   "measurements_commit": "f27a9ea3b081a18b1f2ad5108ee3c1b1734c1246",
   "measurements_dirty": false,
-  "created_utc": "2026-11-02T11:53:19+00:00"
+  "created_utc": "2026-11-02T13:10:56+00:00"
  }
 }

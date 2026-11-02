@@ -51,10 +51,17 @@ Each K uses the lesions with ≥ 2K measured keyframes, so the set of lesions sh
 | 4 | 133 | 21 | 22.2% (15.8%–31.0%) | 13.4% (5.6%–20.7%) | 92.5% |
 | 5 | 133 | 21 | 21.7% (14.7%–30.4%) | 12.0% (4.7%–18.5%) | 91.0% |
 
+## Sensitivity: tracks with two boxes on one keyframe
+
+Found after the result above, while preparing a demonstration: 16 lesion tracks (9 development, 7 test; 601 boxes) hold two boxes on the same keyframes: two boxes of one grade in one video were joined into one track. Their alternate keyframes can mix two lesions. Without them (not pre-registered; nothing above is changed by it):
+
+- Development: K = 5 by the same rule.
+- Test, K = 5: 106 lesions; FFR CV 4.9% (95% 3.1%–6.7%); %DS CV 24.6%; medians agree at 0.80 in 91.5%.
+
 ## Limits
 
 - CADICA's keyframes span heart phases; the product takes its consensus over end-diastolic frames (P7), which differ less from one another.
 - Frames share the segmentation model's habits, so their errors are partly correlated: the median removes frame-to-frame noise, not a bias that every frame has (D44: severe lesions read too mild).
 - The FFR is the lesion segment's at the assumed 0.3 mm/px (CADICA has no pixel size), as in P4f. Nothing here is compared with wire FFR.
 
-Segmentation model `models/seg/seg_unet_r34_synth-20261101-182811`. Measurements from commit `f27a9ea3b081a18b1f2ad5108ee3c1b1734c1246` (dirty: False); report from commit `ffd688f59c911ebb82b1a02e22c46b489f002b39` (dirty: False), created 2026-11-02T11:53:19+00:00.
+Segmentation model `models/seg/seg_unet_r34_synth-20261101-182811`. Measurements from commit `f27a9ea3b081a18b1f2ad5108ee3c1b1734c1246` (dirty: False); report from commit `62fc84632e64ad7d6ed2f105278daeabd6ec9891` (dirty: False), created 2026-11-02T13:10:56+00:00.
