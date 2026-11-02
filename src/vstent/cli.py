@@ -1758,6 +1758,9 @@ def physics_check(
     reader: Annotated[
         Path | None, typer.Option("--reader", help="c3: an exported lesion reader directory.")
     ] = None,
+    from_saved: Annotated[
+        bool, typer.Option("--from-saved", help="Re-write the report from the saved rows.")
+    ] = False,
 ) -> None:
     """Side-branch outflow (Murray, P4k-C), the FFR at the wire position (P4k-C2), and both
     with a learned lesion reader (P4k-C3) vs the product on CADICA, against De Bruyne 2001
@@ -1792,13 +1795,20 @@ def physics_check(
         return show
 
     rd = None if reader is None else str(reader)
-    free = pc.lesion_free_rows(stage, seg, params, raw_dir, progress("lesion-free runs"),
-                               reader_dir=rd)  # fmt: skip
-    graded = pc.graded_rows(stage, seg, params, raw_dir, workers=workers,
-                            progress=progress("frames with graded lesions"),
-                            reader_dir=rd)  # fmt: skip
+    saved = pc.OUT_DIR / f"{stem}_{stage}.json"
+    if from_saved:  # the same rows, the report written again (no new measurement)
+        rec = json.loads(saved.read_text(encoding="utf-8"))
+        free, graded = rec["lesion_free"], rec["graded"]
+    else:
+        free = pc.lesion_free_rows(stage, seg, params, raw_dir, progress("lesion-free runs"),
+                                   reader_dir=rd)  # fmt: skip
+        graded = pc.graded_rows(stage, seg, params, raw_dir, workers=workers,
+                                progress=progress("frames with graded lesions"),
+                                reader_dir=rd)  # fmt: skip
     summary = pc.summarise(free, graded)
-    typer.echo(f"Wrote {pc.save(stage, free, graded, summary, name=stem)}")
+    summary["git"] = git
+    if not from_saved:
+        typer.echo(f"Wrote {pc.save(stage, free, graded, summary, name=stem)}")
     title = {
         "c": "P4k-C: side-branch outflow in the physics",
         "c2": "P4k-C2: the FFR where a pressure wire would sit",
@@ -1813,7 +1823,7 @@ def physics_check(
     if stage == "test":
         dev_summary = json.loads(dev_file.read_text(encoding="utf-8"))["summary"]
         lines += pc.section("dev", dev_summary, part)
-    lines += pc.section(stage, summary, "c" if part == "c3" else part)
+    lines += pc.section(stage, summary, part)
     if part == "c3":  # every arm with the reader against the product's numbers (C)
         product_file = pc.OUT_DIR / f"physics_{stage}.json"
         product = json.loads(product_file.read_text(encoding="utf-8"))["summary"]
@@ -1827,6 +1837,9 @@ def physics_check(
             lines.append(f"- {pc.ARM_LABELS[arm]}: {r['reason']}; combined distance {score} → "
                          f"{'qualifies' if r['qualifies'] else 'does not qualify'}.")  # fmt: skip
         lines.append("")
+    if from_saved:
+        measured = rec.get("summary", {}).get("git", {}).get("git_commit", "an earlier commit")
+        lines.append(f"Re-written from the saved rows (`--from-saved`); measured at {measured}.")
     lines.append(f"Segmentation model `{Path(seg_dir).as_posix()}`. Commit "
                  f"`{git['git_commit']}` (dirty: {git['git_dirty']}).")  # fmt: skip
     name = f"p4k_{stem}_dev.md" if stage == "dev" else f"p4k_{stem}.md"

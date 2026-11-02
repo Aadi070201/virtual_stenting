@@ -296,7 +296,7 @@ def section(stage: str, s: dict[str, Any], part: str = "c") -> list[str]:
     row("Mean distance from FAME's shares", lambda x: mad(x["fame_mad"]))
     lines += ["", f"{s['n_free']} lesion-free runs measured ({s['n_free_failed']} could not be); "
               f"{s['n_boxes']} boxes of {s['n_lesions']} graded lesions.", ""]  # fmt: skip
-    if stage == "dev":
+    if stage == "dev" and part in ("c", "c2"):  # C3's rule is reported by the caller
         key, name = ("adopt", "`murray`") if part == "c" else ("wire_adopt", "the wire position")
         reason = s["reason"] if part == "c" else s["wire_reason"]
         decision = f"adopt {name}" if s[key] else "not adopted"
