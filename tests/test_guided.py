@@ -214,3 +214,52 @@ def test_go_to_an_expert_frame(guided_env, monkeypatch):
     at.button(key="to_expert").click().run()
     assert not at.exception, [e.value for e in at.exception]
     assert at.slider[0].value == 5
+
+
+def test_contours_lesion_table_and_loss_chart():
+    """The QFR-style display: lumen contours, lesions filled between them, a lesion table and
+    the FFR lost per mm under the FFR curve (P4k-D)."""
+    from vstent.imaging.qca import run_qca
+    from vstent.physics.solver import PhysicsParams
+
+    prob = np.zeros((120, 400))
+    cols = np.arange(400)
+    half = np.where(np.abs(cols - 200) < 12, 2.5, 6.0)  # a vessel 12 px wide, 5 px at a lesion
+    for c in range(20, 380):
+        prob[int(60 - half[c]) : int(60 + half[c]) + 1, c] = 1.0
+    q = run_qca(prob, (60, 25), (60, 375), mm_per_px=0.25)
+    marks = guided.lesion_marks(q)
+    assert len(marks) == 1 and 180 <= marks[0].col <= 220
+    img = np.full(prob.shape, 120, np.uint8)
+    out = guided.overlay(img, prob, q, marks, points=[(60, 25), (60, 375)])
+    plain = guided.overlay(img, prob, q, marks, contours=False)
+    assert out.shape == (120, 400, 3) and not np.array_equal(out, plain)
+    assert out[60, marks[0].col, 0] > out[60, marks[0].col, 2]  # filled red at the lesion
+    p = PhysicsParams()
+    pre = core.evaluate(q.profile, p, p.pa, p.pv)
+    rows = guided.lesion_table(q, pre, marks)
+    assert rows[0]["Lesion"] == "1" and float(rows[0]["FFR drop"]) > 0.0
+    assert rows[0]["Reference"].endswith(" mm") and rows[0]["Stenosis"].endswith("%")
+    drop = guided.ffr_drop_per_mm(pre)
+    s_mm = pre.s * 1e3
+    assert drop.shape == pre.solver.shape and drop.min() >= 0.0
+    assert abs(s_mm[np.argmax(drop)] - marks[0].at_mm) < 8.0  # the loss peaks at the lesion
+    assert len(guided.ffr_chart(pre, None, marks).data) == 2  # FFR and loss per mm
+
+
+def test_path_starts_at_the_left_main_not_a_branch_tip():
+    """A short, wide left main splitting into two long branches: the longest path runs between
+    the branch tips, but the path must start at the left main (the widest end)."""
+    mask = np.zeros((200, 300), bool)
+    mask[90:111, 5:40] = True  # left main: 21 px wide, 35 px long
+    for k in range(200):  # LAD: 9 px wide, down-right
+        mask[100 + k // 2 - 4 : 100 + k // 2 + 5, 40 + k] = True
+    for k in range(150):  # a long branch: 7 px wide, up-right
+        mask[100 - k // 2 - 3 : 100 - k // 2 + 4, 40 + k] = True
+    a, b = main_trunk_endpoints(mask)
+    assert a[1] < 20 and 90 <= a[0] <= 111  # the left main
+    assert b[1] > 200 and b[0] > 150  # down the LAD
+    from vstent.imaging.centerline import target_endpoints
+
+    a2, b2 = target_endpoints(mask, (40, 160))  # click on the branch
+    assert a2 == a and b2[0] < 40

@@ -1289,3 +1289,25 @@ its training range (synthetic vessels about 70 mm long), so the two disagree.
 
 **Alternatives:** showing both FFRs in the plan list was rejected: two numbers for one plan
 confuse the guided view.
+
+### D65 — The automatic path starts at the tree's widest end, not at an end of the longest path (2026-11-02)
+**Seen** (a CADICA left-coronary run, P4k-D's display): the path started at the tip of a
+diagonal branch, ran back through the left main, then down the LAD. The reference diameter and
+the flow direction over that first part were wrong.
+
+**Cause:** the proximal end was the wider end of the longest skeleton path. With a short left
+main, the longest path runs from a side branch's tip to the LAD's end, so the left main is not
+on it.
+
+**Decision:**
+- `proximal_end` chooses, among all ends of the largest vessel tree, the one where the vessel
+  is widest over its first 15 px.
+- `main_trunk_endpoints` (the automatic path), `target_endpoints` (Target) and
+  `guided.box_path` use it.
+- `longest_path_endpoints` is unchanged for `vstent analyse` and the research view.
+- Found before P4k-C's development stage was looked at. Its first run used the old start and
+  was stopped unread. The stage is re-run with the fix.
+
+**Alternatives:** asking the user to click the ostium every time was rejected (the guided app
+must work automatically). A catheter segmented as vessel could still win; the user can move the
+start.

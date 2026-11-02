@@ -429,6 +429,9 @@ def main() -> None:
             st.caption("Pixel size assumed (0.30 mm)", help="Set it under Settings.")
     with right:
         st.plotly_chart(guided.ffr_chart(pre, None, guided.lesion_marks(q)), key="ffr_now")
+    marks = guided.lesion_marks(q)
+    if marks:
+        st.dataframe(guided.lesion_table(q, pre, marks), hide_index=True, width="stretch")
 
     # 4 · stent --------------------------------------------------------------------------------
     st.markdown("#### 4 · Stent")

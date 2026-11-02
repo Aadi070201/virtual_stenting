@@ -22,6 +22,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from vstent.imaging.centerline import main_trunk_endpoints, target_endpoints
 from vstent.imaging.image_io import RunInput, read_run, read_run_bytes
@@ -318,10 +319,12 @@ def overlay(
     stents: list[Stent] | None = None,
     points: list[tuple[int, int]] | None = None,
     boxes: list[tuple[float, float, float, float, str]] | None = None,
+    contours: bool = True,
 ) -> np.ndarray:
-    """RGB angiogram: vessels tinted blue, the path yellow, stents orange, lesions as numbered
-    red circles, the start (green) and end (orange) points, experts' boxes (x, y, w, h, grade)
-    in cyan."""
+    """RGB angiogram: vessels tinted blue; the path as its two measured lumen contours (yellow;
+    ``contours=False``: its centreline); lesions filled red between the contours, with ticks
+    at their ends and their numbers; stents orange; the start (green) and end (orange)
+    points; experts' boxes (x, y, w, h, grade) in cyan."""
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
     if prob is not None:
         mask = prob >= THRESHOLD
@@ -335,7 +338,21 @@ def overlay(
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4 * scale, EXPERT, scale, cv2.LINE_AA)  # fmt: skip
     if qca is not None:
         pts = np.round(qca.centerline.points[:, ::-1]).astype(np.int32)
-        cv2.polylines(out, [pts], False, PATH, scale, cv2.LINE_AA)
+        if contours:
+            left, right = (np.round(e[:, ::-1]).astype(np.int32) for e in edge_lines(qca))
+            fill = out.copy()
+            for m in lesions or []:
+                sel = (qca.s_mm >= m.start_mm) & (qca.s_mm <= m.end_mm)
+                if sel.sum() >= 2:
+                    cv2.fillPoly(fill, [np.vstack([left[sel], right[sel][::-1]])], LESION)
+                    for k in np.flatnonzero(sel)[[0, -1]]:  # ticks at the lesion's ends
+                        cv2.line(out, tuple(map(int, left[k])), tuple(map(int, right[k])),
+                                 (255, 255, 255), scale, cv2.LINE_AA)  # fmt: skip
+            out = cv2.addWeighted(fill, 0.45, out, 0.55, 0)
+            for edge in (left, right):
+                cv2.polylines(out, [edge], False, PATH, scale, cv2.LINE_AA)
+        else:
+            cv2.polylines(out, [pts], False, PATH, scale, cv2.LINE_AA)
         for k, st in enumerate(stents or []):
             sel = (qca.s_mm >= m_to_mm(st.s_start)) & (qca.s_mm <= m_to_mm(st.s_end))
             if sel.sum() >= 2:
@@ -346,7 +363,8 @@ def overlay(
                     cv2.putText(out, f"S{k + 1}", at, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * scale,
                                 STENT, 2 * scale, cv2.LINE_AA)  # fmt: skip
     for m in lesions or []:
-        cv2.circle(out, (m.col, m.row), 11 * scale, LESION, 2 * scale, cv2.LINE_AA)
+        if not (contours and qca is not None):
+            cv2.circle(out, (m.col, m.row), 11 * scale, LESION, 2 * scale, cv2.LINE_AA)
         at = (m.col + 12 * scale, m.row - 8 * scale)
         cv2.putText(out, str(m.number), at, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, LESION,
                     2 * scale, cv2.LINE_AA)  # fmt: skip
@@ -418,23 +436,53 @@ def diffuse_note(post, lesions: list[LesionMark]) -> str | None:
 def ffr_chart(pre, post=None, lesions: list[LesionMark] | None = None) -> go.Figure:
     """Virtual FFR along the path (solver), before and after stenting, with the 0.80 cut-off
     and the lesions shaded. ``pre`` / ``post``: :class:`~vstent.app.core.Curves`."""
-    fig = go.Figure()
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.72, 0.28],
+                        vertical_spacing=0.06)  # fmt: skip
     for m in lesions or []:
         fig.add_vrect(x0=m.start_mm, x1=m.end_mm, fillcolor="rgba(220,38,38,0.10)", line_width=0,
-                      annotation_text=str(m.number), annotation_position="top left")  # fmt: skip
-    fig.add_hline(y=CUTOFF, line_dash="dash", line_color="#898781",
+                      annotation_text=str(m.number), annotation_position="top left",
+                      row="all", col=1)  # fmt: skip
+    fig.add_hline(y=CUTOFF, line_dash="dash", line_color="#898781", row=1, col=1,
                   annotation_text="0.80 cut-off", annotation_position="bottom right")  # fmt: skip
-    fig.add_scatter(x=m_to_mm(pre.s), y=pre.solver, name="Now", line={"color": "#52514e",
-                                                                       "width": 2.5})  # fmt: skip
+    series = [("Now", pre, "#52514e")]
     if post is not None:
-        fig.add_scatter(x=m_to_mm(post.s), y=post.solver, name="After the stent",
-                        line={"color": "#eb6834", "width": 2.5})  # fmt: skip
+        series.append(("After the stent", post, "#eb6834"))
+    for name, c, color in series:
+        fig.add_scatter(x=m_to_mm(c.s), y=c.solver, name=name, legendgroup=name,
+                        line={"color": color, "width": 2.5}, row=1, col=1)  # fmt: skip
+        fig.add_scatter(x=m_to_mm(c.s), y=ffr_drop_per_mm(c), name=name, legendgroup=name,
+                        showlegend=False, line={"color": color, "width": 1.5}, row=2,
+                        col=1)  # fmt: skip
     low = min(float(np.min(pre.solver)), CUTOFF) - 0.05
-    fig.update_layout(template="plotly_white", height=300, margin={"l": 50, "r": 10, "t": 20,
-                      "b": 40}, legend={"orientation": "h", "y": -0.3},
-                      xaxis_title="Distance along the path (mm)", yaxis_title="Virtual FFR",
-                      yaxis_range=[max(low, 0.0), 1.02])  # fmt: skip
+    fig.update_layout(template="plotly_white", height=360, margin={"l": 50, "r": 10, "t": 20,
+                      "b": 40}, legend={"orientation": "h", "y": -0.22})  # fmt: skip
+    fig.update_yaxes(title_text="Virtual FFR", range=[max(low, 0.0), 1.02], row=1, col=1)
+    fig.update_yaxes(title_text="Loss per mm", rangemode="tozero", row=2, col=1)
+    fig.update_xaxes(title_text="Distance along the path (mm)", row=2, col=1)
     return fig
+
+
+def ffr_drop_per_mm(curves) -> np.ndarray:
+    """The FFR lost per mm along the path (1/mm), from a :class:`~vstent.app.core.Curves`."""
+    return np.maximum(-np.gradient(curves.solver, m_to_mm(curves.s)), 0.0)
+
+
+def lesion_table(qca: QCAResult, pre, lesions: list[LesionMark]) -> list[dict[str, str]]:
+    """One row per marked lesion: %DS, minimal lumen and reference diameters (mm), length (mm)
+    and the FFR lost across it. ``pre``: :class:`~vstent.app.core.Curves`."""
+    s_mm = m_to_mm(qca.profile.s)
+    ref_mm = 2e3 * qca.profile.reference_radius()
+    curve_mm = m_to_mm(pre.s)
+    rows = []
+    for m in lesions:
+        drop = float(np.interp(m.start_mm, curve_mm, pre.solver)
+                     - np.interp(m.end_mm, curve_mm, pre.solver))  # fmt: skip
+        ref = float(np.interp(m.at_mm, s_mm, ref_mm))
+        rows.append({"Lesion": str(m.number), "Stenosis": f"{m.ds_pct:.0f}%",
+                     "Minimal lumen": f"{m.mld_mm:.2f} mm", "Reference": f"{ref:.2f} mm",
+                     "Length": f"{m.length_mm:.1f} mm",
+                     "FFR drop": f"{max(drop, 0.0):.2f}"})  # fmt: skip
+    return rows
 
 
 def edge_lines(qca: QCAResult) -> tuple[np.ndarray, np.ndarray]:

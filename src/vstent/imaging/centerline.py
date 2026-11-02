@@ -351,17 +351,30 @@ def _ahead_width(graph: nx.Graph, node: Pixel, blocked: set, width: np.ndarray) 
     return float(np.mean(vals))
 
 
+def proximal_end(graph: nx.Graph, width: np.ndarray) -> Pixel:
+    """The vessel tree's proximal end: of the largest skeleton component's ends, the one where
+    the vessel is widest over its first ``TRUNK_LOOKAHEAD_PX`` pixels (the ostium or left main).
+    An end of the longest path is not enough: with a short left main, the longest path runs
+    from a side branch's tip to the LAD's end."""
+    if graph.number_of_nodes() == 0:
+        raise ValueError("the vessel mask has no skeleton")
+    component = graph.subgraph(max(nx.connected_components(graph), key=len))
+    ends = sorted(n for n in component.nodes if component.degree(n) <= 1)
+    return max(ends or sorted(component.nodes), key=lambda n: _ahead_width(component, n, set(),
+                                                                          width))  # fmt: skip
+
+
 def main_trunk_endpoints(
     mask: np.ndarray, max_length_px: float | None = None, min_spur_px: float = MIN_SPUR_PX
 ) -> tuple[Pixel, Pixel]:
-    """An automatic path along a main vessel: from the wider end of the longest path
-    (:func:`longest_path_endpoints`), follow the skeleton, taking at every fork the branch that
-    is widest over the next ``TRUNK_LOOKAHEAD_PX`` pixels, until a vessel end or
-    ``max_length_px`` of path. The longest path alone wanders through side branches and
-    crossing vessels on real angiograms; the main vessel stays the widest."""
+    """An automatic path along a main vessel: from the tree's proximal end
+    (:func:`proximal_end`), follow the skeleton, taking at every fork the branch that is widest
+    over the next ``TRUNK_LOOKAHEAD_PX`` pixels, until a vessel end or ``max_length_px`` of
+    path. The longest path alone wanders through side branches and crossing vessels on real
+    angiograms; the main vessel stays the widest."""
     graph = vessel_graph(mask, min_spur_px)
-    a, _ = longest_path_endpoints(mask, min_spur_px)
     width = distance_transform_edt(clean_mask(mask))
+    a = proximal_end(graph, width)
     return a, _walk_trunk(graph, width, a, {a}, max_length_px)
 
 
@@ -385,15 +398,15 @@ def target_endpoints(
     mask: np.ndarray, point, max_length_px: float | None = None,
     min_spur_px: float = MIN_SPUR_PX,
 ) -> tuple[Pixel, Pixel]:  # fmt: skip
-    """A path to a chosen vessel: from the vessel tree's proximal (wider) end
-    (:func:`longest_path_endpoints`) through the skeleton pixel nearest ``point`` ((row, col)
+    """A path to a chosen vessel: from the vessel tree's proximal end
+    (:func:`proximal_end`) through the skeleton pixel nearest ``point`` ((row, col)
     px, which must lie on the vessel), then on along the widest branch to that vessel's end,
     at most ``max_length_px`` in all. Raises ``ValueError`` off the vessel or without a
     connection."""
     graph = vessel_graph(mask, min_spur_px)
     width = distance_transform_edt(clean_mask(mask))
     node = snap_point(graph, point, width, "target")
-    a, _ = longest_path_endpoints(mask, min_spur_px)
+    a = proximal_end(graph, width)
     try:
         lengths, paths = nx.single_source_dijkstra(graph, a, node, weight="weight")
     except nx.NetworkXNoPath as exc:
