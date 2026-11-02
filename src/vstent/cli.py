@@ -2652,6 +2652,7 @@ def cine_frames(
 
 APP_SCRIPT = Path(__file__).resolve().parent / "app" / "streamlit_app.py"  # the research view
 GUIDED_SCRIPT = Path(__file__).resolve().parent / "app" / "guided_app.py"
+LABEL_SCRIPT = Path(__file__).resolve().parent / "app" / "label_app.py"  # P4l: ED labels
 
 
 @app.command()
@@ -2734,6 +2735,25 @@ def launch_app(
     if headless:
         cmd += ["--server.headless", "true"]
     typer.echo(f"{DISCLAIMER} Starting the app on http://{address}:{port} (Ctrl+C to stop).")
+    raise typer.Exit(code=subprocess.call(cmd))
+
+
+@app.command("label-ed")
+def label_ed(
+    port: Annotated[int, typer.Option("--port", help="Server port.")] = 8502,
+    headless: Annotated[bool, typer.Option("--headless", help="No browser window.")] = False,
+) -> None:
+    """Expert ED-frame labelling page (P4l; research use only): mark one end-diastolic frame
+    per heart beat → data/labels/ed/<reader>/."""
+    import subprocess
+    import sys
+
+    cmd = [sys.executable, "-m", "streamlit", "run", str(LABEL_SCRIPT), "--server.port",
+           str(port), "--browser.gatherUsageStats", "false",
+           "--server.address", "localhost"]  # fmt: skip
+    if headless:
+        cmd += ["--server.headless", "true"]
+    typer.echo(f"{DISCLAIMER} ED labelling on http://localhost:{port} (Ctrl+C to stop).")
     raise typer.Exit(code=subprocess.call(cmd))
 
 
