@@ -484,6 +484,37 @@ def fda_nozzle(
     typer.echo(f"FDA nozzle data ready in {out} (commit {source['commit'][:12]})")
 
 
+@data_app.command("define-flow")
+def define_flow(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path(
+        "data/raw/define_flow"
+    ),
+) -> None:
+    """Download and verify DEFINE-FLOW: invasive FFR, CFR and Doppler velocity (CC0; P4e)."""
+    _fetch_physiology("define_flow", out)
+
+
+@data_app.command("contrast")
+def contrast_data(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/contrast"),
+) -> None:
+    """Download and verify CONTRAST: raw coronary pressure tracings (CC0; P4e)."""
+    _fetch_physiology("contrast", out)
+
+
+def _fetch_physiology(name: str, out: Path) -> None:
+    from urllib.error import URLError
+
+    from vstent.data.physiology import fetch_physiology
+
+    try:
+        source = fetch_physiology(name, out, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(f"{name} download failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"{source['title'].split(':')[0]} ready in {out} ({source['licence']})")
+
+
 @app.command()
 def train_seg(
     config: Annotated[
@@ -1488,6 +1519,38 @@ def cine_synthetic(
     typer.echo(f"Wrote {report_dir / 'cine_synthetic.md'}")
     if not all(t["passed"] for t in s["targets"]):
         raise typer.Exit(code=1)
+
+
+@app.command()
+def physiology_real(
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="DEFINE-FLOW folder.")] = Path(
+        "data/raw/define_flow"
+    ),
+    report_dir: Annotated[
+        Path, typer.Option("--report-dir", help="Where to write physiology_real.md.")
+    ] = Path("reports"),
+) -> None:
+    """The model's physiology assumptions (phasic flow, hyperemic velocity, FAVOR conversion,
+    pressures) against DEFINE-FLOW's invasive measurements → reports/physiology_real.md (P4e)."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.physiology import SOURCE_FILE, fetch_physiology
+    from vstent.validation import physiology_real as pr
+
+    typer.echo(DISCLAIMER)
+    git = git_info()  # before anything is written
+    if not (raw_dir / SOURCE_FILE).exists():
+        fetch_physiology("define_flow", raw_dir, log=typer.echo)
+    source = json.loads((raw_dir / SOURCE_FILE).read_text(encoding="utf-8"))
+    result = pr.analyse(raw_dir)
+    pr.write_report(result, git, report_dir, source)
+    rules = result["rules"]
+    typer.echo(f"{result['n_lesions']} lesions; median resting diastolic / systolic ratio "
+               f"{rules['phasic_median_ratio']:.2f}; prior replaced: "
+               f"{rules['phasic_prior_replaced']}; fixed velocity to revisit: "
+               f"{rules['fixed_velocity_revisit']}")  # fmt: skip
+    typer.echo(f"Wrote {report_dir / 'physiology_real.md'}")
 
 
 @app.command()
