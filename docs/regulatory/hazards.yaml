@@ -69,7 +69,7 @@ hazards:
     residual_basis: >-
       Measured with the controls in place (the CADICA result is the product's own method).
       Intervals and warnings inform the user but do not correct the compression.
-    evidence: [reports/stenosis_grading.md, reports/lumen_synthetic.md]
+    evidence: [reports/stenosis_grading.md, reports/lumen_synthetic.md, reports/repeatability.md]
     needed: >-
       Lesion-accurate QCA on real angiograms (agreement with expert or core-lab QCA), then
       agreement with invasive FFR (ICADD or a clinical study).
@@ -89,12 +89,15 @@ hazards:
     basis: >-
       Estimated. On CADICA no lesion graded 0–50% was read as ≥ 90% DS (0 of 219 measured
       with the D53 segmenter; 0 of 223 with M5); smaller overestimates were not quantified,
-      and nothing is measured against FFR.
+      and nothing is measured against FFR. Repeatability on CADICA (D57): one lesion on
+      different keyframes varies by 10 %DS points and 0.12 in segment FFR (SD); 15% of
+      keyframe pairs fall on opposite sides of 0.80.
     controls: [SR-10, SR-06, SR-13, SR-24, SR-01]
     residual_probability: 4
     residual_basis: Not measured after the controls; unchanged.
-    evidence: [reports/stenosis_grading.md]
-    needed: Agreement with invasive FFR; false-positive rate in vessels with FFR > 0.80.
+    evidence: [reports/stenosis_grading.md, reports/repeatability.md]
+    needed: Agreement with invasive FFR; false-positive rate in vessels with FFR > 0.80;
+      repeatable measurement across frames (multi-frame consensus, D57).
 
   - id: H-03
     title: Wrong pixel size

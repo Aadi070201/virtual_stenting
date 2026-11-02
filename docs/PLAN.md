@@ -433,20 +433,23 @@ configs/physics.yaml. CADICA has no pixel size, so the default 0.3 mm/px is assu
 within a run). This FFR is the lesion segment's, not a whole vessel's. Lesions graded 0–98%;
 total occlusions are left out.
 
-- [ ] **Frame to frame:** the same lesion on the keyframes of its run (margin = the box size).
+- [x] **Frame to frame:** the same lesion on the keyframes of its run (margin = the box size).
   Per lesion with ≥ 2 measured frames: the within-lesion standard deviation and the
   coefficient of variation (CV; root-mean-square over lesions, as in QREP). **Targets:**
   - %DS CV ≤ 11.9%: QCA's inter-observer CV with operator-selected frames (Ito et al.);
   - FFR CV ≤ 9.4%: QFR's inter-observer CV in QREP (EuroIntervention 2022), which includes
     each observer's own frame choice.
-- [ ] **Operator to operator:** on each keyframe, two simulated operators choose the analysed
+
+  **Result:** %DS CV 44.6% and FFR CV 18.7% (414 lesions): **both not met** (D57).
+- [x] **Operator to operator:** on each keyframe, two simulated operators choose the analysed
   segment's margin independently, uniformly from 0.5–1.5 × the box size (fixed seeds). The
   CV between the two. **Targets:** FFR CV ≤ 9.4% (QREP); %DS standard deviation of the
   differences ≤ 7 points (QCA inter-observer, operator-selected frames). Real operators also
-  choose frames and points, so this is a lower bound of operator variability.
-- [ ] Also reported, no targets: agreement on the side of 0.80 for pairs of frames and of
+  choose frames and points, so this is a lower bound of operator variability. **Result:**
+  FFR CV 17.1% (**not met**); %DS SD of differences 6.0 points (met).
+- [x] Also reported, no targets: agreement on the side of 0.80 for pairs of frames and of
   operators; results by expert grade; patient-level bootstrap intervals.
-- [ ] Report: `vstent repeatability` → `reports/repeatability.md`.
+- [x] Report: `vstent repeatability` → `reports/repeatability.md`.
 
 **Done when:** the report exists with every target's result.
 

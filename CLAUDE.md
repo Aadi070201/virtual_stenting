@@ -124,7 +124,8 @@ vstent/
                         # synthetic.py + synthetic_report.py (stand-in study), stenosis_grading.py
                         # (CADICA expert grades, P4b), cine_frames.py (CADICA runs: analysis
                         # frame vs the clinicians' frames, contrast transit, P4d),
-                        # physiology_real.py (model assumptions vs DEFINE-FLOW, P4e)
+                        # physiology_real.py (model assumptions vs DEFINE-FLOW, P4e),
+                        # repeatability.py (frame / operator repeatability on CADICA, P4f)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -206,6 +207,7 @@ uv run vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]
                                   # P7: cine run on its ED frame; measured flow velocity (default: fixed)
 uv run vstent data define-flow    # P4e: open invasive physiology (CC0); also `data contrast`
 uv run vstent physiology-real     # P4e: model physiology vs DEFINE-FLOW → reports/physiology_real.md
+uv run vstent repeatability [--workers N]   # P4f: %DS and FFR repeatability on CADICA → reports/repeatability.md
 uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments → reports/physics_nozzle.md
 uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
 uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms

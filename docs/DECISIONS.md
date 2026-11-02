@@ -980,3 +980,34 @@ seen in the data and applied at once would not be.
 alters the flow; the mean-to-peak factor is uncertain (0.5–0.8). The population is stable
 patients with intermediate lesions. No angiograms are included, so FFR from images is not
 measured.
+
+### D57 — Automatic single-frame measurements are not repeatable enough yet (2026-11-02)
+**Finding** (`reports/repeatability.md`; CADICA, 42 patients, 414 lesions with ≥ 2 keyframes,
+targets pre-registered in docs/PLAN.md, P4f, from accepted methods' own variability):
+- **Frame to frame, not met.** The same lesion on different keyframes of its run gives a
+  within-lesion SD of 10 %DS points (CV 44.6%; target ≤ 11.9%) and a segment-FFR SD of 0.124
+  (CV 18.7%; target ≤ 9.4%, QFR's inter-observer CV in QREP). It is worst in severe lesions
+  (FFR CV 27–28% at 70–98%). Pairs of keyframes agree on the side of 0.80 in 85%.
+- **Operator to operator.** Two independent choices of the segment ends give an FFR CV of
+  17.1% (not met; 90% agree at 0.80), but an SD of %DS differences of 6.0 points (met;
+  QCA's inter-observer range is about 5–7).
+- **Part of this is the design:**
+  - the keyframes span heart phases, where the product's cine workflow uses end-diastolic
+    frames only;
+  - the FFR is a short segment's, at an assumed pixel size;
+  - nothing is corrected by hand, whereas QFR's analysts edit contours.
+- **Part is a real weakness:** one automatic frame does not measure a lesion stably. This
+  agrees with the weak agreement with the experts' grades (D44) and is now a hazard input
+  (H-01, H-02).
+
+**Decision:** nothing changes by rule; the report stands as measured. The next step,
+pre-registered before it is tried, is **multi-frame consensus**: measure the lesion on several
+frames (the run's end-diastolic frames, or the keyframes) and report the median. If frame
+errors were independent, three frames would cut the spread by about √3. The number of frames is
+to be chosen on the CADICA development patients and the result reported on the test patients.
+Also: contour editing in the app (as QFR analysts do), and a lesion-measurement model trained
+on open stenosis annotations (AngioCAD, CARDIAG).
+
+**Alternatives:** retune the pass marks (rejected: they were set from accepted methods before
+measuring); claim the lower operator variability only (rejected: the frame-to-frame result is
+the one a user meets).

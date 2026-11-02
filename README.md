@@ -77,6 +77,12 @@ P4e checks the model's physiology against real invasive measurements of 455 lesi
 - **What is missing:** these data have no angiograms; their authors are the best lead for
   angiograms with wire FFR.
 
+P4f measures repeatability on real angiograms (CADICA). One lesion measured on different
+frames of its run varies by 10 %DS points and 0.12 in FFR (SD), about twice the inter-observer
+variability of accepted tools. The single-frame automatic measurement is therefore not yet
+stable enough. Measuring on several frames and taking the median is the next step
+([reports/repeatability.md](reports/repeatability.md)).
+
 P8 adds regulatory groundwork drafts for review by a qualified person
 ([docs/regulatory/](docs/regulatory/README.md)):
 - intended use and preliminary classification (India, EU, US);
@@ -180,6 +186,7 @@ Trainings can be paused and resumed exactly:
 | `vstent analyse <run.dcm> [--flow measured] [--hyperemic-run]` | a cine run on its end-diastolic frame (R-wave pointer, ECG or images) with the contrast flow velocity; `--flow measured` uses it instead of the fixed hyperemic velocity | P7 |
 | `vstent data define-flow` / `vstent data contrast` | download and verify open invasive physiology data (DEFINE-FLOW, CONTRAST; CC0) | P4e |
 | `vstent physiology-real` | the model's physiology assumptions against DEFINE-FLOW's invasive measurements → `reports/physiology_real.md` | P4e |
+| `vstent repeatability [--workers N]` | frame-to-frame and operator-to-operator repeatability of %DS and FFR on CADICA's real angiograms → `reports/repeatability.md` | P4f |
 | `vstent cine-frames` | every CADICA cine run: automatic analysis frame and opacified window vs the frames the clinicians selected, and contrast transit → `reports/cine_frames.md` | P4d |
 | `vstent lumen-synthetic` | lumen methods (intensity edges, imaging-chain model) on rendered vessels with known tight and eccentric lumens → `reports/lumen_synthetic.md` | P4c |
 | `vstent physics-nozzle` | the loss model vs the FDA benchmark nozzle experiments → `reports/physics_nozzle.md` | P4b |

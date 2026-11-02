@@ -1210,3 +1210,31 @@ qualified person, not regulatory advice.
   ranges.
 - DEFINE-FLOW's angiograms are not deposited. With them (a request to the corresponding
   author), the product could be compared with wire FFR end to end (HUMAN_ACTIONS, first item).
+
+## 2026-11-02 — P4f: Repeatability on real angiograms (done; 3 of 4 targets not met)
+
+**What was done**
+- Plan and targets pre-registered (commit 7873b9a), set from accepted methods' own
+  variability:
+  - QREP: QFR inter-observer CV 9.4%;
+  - QCA inter-observer: %DS CV 11.9%, SD of differences 5–7 points.
+- `vstent repeatability` (`validation/repeatability.py`) runs on CADICA's expert lesions,
+  graded 0–98%, with the product's steps. Each box is measured with the default segment
+  margin and with two simulated operators' margins (0.5–1.5 × the box size, seeded). The box
+  path takes an adjustable margin (`stenosis_grading.path_through_box`).
+
+**Results** (5,894 boxes, 414 lesions with ≥ 2 keyframes, 42 patients)
+- Frame to frame:
+  - %DS within-lesion SD 10 points, CV 44.6% (not met);
+  - segment-FFR SD 0.124, CV 18.7% (not met), worst in severe lesions;
+  - 85% of keyframe pairs agree on the side of 0.80.
+- Operator to operator:
+  - FFR CV 17.1% (not met), 90% agreement at 0.80;
+  - %DS SD of differences 6.0 points (met).
+- D57: a real weakness of single-frame automatic measurement, partly made worse by the
+  design (mixed heart phases, short segments, no manual editing).
+
+**Open issues**
+- Multi-frame consensus (median over frames), pre-registered before it is tried: frame count
+  chosen on CADICA development patients, reported on test patients.
+- Contour editing in the app; a lesion-measurement model trained on AngioCAD / CARDIAG.
