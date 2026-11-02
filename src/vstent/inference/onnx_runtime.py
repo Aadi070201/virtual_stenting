@@ -34,6 +34,10 @@ PARALLEL_PREP_MIN = 512  # vessels; below this one prepare_inputs call is cheape
 SEG_ONNX_FILE = "seg.onnx"
 SEG_INPUT = "image"
 SEG_OUTPUT = "prob"
+MAP_ONNX_FILE = "map.onnx"  # P4k: vessel identity and the whole-image lesion detector
+MAP_INPUT = "image"
+MAP_OUTPUT = "probs"
+MAP_TASKS = ("vessel_id", "lesion_boxes")
 
 
 def default_workers() -> int:
@@ -220,6 +224,45 @@ class SurrogateRunner:
             return s, self.predict(raw)[0], None
         mean, std = self.predict_with_spread(raw)
         return s, mean[0], std[0]
+
+
+class MapRunner:
+    """Per-pixel probabilities (C, H, W) at the image's size from an exported probability-map
+    model (P4k): vessel identity (C = 5, softmax; :mod:`vstent.data.vessel_id`) or the
+    whole-image lesion detector (C = 1, sigmoid). The same pre-processing as segmentation.
+
+    Args:
+        model_path: the ``map.onnx`` file (input ``image`` (B, 1, S, S), output ``probs``).
+        intra_op_threads: ONNX Runtime threads; ``None`` = ONNX Runtime default.
+    """
+
+    def __init__(self, model_path: str | Path, *, intra_op_threads: int | None = None) -> None:
+        self.model_path = Path(model_path)
+        opts = ort.SessionOptions()
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        if intra_op_threads is not None:
+            opts.intra_op_num_threads = intra_op_threads
+        self.session = ort.InferenceSession(str(self.model_path), opts,
+                                            providers=["CPUExecutionProvider"])  # fmt: skip
+        self.metadata = dict(self.session.get_modelmeta().custom_metadata_map)
+        if self.metadata.get("task") not in MAP_TASKS or "image_size" not in self.metadata:
+            raise ValueError(f"{self.model_path} is not a vstent probability-map model")
+        self.task = self.metadata["task"]
+        self.image_size = int(self.metadata["image_size"])
+
+    @classmethod
+    def from_dir(cls, model_dir: str | Path, **kwargs) -> "MapRunner":
+        """Load ``map.onnx`` from a model directory."""
+        return cls(Path(model_dir) / MAP_ONNX_FILE, **kwargs)
+
+    def predict(self, image: np.ndarray) -> np.ndarray:
+        """Probabilities (C, H, W) float32 for a greyscale image (H, W) of any size."""
+        from vstent.imaging.segment import preprocess_image, probability_to_image
+
+        x = preprocess_image(image, self.image_size)[None]
+        out = self.session.run([MAP_OUTPUT], {MAP_INPUT: x})[0][0]
+        shape = np.asarray(image).shape[:2]
+        return np.stack([probability_to_image(c, shape) for c in out])
 
 
 class SegmentationRunner:

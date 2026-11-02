@@ -41,6 +41,7 @@ class BoxImage:
     patient: str
     role: str
     lesion_free: bool = False
+    grades: tuple[str, ...] = ()  # CADICA: each box's grade category (e.g. "p70_90")
 
 
 def _held_out(patients: list[str], n: int, seed: int = SEED) -> set[str]:
@@ -64,9 +65,12 @@ def cadica_items(raw_dir=None) -> list[BoxImage]:
     by_image: dict[Path, list] = {}
     for b in boxes:
         if b.patient in split:
-            by_image.setdefault(b.image, [b.patient, []])[1].append((b.x, b.y, b.w, b.h))
-    out = [BoxImage(path, tuple(bs), "cadica", p, role(p))
-           for path, (p, bs) in sorted(by_image.items(), key=lambda kv: str(kv[0]))]  # fmt: skip
+            entry = by_image.setdefault(b.image, [b.patient, [], []])
+            entry[1].append((b.x, b.y, b.w, b.h))
+            entry[2].append(b.category)
+    ordered = sorted(by_image.items(), key=lambda kv: str(kv[0]))
+    out = [BoxImage(path, tuple(bs), "cadica", p, role(p), grades=tuple(gs))
+           for path, (p, bs, gs) in ordered]  # fmt: skip
     for r in cadica.load_selected_runs(raw_dir):
         if r.lesion or r.patient not in split:
             continue
