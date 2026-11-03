@@ -1125,6 +1125,32 @@ nearest the middle of the lesion's boxes).
   - Neither meets the targets: the residual loss after stenting is the diffuse artefact and
     the under-read lesions (C, C3).
 
+## P4o: CardioSYNTAX, an external check with SYNTAX per side (added 2026-11-03; pre-registered before any model is run on it)
+
+Why: the user asked for every useful dataset. CardioSYNTAX (Zenodo 10.5281/zenodo.14005818,
+CC BY 4.0; Tyumen Cardiology Research Center, Philips systems) has 1,844 studies, 14,219 cine
+runs at a known 15 fps, each run tagged LCA or RCA by the authors' classifier, and an
+interventional cardiologist's SYNTAX score per side. A side with SYNTAX 0 has no lesion of
+≥ 50% in a vessel ≥ 1.5 mm; a side with SYNTAX > 0 has at least one. Only the metadata has
+been looked at (`all.json`).
+
+- **Set:** studies without bypass whose runs are in zip parts 0 and 9 (downloaded first);
+  runs with ≥ 10 frames and a confident tag (RCA probability ≤ 0.1: LCA; ≥ 0.9: RCA). Parts
+  1–8 are not used here (reserved).
+- **The product on every run** (as P4k-J): its analysis frame (frame time 66.7 ms), the
+  automatic path, the product's QCA and physics (`configs/product.yaml`), the median over up to
+  five heartbeats. A side is **flagged** if any of its runs has a marked lesion ≥ 50% or a
+  virtual FFR ≤ 0.80.
+- **Reported (no targets; run once):**
+  1. false alarms: SYNTAX-0 sides flagged;
+  2. sensitivity: SYNTAX > 0 sides flagged, by the side's SYNTAX (1–7, 8–14, ≥ 15);
+  3. runs of SYNTAX-0 sides with FFR ≤ 0.80 (De Bruyne about 13%; the automatic path may not
+     follow the graded vessel);
+  4. ED frames without an ECG at a known frame rate: each run's implied heart rate from M0
+     and from M2b `tcn5` (share within 40–150 bpm; no truth, a plausibility check);
+  5. with G decided: the run's predicted side against the authors' tag.
+- Rows are cached per run (resumable); runs that cannot be measured are reported by reason.
+
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 
 Why (disclosed; found on development data after D69): in P4m's development run, about 8 of

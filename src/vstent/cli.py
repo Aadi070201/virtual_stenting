@@ -484,6 +484,31 @@ def angiocad(
 
 
 @data_app.command()
+def cardiosyntax(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path(
+        "data/raw/cardiosyntax"
+    ),
+    parts: Annotated[str, typer.Option("--parts", help="Zip parts 0-9, comma-separated.")] = "9",
+) -> None:
+    """Download and verify (MD5) CardioSYNTAX (CC BY 4.0; 1,844 studies, 14,219 cine runs at
+    15 fps, SYNTAX per side): the metadata and the chosen zip parts (~16 GB each, part 9
+    3.2 GB). The runs are read from the zips; nothing is extracted or run."""
+    from urllib.error import URLError
+
+    from vstent.data.cardiosyntax import fetch_cardiosyntax
+
+    chosen = tuple(int(p) for p in parts.split(",") if p.strip())
+    if any(not 0 <= p <= 9 for p in chosen):
+        raise typer.BadParameter("--parts are 0-9")
+    try:
+        source = fetch_cardiosyntax(out, chosen, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(f"CardioSYNTAX download failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Verified {len(source['files'])} files in {out} ({source['licence']})")
+
+
+@data_app.command()
 def kemerovo(
     out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/kemerovo"),
     force: Annotated[bool, typer.Option("--force", help="Download and extract again.")] = False,
