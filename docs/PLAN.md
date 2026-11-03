@@ -1193,6 +1193,14 @@ code or training; development data only):
     sinusoidal encodings of each frame's time in seconds.
 - **Choice among M2 and the three variants:** the highest validation ±1-frame accuracy at its
   worst frame rate (ties: pooled). The chosen one stands for "M2" in the choice below.
+- **Amendment 1** (2026-11-03, after 6 epochs of `tcn5` and two 4-epoch diagnostics, all on
+  development data; disclosed): **no augmentation.**
+  - `tcn5` with augmentation predicted an almost constant probability per frame rate
+    (validation ±1 frame 29% after 6 epochs; M2 74% after 4).
+  - Diagnostics, 4 epochs each, M2's head: soft targets alone 81.6%; augmentation alone
+    35.8%, with a flat loss.
+  - The three variants are trained with soft targets, cosine and 40 epochs, without
+    augmentation. Everything else is unchanged; the aborted `tcn5` run is not evaluated.
 
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
