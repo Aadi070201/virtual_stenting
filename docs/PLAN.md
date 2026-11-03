@@ -761,7 +761,17 @@ Evaluation:
   nearest to the product's analysis frame.
 - **Metric:** the share of runs whose automatic path crosses ≥ 1 expert box (≥ 5 px inside, as
   P4j).
-- [ ] **Adopt** if the share is ≥ 10 points above the main trunk's. Test patients reported.
+- [x] **Adopt** if the share is ≥ 10 points above the main trunk's. Test patients reported.
+
+  **Result: not adopted** (`reports/p4k_target_path_dev.md`; 152 development lesion runs,
+  21 patients).
+  - The main trunk crosses an expert box on 84% of runs; the lesion-seeking path on 79%
+    (−4.6 points; rule: +10).
+  - The seeking path differs on 63 runs: it crosses a box there on 48, the trunk on 55. It
+    often follows a branch where the reader reads a deep narrowing (scores up to 97%) that
+    the experts did not box: overlaps and crossings read as near-occlusions.
+  - The product keeps the main trunk; the user's one-click vessel choice stays.
+  - The report's "dirty" flag: docs/PLAN.md was being edited; no code was.
 
 ### C. Side-branch outflow in the physics (CPU)
 μQFR (Murray's law) lets flow leave through side branches. Here, the flow at s is
