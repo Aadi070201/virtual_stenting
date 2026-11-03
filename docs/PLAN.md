@@ -1169,6 +1169,31 @@ ground truth and a method that need no ECG (`docs/INVENTION_NOTES.md` §8).
 - **Scored as P7:** true ED beats in the well-opacified frames found within ±1 frame, per
   frame rate.
 
+**M2 result (development; `runs/ed_mnv3-20261103-014452`):** validation ±1 frame 85.7%
+(M0 80.9%). By frame rate (7.5 / 10 / 15 / 30 fps): M2 92 / 95 / 77 / 77%, M0 80 / 87 / 79 /
+77%. At 15 and 30 fps M2 also misses whole beats (offsets of ±6 frames): its temporal reach,
+29 frames, is under one heartbeat at 30 fps.
+
+**M2b** (pre-registered 2026-11-03, after the M2 development result above and before any M2b
+code or training; development data only):
+- **Same as M2:** data and splits, the per-frame MobileNetV3-Small (64 features + frame
+  time), batch 4 runs, AdamW lr 1e-3, weight decay 1e-4, seed 0, decoding, scoring; the
+  epoch with the best validation ±1-frame accuracy is kept.
+- **Changes for all variants:**
+  - 40 epochs, cosine learning-rate decay;
+  - soft targets: each true ED frame spreads exp(−Δ²/(2·0.6²)) to its neighbours (Δ in
+    frames), maximum over beats; the BCE positive weight 5 applies to the target;
+  - augmentation per training run: the same horizontal and vertical flips (p = 0.5 each) on all
+    frames, brightness ±10%, contrast ×(0.8–1.2), gamma 0.8–1.25, Gaussian noise σ ≤ 3 grey
+    levels, and a random contiguous crop of 70–100% of the frames.
+- **Temporal heads (three variants):**
+  - `tcn5`: dilated convolutions (kernel 5; dilation 1, 2, 4, 8, 16), reach 125 frames;
+  - `gru`: a two-layer bidirectional GRU (64 per direction) over the whole run;
+  - `transformer`: two encoder layers (64 wide, 4 heads, feed-forward 128, dropout 0.1) with
+    sinusoidal encodings of each frame's time in seconds.
+- **Choice among M2 and the three variants:** the highest validation ±1-frame accuracy at its
+  worst frame rate (ties: pooled). The chosen one stands for "M2" in the choice below.
+
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
   whose real development reproducibility is no worse than M0's. Both are measured on
