@@ -12,6 +12,7 @@ files: they are listed and checked before anything is extracted, and nothing in 
 
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -63,3 +64,121 @@ def fetch_angiocad(
     }  # fmt: skip
     (raw_dir / SOURCE_FILE).write_text(json.dumps(source, indent=2), encoding="utf-8", newline="\n")
     return source
+
+
+# --- labels (AngioCAD_Labels.xlsx) ----------------------------------------------------------------
+
+LABELS_FILE = "AngioCAD_Labels.xlsx"
+FRAMES_DIR = "frames/AngioCAD_Dataset"
+GRADES = ("NL", "1-25", "26-50", "51-75", "76-90", "91-99", "100")
+SIDES = {
+    "right": ("Prox RCA", "Mid RCA", "Dist RCA", "PDA", "PLB"),
+    "left": ("LM", "Prox LAD", "Mid LAD", "Dist LAD", "1st dig", "2nd dig", "Prox LCX",
+             "Mid LCX", "Dist LCX", "OM"),
+}  # fmt: skip
+SERIES_COLUMNS = {"right": "Right Coronary Series", "left": "Left Coronary Series"}
+_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+
+
+@dataclass(frozen=True)
+class PatientLabels:
+    """One AngioCAD patient: the series of each side and each segment's grade (one of
+    :data:`GRADES`, or ``None`` if blank)."""
+
+    patient: str
+    series: dict[str, tuple[int, ...]]
+    grades: dict[str, str | None]
+
+    def worst(self, side: str) -> str | None:
+        """The side's worst grade (``None`` if no segment is graded)."""
+        found = [g for s in SIDES[side] if (g := self.grades.get(s)) in GRADES]
+        return max(found, key=GRADES.index) if found else None
+
+    def status(self, side: str) -> str | None:
+        """``significant`` (a segment ≥ 51%), ``normal`` (all NL) or ``mild``; ``None`` if
+        ungraded."""
+        worst = self.worst(side)
+        if worst is None:
+            return None
+        if GRADES.index(worst) >= GRADES.index("51-75"):
+            return "significant"
+        return "normal" if worst == "NL" else "mild"
+
+
+def _column(ref: str) -> str:
+    return "".join(ch for ch in ref if ch.isalpha())
+
+
+def xlsx_rows(path: str | Path) -> list[dict[str, str | None]]:
+    """The first worksheet of an .xlsx file as rows keyed by the header row (cell text; numbers
+    as written). Read with the standard library only; nothing in the file is run."""
+    import xml.etree.ElementTree as ET
+    import zipfile
+
+    with zipfile.ZipFile(path) as z:
+        names = set(z.namelist())
+        shared = []
+        if "xl/sharedStrings.xml" in names:
+            root = ET.fromstring(z.read("xl/sharedStrings.xml"))
+            shared = ["".join(t.text or "" for t in si.iter(f"{_NS}t"))
+                      for si in root.findall(f"{_NS}si")]  # fmt: skip
+        sheet = ET.fromstring(z.read("xl/worksheets/sheet1.xml"))
+    table = []
+    for row in sheet.iter(f"{_NS}row"):
+        cells = {}
+        for c in row.findall(f"{_NS}c"):
+            v = c.find(f"{_NS}v")
+            if v is None or v.text is None:
+                inline = c.find(f"{_NS}is")
+                text = (
+                    None
+                    if inline is None
+                    else "".join(t.text or "" for t in inline.iter(f"{_NS}t"))
+                )
+            else:
+                text = shared[int(v.text)] if c.get("t") == "s" else v.text
+            cells[_column(c.get("r", ""))] = text
+        table.append(cells)
+    if not table:
+        return []
+    header = {col: name for col, name in table[0].items() if name}
+    return [{name: cells.get(col) for col, name in header.items()} for cells in table[1:]]
+
+
+def parse_series(text: str | None) -> tuple[int, ...]:
+    """Series numbers from "1-2", "3", "1-6", "1,3" or "1-2, 5" (empty if blank)."""
+    out: list[int] = []
+    for part in str(text or "").replace(" ", "").split(","):
+        if not part:
+            continue
+        if "-" in part:
+            a, b = part.split("-", 1)
+            out.extend(range(int(float(a)), int(float(b)) + 1))
+        else:
+            out.append(int(float(part)))
+    return tuple(out)
+
+
+def _grade(text: str | None) -> str | None:
+    if text is None or not str(text).strip():
+        return None
+    t = str(text).strip()
+    return {"100.0": "100"}.get(t, t)
+
+
+def load_labels(raw_dir: str | Path = RAW_DIR) -> list[PatientLabels]:
+    """Every labelled patient of ``AngioCAD_Labels.xlsx`` (rows without an ID skipped)."""
+    out = []
+    for row in xlsx_rows(Path(raw_dir) / LABELS_FILE):
+        pid = row.get("ID")
+        if pid is None or not str(pid).strip():
+            continue
+        series = {side: parse_series(row.get(col)) for side, col in SERIES_COLUMNS.items()}
+        grades = {seg: _grade(row.get(seg)) for segs in SIDES.values() for seg in segs}
+        out.append(PatientLabels(str(int(float(pid))), series, grades))
+    return out
+
+
+def series_dir(raw_dir: str | Path, patient: str, series: int) -> Path:
+    """The folder of one series' frames."""
+    return Path(raw_dir) / FRAMES_DIR / patient / str(series)

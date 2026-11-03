@@ -1920,6 +1920,46 @@ def train_ed(
 
 
 @app.command()
+def angiocad_check(
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="AngioCAD folder.")] = Path(
+        "data/raw/angiocad"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """The product on AngioCAD's 413 patients against the experts' segment grades (P4k-J;
+    external, run once; resumable) → reports/p4k_angiocad.md."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.angiocad import load_labels
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+    from vstent.inference.product import product_config
+    from vstent.validation import angiocad_check as ac
+
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    labels = load_labels(raw_dir)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    typer.echo(f"{len(labels)} patients, {len(ac.tasks(labels))} series …")
+
+    def progress(k, n):
+        if k % 50 == 0 or k == n:
+            typer.echo(f"  {k} / {n} series")
+
+    rows = ac.rows(labels, raw_dir, seg_dir, workers=workers, progress=progress)
+    summary = ac.summarise(labels, rows)
+    product = product_config().model_dump()
+    path = ac.write_report(report_dir / "p4k_angiocad.md", summary, seg_model=seg_dir.as_posix(),
+                           product=product, git=git)  # fmt: skip
+    path.with_suffix(".json").write_text(
+        json.dumps({"summary": summary, "product": product, "git": git}, indent=1),
+        encoding="utf-8",
+    )
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
 def ed_report(
     run: Annotated[Path, typer.Option("--run", help="runs/<ED model run>")],
     stage: Annotated[str, typer.Option("--stage", help="dev, then test.")] = "dev",
