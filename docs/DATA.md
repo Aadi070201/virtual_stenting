@@ -15,7 +15,7 @@ repository.** All data lives under the git-ignored `data/` folder.
 | CONTRAST | Dryad doi:10.5061/dryad.f76nv (Zenodo record 4992130), `CONTRAST.tgz` | CC0 1.0; cite Johnson et al., JACC Cardiovasc Interv 2016 | `data/raw/contrast/` | rest / contrast / adenosine pressures (P4e; no condition markers, not used yet) | downloaded and MD5-verified (P4e) |
 | ARCADE | Zenodo record 10390295 (DOI 10.5281/zenodo.10390295), `arcade.zip` | CC0 1.0 (Zenodo licence `cc-zero`) | `data/raw/arcade/` | vessel segmentation (`syntax` task), stenosis overlays (`stenosis` task) | downloaded and verified (M5) |
 | CardioSYNTAX | Zenodo record 14005818 (DOI 10.5281/zenodo.14005818), `all.json`, `three_experts.json`, zip parts `0.zip`–`9.zip` | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Ponomarchuk et al., WACV 2025 | `data/raw/cardiosyntax/` | external check against SYNTAX per side (P4o) | metadata and parts 0, 9 downloaded and MD5-verified (2026-11-03) |
-| CARDIAG | Zenodo record 19958730 (DOI 10.5281/zenodo.19958730), `CARDIAG.zip` (not `models.zip`) | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Lau et al., arXiv:2607.22139 | `data/raw/cardiag/` | true pixel size (SID, SOD, imager spacing), SYNTAX segment masks, catheter masks (planned; pre-registration before any model is run) | downloading (2026-11-03) |
+| CARDIAG | Zenodo record 19958730 (DOI 10.5281/zenodo.19958730), `CARDIAG.zip` (not `models.zip`) | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Lau et al., arXiv:2607.22139 | `data/raw/cardiag/` | true pixel size (SID, SOD, imager spacing), SYNTAX segment masks, catheter masks (planned; pre-registration before any model is run) | downloaded, MD5-verified and listed (2026-11-03); not extracted |
 | X-ray angiography and SYNTAX (Figshare) | Figshare doi:10.6084/m9.figshare.25801447.v1, `Total Samples.rar` | CC BY 4.0 (Figshare licence field) | `data/raw/syntax_xray/` | not used: every patient has SYNTAX > 0 and a lesion > 70% (no normal patients), 3 frames per projection, no pixel size | downloaded, MD5-verified, labels inspected (2026-11-03) |
 
 ## Synthetic vessels v1
@@ -280,7 +280,7 @@ the frames and label files are extracted.
   partners; five cardiology centres in northern Poland; Siemens Axiom Artis. Zenodo
   doi:10.5281/zenodo.19958730, CC BY 4.0 (licence field checked 2026-11-03). Code (MIT):
   github.com/cvlab-ai/cardiag-benchmark (not used).
-- **Content** (from the record and the paper; the archive not yet opened):
+- **Content** (from the record, the paper and the archive's file list; 645 sample folders, each with `img.png` (512 × 512), `metadata.json` (SID, SOD, spacing, angles, keyframe index, hashed patient and centre), `binary.png`, `catheter.png`, `narrowings.png`, `uncertainty.png`, `background.png`, one mask per SYNTAX segment shown, `other_keyframes/`; the authors' `train/val/test_split.txt`):
   - 644 annotated frames of 114 patients, one frame per projection at good opacification,
     with up to 30 earlier and 10 later frames;
   - per frame: SYNTAX segment masks (26 classes; three interventional cardiologists, AngioTagger
