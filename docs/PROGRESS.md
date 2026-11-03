@@ -1485,3 +1485,18 @@ external test. E remains the final word.
 - P4k-B test patients (reported once), the frame-rate test (H, with the TIMI frame count per
   frame rate), the detector and vessel-identity encoder comparisons (GPU), then AngioCAD (J).
 - Memory: training with CUDA commits ~10 GB on Windows; jobs stay one per queue.
+
+**Later the same day**
+- **M2b:** `tcn5` chosen (synthetic validation 99 / 98 / 92 / 80% at 7.5 / 10 / 15 / 30 fps;
+  `gru` 89%, `transformer` 77%). On real CADICA runs it transfers far better than M2 (4.5 ED
+  frames per run, median 60 bpm), but the P4l gate kept M0.
+- **D71:** the gate itself fails against the truth on synthetic runs (true ED frames 1.17, M0
+  0.86; the more accurate method has the lower ratio on 43% of runs). It favours M0 by
+  construction. M0 stays; the next decision needs expert-labelled or ECG-gated real runs.
+- **P4k-B test (once):** trunk 77%, lesion-seeking 82% (development −4.6, test +5): no
+  reliable gain; not adopted.
+- **P4k-H (new seeds, once):** every P7 target met; image-based ED within ±1 frame 74 / 88 /
+  82 / 77% by frame rate; the time-based rule does not fire.
+- **P4k-I:** TIMI frame count median |error| 0.5–1.0 frames at every frame rate.
+- GPU: the MiT-B2 detector resumes from epoch 15 (best validation Dice 0.344 so far, ResNet34
+  0.31), then the remaining encoders.
