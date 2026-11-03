@@ -1920,6 +1920,62 @@ def train_ed(
 
 
 @app.command()
+def ed_report(
+    run: Annotated[Path, typer.Option("--run", help="runs/<ED model run>")],
+    stage: Annotated[str, typer.Option("--stage", help="dev, then test.")] = "dev",
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
+        "data/raw/cadica"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """Learned ED frames (M2) vs the product's (M0), P4l: synthetic ±1 frame per frame rate;
+    for development also beat-to-beat reproducibility on CADICA runs →
+    reports/ed_model_dev.md, then reports/ed_model.md (synthetic test runs, once)."""
+    import json
+
+    from vstent.config import git_info, load_config
+    from vstent.imaging.ed_model import CONFIG_FILENAME, EdTrainConfig
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+    from vstent.validation import ed_eval
+
+    if stage not in ("dev", "test"):
+        raise typer.BadParameter("--stage is dev or test")
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    cfg = load_config(run / CONFIG_FILENAME, EdTrainConfig)
+    synthetic = ed_eval.synthetic_scores(run, "val" if stage == "dev" else "test", cfg.data_dir)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    real = None
+    if stage == "dev":
+        from vstent.data.cadica import load_lesion_boxes, load_selected_runs
+        from vstent.validation.stenosis_grading import lesion_tracks, patient_split
+
+        split = patient_split([t.patient for t in lesion_tracks(load_lesion_boxes(raw_dir))])
+        runs = [r for r in load_selected_runs(raw_dir) if split[r.patient] == "dev"]
+        typer.echo(f"{len(runs)} CADICA development runs …")
+
+        def progress(k, n):
+            if k % 10 == 0 or k == n:
+                typer.echo(f"  {k} / {n} runs")
+
+        rows = ed_eval.real_rows(runs, str(seg_dir), str(run),
+                                 ed_eval.REAL_DIR / f"{run.name}_dev.json", workers=workers,
+                                 progress=progress)  # fmt: skip
+        real = ed_eval.summarise_real(rows)
+    name = "ed_model_dev.md" if stage == "dev" else "ed_model.md"
+    path = ed_eval.write_report(report_dir / name, stage=stage, synthetic=synthetic, real=real,
+                                model=run.as_posix(), seg_model=seg_dir.as_posix(),
+                                git=git)  # fmt: skip
+    path.with_suffix(".json").write_text(
+        json.dumps({"synthetic": synthetic, "real": real, "git": git}, indent=1), encoding="utf-8"
+    )
+    if real is not None:
+        typer.echo("Choice: {} ({})".format(*ed_eval.choose(synthetic, real)))
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
 def stent_check(
     stage: Annotated[str, typer.Option("--stage", help="dev, then test.")],
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,

@@ -39,6 +39,12 @@ def _segmenter(seg_dir: str):
     return _SEG
 
 
+def small_frames(frames: np.ndarray) -> np.ndarray:
+    """(T, 128, 128) uint8: a run's frames area-resized for the ED model (training and real
+    runs alike)."""
+    return np.stack([cv2.resize(f, (SIZE, SIZE), interpolation=cv2.INTER_AREA) for f in frames])
+
+
 def make_case(seed: int, split: str, seg_dir: str, out_dir: str | Path = OUT_DIR) -> int:
     """Both runs of one case; returns the number of runs written (0 if already there)."""
     from vstent.imaging.cardiac import ED_AREA_FRACTION, ed_from_spread
@@ -68,9 +74,7 @@ def make_case(seed: int, split: str, seg_dir: str, out_dir: str | Path = OUT_DIR
         rf = analyse_frames(loaded, seg.predict)
         op = rf.opacification
         m0 = ed_from_spread(rf.spread, op.smoothed, loaded.frame_time_ms)
-        small = np.stack([cv2.resize(f, (SIZE, SIZE), interpolation=cv2.INTER_AREA)
-                          for f in frames])  # fmt: skip
-        np.savez_compressed(path, frames=small, ed=np.array(cc.ed_frames(k), int),
+        np.savez_compressed(path, frames=small_frames(frames), ed=np.array(cc.ed_frames(k), int),
                             well=op.smoothed >= ED_AREA_FRACTION * op.smoothed.max(),
                             m0=np.array(m0.frames, int), fps=float(cc.runs[k].fps))  # fmt: skip
         written += 1
