@@ -24,7 +24,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from vstent.imaging.centerline import main_trunk_endpoints, target_endpoints
+from vstent.imaging.centerline import branch_ends, main_trunk_endpoints, target_endpoints
 from vstent.imaging.image_io import RunInput, read_run, read_run_bytes
 from vstent.imaging.qca import QCAResult
 from vstent.imaging.segment import THRESHOLD
@@ -228,6 +228,42 @@ def auto_path(prob: np.ndarray, mm_per_px: float | None) -> tuple[tuple[int, int
     main trunk, at most :data:`AUTO_PATH_MM` (at the pixel size; 0.30 mm assumed if unknown)."""
     a, b = main_trunk_endpoints(prob >= THRESHOLD, AUTO_PATH_MM / (mm_per_px or 0.30))
     return tuple(map(int, a)), tuple(map(int, b))
+
+
+SEEK_MIN_MM = 30.0  # P4k-B: candidate paths at least this long
+SEEK_MIN_DS = 50.0  # ... chosen over the main trunk only with a lesion this deep
+SEEK_MIN_REF_MM = 2.0  # ... where the reference diameter is at least this (FAVOR II)
+
+
+def lesion_score(qca: QCAResult, min_ref_mm: float = SEEK_MIN_REF_MM) -> float:
+    """The path's deepest lesion (%DS) where the reference diameter is ≥ ``min_ref_mm``
+    (0 if none)."""
+    s_mm = m_to_mm(qca.profile.s)
+    ref_mm = 2e3 * np.broadcast_to(qca.profile.reference_radius(), s_mm.shape)
+    deep = [float(les.max_ds_pct) for les in qca.profile.lesions()
+            if np.interp(m_to_mm(les.s_mld), s_mm, ref_mm) >= min_ref_mm]  # fmt: skip
+    return max(deep, default=0.0)
+
+
+def seeking_path(prob: np.ndarray, mm_per_px: float | None, measure) -> tuple[tuple, tuple, float]:
+    """P4k-B's lesion-seeking path: from the tree's proximal end to every vessel end ≥
+    :data:`SEEK_MIN_MM` away, each measured with ``measure(start, end)`` (the product's
+    :func:`~vstent.inference.pipeline.analyse_vessel`); the one with the highest
+    :func:`lesion_score` if it is ≥ :data:`SEEK_MIN_DS`, else the main trunk
+    (:func:`auto_path`). Returns (start, end, score)."""
+    a, ends = branch_ends(prob >= THRESHOLD, SEEK_MIN_MM / (mm_per_px or 0.30))
+    best, best_score = None, -1.0
+    for e in ends:
+        try:
+            score = lesion_score(measure(a, e).qca)
+        except ValueError:
+            continue
+        if score > best_score:
+            best, best_score = e, score
+    if best is not None and best_score >= SEEK_MIN_DS:
+        return tuple(map(int, a)), tuple(map(int, best)), best_score
+    start, end = auto_path(prob, mm_per_px)
+    return start, end, max(best_score, 0.0)
 
 
 @dataclass(frozen=True)

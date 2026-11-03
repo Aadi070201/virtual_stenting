@@ -333,3 +333,52 @@ def test_vessel_3d_tube_coloured_by_ffr_with_lesions_and_stent():
     sleeves = [t for t in fig2.data if t.type == "mesh3d" and t.opacity is not None]
     assert len(sleeves) == 1 and sleeves[0].name.startswith("Stent 3.00 × 16")
     assert fig2.data[0].intensity[-1] > tube.intensity[-1]  # better FFR after the stent
+
+
+def _tree_with_branch_lesion() -> np.ndarray:
+    import cv2
+
+    img = np.zeros((260, 420), np.uint8)
+    for k, x in enumerate(range(20, 380, 30)):  # a healthy trunk tapering 17 → 13 px
+        cv2.line(img, (x, 60), (x + 30, 60), 1, 17 - (k * 4) // 12)
+    a, b = np.array([150.0, 60.0]), np.array([330.0, 240.0])  # a branch, 11 px wide
+    for t0 in np.linspace(0, 0.95, 20):
+        p, q = a + (b - a) * t0, a + (b - a) * (t0 + 0.05)
+        w = 3 if 0.5 <= t0 < 0.6 else 11  # a tight lesion halfway along the branch
+        cv2.line(img, tuple(map(int, p)), tuple(map(int, q)), 1, w)
+    return img.astype(float)
+
+
+def test_lesion_seeking_path_takes_the_branch_with_the_lesion():
+    """P4k-B: the trunk is healthy, the branch has a ≥ 50% lesion where the vessel is ≥ 2 mm:
+    the seeking path goes down the branch; without a lesion it keeps the trunk."""
+    from vstent.imaging.centerline import branch_ends
+    from vstent.inference.pipeline import analyse_vessel
+    from vstent.physics.solver import PhysicsParams
+    from vstent.validation.target_path import crosses
+
+    prob = _tree_with_branch_lesion()
+    a, ends = branch_ends(prob >= 0.5, 30.0 / 0.30)
+    assert a[1] < 40 and len(ends) == 2  # the trunk's wide end; the trunk's and the branch's
+
+    def measure(s, e):
+        return analyse_vessel(prob, s, e, params=PhysicsParams(), mm_per_px=0.30)
+
+    trunk = guided.auto_path(prob, 0.30)
+    assert abs(trunk[1][0] - 60) < 10  # the main trunk stays on the trunk
+    start, end, score = guided.seeking_path(prob, 0.30, measure)
+    assert end[0] > 200 and score >= guided.SEEK_MIN_DS  # down the branch to its end
+    q = measure(start, end).qca
+    assert crosses(q.centerline.points, [(230, 140, 40, 40)])  # the lesion near (row 160, col 240)
+    assert not crosses(measure(*trunk).qca.centerline.points, [(230, 140, 40, 40)])
+    healthy = prob.copy()
+    healthy[130:200, 200:290] = 0
+    import cv2
+
+    cv2.line(healthy, (150, 60), (330, 240), 1.0, 11)  # the branch without the lesion
+
+    def measure_healthy(s, e):
+        return analyse_vessel(healthy, s, e, params=PhysicsParams(), mm_per_px=0.30)
+
+    trunk_healthy = guided.auto_path(healthy, 0.30)
+    assert guided.seeking_path(healthy, 0.30, measure_healthy)[:2] == trunk_healthy

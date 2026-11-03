@@ -378,6 +378,20 @@ def main_trunk_endpoints(
     return a, _walk_trunk(graph, width, a, {a}, max_length_px)
 
 
+def branch_ends(
+    mask: np.ndarray, min_length_px: float = 0.0, min_spur_px: float = MIN_SPUR_PX
+) -> tuple[Pixel, list[Pixel]]:
+    """The vessel tree's proximal end (:func:`proximal_end`) and every skeleton end of the same
+    tree at least ``min_length_px`` of path away from it, nearest first (P4k-B's candidate
+    paths)."""
+    graph = vessel_graph(mask, min_spur_px)
+    width = distance_transform_edt(clean_mask(mask))
+    a = proximal_end(graph, width)
+    dist = nx.single_source_dijkstra_path_length(graph, a, weight="weight")
+    ends = [n for n, d in dist.items() if n != a and graph.degree(n) == 1 and d >= min_length_px]
+    return a, sorted(ends, key=lambda n: (dist[n], n))
+
+
 def _walk_trunk(graph: nx.Graph, width: np.ndarray, start: Pixel, visited: set,
                 max_length_px: float | None, length: float = 0.0) -> Pixel:  # fmt: skip
     """From ``start``, the widest branch at every fork (avoiding ``visited``) to a vessel end

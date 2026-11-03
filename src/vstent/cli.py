@@ -1920,6 +1920,76 @@ def train_ed(
 
 
 @app.command()
+def target_path(
+    stage: Annotated[str, typer.Option("--stage", help="dev, then test (once).")],
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CADICA folder.")] = Path(
+        "data/raw/cadica"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """The lesion-seeking automatic path vs the main trunk on CADICA's lesion runs (P4k-B):
+    --stage dev applies the pre-registered rule → reports/p4k_target_path_dev.md; --stage test
+    (after the dev decision is committed) → reports/p4k_target_path.md."""
+    import json
+    import subprocess
+
+    from vstent.config import git_info
+    from vstent.data.cadica import load_selected_runs
+    from vstent.imaging.run_analysis import RUN_LEVEL
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE, SegmentationRunner
+    from vstent.inference.product import product_config
+    from vstent.validation import cine_frames as cf
+    from vstent.validation import target_path as tp
+
+    if stage not in ("dev", "test"):
+        raise typer.BadParameter("--stage is dev or test")
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    dev_json = report_dir / "p4k_target_path_dev.json"
+    if stage == "test":
+        tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(dev_json)],
+                                 capture_output=True).returncode == 0  # fmt: skip
+        if not tracked or git["git_dirty"]:
+            typer.echo("The development decision must be committed (and the tree clean) "
+                       "before the test stage.", err=True)  # fmt: skip
+            raise typer.Exit(code=1)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    seg = SegmentationRunner.from_dir(seg_dir)
+    stats = cf.run_stats(load_selected_runs(raw_dir), seg.predict,
+                         cf.AREAS_DIR / f"stats_{seg_dir.name}_{RUN_LEVEL:g}.json",
+                         level=RUN_LEVEL)  # fmt: skip
+    items = tp.run_items(stage, stats, raw_dir)
+    cfg = product_config()
+    typer.echo(f"{len(items)} lesion runs ({stage}) …")
+
+    def progress(k, n):
+        if k % 10 == 0 or k == n:
+            typer.echo(f"  {k} / {n} runs")
+
+    rows = tp.measure_items(items, seg, reader_dir=cfg.lesion_reader,
+                            min_ref_mm=cfg.lesion_min_ref_mm, workers=workers,
+                            progress=progress)  # fmt: skip
+    s = tp.summarise(rows)
+    product = cfg.model_dump()
+    if stage == "dev":
+        sections = tp.section("Development (CADICA development patients)", s, rule=True)
+        name, data = "p4k_target_path_dev.md", {"dev": s, "rows": rows}
+    else:
+        d = json.loads(dev_json.read_text(encoding="utf-8"))["dev"]
+        sections = [*tp.section("Development (CADICA development patients)", d, rule=True), "",
+                    *tp.section("Test (CADICA test patients, once)", s, rule=False)]  # fmt: skip
+        name, data = "p4k_target_path.md", {"dev": d, "test": s, "rows": rows}
+    path = tp.write_report(report_dir / name, sections, product=product,
+                           seg_model=seg_dir.as_posix(), git=git)  # fmt: skip
+    path.with_suffix(".json").write_text(json.dumps({**data, "git": git}, indent=1, default=str),
+                                         encoding="utf-8")  # fmt: skip
+    if stage == "dev":
+        typer.echo(f"Gain {100 * s['gain']:+.1f} points → adopt: {s['adopt']}")
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
 def angiocad_check(
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="AngioCAD folder.")] = Path(
