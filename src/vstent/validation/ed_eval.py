@@ -291,3 +291,94 @@ def write_report(path: str | Path, *, stage: str, synthetic: dict[str, Any],
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+# --- the measure itself, where the truth is known (synthetic runs) ------------------------------
+
+
+def synthetic_measure_run(seed: int, k: int, seg_dir: str, model_dir: str) -> dict[str, Any]:
+    """One synthetic run: the reproducibility of its true ED frames, M0's and M2's, and each
+    method's ±1-frame hits, so the measure can be checked against the truth."""
+    from vstent.imaging.ed_data import FPS_CHOICES, small_frames
+    from vstent.imaging.ed_model import decode, predict
+    from vstent.imaging.image_io import read_run_bytes
+    from vstent.imaging.run_analysis import analyse_frames
+    from vstent.imaging.synthetic_cine import (
+        CineSynthConfig,
+        render_run,
+        run_dicom,
+        sample_cine_case,
+    )
+
+    seg, model = _worker(seg_dir, model_dir)
+    cfg = CineSynthConfig(fps_choices=FPS_CHOICES)
+    cc = sample_cine_case(seed, cfg)
+    frames = render_run(cc, k, probs=False).frames
+    loaded = read_run_bytes(run_dicom(cc, k, frames, cfg), f"case{seed}_run{k}.dcm")
+    rf = analyse_frames(loaded, seg.predict)
+    op = rf.opacification
+    well = op.smoothed >= ED_AREA_FRACTION * op.smoothed.max()
+    fps = float(cc.runs[k].fps)
+    found = {
+        "truth": tuple(cc.ed_frames(k)),
+        "M0": tuple(ed_from_spread(rf.spread, op.smoothed, loaded.frame_time_ms).frames),
+        "M2": decode(predict(model, [{"frames": small_frames(frames), "fps": fps}], "cpu")[0]),
+    }
+    true = [e for e in found["truth"] if well[e]]
+    row: dict[str, Any] = {"seed": seed, "k": k, "fps": fps}
+    for name, f in found.items():
+        row[f"rep_{name}"] = reproducibility(rf.small, f, well)
+        row[f"hits_{name}"] = (sum(any(abs(e - g) <= 1 for g in f) for e in true), len(true))
+    return row
+
+
+def synthetic_measure(
+    seeds,
+    seg_dir: str,
+    model_dir: str,
+    *,
+    workers: int = 1,
+    progress: Callable[[int, int], None] | None = None,
+) -> list[dict]:
+    """:func:`synthetic_measure_run` for both runs of every seed."""
+    tasks = [(int(s), k, str(seg_dir), str(model_dir)) for s in seeds for k in range(2)]
+    if workers <= 1:
+        out = []
+        for i, t in enumerate(tasks, 1):
+            out.append(synthetic_measure_run(*t))
+            if progress:
+                progress(i, len(tasks))
+        return out
+    from concurrent.futures import ProcessPoolExecutor
+
+    for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(var, "1")
+    out = []
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        for i, row in enumerate(pool.map(synthetic_measure_run, *zip(*tasks, strict=True)), 1):
+            out.append(row)
+            if progress:
+                progress(i, len(tasks))
+    return out
+
+
+def summarise_measure(rows: list[dict]) -> dict[str, Any]:
+    """Per method: mean and median ratio, ±1-frame accuracy; and whether runs where a method
+    is more accurate also have a lower ratio."""
+    out: dict[str, Any] = {"runs": len(rows)}
+    for name in ("truth", "M0", "M2"):
+        r = [x[f"rep_{name}"]["ratio"] for x in rows if x[f"rep_{name}"]]
+        hits = sum(x[f"hits_{name}"][0] for x in rows)
+        beats = sum(x[f"hits_{name}"][1] for x in rows)
+        out[name] = {"with_value": len(r), "mean_ratio": float(np.mean(r)) if r else None,
+                     "median_ratio": float(np.median(r)) if r else None,
+                     "share_below_1": float(np.mean(np.array(r) < 1)) if r else None,
+                     "within1": hits / beats if beats else None}  # fmt: skip
+    both = [x for x in rows if x["rep_M0"] and x["rep_M2"]]
+    agree = [np.sign(x["rep_M2"]["ratio"] - x["rep_M0"]["ratio"])
+             == -np.sign(x["hits_M2"][0] - x["hits_M0"][0])
+             for x in both if x["hits_M2"][0] != x["hits_M0"][0]]  # fmt: skip
+    out["paired"] = len(both)
+    out["order_agrees"] = float(np.mean(agree)) if agree else None
+    out["order_runs"] = len(agree)
+    return out

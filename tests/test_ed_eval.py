@@ -62,3 +62,21 @@ def test_summary_and_choice():
     assert ed_eval.choose({"M0": {"rate": 0.95}, "M2": {"rate": 0.93}}, s)[0] == "M0"
     worse = ed_eval.summarise_real([_row("p1", 1, 0.5, 0.9)], n_boot=50)
     assert ed_eval.choose(syn, worse)[0] == "M0"
+
+
+def test_measure_check_summary():
+    def rep(r):
+        return None if r is None else {"pairs": 2, "distance": r, "shifted": 1.0, "ratio": r}
+
+    rows = [
+        {"rep_truth": rep(0.7), "rep_M0": rep(0.9), "rep_M2": rep(0.8),
+         "hits_truth": (4, 4), "hits_M0": (2, 4), "hits_M2": (3, 4)},
+        {"rep_truth": rep(0.8), "rep_M0": rep(1.1), "rep_M2": rep(1.3),
+         "hits_truth": (3, 3), "hits_M0": (2, 3), "hits_M2": (1, 3)},
+        {"rep_truth": rep(0.9), "rep_M0": rep(1.0), "rep_M2": None,
+         "hits_truth": (2, 2), "hits_M0": (2, 2), "hits_M2": (0, 2)},
+    ]  # fmt: skip
+    s = ed_eval.summarise_measure(rows)
+    assert s["truth"]["mean_ratio"] == pytest.approx(0.8) and s["truth"]["share_below_1"] == 1.0
+    assert s["truth"]["within1"] == 1.0 and s["M2"]["with_value"] == 2
+    assert s["paired"] == 2 and s["order_agrees"] == 1.0  # more accurate ↔ lower ratio
