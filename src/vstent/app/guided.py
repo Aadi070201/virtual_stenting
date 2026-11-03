@@ -501,6 +501,41 @@ def overlap_notes(stents: list[Stent]) -> list[str]:
     return out
 
 
+PPG_WINDOW_MM = 20.0  # Collet et al., JACC 2019: the largest FFR drop over any 20 mm
+PPG_FD_PER_MM = 0.0015  # ... length with functional disease: an FFR drop ≥ this per mm
+PPG_FOCAL = 0.78  # angiography-derived (QFR) PPG: Shin et al. 2021; PANDA III
+
+
+def ppg(curves) -> float | None:
+    """Pullback pressure gradient index of the virtual FFR along the path (Collet et al.,
+    JACC 2019): (largest FFR drop over 20 mm ÷ the path's FFR drop + 1 − share of the path
+    with a drop ≥ 0.0015 per mm) ÷ 2. Near 1 focal, near 0 diffuse; ``None`` without a drop.
+    ``curves``: :class:`~vstent.app.core.Curves`."""
+    s_mm = m_to_mm(np.asarray(curves.s, float))
+    f = np.asarray(curves.solver, float)
+    total = float(f[0] - f[-1])
+    length = float(s_mm[-1] - s_mm[0])
+    if total <= 1e-6 or length <= 0:
+        return None
+    ahead = np.interp(np.minimum(s_mm + PPG_WINDOW_MM, s_mm[-1]), s_mm, f)
+    max20 = float(np.max(f - ahead))
+    drop = ffr_drop_per_mm(curves)
+    ds = np.gradient(s_mm)
+    diseased = float(ds[drop >= PPG_FD_PER_MM].sum())
+    return float(np.clip(0.5 * (max20 / total + 1.0 - diseased / length), 0.0, 1.0))
+
+
+def ppg_text(curves) -> str | None:
+    """The disease pattern along the path from :func:`ppg` (research; display only)."""
+    value = ppg(curves)
+    if value is None:
+        return None
+    kind = "focal" if value >= PPG_FOCAL else "diffuse"
+    hint = ("a stent at the lesion should restore most of the FFR" if kind == "focal"
+            else "a stent may not restore the FFR fully")  # fmt: skip
+    return f"Disease pattern: {kind} (PPG {value:.2f}): {hint}."
+
+
 def diffuse_note(post, lesions: list[LesionMark]) -> str | None:
     """Why stenting the marked lesions leaves the FFR low: most of the remaining pressure loss
     is spread along the path. ``post``: :class:`~vstent.app.core.Curves` after stenting."""

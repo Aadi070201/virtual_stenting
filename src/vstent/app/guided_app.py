@@ -471,6 +471,12 @@ def main() -> None:
         if share is not None:
             st.caption(f"Pressure loss: {100 * share:.0f}% at the marked lesions, "
                        f"{100 * (1 - share):.0f}% along the rest of the path")  # fmt: skip
+        pattern = guided.ppg_text(pre) if round(cons.ffr, 2) <= guided.CUTOFF else None
+        if pattern:
+            st.caption(pattern, help="Pullback pressure gradient (Collet et al., JACC 2019) of "
+                       "the virtual FFR along the path; ≥ 0.78 focal (angiography-derived PPG, "
+                       "PANDA III). Research: angiography-derived PPG tends to read disease as "
+                       "more focal than the wire does.")  # fmt: skip
         if q.calibration_assumed:
             st.caption("Pixel size assumed (0.30 mm)", help="Set it under Settings.")
         tr = vessel_contrast(f"{frame_key}:{chosen.frame}:{chosen.start}:{chosen.end}", rf,

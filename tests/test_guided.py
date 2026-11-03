@@ -398,3 +398,17 @@ def test_contrast_text():
     assert "needs the frame rate" in guided.contrast_text(tr, 5, None)
     assert "filling" in guided.contrast_text(tr, 5, None)
     assert "not measured" in guided.contrast_text(None, 5, 33.3)
+
+
+def test_ppg_focal_and_diffuse():
+    """Collet's PPG on virtual pullbacks: a 10 mm focal drop → ~0.95; the same drop spread
+    evenly over 100 mm → ~0.1; no drop → None."""
+    s = np.linspace(0.0, 0.1, 1001)  # m
+    focal = np.interp(s, [0.0, 0.04, 0.05, 0.1], [1.0, 1.0, 0.75, 0.75])
+    diffuse = 1.0 - 2.5 * s
+    p_f = guided.ppg(SimpleNamespace(s=s, solver=focal))
+    p_d = guided.ppg(SimpleNamespace(s=s, solver=diffuse))
+    assert p_f == pytest.approx(0.95, abs=0.01) and p_d == pytest.approx(0.1, abs=0.01)
+    assert "focal" in guided.ppg_text(SimpleNamespace(s=s, solver=focal))
+    assert "diffuse" in guided.ppg_text(SimpleNamespace(s=s, solver=diffuse))
+    assert guided.ppg(SimpleNamespace(s=s, solver=np.ones_like(s))) is None
