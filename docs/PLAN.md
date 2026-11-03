@@ -1186,6 +1186,19 @@ ground truth and a method that need no ECG (`docs/INVENTION_NOTES.md` §8).
 77%. At 15 and 30 fps M2 also misses whole beats (offsets of ±6 frames): its temporal reach,
 29 frames, is under one heartbeat at 30 fps.
 
+**M2 on real runs (development; `reports/ed_model_dev.md`):** the P4l rule keeps **M0**.
+- Beat-to-beat reproducibility on 205 CADICA development runs (10 fps): M0 has a value on 150
+  runs (median 4.2 ED frames per run); M2 on 14.
+- M2 finds about 2 ED frames per run (implied median heart rate 21 bpm; 159 runs outside
+  40–150 bpm). On the 13 paired runs: mean ratio M0 0.93, M2 1.39.
+- Diagnosis (development runs inspected): on every real run M2 fires at frame 12 and at the
+  last two frames (probability ≈ 1), whatever the images show. It learned position-in-run cues
+  of the synthetic runs (padding at the run's ends), not cardiac motion that transfers.
+- The report's "dirty" flag: the reader v2 test had written its report 10 s earlier; the code
+  that ran is the commit shown.
+- Consequence: synthetic-only training does not carry over to real angiograms. M3 (fine-tuning
+  on real runs) is the route; M2b is still run as pre-registered.
+
 **M2b** (pre-registered 2026-11-03, after the M2 development result above and before any M2b
 code or training; development data only):
 - **Same as M2:** data and splits, the per-frame MobileNetV3-Small (64 features + frame
