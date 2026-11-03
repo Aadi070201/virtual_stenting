@@ -1,0 +1,2688 @@
+{
+ "dev": {
+  "runs": 153,
+  "measured": 152,
+  "patients": 21,
+  "changed": 63,
+  "trunk": {
+   "k": 127,
+   "n": 152,
+   "share": 0.8355263157894737,
+   "ci": [
+    0.7684693638513513,
+    0.8860419630565783
+   ]
+  },
+  "seeking": {
+   "k": 120,
+   "n": 152,
+   "share": 0.7894736842105263,
+   "ci": [
+    0.717934551675119,
+    0.8467418872258399
+   ]
+  },
+  "gain": -0.046052631578947345,
+  "only_seeking": 1,
+  "only_trunk": 8,
+  "adopt": false
+ },
+ "test": {
+  "runs": 116,
+  "measured": 116,
+  "patients": 21,
+  "changed": 55,
+  "trunk": {
+   "k": 89,
+   "n": 116,
+   "share": 0.7672413793103449,
+   "ci": [
+    0.6825321924502454,
+    0.8348179851102926
+   ]
+  },
+  "seeking": {
+   "k": 95,
+   "n": 116,
+   "share": 0.8189655172413793,
+   "ci": [
+    0.7390492763673854,
+    0.8784331936242246
+   ]
+  },
+  "gain": 0.051724137931034475,
+  "only_seeking": 12,
+  "only_trunk": 6,
+  "adopt": false
+ },
+ "rows": [
+  {
+   "run": "p1_v2",
+   "patient": "p1",
+   "analysis_frame": 42,
+   "keyframe": 36,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p1\\v2\\input\\p1_v2_00036.png",
+   "boxes": [
+    [
+     265.0,
+     108.0,
+     49.0,
+     68.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 39.46813964843749
+  },
+  {
+   "run": "p1_v3",
+   "patient": "p1",
+   "analysis_frame": 22,
+   "keyframe": 23,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p1\\v3\\input\\p1_v3_00023.png",
+   "boxes": [
+    [
+     275.0,
+     218.0,
+     26.0,
+     32.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 94.20634665697055
+  },
+  {
+   "run": "p1_v10",
+   "patient": "p1",
+   "analysis_frame": 42,
+   "keyframe": 43,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p1\\v10\\input\\p1_v10_00043.png",
+   "boxes": [
+    [
+     287.0,
+     165.0,
+     38.0,
+     49.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 63.29462432861328
+  },
+  {
+   "run": "p1_v11",
+   "patient": "p1",
+   "analysis_frame": 22,
+   "keyframe": 23,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p1\\v11\\input\\p1_v11_00023.png",
+   "boxes": [
+    [
+     274.0,
+     217.0,
+     28.0,
+     32.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 94.20634665697055
+  },
+  {
+   "run": "p6_v5",
+   "patient": "p6",
+   "analysis_frame": 23,
+   "keyframe": 25,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p6\\v5\\input\\p6_v5_00025.png",
+   "boxes": [
+    [
+     300.0,
+     241.0,
+     25.0,
+     48.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 60.81408691406251
+  },
+  {
+   "run": "p6_v6",
+   "patient": "p6",
+   "analysis_frame": 13,
+   "keyframe": 14,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p6\\v6\\input\\p6_v6_00014.png",
+   "boxes": [
+    [
+     164.0,
+     89.0,
+     63.0,
+     23.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 56.907752990722685
+  },
+  {
+   "run": "p7_v5",
+   "patient": "p7",
+   "analysis_frame": 49,
+   "keyframe": 51,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p7\\v5\\input\\p7_v5_00051.png",
+   "boxes": [
+    [
+     266.0,
+     55.0,
+     109.0,
+     69.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 55.769371032714844
+  },
+  {
+   "run": "p7_v6",
+   "patient": "p7",
+   "analysis_frame": 34,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p7\\v6\\input\\p7_v6_00032.png",
+   "boxes": [
+    [
+     249.0,
+     109.0,
+     68.0,
+     62.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 42.912544250488295
+  },
+  {
+   "run": "p7_v9",
+   "patient": "p7",
+   "analysis_frame": 26,
+   "keyframe": 25,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p7\\v9\\input\\p7_v9_00025.png",
+   "boxes": [
+    [
+     234.0,
+     192.0,
+     35.0,
+     31.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 37.843006134033196
+  },
+  {
+   "run": "p7_v10",
+   "patient": "p7",
+   "analysis_frame": 30,
+   "keyframe": 31,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p7\\v10\\input\\p7_v10_00031.png",
+   "boxes": [
+    [
+     81.0,
+     89.0,
+     29.0,
+     27.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 79.46174662709485
+  },
+  {
+   "run": "p8_v11",
+   "patient": "p8",
+   "analysis_frame": 30,
+   "keyframe": 31,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p8\\v11\\input\\p8_v11_00031.png",
+   "boxes": [
+    [
+     248.0,
+     87.0,
+     126.0,
+     36.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 80.73869323730469
+  },
+  {
+   "run": "p8_v13",
+   "patient": "p8",
+   "analysis_frame": 42,
+   "keyframe": 44,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p8\\v13\\input\\p8_v13_00044.png",
+   "boxes": [
+    [
+     198.0,
+     121.0,
+     25.0,
+     28.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 76.59432983398439
+  },
+  {
+   "run": "p9_v1",
+   "patient": "p9",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p9\\v1\\input\\p9_v1_00033.png",
+   "boxes": [
+    [
+     99.0,
+     70.0,
+     76.0,
+     67.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 70.98718202485348
+  },
+  {
+   "run": "p9_v2",
+   "patient": "p9",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p9\\v2\\input\\p9_v2_00027.png",
+   "boxes": [
+    [
+     89.0,
+     142.0,
+     75.0,
+     56.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 86.82292814317599
+  },
+  {
+   "run": "p9_v5",
+   "patient": "p9",
+   "analysis_frame": 40,
+   "keyframe": 41,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p9\\v5\\input\\p9_v5_00041.png",
+   "boxes": [
+    [
+     250.0,
+     107.0,
+     33.0,
+     22.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 53.60355214500776
+  },
+  {
+   "run": "p10_v1",
+   "patient": "p10",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p10\\v1\\input\\p10_v1_00029.png",
+   "boxes": [
+    [
+     86.0,
+     104.0,
+     30.0,
+     46.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 50.73218536376953
+  },
+  {
+   "run": "p10_v3",
+   "patient": "p10",
+   "analysis_frame": 36,
+   "keyframe": 37,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p10\\v3\\input\\p10_v3_00037.png",
+   "boxes": [
+    [
+     67.0,
+     151.0,
+     31.0,
+     82.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 93.25598489516588
+  },
+  {
+   "run": "p10_v6",
+   "patient": "p10",
+   "analysis_frame": 33,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p10\\v6\\input\\p10_v6_00034.png",
+   "boxes": [
+    [
+     10.0,
+     294.0,
+     95.0,
+     87.0
+    ],
+    [
+     36.0,
+     97.0,
+     79.0,
+     49.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 47.64592485254463
+  },
+  {
+   "run": "p10_v7",
+   "patient": "p10",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p10\\v7\\input\\p10_v7_00029.png",
+   "boxes": [
+    [
+     44.0,
+     110.0,
+     73.0,
+     56.0
+    ],
+    [
+     24.0,
+     322.0,
+     81.0,
+     63.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 96.23342288448201
+  },
+  {
+   "run": "p10_v8",
+   "patient": "p10",
+   "analysis_frame": 30,
+   "keyframe": 31,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p10\\v8\\input\\p10_v8_00031.png",
+   "boxes": [
+    [
+     120.0,
+     97.0,
+     51.0,
+     35.0
+    ],
+    [
+     110.0,
+     289.0,
+     39.0,
+     69.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 50.84149932861328
+  },
+  {
+   "run": "p13_v1",
+   "patient": "p13",
+   "analysis_frame": 30,
+   "keyframe": 31,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p13\\v1\\input\\p13_v1_00031.png",
+   "boxes": [
+    [
+     46.0,
+     235.0,
+     28.0,
+     34.0
+    ],
+    [
+     60.0,
+     136.0,
+     48.0,
+     43.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 85.54175567626953
+  },
+  {
+   "run": "p13_v3",
+   "patient": "p13",
+   "analysis_frame": 43,
+   "keyframe": 44,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p13\\v3\\input\\p13_v3_00044.png",
+   "boxes": [
+    [
+     6.0,
+     253.0,
+     34.0,
+     35.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 48.9313850402832
+  },
+  {
+   "run": "p13_v5",
+   "patient": "p13",
+   "analysis_frame": 40,
+   "keyframe": 41,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p13\\v5\\input\\p13_v5_00041.png",
+   "boxes": [
+    [
+     323.0,
+     114.0,
+     54.0,
+     34.0
+    ],
+    [
+     408.0,
+     213.0,
+     47.0,
+     74.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 46.80714797973633
+  },
+  {
+   "run": "p13_v10",
+   "patient": "p13",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p13\\v10\\input\\p13_v10_00033.png",
+   "boxes": [
+    [
+     231.0,
+     163.0,
+     96.0,
+     57.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 62.44483184814453
+  },
+  {
+   "run": "p13_v14",
+   "patient": "p13",
+   "analysis_frame": 28,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p13\\v14\\input\\p13_v14_00027.png",
+   "boxes": [
+    [
+     128.0,
+     222.0,
+     88.0,
+     20.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 96.73552773869409
+  },
+  {
+   "run": "p14_v1",
+   "patient": "p14",
+   "analysis_frame": 25,
+   "keyframe": 26,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p14\\v1\\input\\p14_v1_00026.png",
+   "boxes": [
+    [
+     52.0,
+     199.0,
+     34.0,
+     42.0
+    ],
+    [
+     200.0,
+     249.0,
+     77.0,
+     23.0
+    ],
+    [
+     57.0,
+     121.0,
+     25.0,
+     36.0
+    ],
+    [
+     89.0,
+     225.0,
+     35.0,
+     31.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 78.03565979003906
+  },
+  {
+   "run": "p14_v2",
+   "patient": "p14",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p14\\v2\\input\\p14_v2_00027.png",
+   "boxes": [
+    [
+     27.0,
+     222.0,
+     30.0,
+     70.0
+    ],
+    [
+     70.0,
+     290.0,
+     61.0,
+     27.0
+    ],
+    [
+     188.0,
+     257.0,
+     59.0,
+     44.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 74.7061767578125
+  },
+  {
+   "run": "p14_v10",
+   "patient": "p14",
+   "analysis_frame": 0,
+   "keyframe": 1,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p14\\v10\\input\\p14_v10_00001.png",
+   "boxes": [
+    [
+     184.0,
+     355.0,
+     39.0,
+     42.0
+    ],
+    [
+     182.0,
+     284.0,
+     28.0,
+     65.0
+    ],
+    [
+     208.0,
+     401.0,
+     28.0,
+     32.0
+    ],
+    [
+     238.0,
+     153.0,
+     15.0,
+     25.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 95.4132145521523
+  },
+  {
+   "run": "p15_v1",
+   "patient": "p15",
+   "analysis_frame": 19,
+   "keyframe": 20,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v1\\input\\p15_v1_00020.png",
+   "boxes": [
+    [
+     217.0,
+     283.0,
+     95.0,
+     37.0
+    ],
+    [
+     211.0,
+     109.0,
+     18.0,
+     25.0
+    ],
+    [
+     163.0,
+     121.0,
+     47.0,
+     66.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 69.19184124567236
+  },
+  {
+   "run": "p15_v2",
+   "patient": "p15",
+   "analysis_frame": 31,
+   "keyframe": 30,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v2\\input\\p15_v2_00030.png",
+   "boxes": [
+    [
+     63.0,
+     178.0,
+     64.0,
+     20.0
+    ],
+    [
+     130.0,
+     81.0,
+     79.0,
+     26.0
+    ],
+    [
+     127.0,
+     190.0,
+     73.0,
+     25.0
+    ],
+    [
+     67.0,
+     81.0,
+     63.0,
+     69.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 59.54179763793947
+  },
+  {
+   "run": "p15_v3",
+   "patient": "p15",
+   "analysis_frame": 24,
+   "keyframe": 25,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v3\\input\\p15_v3_00025.png",
+   "boxes": [
+    [
+     177.0,
+     101.0,
+     28.0,
+     34.0
+    ],
+    [
+     173.0,
+     135.0,
+     12.0,
+     47.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 91.10282653226172
+  },
+  {
+   "run": "p15_v4",
+   "patient": "p15",
+   "analysis_frame": 14,
+   "keyframe": 15,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v4\\input\\p15_v4_00015.png",
+   "boxes": [
+    [
+     262.0,
+     108.0,
+     48.0,
+     17.0
+    ],
+    [
+     307.0,
+     136.0,
+     18.0,
+     19.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 44.76247787475586
+  },
+  {
+   "run": "p15_v5",
+   "patient": "p15",
+   "analysis_frame": 19,
+   "keyframe": 21,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v5\\input\\p15_v5_00021.png",
+   "boxes": [
+    [
+     316.0,
+     129.0,
+     15.0,
+     11.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 60.33203124999999
+  },
+  {
+   "run": "p15_v6",
+   "patient": "p15",
+   "analysis_frame": 19,
+   "keyframe": 19,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v6\\input\\p15_v6_00019.png",
+   "boxes": [
+    [
+     243.0,
+     76.0,
+     68.0,
+     17.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 46.589073181152344
+  },
+  {
+   "run": "p15_v7",
+   "patient": "p15",
+   "analysis_frame": 23,
+   "keyframe": 24,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v7\\input\\p15_v7_00024.png",
+   "boxes": [
+    [
+     277.0,
+     58.0,
+     15.0,
+     43.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 95.29251074054858
+  },
+  {
+   "run": "p15_v8",
+   "patient": "p15",
+   "analysis_frame": 18,
+   "keyframe": 14,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p15\\v8\\input\\p15_v8_00014.png",
+   "boxes": [
+    [
+     254.0,
+     122.0,
+     40.0,
+     44.0
+    ],
+    [
+     261.0,
+     177.0,
+     27.0,
+     23.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 51.64960861206056
+  },
+  {
+   "run": "p16_v1",
+   "patient": "p16",
+   "analysis_frame": 19,
+   "keyframe": 20,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v1\\input\\p16_v1_00020.png",
+   "boxes": [
+    [
+     41.0,
+     308.0,
+     41.0,
+     58.0
+    ],
+    [
+     247.0,
+     372.0,
+     66.0,
+     25.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 60.148540496826165
+  },
+  {
+   "run": "p16_v12",
+   "patient": "p16",
+   "analysis_frame": 7,
+   "keyframe": 8,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v12\\input\\p16_v12_00008.png",
+   "boxes": [
+    [
+     191.0,
+     114.0,
+     32.0,
+     38.0
+    ],
+    [
+     306.0,
+     314.0,
+     61.0,
+     44.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 42.87456044132655
+  },
+  {
+   "run": "p16_v13",
+   "patient": "p16",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v13\\input\\p16_v13_00029.png",
+   "boxes": [
+    [
+     70.0,
+     340.0,
+     30.0,
+     28.0
+    ],
+    [
+     260.0,
+     374.0,
+     59.0,
+     22.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 59.80524826049805
+  },
+  {
+   "run": "p16_v14",
+   "patient": "p16",
+   "analysis_frame": 36,
+   "keyframe": 37,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v14\\input\\p16_v14_00037.png",
+   "boxes": [
+    [
+     237.0,
+     173.0,
+     48.0,
+     16.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 53.617454528808594
+  },
+  {
+   "run": "p16_v18",
+   "patient": "p16",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v18\\input\\p16_v18_00027.png",
+   "boxes": [
+    [
+     135.0,
+     333.0,
+     76.0,
+     56.0
+    ],
+    [
+     104.0,
+     205.0,
+     46.0,
+     63.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 69.27200665611444
+  },
+  {
+   "run": "p16_v22",
+   "patient": "p16",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v22\\input\\p16_v22_00029.png",
+   "boxes": [
+    [
+     113.0,
+     308.0,
+     41.0,
+     39.0
+    ],
+    [
+     314.0,
+     326.0,
+     65.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 93.70012053854562
+  },
+  {
+   "run": "p16_v26",
+   "patient": "p16",
+   "analysis_frame": 16,
+   "keyframe": 17,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p16\\v26\\input\\p16_v26_00017.png",
+   "boxes": [
+    [
+     48.0,
+     373.0,
+     43.0,
+     46.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 71.88924601581282
+  },
+  {
+   "run": "p17_v1",
+   "patient": "p17",
+   "analysis_frame": 42,
+   "keyframe": 43,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v1\\input\\p17_v1_00043.png",
+   "boxes": [
+    [
+     155.0,
+     93.0,
+     72.0,
+     47.0
+    ],
+    [
+     222.0,
+     285.0,
+     47.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 94.69187481967924
+  },
+  {
+   "run": "p17_v2",
+   "patient": "p17",
+   "analysis_frame": 34,
+   "keyframe": 36,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v2\\input\\p17_v2_00036.png",
+   "boxes": [
+    [
+     188.0,
+     156.0,
+     18.0,
+     27.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 42.707478670199905
+  },
+  {
+   "run": "p17_v4",
+   "patient": "p17",
+   "analysis_frame": 19,
+   "keyframe": 20,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v4\\input\\p17_v4_00020.png",
+   "boxes": [
+    [
+     178.0,
+     82.0,
+     64.0,
+     48.0
+    ],
+    [
+     241.0,
+     260.0,
+     44.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 90.83914780609142
+  },
+  {
+   "run": "p17_v7",
+   "patient": "p17",
+   "analysis_frame": 21,
+   "keyframe": 21,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v7\\input\\p17_v7_00021.png",
+   "boxes": [
+    [
+     117.0,
+     122.0,
+     38.0,
+     61.0
+    ],
+    [
+     164.0,
+     78.0,
+     73.0,
+     49.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 94.14422650964278
+  },
+  {
+   "run": "p17_v9",
+   "patient": "p17",
+   "analysis_frame": 15,
+   "keyframe": 15,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v9\\input\\p17_v9_00015.png",
+   "boxes": [
+    [
+     66.0,
+     123.0,
+     38.0,
+     61.0
+    ],
+    [
+     124.0,
+     56.0,
+     86.0,
+     49.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 89.15972702907115
+  },
+  {
+   "run": "p17_v12",
+   "patient": "p17",
+   "analysis_frame": 29,
+   "keyframe": 14,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v12\\input\\p17_v12_00014.png",
+   "boxes": [
+    [
+     97.0,
+     104.0,
+     79.0,
+     26.0
+    ],
+    [
+     145.0,
+     294.0,
+     48.0,
+     24.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 53.77313665578075
+  },
+  {
+   "run": "p17_v16",
+   "patient": "p17",
+   "analysis_frame": 34,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v16\\input\\p17_v16_00032.png",
+   "boxes": [
+    [
+     296.0,
+     108.0,
+     39.0,
+     25.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 94.96144079486919
+  },
+  {
+   "run": "p17_v18",
+   "patient": "p17",
+   "analysis_frame": 32,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v18\\input\\p17_v18_00032.png",
+   "boxes": [
+    [
+     94.0,
+     138.0,
+     68.0,
+     41.0
+    ],
+    [
+     164.0,
+     397.0,
+     47.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 76.52555873195823
+  },
+  {
+   "run": "p17_v19",
+   "patient": "p17",
+   "analysis_frame": 31,
+   "keyframe": 31,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p17\\v19\\input\\p17_v19_00031.png",
+   "boxes": [
+    [
+     161.0,
+     139.0,
+     72.0,
+     36.0
+    ],
+    [
+     229.0,
+     326.0,
+     50.0,
+     29.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 67.14294543878314
+  },
+  {
+   "run": "p20_v2",
+   "patient": "p20",
+   "analysis_frame": 35,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v2\\input\\p20_v2_00029.png",
+   "boxes": [
+    [
+     176.0,
+     52.0,
+     25.0,
+     47.0
+    ],
+    [
+     161.0,
+     24.0,
+     24.0,
+     21.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 80.1010349829095
+  },
+  {
+   "run": "p20_v3",
+   "patient": "p20",
+   "analysis_frame": 45,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v3\\input\\p20_v3_00034.png",
+   "boxes": [
+    [
+     245.0,
+     115.0,
+     42.0,
+     59.0
+    ],
+    [
+     166.0,
+     72.0,
+     45.0,
+     16.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 57.74497222900391
+  },
+  {
+   "run": "p20_v4",
+   "patient": "p20",
+   "analysis_frame": 36,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v4\\input\\p20_v4_00027.png",
+   "boxes": [
+    [
+     149.0,
+     58.0,
+     48.0,
+     29.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 77.0902328491211
+  },
+  {
+   "run": "p20_v8",
+   "patient": "p20",
+   "analysis_frame": 35,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v8\\input\\p20_v8_00034.png",
+   "boxes": [
+    [
+     108.0,
+     27.0,
+     51.0,
+     24.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 82.24975585937499
+  },
+  {
+   "run": "p20_v19",
+   "patient": "p20",
+   "analysis_frame": 27,
+   "keyframe": 28,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v19\\input\\p20_v19_00028.png",
+   "boxes": [
+    [
+     143.0,
+     97.0,
+     30.0,
+     40.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 75.76065826416016
+  },
+  {
+   "run": "p20_v21",
+   "patient": "p20",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v21\\input\\p20_v21_00027.png",
+   "boxes": [
+    [
+     202.0,
+     136.0,
+     24.0,
+     44.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 0.0
+  },
+  {
+   "run": "p20_v22",
+   "patient": "p20",
+   "analysis_frame": 33,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p20\\v22\\input\\p20_v22_00027.png",
+   "boxes": [
+    [
+     116.0,
+     56.0,
+     75.0,
+     28.0
+    ],
+    [
+     207.0,
+     88.0,
+     69.0,
+     70.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 69.38113403320312
+  },
+  {
+   "run": "p24_v2",
+   "patient": "p24",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v2\\input\\p24_v2_00033.png",
+   "boxes": [
+    [
+     133.0,
+     165.0,
+     35.0,
+     44.0
+    ],
+    [
+     171.0,
+     177.0,
+     23.0,
+     31.0
+    ],
+    [
+     165.0,
+     140.0,
+     18.0,
+     25.0
+    ],
+    [
+     303.0,
+     257.0,
+     17.0,
+     30.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 56.718952178955064
+  },
+  {
+   "run": "p24_v3",
+   "patient": "p24",
+   "analysis_frame": 33,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v3\\input\\p24_v3_00034.png",
+   "boxes": [
+    [
+     255.0,
+     172.0,
+     47.0,
+     60.0
+    ],
+    [
+     324.0,
+     360.0,
+     16.0,
+     28.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 71.0927963256836
+  },
+  {
+   "run": "p24_v4",
+   "patient": "p24",
+   "analysis_frame": 46,
+   "keyframe": 47,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v4\\input\\p24_v4_00047.png",
+   "boxes": [
+    [
+     110.0,
+     262.0,
+     22.0,
+     77.0
+    ],
+    [
+     309.0,
+     159.0,
+     14.0,
+     33.0
+    ],
+    [
+     376.0,
+     289.0,
+     23.0,
+     24.0
+    ],
+    [
+     157.0,
+     213.0,
+     19.0,
+     27.0
+    ],
+    [
+     115.0,
+     197.0,
+     29.0,
+     55.0
+    ],
+    [
+     133.0,
+     147.0,
+     22.0,
+     50.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 95.53749667563524
+  },
+  {
+   "run": "p24_v5",
+   "patient": "p24",
+   "analysis_frame": 37,
+   "keyframe": 38,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v5\\input\\p24_v5_00038.png",
+   "boxes": [
+    [
+     432.0,
+     307.0,
+     34.0,
+     29.0
+    ],
+    [
+     166.0,
+     310.0,
+     22.0,
+     77.0
+    ],
+    [
+     406.0,
+     204.0,
+     15.0,
+     37.0
+    ],
+    [
+     204.0,
+     261.0,
+     19.0,
+     32.0
+    ],
+    [
+     173.0,
+     247.0,
+     29.0,
+     55.0
+    ],
+    [
+     195.0,
+     194.0,
+     22.0,
+     53.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 87.54456329345703
+  },
+  {
+   "run": "p24_v7",
+   "patient": "p24",
+   "analysis_frame": 46,
+   "keyframe": 47,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v7\\input\\p24_v7_00047.png",
+   "boxes": [
+    [
+     77.0,
+     123.0,
+     40.0,
+     62.0
+    ],
+    [
+     117.0,
+     123.0,
+     61.0,
+     17.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 92.57424296664189
+  },
+  {
+   "run": "p24_v12",
+   "patient": "p24",
+   "analysis_frame": 27,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v12\\input\\p24_v12_00027.png",
+   "boxes": [
+    [
+     394.0,
+     194.0,
+     17.0,
+     46.0
+    ],
+    [
+     174.0,
+     89.0,
+     40.0,
+     41.0
+    ],
+    [
+     179.0,
+     228.0,
+     37.0,
+     68.0
+    ],
+    [
+     222.0,
+     240.0,
+     20.0,
+     38.0
+    ],
+    [
+     215.0,
+     171.0,
+     19.0,
+     54.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 72.41808916280357
+  },
+  {
+   "run": "p24_v15",
+   "patient": "p24",
+   "analysis_frame": 44,
+   "keyframe": 45,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v15\\input\\p24_v15_00045.png",
+   "boxes": [
+    [
+     134.0,
+     142.0,
+     16.0,
+     64.0
+    ],
+    [
+     139.0,
+     118.0,
+     24.0,
+     24.0
+    ],
+    [
+     177.0,
+     119.0,
+     19.0,
+     25.0
+    ],
+    [
+     310.0,
+     318.0,
+     18.0,
+     27.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 94.10125130407062
+  },
+  {
+   "run": "p24_v16",
+   "patient": "p24",
+   "analysis_frame": 37,
+   "keyframe": 38,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v16\\input\\p24_v16_00038.png",
+   "boxes": [
+    [
+     129.0,
+     165.0,
+     55.0,
+     18.0
+    ],
+    [
+     82.0,
+     188.0,
+     39.0,
+     83.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 58.151995908526956
+  },
+  {
+   "run": "p24_v18",
+   "patient": "p24",
+   "analysis_frame": 32,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v18\\input\\p24_v18_00032.png",
+   "boxes": [
+    [
+     165.0,
+     155.0,
+     25.0,
+     25.0
+    ],
+    [
+     146.0,
+     332.0,
+     22.0,
+     61.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 45.57062911987304
+  },
+  {
+   "run": "p24_v19",
+   "patient": "p24",
+   "analysis_frame": 52,
+   "keyframe": 46,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v19\\input\\p24_v19_00046.png",
+   "boxes": [
+    [
+     136.0,
+     171.0,
+     30.0,
+     67.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 58.03901290893554
+  },
+  {
+   "run": "p24_v22",
+   "patient": "p24",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v22\\input\\p24_v22_00029.png",
+   "boxes": [
+    [
+     125.0,
+     155.0,
+     26.0,
+     106.0
+    ],
+    [
+     313.0,
+     343.0,
+     14.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 67.0374298095703
+  },
+  {
+   "run": "p24_v23",
+   "patient": "p24",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p24\\v23\\input\\p24_v23_00033.png",
+   "boxes": [
+    [
+     329.0,
+     278.0,
+     55.0,
+     50.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 95.62636538220154
+  },
+  {
+   "run": "p26_v1",
+   "patient": "p26",
+   "analysis_frame": 20,
+   "keyframe": 21,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p26\\v1\\input\\p26_v1_00021.png",
+   "boxes": [
+    [
+     246.0,
+     89.0,
+     39.0,
+     24.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 40.345100402832024
+  },
+  {
+   "run": "p26_v2",
+   "patient": "p26",
+   "analysis_frame": 28,
+   "keyframe": 28,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p26\\v2\\input\\p26_v2_00028.png",
+   "boxes": [
+    [
+     210.0,
+     89.0,
+     50.0,
+     26.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": false,
+   "changed": true,
+   "score": 64.00672149658205
+  },
+  {
+   "run": "p30_v1",
+   "patient": "p30",
+   "analysis_frame": 18,
+   "keyframe": 18,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v1\\input\\p30_v1_00018.png",
+   "boxes": [
+    [
+     357.0,
+     189.0,
+     64.0,
+     30.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 75.61662292480467
+  },
+  {
+   "run": "p30_v2",
+   "patient": "p30",
+   "analysis_frame": 16,
+   "keyframe": 17,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v2\\input\\p30_v2_00017.png",
+   "boxes": [
+    [
+     238.0,
+     65.0,
+     62.0,
+     35.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 71.95499420166016
+  },
+  {
+   "run": "p30_v3",
+   "patient": "p30",
+   "analysis_frame": 13,
+   "keyframe": 14,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v3\\input\\p30_v3_00014.png",
+   "boxes": [
+    [
+     207.0,
+     65.0,
+     57.0,
+     41.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 73.44658660888673
+  },
+  {
+   "run": "p30_v5",
+   "patient": "p30",
+   "analysis_frame": 22,
+   "keyframe": 23,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v5\\input\\p30_v5_00023.png",
+   "boxes": [
+    [
+     230.0,
+     137.0,
+     29.0,
+     47.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 49.38344192504882
+  },
+  {
+   "run": "p30_v6",
+   "patient": "p30",
+   "analysis_frame": 17,
+   "keyframe": 18,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v6\\input\\p30_v6_00018.png",
+   "boxes": [
+    [
+     244.0,
+     141.0,
+     23.0,
+     23.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 51.08258056640626
+  },
+  {
+   "run": "p30_v7",
+   "patient": "p30",
+   "analysis_frame": 13,
+   "keyframe": 14,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p30\\v7\\input\\p30_v7_00014.png",
+   "boxes": [
+    [
+     212.0,
+     97.0,
+     66.0,
+     39.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 80.22751617431642
+  },
+  {
+   "run": "p32_v3",
+   "patient": "p32",
+   "analysis_frame": 46,
+   "keyframe": 47,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v3\\input\\p32_v3_00047.png",
+   "boxes": [
+    [
+     160.0,
+     129.0,
+     40.0,
+     82.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 94.32609823434464
+  },
+  {
+   "run": "p32_v4",
+   "patient": "p32",
+   "analysis_frame": 37,
+   "keyframe": 38,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v4\\input\\p32_v4_00038.png",
+   "boxes": [
+    [
+     298.0,
+     175.0,
+     58.0,
+     59.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 49.56832866899414
+  },
+  {
+   "run": "p32_v8",
+   "patient": "p32",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v8\\input\\p32_v8_00027.png",
+   "boxes": [
+    [
+     253.0,
+     222.0,
+     30.0,
+     65.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 96.85708971859411
+  },
+  {
+   "run": "p32_v9",
+   "patient": "p32",
+   "analysis_frame": 28,
+   "keyframe": 29,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v9\\input\\p32_v9_00029.png",
+   "boxes": [
+    [
+     272.0,
+     220.0,
+     48.0,
+     67.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 96.73023486255381
+  },
+  {
+   "run": "p32_v10",
+   "patient": "p32",
+   "analysis_frame": 43,
+   "keyframe": 40,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v10\\input\\p32_v10_00040.png",
+   "boxes": [
+    [
+     277.0,
+     235.0,
+     43.0,
+     70.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 95.53264612548422
+  },
+  {
+   "run": "p32_v12",
+   "patient": "p32",
+   "analysis_frame": 43,
+   "keyframe": 40,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p32\\v12\\input\\p32_v12_00040.png",
+   "boxes": [
+    [
+     271.0,
+     249.0,
+     45.0,
+     35.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 57.678825378417976
+  },
+  {
+   "run": "p34_v2",
+   "patient": "p34",
+   "analysis_frame": 33,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v2\\input\\p34_v2_00034.png",
+   "boxes": [
+    [
+     141.0,
+     71.0,
+     81.0,
+     33.0
+    ],
+    [
+     142.0,
+     262.0,
+     98.0,
+     41.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 48.803298341513035
+  },
+  {
+   "run": "p34_v4",
+   "patient": "p34",
+   "analysis_frame": 31,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v4\\input\\p34_v4_00032.png",
+   "boxes": [
+    [
+     110.0,
+     82.0,
+     81.0,
+     36.0
+    ],
+    [
+     99.0,
+     254.0,
+     98.0,
+     32.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 83.60369237009566
+  },
+  {
+   "run": "p34_v5",
+   "patient": "p34",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v5\\input\\p34_v5_00033.png",
+   "boxes": [
+    [
+     305.0,
+     136.0,
+     22.0,
+     30.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 0.0
+  },
+  {
+   "run": "p34_v6",
+   "patient": "p34",
+   "analysis_frame": 32,
+   "keyframe": 33,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v6\\input\\p34_v6_00033.png",
+   "boxes": [
+    [
+     321.0,
+     204.0,
+     13.0,
+     29.0
+    ],
+    [
+     291.0,
+     160.0,
+     43.0,
+     44.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 75.07568359375
+  },
+  {
+   "run": "p34_v8",
+   "patient": "p34",
+   "analysis_frame": 42,
+   "keyframe": 43,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v8\\input\\p34_v8_00043.png",
+   "boxes": [
+    [
+     348.0,
+     137.0,
+     25.0,
+     66.0
+    ],
+    [
+     296.0,
+     114.0,
+     52.0,
+     35.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 66.38340759277345
+  },
+  {
+   "run": "p34_v9",
+   "patient": "p34",
+   "analysis_frame": 33,
+   "keyframe": 34,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v9\\input\\p34_v9_00034.png",
+   "boxes": [
+    [
+     299.0,
+     64.0,
+     53.0,
+     28.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 50.23391723632813
+  },
+  {
+   "run": "p34_v10",
+   "patient": "p34",
+   "analysis_frame": 26,
+   "keyframe": 27,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v10\\input\\p34_v10_00027.png",
+   "boxes": [
+    [
+     288.0,
+     69.0,
+     57.0,
+     95.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 42.0115737915039
+  },
+  {
+   "run": "p34_v11",
+   "patient": "p34",
+   "analysis_frame": 23,
+   "keyframe": 24,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p34\\v11\\input\\p34_v11_00024.png",
+   "boxes": [
+    [
+     254.0,
+     153.0,
+     61.0,
+     42.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 0.0
+  },
+  {
+   "run": "p35_v1",
+   "patient": "p35",
+   "analysis_frame": 41,
+   "keyframe": 42,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v1\\input\\p35_v1_00042.png",
+   "boxes": [
+    [
+     240.0,
+     105.0,
+     39.0,
+     86.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 0.0
+  },
+  {
+   "run": "p35_v3",
+   "patient": "p35",
+   "analysis_frame": 25,
+   "keyframe": 26,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v3\\input\\p35_v3_00026.png",
+   "boxes": [
+    [
+     194.0,
+     121.0,
+     49.0,
+     16.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 93.20145999684706
+  },
+  {
+   "run": "p35_v5",
+   "patient": "p35",
+   "analysis_frame": 23,
+   "keyframe": 24,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v5\\input\\p35_v5_00024.png",
+   "boxes": [
+    [
+     269.0,
+     139.0,
+     59.0,
+     66.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 43.84950637817383
+  },
+  {
+   "run": "p35_v6",
+   "patient": "p35",
+   "analysis_frame": 37,
+   "keyframe": 37,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v6\\input\\p35_v6_00037.png",
+   "boxes": [
+    [
+     215.0,
+     122.0,
+     45.0,
+     44.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": false,
+   "score": 59.30491256713868
+  },
+  {
+   "run": "p35_v9",
+   "patient": "p35",
+   "analysis_frame": 27,
+   "keyframe": 28,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v9\\input\\p35_v9_00028.png",
+   "boxes": [
+    [
+     247.0,
+     108.0,
+     63.0,
+     74.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 0.0
+  },
+  {
+   "run": "p35_v11",
+   "patient": "p35",
+   "analysis_frame": 16,
+   "keyframe": 18,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p35\\v11\\input\\p35_v11_00018.png",
+   "boxes": [
+    [
+     117.0,
+     125.0,
+     53.0,
+     16.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 91.72167533410284
+  },
+  {
+   "run": "p36_v3",
+   "patient": "p36",
+   "analysis_frame": 39,
+   "keyframe": 40,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v3\\input\\p36_v3_00040.png",
+   "boxes": [
+    [
+     272.0,
+     133.0,
+     43.0,
+     47.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 56.51912689208983
+  },
+  {
+   "run": "p36_v4",
+   "patient": "p36",
+   "analysis_frame": 35,
+   "keyframe": 36,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v4\\input\\p36_v4_00036.png",
+   "boxes": [
+    [
+     209.0,
+     159.0,
+     44.0,
+     46.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 75.23200988769531
+  },
+  {
+   "run": "p36_v14",
+   "patient": "p36",
+   "analysis_frame": 29,
+   "keyframe": 30,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v14\\input\\p36_v14_00030.png",
+   "boxes": [
+    [
+     227.0,
+     141.0,
+     58.0,
+     78.0
+    ],
+    [
+     216.0,
+     83.0,
+     91.0,
+     35.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 63.06720733642579
+  },
+  {
+   "run": "p36_v18",
+   "patient": "p36",
+   "analysis_frame": 46,
+   "keyframe": 49,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v18\\input\\p36_v18_00049.png",
+   "boxes": [
+    [
+     208.0,
+     49.0,
+     18.0,
+     44.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 35.858286062381005
+  },
+  {
+   "run": "p36_v20",
+   "patient": "p36",
+   "analysis_frame": 30,
+   "keyframe": 40,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v20\\input\\p36_v20_00040.png",
+   "boxes": [
+    [
+     183.0,
+     88.0,
+     60.0,
+     37.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 76.63562774658205
+  },
+  {
+   "run": "p36_v22",
+   "patient": "p36",
+   "analysis_frame": 42,
+   "keyframe": 39,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v22\\input\\p36_v22_00039.png",
+   "boxes": [
+    [
+     223.0,
+     144.0,
+     64.0,
+     65.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 67.5550633050566
+  },
+  {
+   "run": "p36_v24",
+   "patient": "p36",
+   "analysis_frame": 22,
+   "keyframe": 23,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v24\\input\\p36_v24_00023.png",
+   "boxes": [
+    [
+     236.0,
+     156.0,
+     66.0,
+     63.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 66.971305847168
+  },
+  {
+   "run": "p36_v25",
+   "patient": "p36",
+   "analysis_frame": 37,
+   "keyframe": 38,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p36\\v25\\input\\p36_v25_00038.png",
+   "boxes": [
+    [
+     217.0,
+     119.0,
+     49.0,
+     60.0
+    ],
+    [
+     184.0,
+     102.0,
+     33.0,
+     29.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 95.6354284262246
+  },
+  {
+   "run": "p38_v1",
+   "patient": "p38",
+   "analysis_frame": 29,
+   "keyframe": 30,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p38\\v1\\input\\p38_v1_00030.png",
+   "boxes": [
+    [
+     115.0,
+     265.0,
+     38.0,
+     19.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 92.0418082817864
+  },
+  {
+   "run": "p38_v2",
+   "patient": "p38",
+   "analysis_frame": 21,
+   "keyframe": 21,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p38\\v2\\input\\p38_v2_00021.png",
+   "boxes": [
+    [
+     153.0,
+     105.0,
+     33.0,
+     19.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 51.95597738380481
+  },
+  {
+   "run": "p38_v6",
+   "patient": "p38",
+   "analysis_frame": 32,
+   "keyframe": 32,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p38\\v6\\input\\p38_v6_00032.png",
+   "boxes": [
+    [
+     276.0,
+     113.0,
+     23.0,
+     23.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": false,
+   "changed": true,
+   "score": 95.03830811732873
+  },
+  {
+   "run": "p38_v8",
+   "patient": "p38",
+   "analysis_frame": 18,
+   "keyframe": 19,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p38\\v8\\input\\p38_v8_00019.png",
+   "boxes": [
+    [
+     215.0,
+     136.0,
+     40.0,
+     24.0
+    ]
+   ],
+   "trunk": false,
+   "seeking": true,
+   "changed": true,
+   "score": 92.51919504043327
+  },
+  {
+   "run": "p38_v9",
+   "patient": "p38",
+   "analysis_frame": 29,
+   "keyframe": 30,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p38\\v9\\input\\p38_v9_00030.png",
+   "boxes": [
+    [
+     137.0,
+     359.0,
+     21.0,
+     18.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 94.25607346675315
+  },
+  {
+   "run": "p42_v2",
+   "patient": "p42",
+   "analysis_frame": 22,
+   "keyframe": 23,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p42\\v2\\input\\p42_v2_00023.png",
+   "boxes": [
+    [
+     221.0,
+     260.0,
+     83.0,
+     31.0
+    ],
+    [
+     81.0,
+     108.0,
+     96.0,
+     85.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 57.14092391053087
+  },
+  {
+   "run": "p42_v5",
+   "patient": "p42",
+   "analysis_frame": 21,
+   "keyframe": 22,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p42\\v5\\input\\p42_v5_00022.png",
+   "boxes": [
+    [
+     153.0,
+     190.0,
+     103.0,
+     92.0
+    ],
+    [
+     215.0,
+     345.0,
+     122.0,
+     27.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 81.81986999511719
+  },
+  {
+   "run": "p42_v7",
+   "patient": "p42",
+   "analysis_frame": 24,
+   "keyframe": 25,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p42\\v7\\input\\p42_v7_00025.png",
+   "boxes": [
+    [
+     98.0,
+     159.0,
+     94.0,
+     91.0
+    ],
+    [
+     140.0,
+     292.0,
+     136.0,
+     52.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": false,
+   "score": 74.45166157700463
+  },
+  {
+   "run": "p42_v10",
+   "patient": "p42",
+   "analysis_frame": 18,
+   "keyframe": 19,
+   "image": "data\\raw\\cadica\\CADICA\\selectedVideos\\p42\\v10\\input\\p42_v10_00019.png",
+   "boxes": [
+    [
+     281.0,
+     13.0,
+     32.0,
+     24.0
+    ]
+   ],
+   "trunk": true,
+   "seeking": true,
+   "changed": true,
+   "score": 50.62129211425782
+  }
+ ],
+ "git": {
+  "git_commit": "374f3dfb04125979dc08ffa66aa106fffef8bb9f",
+  "git_dirty": false
+ }
+}

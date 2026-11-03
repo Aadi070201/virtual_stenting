@@ -772,6 +772,10 @@ Evaluation:
     the experts did not box: overlaps and crossings read as near-occlusions.
   - The product keeps the main trunk; the user's one-click vessel choice stays.
   - The report's "dirty" flag: docs/PLAN.md was being edited; no code was.
+  - **Test patients (once, `reports/p4k_target_path.md`; 116 runs, 21 patients):** trunk 77%
+    (95% CI 68–83%), lesion-seeking 82% (74–88%), +5 points; it differs on 55 runs (only the
+    seeking path crosses a box on 12, only the trunk on 6). The halves point opposite ways
+    within their intervals: no reliable gain either way. The decision (development) stands.
 
 ### C. Side-branch outflow in the physics (CPU)
 μQFR (Murray's law) lets flow leave through side branches. Here, the flow at s is
