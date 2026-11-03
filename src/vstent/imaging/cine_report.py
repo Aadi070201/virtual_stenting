@@ -36,6 +36,7 @@ from vstent import DISCLAIMER, __version__
 from vstent.config import load_config
 from vstent.imaging.cardiac import ED_AREA_FRACTION, ed_from_ecg, ed_from_spread
 from vstent.imaging.centerline import trace_centerline
+from vstent.imaging.cine import TFC_FPS, timi_frame_count
 from vstent.imaging.flow import (
     LEVEL,
     MAX_RUN_RATIO,
@@ -72,6 +73,16 @@ def _velocity_row(fv, truth: float) -> dict[str, Any]:
     return {"cfv": fv.cfv, "lo": fv.interval[0], "hi": fv.interval[1], "accepted": fv.accepted,
             "reasons": list(fv.reasons), "err": fv.cfv / truth - 1.0 if np.isfinite(fv.cfv)
             else None, "covered": bool(fv.interval[0] <= truth <= fv.interval[1])}  # fmt: skip
+
+
+def _tfc_row(cc, k: int, tr, frame_time_ms: float | None) -> dict[str, Any]:
+    """TIMI frame count along the main vessel (P4k-I): measured vs the front's true transit,
+    both at 30 fps."""
+    t0, t1 = cc.front_time(k, 0.0), cc.front_time(k, float(cc.case.curve_s[0][-1]))
+    true = None if t0 is None or t1 is None else (t1 - t0) * TFC_FPS
+    measured = timi_frame_count(tr, frame_time_ms)
+    err = None if true is None or measured is None else measured - true
+    return {"true": true, "measured": measured, "err": err}
 
 
 def run_case(seed: int, cfg: CineSynthConfig, seg_dir: str) -> dict[str, Any]:
@@ -112,9 +123,10 @@ def run_case(seed: int, cfg: CineSynthConfig, seg_dir: str) -> dict[str, Any]:
         try:
             mask = seg.predict(loaded.frames[rf.analysis_frame]) >= 0.5
             cl = trace_centerline(mask, start, end)
-            fv, _ = rf.velocity(cl, rf.analysis_frame, pixel_distance(loaded.pixel_spacing_mm),
-                                single_view=True)  # fmt: skip
+            fv, tr = rf.velocity(cl, rf.analysis_frame, pixel_distance(loaded.pixel_spacing_mm),
+                                 single_view=True)  # fmt: skip
             r["single"] = _velocity_row(fv, truth)
+            r["tfc"] = _tfc_row(cc, k, tr, loaded.frame_time_ms)
             analysed.append((rf, cl, loaded))
         except ValueError as exc:
             r["failed"] = str(exc)
@@ -208,8 +220,18 @@ def summarise(rows: list[dict]) -> dict[str, Any]:
         sel = [x for x in runs if x["fps"] == fps]
         k, n = map(sum, zip(*[x["image_beats"] for x in sel], strict=True)) if sel else (0, 0)
         e = [abs(x["single"]["err"]) for x in sel if "single" in x and x["single"]["accepted"]]
+        tfc = [x["tfc"] for x in sel if "tfc" in x]
+        te = np.array([t["err"] for t in tfc if t["err"] is not None])
         by_fps[fps] = {"runs": len(sel), "image_beats": _rate(k, n),
-                       "single_median": float(np.median(e)) if e else None}  # fmt: skip
+                       "single_median": float(np.median(e)) if e else None,
+                       "tfc": {"runs": len(tfc), "measured": int(te.size),
+                               "true_seen": sum(t["true"] is not None for t in tfc),
+                               "median_err": float(np.median(te)) if te.size else None,
+                               "median_abs": float(np.median(np.abs(te))) if te.size else None,
+                               "within4": _rate(int((np.abs(te) <= 4).sum()), int(te.size)),
+                               "median_true": float(np.median([t["true"] for t in tfc
+                                                               if t["true"] is not None]))
+                               if any(t["true"] is not None for t in tfc) else None}}  # fmt: skip
 
     def beats(pairs):
         k, n = (sum(p[0] for p in pairs), sum(p[1] for p in pairs))
@@ -286,6 +308,10 @@ def _num(x) -> str:
 
 def _pct(x, digits: int = 0) -> str:
     return "–" if x is None else f"{100 * x:.{digits}f}%"
+
+
+def _tfc(x, sign: bool = False) -> str:
+    return "–" if x is None else (f"{x:+.1f}" if sign else f"{x:.1f}")
 
 
 def write_report(rows, cfg: CineSynthConfig, seeds, git: dict, seg_dir: str,
@@ -375,6 +401,20 @@ def write_report(rows, cfg: CineSynthConfig, seeds, git: dict, seg_dir: str,
         f"{_pct(sg['median_abs'], 1)}; widened-interval coverage {_pct(sg['coverage'])}.",
         f"- Runs rejected by the guards (or not analysable): {_pct(s['rejected_runs'])}. "
         "Reasons seen: " + ("; ".join(s["reasons"]) or "none") + ".",
+        "",
+        "## TIMI frame count along the main vessel (P4k-I)",
+        "",
+        "Frames from contrast entering the path to reaching its end, × 30 / fps (Gibson 1996), "
+        "against the generator's contrast front over the main vessel (also × 30). Runs where "
+        "the front leaves the vessel after the run ends have no truth.",
+        "",
+        "| Frames per second | Runs | Measured (with truth) | Median true TFC | Median error | "
+        "Median |error| | Within ±4 frames |",
+        "|---:|---:|---:|---:|---:|---:|---:|",
+        *(f"| {fps:g} | {v['tfc']['runs']} | {v['tfc']['measured']} of {v['tfc']['true_seen']}"
+          f" | {_tfc(v['tfc']['median_true'])} | {_tfc(v['tfc']['median_err'], True)} | "
+          f"{_tfc(v['tfc']['median_abs'])} | {_pct(v['tfc']['within4'])} |"
+          for fps, v in s["by_fps"].items() if "tfc" in v),
         "",
         "**Limits:**",
         "- The phasic correction assumes the same flow profile family that the generator "

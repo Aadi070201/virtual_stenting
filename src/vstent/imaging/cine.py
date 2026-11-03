@@ -116,6 +116,7 @@ class ContrastTransit:
     n_points: int
     used: np.ndarray = field(default_factory=lambda: np.zeros(0, int))
     filled: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    level: np.ndarray = field(default_factory=lambda: np.zeros(0))  # (T,) path contrast ÷ plateau
 
     @property
     def plausible(self) -> bool:
@@ -172,6 +173,8 @@ def contrast_transit(
     ok = np.isfinite(arrival)
     if ok.sum() < MIN_TRANSIT_POINTS:
         return None
+    seen = plateau >= MIN_CONTRAST
+    level = np.clip(contrast[:, seen] / plateau[seen], 0.0, 1.0).mean(axis=1)
     # a path may run through the inflow (e.g. LAD tip → left main → LCx tip): contrast arrives
     # first there, so the longer side from the earliest (median-smoothed) arrival is used
     first = int(np.argmin(median_filter(np.where(ok, arrival, np.inf), 5, mode="nearest")))
@@ -182,4 +185,47 @@ def contrast_transit(
     dist = np.abs(s[side] - s[first])
     slope, _, low, high = theilslopes(dist, arrival[side], alpha=0.95)
     return ContrastTransit(s, arrival, float(s[first]), float(slope), (float(low), float(high)),
-                           int(side.size), side, filled)  # fmt: skip
+                           int(side.size), side, filled, level)  # fmt: skip
+
+
+TFC_FPS = 30.0  # Gibson's TIMI frame count is counted at 30 frames/s
+TFC_END_POINTS = 3  # arrivals at each end: the median of this many points
+TFC_END_SHARE = 0.05  # the far end's arrival must be seen within this share of the path's end
+
+
+def timi_frame_count(tr: ContrastTransit | None, frame_time_ms: float | None) -> float | None:
+    """TIMI frame count along the path (Gibson 1996): frames from contrast entering the path
+    (the arrival where it enters) to reaching its far end, × 30 / fps. ``None`` without a frame
+    time, without a forward-moving front, or if the arrival at the far end was not seen."""
+    if tr is None or not frame_time_ms or not tr.plausible or tr.used.size < 2 * TFC_END_POINTS:
+        return None
+    side = tr.used  # ordered from the inflow outwards, arrivals seen
+    end_px = tr.s_px[-1] if tr.s_px[side[-1]] >= tr.inflow_px else tr.s_px[0]
+    if abs(tr.s_px[side[-1]] - end_px) > TFC_END_SHARE * tr.s_px[-1]:
+        return None
+    start = float(np.median(tr.arrival[side[:TFC_END_POINTS]]))
+    end = float(np.median(tr.arrival[side[-TFC_END_POINTS:]]))
+    return (end - start) * TFC_FPS * frame_time_ms / 1000.0
+
+
+FULL_LEVEL = 0.8  # the target vessel counts as full from this share of its plateau contrast
+
+
+def path_state(tr: ContrastTransit | None, frame: int) -> str | None:
+    """The target vessel at ``frame``: "filling", "full" or "washing out" (contrast along the
+    path ÷ its plateau, P4k-I); ``None`` without a transit."""
+    if tr is None or tr.level.size == 0 or not 0 <= frame < tr.level.size:
+        return None
+    lv = tr.level
+    peak = int(np.argmax(lv))
+    if lv[frame] >= FULL_LEVEL:
+        return "full"
+    return "filling" if frame < peak else "washing out"
+
+
+def path_filled_share(tr: ContrastTransit | None, frame: int) -> float | None:
+    """The share of the path's points that contrast has reached by ``frame`` (P4k-I)."""
+    if tr is None:
+        return None
+    seen = np.isfinite(tr.arrival)
+    return float((tr.arrival[seen] <= frame).mean()) if seen.any() else None

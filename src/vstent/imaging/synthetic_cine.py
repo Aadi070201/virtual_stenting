@@ -170,6 +170,17 @@ class CineCase:
         pos = np.concatenate([[0.0], np.cumsum(v[:-1] * TIME_STEP_S)])
         return np.interp(np.asarray(t, float), grid, pos, left=0.0)
 
+    def front_time(self, k: int, s_m: float) -> float | None:
+        """When the front reaches arc length ``s_m`` (m) of the main vessel in run ``k`` (s), or
+        ``None`` if not before the run ends (P4k-I: the true TIMI frame count)."""
+        run = self.runs[k]
+        grid = np.arange(run.arrival_s, max(run.end_s, run.arrival_s) + 2 * TIME_STEP_S,
+                         TIME_STEP_S)  # fmt: skip
+        pos = self.front_m(k, grid)
+        if pos[-1] < s_m or grid[np.argmax(pos >= s_m)] > run.end_s:
+            return None
+        return float(grid[np.argmax(pos >= s_m)])
+
     def fade(self, k: int, t: float) -> float:
         run = self.runs[k]
         return float(np.clip(1.0 - (t - run.washout_start_s) / run.washout_s, 0.0, 1.0))

@@ -200,3 +200,42 @@ def test_cine_report_end_to_end(tmp_path, dark_seg_dir):
     assert "clinicians" in md and "Plausible in 2 of 2 runs" in md and "left coronary" in md
     assert (tmp_path / "rep" / "figures" / "cine_frames.png").exists()
     assert (tmp_path / "rep" / "cine.json").exists()
+
+
+def test_timi_frame_count_and_path_state():
+    """P4k-I: the front crosses ~330 px at 12 px per frame → ~27.5 frames at the run's rate,
+    × 30 / fps for the TIMI frame count; the path fills, is full, then washes out."""
+    from vstent.imaging.cine import path_filled_share, path_state, timi_frame_count
+
+    pts, s = sine_centerline((80.0, 20.0), 320.0, amplitude_px=15.0, wavelength_px=300.0)
+    frames = render_cine(SHAPE, [(pts, np.full(s.size, 5.0))], n_frames=50, arrival_frame=6.0,
+                         front_px_per_frame=12.0, washout_frame=40.0, background=0.6,
+                         blur_sigma=1.0, edge_amount=1.0, noise_std=0.01)  # fmt: skip
+    cl = smooth_and_resample(np.round(pts[::8]))
+    tr = contrast_transit(frames, cl)
+    span = (cl.s[-1] - tr.inflow_px) / 12.0
+    assert timi_frame_count(tr, 1000.0 / 30.0) == pytest.approx(span, rel=0.15)
+    assert timi_frame_count(tr, 1000.0 / 15.0) == pytest.approx(2 * span, rel=0.15)
+    assert timi_frame_count(tr, None) is None
+    short = smooth_and_resample(np.round(pts[: len(pts) // 2 : 8]))  # path ends mid-vessel
+    t_short = timi_frame_count(contrast_transit(frames, short), 1000.0 / 30.0)
+    assert t_short == pytest.approx(span / 2, rel=0.25)
+    assert path_state(tr, 12) == "filling" and path_state(tr, 38) == "full"
+    assert path_state(tr, 47) == "washing out" and path_state(None, 3) is None
+    assert path_filled_share(tr, 2) == 0.0 and path_filled_share(tr, 38) == 1.0
+    assert 0.2 < path_filled_share(tr, 20) < 0.7
+    early = contrast_transit(*_run()[:1], cl)  # washout from frame 30: the end never fills
+    assert timi_frame_count(early, 1000.0 / 30.0) is None
+
+
+def test_true_front_time_of_a_synthetic_case():
+    from vstent.imaging.synthetic_cine import CineSynthConfig, sample_cine_case
+
+    cc = sample_cine_case(20300, CineSynthConfig())
+    t0 = cc.front_time(0, 0.0)
+    assert t0 == pytest.approx(cc.runs[0].arrival_s, abs=2e-3)
+    t1 = cc.front_time(0, 0.02)
+    assert t1 is not None and t1 > t0
+    assert float(cc.front_m(0, t1)) == pytest.approx(0.02, abs=1e-3)
+    assert 0.02 / (t1 - t0) == pytest.approx(cc.velocity_m_s, rel=0.8)  # phasic, about v
+    assert cc.front_time(0, 10.0) is None  # never within the run
