@@ -1441,3 +1441,47 @@ external test. E remains the final word.
 - AngioCAD external run (after the decisions).
 - Memory: 15 GB RAM. Jobs now run one per queue, with PID files (two crashes from leftover
   queue loops, fixed).
+
+## 2026-11-03 — P4n test, reader v2 test, ED model on real runs, lesion-seeking path, 3D view, contrast (TIMI), AngioCAD tooling
+
+**What was done**
+- **Guided app:**
+  - 3D vessel view: the measured lumen as a tube along the path, coloured by virtual FFR,
+    lesions marked, stents as sleeves (one view: drawn in the image plane, depth not
+    measured);
+  - contrast along the analysed vessel: its state on the frame (filling / full / washing out)
+    and the TIMI frame count at 30 fps when the frame rate is known (P4k-I, display only).
+- **New tools:** `vstent ed-report` (ED methods per frame rate; beat-to-beat reproducibility on
+  real runs without labels), `vstent target-path` (P4k-B), `vstent angiocad-check` (P4k-J;
+  the labels read from the .xlsx with the standard library).
+- **Docs:** README and CLAUDE.md list every command since P4i, and the product settings layer.
+
+**Results**
+- **P4n test (once):** the thin-vessel guard holds. Lesion-free vessels ≤ 0.80: 20% → 16%;
+  combined distance 0.35 → 0.34. P4m on test patients (first run): post-PCI ≤ 0.80 12%
+  (target ≤ 15%, met), median post-PCI FFR 0.92, plans reaching 0.90 73%, stent on the
+  experts' lesion 82% (target 90%), median stent 26 mm.
+- **Reader v2 test (once):** few false alarms (fresh lesion-free candidates read ≥ 50%: 7%;
+  ARCADE distant candidates 20%, met), but severe lesions still read shallow (70–90%: median
+  46%; 90–98%: 57%; Kemerovo read ≥ 50%: 51%).
+- **ED without an ECG (P4l):**
+  - M2 (synthetic-trained network): 85.7% within ±1 frame on synthetic validation (M0 80.9%),
+    but on real CADICA runs it finds ~2 ED frames per run: it fires at frame 12 and at the last
+    frames whatever the images show (position cues of the synthetic runs). The rule keeps M0.
+  - M2b (pre-registered; amendment 1, disclosed: augmentation dropped because it stopped the
+    model learning): `tcn5` 92.5% on synthetic validation (99 / 98 / 92 / 80% at 7.5 / 10 /
+    15 / 30 fps); `gru` and `transformer` training; then the real-run check.
+- **P4k-B (lesion-seeking path):** not adopted. The main trunk already crosses an expert box
+  on 84% of development lesion runs; the seeking path 79%, because it follows branches the
+  reader over-reads.
+
+**Open issues**
+- Severe lesions read shallow by every method (edges, imaging-chain model, densitometry,
+  readers v1 and v2). Likely causes: visual grades read above QCA, and processed 8-bit exports.
+  Real QCA- or FFR-annotated data would settle it (the user is seeking ECG + FFR data).
+- ED: synthetic-only training does not transfer; M3 (adaptation to real runs, with a patient
+  split between adaptation and evaluation) to be pre-registered after M2b's real result.
+  Expert ED labels (`vstent label-ed`) would give the real test set.
+- P4k-B test patients (reported once), the frame-rate test (H, with the TIMI frame count per
+  frame rate), the detector and vessel-identity encoder comparisons (GPU), then AngioCAD (J).
+- Memory: training with CUDA commits ~10 GB on Windows; jobs stay one per queue.
