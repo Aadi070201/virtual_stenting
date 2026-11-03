@@ -752,6 +752,24 @@ def frame_chart(rf, frame: int) -> go.Figure:
     return fig
 
 
+def contrast_text(tr, frame: int, frame_time_ms: float | None) -> str:
+    """Contrast along the analysed vessel (P4k-I): its state on ``frame`` and the TIMI frame
+    count (Gibson 1996, at 30 fps) if the frame rate is known."""
+    from vstent.imaging.cine import path_state, timi_frame_count
+
+    if tr is None:
+        return "Contrast along the vessel: not measured on this run."
+    parts = [f"Contrast along the vessel: {path_state(tr, frame) or 'unknown'} on frame {frame}"]
+    tfc = timi_frame_count(tr, frame_time_ms)
+    if tfc is not None:
+        parts.append(f"TIMI frame count {tfc:.0f} (at 30 fps)")
+    elif not frame_time_ms:
+        parts.append("TIMI frame count needs the frame rate")
+    else:
+        parts.append("TIMI frame count: the contrast was not seen reaching the end of the path")
+    return " · ".join(parts) + "."
+
+
 def loss_split(pre, lesions: list[LesionMark]) -> float | None:
     """Share of the path's pressure loss (1 − distal FFR) that happens inside the marked
     lesions (``pre``: :class:`~vstent.app.core.Curves`); ``None`` without a loss."""

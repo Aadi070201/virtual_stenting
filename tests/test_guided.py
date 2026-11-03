@@ -382,3 +382,19 @@ def test_lesion_seeking_path_takes_the_branch_with_the_lesion():
 
     trunk_healthy = guided.auto_path(healthy, 0.30)
     assert guided.seeking_path(healthy, 0.30, measure_healthy)[:2] == trunk_healthy
+
+
+def test_contrast_text():
+    from vstent.imaging.cine import ContrastTransit
+
+    s = np.arange(0.0, 40.0, 2.0)
+    arrival = 5.0 + s / 4.0  # 4 px per frame
+    level = np.r_[np.linspace(0, 1, 16), np.ones(4), [0.5, 0.2]]
+    tr = ContrastTransit(s, arrival, 0.0, 4.0, (3.5, 4.5), s.size, np.arange(s.size),
+                         arrival + 2, level)  # fmt: skip
+    text = guided.contrast_text(tr, 17, 1000.0 / 15.0)
+    # ends: the median of 3 points (5.5 and 14.0 frames) → 8.5 frames at 15 fps → 17 at 30
+    assert "full on frame 17" in text and "TIMI frame count 17 (at 30 fps)" in text
+    assert "needs the frame rate" in guided.contrast_text(tr, 5, None)
+    assert "filling" in guided.contrast_text(tr, 5, None)
+    assert "not measured" in guided.contrast_text(None, 5, 33.3)

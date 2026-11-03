@@ -134,6 +134,14 @@ def heartbeats(key: str, _rf, frame: int, start, end, mm_per_px, pa_mmhg, _refer
                          reference_analysis=_reference)  # fmt: skip
 
 
+@st.cache_resource(max_entries=16, show_spinner="Following the contrast along the vessel…")
+def vessel_contrast(key: str, _rf, _centerline, frame: int):
+    try:
+        return _rf.transit(_centerline, frame)
+    except Exception:  # noqa: BLE001 — display only: a run without a measurable transit
+        return None
+
+
 @st.cache_resource(max_entries=16, show_spinner="Estimating the range…")
 def uncertainty(key: str, _profile, pa_mmhg: float, mm_per_px: float, assumed: bool):
     p = _params(pa_mmhg)
@@ -465,6 +473,12 @@ def main() -> None:
                        f"{100 * (1 - share):.0f}% along the rest of the path")  # fmt: skip
         if q.calibration_assumed:
             st.caption("Pixel size assumed (0.30 mm)", help="Set it under Settings.")
+        tr = vessel_contrast(f"{frame_key}:{chosen.frame}:{chosen.start}:{chosen.end}", rf,
+                             q.centerline, chosen.frame)  # fmt: skip
+        st.caption(guided.contrast_text(tr, chosen.frame, run.frame_time_ms),
+                   help="TIMI frame count: frames from contrast entering the path to reaching "
+                   "its end, corrected to 30 fps (Gibson 1996). Display only; the FFR does not "
+                   "use it.")  # fmt: skip
     with right:
         st.plotly_chart(guided.ffr_chart(pre, None, guided.lesion_marks(q, guided.MILD_MIN_DS)),
                         key="ffr_now")  # fmt: skip
