@@ -16,6 +16,7 @@ repository.** All data lives under the git-ignored `data/` folder.
 | ARCADE | Zenodo record 10390295 (DOI 10.5281/zenodo.10390295), `arcade.zip` | CC0 1.0 (Zenodo licence `cc-zero`) | `data/raw/arcade/` | vessel segmentation (`syntax` task), stenosis overlays (`stenosis` task) | downloaded and verified (M5) |
 | CardioSYNTAX | Zenodo record 14005818 (DOI 10.5281/zenodo.14005818), `all.json`, `three_experts.json`, zip parts `0.zip`–`9.zip` | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Ponomarchuk et al., WACV 2025 | `data/raw/cardiosyntax/` | external check against SYNTAX per side (P4o) | metadata and parts 0, 9 downloaded and MD5-verified (2026-11-03) |
 | CARDIAG | Zenodo record 19958730 (DOI 10.5281/zenodo.19958730), `CARDIAG.zip` (not `models.zip`) | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Lau et al., arXiv:2607.22139 | `data/raw/cardiag/` | true pixel size (SID, SOD, imager spacing), SYNTAX segment masks, catheter masks (planned; pre-registration before any model is run) | downloading (2026-11-03) |
+| X-ray angiography and SYNTAX (Figshare) | Figshare doi:10.6084/m9.figshare.25801447.v1, `Total Samples.rar` | CC BY 4.0 (Figshare licence field) | `data/raw/syntax_xray/` | not used: every patient has SYNTAX > 0 and a lesion > 70% (no normal patients), 3 frames per projection, no pixel size | downloaded, MD5-verified, labels inspected (2026-11-03) |
 
 ## Synthetic vessels v1
 
@@ -292,3 +293,21 @@ the frames and label files are extracted.
   `vstent data cardiag` downloads and MD5-checks it; the archive is listed before it is
   extracted, and nothing in it is run. The authors' weights (`models.zip`, 17.9 GB) are not
   downloaded.
+
+## X-ray angiography images and SYNTAX score (Figshare; inspected, not used)
+
+- **Source:** Figshare doi:10.6084/m9.figshare.25801447.v1, "X-Ray Angiography Images and
+  SYNTAX-Score Dataset" (published 2024-09-27), CC BY 4.0 (licence field checked 2026-11-03).
+  `Total Samples.rar`, 740,742,561 bytes, MD5 2c87d8119fee2f557c7dfb7e1e017089 (matches the
+  record). The record's `Frame Selection Function.py` was not downloaded.
+- **Content:** 231 patients (one zip each): per projection three 512 × 512 JPEG frames, the
+  projection name and the segments it shows; per patient the SYNTAX score, dominance and
+  per-lesion SYNTAX details (segments, occlusion, bifurcation, length > 20 mm, calcification).
+  Every patient's SYNTAX is > 0 (median 20; 5 missing) and every patient's occlusion band is
+  "more than 70 %". No pixel size, no cine runs, no ECG, no FFR.
+- **Safety:** the labels are Python pickles. They were never loaded with plain `pickle`: the
+  opcodes were inspected with `pickletools`, then read with an unpickler that refuses every
+  global except `numpy.dtype` and `numpy.core.numeric._frombuffer` (mapped to
+  `np.frombuffer`), which a small frame-index array needs.
+- **Use:** none for now. With no normal patients it can measure only sensitivity, which is
+  already high on P4o and J; specificity is the open problem.
