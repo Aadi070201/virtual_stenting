@@ -1236,6 +1236,16 @@ code or training; development data only):
     35.8%, with a flat loss.
   - The three variants are trained with soft targets, cosine and 40 epochs, without
     augmentation. Everything else is unchanged; the aborted `tcn5` run is not evaluated.
+- **Result (synthetic validation, ±1 frame at 7.5 / 10 / 15 / 30 fps; worst):**
+
+  | | 7.5 | 10 | 15 | 30 | All | Worst |
+  |---|---:|---:|---:|---:|---:|---:|
+  | M2 (`ed_mnv3-20261103-014452`) | 92.2 | 94.7 | 77.1 | 77.2 | 85.7 | 77.1 |
+  | `tcn5` (`ed_m2b_tcn5-20261103-023054`) | 99.0 | 98.2 | 91.7 | 80.2 | 92.5 | **80.2** |
+  | `gru` (`ed_m2b_gru-20261103-025522`) | 97.1 | 97.3 | 88.5 | 73.3 | 89.3 | 73.3 |
+  | `transformer` (`ed_m2b_transformer-20261103-031846`) | 91.3 | 88.5 | 71.9 | 55.4 | 77.2 | 55.4 |
+
+  **Chosen: `tcn5`.** It now stands for "M2" in the P4l choice (real reproducibility vs M0).
 
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
