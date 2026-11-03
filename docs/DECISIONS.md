@@ -1449,3 +1449,37 @@ the rule accepted the trade.
 post-PCI 0.92, plans reaching 0.90 73%, stent on the experts' lesion 82%. The guard holds on
 test patients. Severe lesions remain under-called (70–90%: 37%, 90–98%: 52%).
 
+
+### D71 — ED frames: the label-free reproducibility gate does not measure accuracy; M0 stays until real labels exist (2026-11-03)
+**Finding** (P4l; `reports/ed_model_dev.md`, `reports/ed_m2b/ed_model_dev.md`,
+`reports/ed_measure_check.md`; development data only).
+- **Synthetic validation (±1 frame, worst frame rate):** M0 80.9% (77%); M2 85.7% (77%);
+  M2b `tcn5` 92.5% (80%).
+- **Real CADICA runs:** the P4l rule kept M0 twice, because its beat-to-beat reproducibility
+  ratio was lower (M2: 0.93 vs 1.39 on 13 runs; `tcn5`: 1.04 vs 1.17 on 86 runs).
+- **The gate checked against the truth** (synthetic validation runs):
+  - the true ED frames score a mean ratio of 1.17 (median 0.97);
+  - M0 scores 0.86, `tcn5` 0.99;
+  - where M0 and `tcn5` differ in accuracy, the more accurate one has the lower ratio on only
+    43% of runs.
+
+  The gate rewards the frames where the vessel tree is largest, which is how M0 chooses
+  them. It favours M0 by construction and does not measure ED accuracy.
+- **Real-run plausibility:** neither method is clearly right. M0's median implied heart rate
+  is 100 bpm (13 runs outside 40–150 bpm), consistent with extra beats. `tcn5` gives 60 bpm
+  but 69 runs outside 40–150 bpm, consistent with missed beats. M2 (no `tcn5` changes) fails
+  outright on real runs: position cues of the synthetic runs.
+
+**Decision:**
+- The product keeps M0. The rule's outcome stands as computed; adopting `tcn5` now, after
+  the gate failed, would be a choice made on results.
+- The gate is not used again. The next real-run decision needs a measure checked against the
+  truth: expert-labelled ED frames (`vstent label-ed`, P4l: 60 runs, two readers) or runs with
+  an ECG.
+- Synthetic-only training does not carry over by itself (M2). `tcn5` carries over partly.
+
+**Alternatives:**
+- Adopting `tcn5` on its synthetic accuracy and plausible median heart rate: rejected for
+  now; its real misses are unmeasured.
+- A heart-rate plausibility gate instead: not decided after seeing these numbers; it can be
+  pre-registered with the labelled set.

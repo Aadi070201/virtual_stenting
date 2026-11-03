@@ -1274,6 +1274,11 @@ code or training; development data only):
   - Caveat: the reproducibility measure has not been checked against true ED frames, and M0's
     median of 100 bpm is high for patients at rest. Checking the measure on synthetic runs,
     where the truth is known, comes before relying on it further.
+- **The measure checked** (`reports/ed_measure_check.md`, synthetic validation runs): it does
+  not measure accuracy. The true ED frames score a mean ratio of 1.17, M0 0.86, `tcn5` 0.99,
+  and the more accurate method has the lower ratio on only 43% of discordant runs. The gate
+  favours M0 by construction (D71). The product keeps M0 until expert-labelled or ECG-gated
+  real runs exist.
 
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
