@@ -561,8 +561,19 @@ def main() -> None:
                 st.info(note)
             st.plotly_chart(guided.ffr_chart(pre, post, guided.lesion_marks(q, guided.MILD_MIN_DS)),
                             key="ffr_after")  # fmt: skip
-        with st.expander("Diameter along the path"):
-            st.plotly_chart(core.profile_figure(profile, stented, stents), key="diameters")
+    t3d, tdia = st.tabs(["3D vessel", "Diameter along the path"])
+    with t3d:
+        marks3d = guided.lesion_marks(q, guided.MILD_MIN_DS)
+        fig3d = (guided.vessel_3d(q, post, marks3d, stents, radius_m=stented.r) if post is not None
+                 else guided.vessel_3d(q, pre, marks3d))  # fmt: skip
+        st.plotly_chart(fig3d, key="vessel3d")
+        st.caption(f"The lumen at its measured diameters, coloured by the virtual FFR "
+                   f"{'after the stent (stent in orange)' if post is not None else 'now'}; "
+                   "lesions in red. One view: drawn in the image plane, depth not measured. "
+                   "Drag to turn, scroll to zoom.")  # fmt: skip
+    with tdia:
+        st.plotly_chart(core.profile_figure(profile, stented if post is not None else None,
+                                            stents or None), key="diameters")  # fmt: skip
 
     # 5 · report -------------------------------------------------------------------------------
     st.markdown("#### 5 · Report")

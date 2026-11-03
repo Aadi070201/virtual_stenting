@@ -507,6 +507,120 @@ def ffr_chart(pre, post=None, lesions: list[LesionMark] | None = None) -> go.Fig
     return fig
 
 
+TUBE_SIDES = 24
+TUBE_RINGS = 300  # at most this many rings along the path
+# FFR colours of the 3D lumen: red ≤ 0.75, orange at 0.80, green from 0.85 (range 0.60–1.00)
+FFR_SCALE = ((0.0, HEX["red"]), (0.375, HEX["red"]), (0.5, HEX["orange"]),
+             (0.625, HEX["green"]), (1.0, HEX["green"]))  # fmt: skip
+
+
+def _transport_frames(p: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Unit normals and binormals along a 3D curve ``p`` (n, 3), carried along without twist
+    (parallel transport), so the tube does not wring at bends."""
+    t = np.gradient(p, axis=0)
+    t /= np.maximum(np.linalg.norm(t, axis=1, keepdims=True), 1e-12)
+    ref = np.array([0.0, 0.0, 1.0]) if abs(t[0, 2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    n = np.cross(t[0], ref)
+    n /= np.linalg.norm(n)
+    normals = [n]
+    for ti in t[1:]:
+        m = n - np.dot(n, ti) * ti
+        norm = np.linalg.norm(m)
+        n = m / norm if norm > 1e-9 else n
+        normals.append(n)
+    nn = np.array(normals)
+    return nn, np.cross(t, nn)
+
+
+def tube_mesh(points_mm: np.ndarray, radius_mm: np.ndarray, values: np.ndarray, **kw) -> go.Mesh3d:
+    """A closed-side tube of ``radius_mm`` around ``points_mm`` (n, 3), coloured by ``values``
+    (one per point)."""
+    nn, bb = _transport_frames(points_mm)
+    th = np.linspace(0.0, 2.0 * np.pi, TUBE_SIDES, endpoint=False)
+    ring = points_mm[:, None, :] + radius_mm[:, None, None] * (
+        np.cos(th)[None, :, None] * nn[:, None, :] + np.sin(th)[None, :, None] * bb[:, None, :]
+    )
+    v = ring.reshape(-1, 3)
+    a = np.arange(len(points_mm) - 1)[:, None] * TUBE_SIDES
+    b = np.arange(TUBE_SIDES)[None, :]
+    v00, v01 = (a + b).ravel(), (a + (b + 1) % TUBE_SIDES).ravel()
+    v10, v11 = v00 + TUBE_SIDES, v01 + TUBE_SIDES
+    return go.Mesh3d(x=v[:, 0], y=v[:, 1], z=v[:, 2], i=np.r_[v00, v00], j=np.r_[v10, v11],
+                     k=np.r_[v11, v01], intensity=np.repeat(values, TUBE_SIDES),
+                     flatshading=False, **kw)  # fmt: skip
+
+
+def path_mm(qca: QCAResult, s_m: np.ndarray) -> np.ndarray:
+    """(n, 3) positions (mm) of the arc lengths ``s_m`` (m) on the analysed path, in the image
+    plane: x to the right, y up, z = 0 (one view does not measure depth)."""
+    c = qca.centerline
+    u_c = c.s / c.s[-1] if c.s[-1] > 0 else np.linspace(0, 1, len(c.s))
+    u = np.asarray(s_m, float) / max(float(qca.profile.s[-1]), 1e-12)
+    row, col = np.interp(u, u_c, c.points[:, 0]), np.interp(u, u_c, c.points[:, 1])
+    return np.c_[col * qca.mm_per_px, -row * qca.mm_per_px, np.zeros_like(row)]
+
+
+def vessel_3d(
+    qca: QCAResult,
+    curves,
+    lesions: list[LesionMark] | None = None,
+    stents: list[Stent] | None = None,
+    radius_m: np.ndarray | None = None,
+) -> go.Figure:
+    """The lumen as a 3D tube along the analysed path, coloured by the virtual FFR of
+    ``curves`` (:class:`~vstent.app.core.Curves`; after the stent if ``stents``, with
+    ``radius_m`` the stented radius), the lesions marked and numbered, the stents drawn as
+    see-through sleeves. One view: the tube lies in the image plane (depth not measured)."""
+    s = np.asarray(curves.s, float)
+    r_mm = 1e3 * np.asarray(qca.profile.r if radius_m is None else radius_m, float)
+    idx = np.unique(np.linspace(0, len(s) - 1, min(len(s), TUBE_RINGS)).round().astype(int))
+    p = path_mm(qca, s[idx])
+    ffr = np.asarray(curves.solver, float)[idx]
+    s_mm = m_to_mm(s[idx])
+    fig = go.Figure()
+    fig.add_trace(tube_mesh(p, r_mm[idx], ffr, cmin=0.6, cmax=1.0, colorscale=FFR_SCALE,
+                            colorbar={"title": "FFR", "len": 0.6, "thickness": 12},
+                            hoverinfo="skip", name="Lumen",
+                            lighting={"ambient": 0.55, "diffuse": 0.7, "specular": 0.15},
+                            ))  # fmt: skip
+    fig.add_scatter3d(x=p[:, 0], y=p[:, 1], z=p[:, 2], mode="lines", name="Path",
+                      line={"color": "rgba(60,60,60,0.25)", "width": 2}, showlegend=False,
+                      customdata=np.c_[s_mm, 2.0 * r_mm[idx], ffr],
+                      hovertemplate="%{customdata[0]:.1f} mm · D %{customdata[1]:.2f} mm · "
+                      "FFR %{customdata[2]:.2f}<extra></extra>")  # fmt: skip
+    for st_ in stents or []:
+        lo, hi = m_to_mm(st_.s_start), m_to_mm(st_.s_end)
+        k = np.flatnonzero((s_mm >= lo) & (s_mm <= hi))
+        if len(k) >= 2:
+            sleeve = np.full(len(k), 0.5e3 * st_.diameter * 1.06)
+            fig.add_trace(tube_mesh(p[k], sleeve, np.zeros(len(k)), opacity=0.28,
+                                    colorscale=((0, HEX["orange"]), (1, HEX["orange"])),
+                                    showscale=False, hoverinfo="skip",
+                                    name=f"Stent {m_to_mm(st_.diameter):.2f} × "
+                                    f"{m_to_mm(st_.length):.0f} mm"))  # fmt: skip
+    marks = lesions or []
+    if marks:
+        at = path_mm(qca, np.array([m.at_mm * 1e-3 for m in marks]))
+        lift = np.array([0.0, 0.0, 1.0]) * (1.5 * float(np.max(r_mm)) + 1.0)
+        fig.add_scatter3d(x=at[:, 0] + lift[0], y=at[:, 1] + lift[1], z=at[:, 2] + lift[2],
+                          mode="markers+text", name="Lesions", showlegend=False,
+                          marker={"size": 6, "color": HEX["red"], "symbol": "diamond"},
+                          text=[f"{m.number}: {m.ds_pct:.0f}%" for m in marks],
+                          textposition="top center", textfont={"color": HEX["red"], "size": 13},
+                          hovertext=[f"Lesion {m.number}: {m.ds_pct:.0f}% · MLD {m.mld_mm:.2f} mm"
+                                     f" · {m.length_mm:.1f} mm long" for m in marks],
+                          hoverinfo="text")  # fmt: skip
+    fig.update_layout(
+        height=430, margin={"l": 0, "r": 0, "t": 10, "b": 0}, showlegend=False,
+        scene={"aspectmode": "data", "xaxis": {"title": "x (mm)", "showbackground": False},
+               "yaxis": {"title": "y (mm)", "showbackground": False},
+               "zaxis": {"title": "", "showticklabels": False, "showbackground": False},
+               "camera": {"eye": {"x": 0.0, "y": -0.7, "z": 1.8},
+                          "up": {"x": 0.0, "y": 1.0, "z": 0.0}}},
+    )  # fmt: skip
+    return fig
+
+
 def ffr_drop_per_mm(curves) -> np.ndarray:
     """The FFR lost per mm along the path (1/mm), from a :class:`~vstent.app.core.Curves`."""
     return np.maximum(-np.gradient(curves.solver, m_to_mm(curves.s)), 0.0)

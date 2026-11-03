@@ -296,3 +296,40 @@ def test_ffr_read_where_a_wire_would_sit():
     plain = guided.overlay(img, prob, a.qca)
     shown = guided.overlay(img, prob, a.qca, beyond=a.full_qca)
     assert not np.array_equal(plain, shown)  # the dashed rest and the FFR marker
+
+
+def test_vessel_3d_tube_coloured_by_ffr_with_lesions_and_stent():
+    """The 3D view: a tube of the measured radius along the path, coloured by FFR, lesions
+    marked, a stent drawn as a sleeve over its span."""
+    from vstent.imaging.qca import run_qca
+    from vstent.physics.solver import PhysicsParams
+    from vstent.planning.stent import apply_stents
+
+    prob = np.zeros((120, 400))
+    cols = np.arange(400)
+    half = np.where(np.abs(cols - 200) < 12, 2.5, 6.0)
+    for c in range(20, 380):
+        prob[int(60 - half[c]) : int(60 + half[c]) + 1, c] = 1.0
+    q = run_qca(prob, (60, 25), (60, 375), mm_per_px=0.25)
+    marks = guided.lesion_marks(q)
+    p = PhysicsParams()
+    pre = core.evaluate(q.profile, p, p.pa, p.pv)
+    fig = guided.vessel_3d(q, pre, marks)
+    tube = fig.data[0]
+    n = len(tube.x) // guided.TUBE_SIDES
+    assert len(tube.x) == n * guided.TUBE_SIDES and len(tube.i) == 2 * (n - 1) * guided.TUBE_SIDES
+    pts = guided.path_mm(q, pre.s)
+    assert np.allclose(pts[:, 2], 0.0) and pts[-1, 0] - pts[0, 0] > 80.0  # ~87 mm, image plane
+    xyz = np.c_[tube.x, tube.y, tube.z].reshape(n, guided.TUBE_SIDES, 3)
+    radius = np.linalg.norm(xyz - xyz.mean(axis=1, keepdims=True), axis=2).mean(axis=1)
+    k = int(np.argmin(radius))
+    assert abs(pts[0, 0] + (pts[-1, 0] - pts[0, 0]) * k / (n - 1) - 200 * 0.25) < 4.0  # waist
+    assert tube.intensity[0] > tube.intensity[-1]  # FFR falls along the path
+    assert any(t.type == "scatter3d" and t.text and "1:" in t.text[0] for t in fig.data)
+    st_ = Stent(marks[0].start_mm * 1e-3 - 2e-3, 16e-3, 3e-3)
+    stented = apply_stents(q.profile, [st_])
+    post = core.evaluate(stented, p, p.pa, p.pv, r_micro=pre.r_micro)
+    fig2 = guided.vessel_3d(q, post, marks, [st_], radius_m=stented.r)
+    sleeves = [t for t in fig2.data if t.type == "mesh3d" and t.opacity is not None]
+    assert len(sleeves) == 1 and sleeves[0].name.startswith("Stent 3.00 × 16")
+    assert fig2.data[0].intensity[-1] > tube.intensity[-1]  # better FFR after the stent
