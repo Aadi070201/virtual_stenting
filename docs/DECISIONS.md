@@ -1420,3 +1420,27 @@ It stays an option (`wire: true`).
   larger combined distance.
 - Choosing by eye after seeing the results was rejected. The rule chose.
 
+### D70 — The learned lesion depth only in vessels ≥ 2 mm (2026-11-03)
+**Finding** (pre-registered in docs/PLAN.md, P4n, commit aeab59f; disclosed as found on
+development data after D69; CADICA development patients).
+- **Cause:** reader v2 read narrowings in thin distal segments (reference about 1.6–1.9 mm)
+  as near-occlusions (lumen about 0.17 mm). The pre-PCI FFR fell to ~0.06, and no stent could
+  fix it (the smallest stent is 2.25 mm).
+- **Guard:** the reader's depth is applied only where the candidate's reference diameter is
+  ≥ 2.0 mm (FAVOR II's vessel size); thinner vessels keep the edges' depth.
+
+| D69 pipeline | Without guard | With guard |
+|---|---:|---:|
+| Lesion-free vessels ≤ 0.80 | 19.2% | 15.4% |
+| 50–70 / 70–90 / 90–98% ≤ 0.80 | 35 / 52 / 66% | 32 / 44 / 66% |
+| Combined distance (C3) | 0.2579 | 0.2539 |
+| Post-PCI ≤ 0.80 (planned lesions) | 28% | 23% |
+| Plans reaching 0.90 | 66% | 72% |
+| Median post-PCI FFR (FFR-SEARCH 0.91) | 0.91 | 0.93 |
+
+**Decision:** `configs/product.yaml` `lesion_min_ref_mm: 2.0`. Test patients once (C3 and
+P4m).
+
+**Note:** 70–90% lesions read ≤ 0.80 a little less often (52 → 44%). Some under-call remains;
+the rule accepted the trade.
+

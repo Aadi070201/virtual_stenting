@@ -1097,10 +1097,20 @@ the planner cannot size a stent below 2.25 mm.
 - **Arms (development patients):**
   - D69's pipeline (reader v2 + Murray outflow);
   - the same with the guard.
-- [ ] **Adopt** the guard only if all hold on the development patients:
+- [x] **Adopt** the guard only if all hold on the development patients:
   1. C3's rule still holds against the product before D69;
   2. the combined distance (C3) grows by at most 0.02;
   3. P4m: the share of planned lesions with post-PCI FFR ≤ 0.80 falls.
+
+  **Result: adopted** (D70; `reports/p4k_reader_lesion_cnn_v2-20261102-194645_ref2_dev.md`,
+  `reports/stent_check_ref2_dev.md`).
+  1. Met: lesion-free 19.2% → 15.4%; FAME distance 19.6 → 23.0 points (still within C3's
+     rule).
+  2. Met: combined distance 0.2579 → 0.2539.
+  3. Met: post-PCI ≤ 0.80 28% → 23%.
+
+  Also: plans reaching 0.90 66% → 72%; median post-PCI FFR 0.91 → 0.93; cases below 0.5
+  six → four.
 - [ ] Test patients once for an adopted guard: C3 and P4m.
 
 ## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)

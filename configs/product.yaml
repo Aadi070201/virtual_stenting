@@ -3,3 +3,4 @@
 lesion_reader: models/lesion/lesion_cnn_v2-20261102-194645   # D69 (P4k-C3, end to end)
 outflow: murray          # D69: Murray side-branch outflow, with the learned reader
 wire: false              # D69 supersedes D68 for the product (an option: true)
+lesion_min_ref_mm: 2.0   # D70 (P4n): the learned depth only in vessels >= 2 mm
