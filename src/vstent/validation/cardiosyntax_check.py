@@ -57,8 +57,9 @@ def _ed_model(model_dir: str | None):
 
 
 def run_row(uid: str, side: str, video: Video, raw_dir: str, seg_dir: str,
-            ed_model_dir: str | None) -> dict[str, Any]:  # fmt: skip
-    """One run: the product's measurements and the ED frames of M0 and the learned model."""
+            ed_model_dir: str | None, detail: bool = False) -> dict[str, Any]:  # fmt: skip
+    """One run: the product's measurements and the ED frames of M0 and the learned model (with
+    ``detail``, also the vessel profile, :func:`~vstent.validation.external.profile_of`)."""
     from vstent.imaging.image_io import RunInput
     from vstent.validation.external import product_on_run
 
@@ -67,7 +68,7 @@ def run_row(uid: str, side: str, video: Video, raw_dir: str, seg_dir: str,
         frames = read_video(raw_dir, video)
         run = RunInput(frames, Path(video.path).name, hashlib.sha256(frames.tobytes()).hexdigest(),
                        frame_time_ms=FRAME_TIME_MS, note="CardioSYNTAX run (15 fps)")  # fmt: skip
-        measured, rf = product_on_run(run, seg_dir)
+        measured, rf = product_on_run(run, seg_dir, detail=detail)
         row.update(measured)
         row["ed_m0"] = list(map(int, rf.ed.frames))
         model = _ed_model(ed_model_dir)
@@ -86,12 +87,15 @@ def run_row(uid: str, side: str, video: Video, raw_dir: str, seg_dir: str,
 
 def rows(studies: list[Study], raw_dir: str | Path, seg_dir: str | Path,
          ed_model_dir: str | None, *, cache_file: str | Path = ROWS_FILE, workers: int = 1,
-         progress: Callable[[int, int], None] | None = None) -> list[dict[str, Any]]:  # fmt: skip
-    """:func:`run_row` for every task, cached in ``cache_file`` (saved every 10 runs)."""
+         progress: Callable[[int, int], None] | None = None,
+         task_list: list[tuple[str, str, Video]] | None = None,
+         detail: bool = False) -> list[dict[str, Any]]:  # fmt: skip
+    """:func:`run_row` for every task (or ``task_list``), cached in ``cache_file`` (saved every
+    10 runs)."""
     cache_file = Path(cache_file)
     cache = json.loads(cache_file.read_text(encoding="utf-8")) if cache_file.exists() else {}
     cache_file.parent.mkdir(parents=True, exist_ok=True)
-    all_tasks = tasks(studies)
+    all_tasks = tasks(studies) if task_list is None else task_list
     todo = [t for t in all_tasks if t[2].path not in cache]
     done = 0
 
@@ -105,7 +109,7 @@ def rows(studies: list[Study], raw_dir: str | Path, seg_dir: str | Path,
         if progress:
             progress(len(all_tasks) - len(todo) + done, len(all_tasks))
 
-    args = [(u, side, v, str(raw_dir), str(seg_dir), ed_model_dir) for u, side, v in todo]
+    args = [(u, side, v, str(raw_dir), str(seg_dir), ed_model_dir, detail) for u, side, v in todo]
     if workers <= 1:
         for a in args:
             keep(run_row(*a))

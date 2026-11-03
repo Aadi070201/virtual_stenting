@@ -2063,6 +2063,48 @@ def cardiosyntax_check(
 
 
 @app.command()
+def false_alarms(
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CardioSYNTAX folder.")] = Path(
+        "data/raw/cardiosyntax"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """Where the product's false alarms arise: reading rules on vessel profiles of a sample of
+    P4o's sides (P4p; exploratory, development data; resumable) →
+    reports/p4p_false_alarms_dev.md."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.cardiosyntax import load_studies
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+    from vstent.inference.product import product_config
+    from vstent.validation import cardiosyntax_check as cc
+    from vstent.validation import false_alarms as fa
+
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    studies = load_studies(raw_dir)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    task_list = fa.sample_tasks(studies)
+    typer.echo(f"{len(task_list)} runs …")
+
+    def progress(k, n):
+        if k % 25 == 0 or k == n:
+            typer.echo(f"  {k} / {n} runs")
+
+    rows = cc.rows(studies, raw_dir, seg_dir, None, cache_file=fa.PROFILES_FILE, workers=workers,
+                   progress=progress, task_list=task_list, detail=True)  # fmt: skip
+    summary = fa.summarise(studies, rows)
+    product = product_config().model_dump()
+    path = fa.write_report(report_dir / "p4p_false_alarms_dev.md", summary, product=product,
+                           git=git)  # fmt: skip
+    payload = {"summary": summary, "product": product, "git": git}
+    path.with_suffix(".json").write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
 def angiocad_check(
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="AngioCAD folder.")] = Path(

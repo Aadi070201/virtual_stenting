@@ -1086,6 +1086,17 @@ are reported.
   product as it is (B was not adopted, so G changes no flag); items 4–5 are added later on the
   same cached analysis frames and paths (`data/derived/angiocad/rows.json`), without running
   the product again. Reason: the GPU queue for G and E takes days.
+- [x] **Result, items 1–3** (run once, 2026-11-03; `reports/p4k_angiocad.md`; commit c009897,
+  the same code as P4o; "dirty" only because P4o's new report files were not yet committed):
+  2,650 of 2,726 listed series measured (38 without a frame folder, 38 errors); 816 of 826
+  graded sides (412 patients).
+  1. Sensitivity: significant sides flagged **88%** (416/471); 51–75% 94%, 76–90% 97%,
+     91–99% 95%; total occlusions 75% (124/166). Right 78%, left 95%.
+  2. False alarms: normal sides flagged **81%** (151/187); mild sides 92%.
+  3. Series of normal sides with FFR ≤ 0.80: **31%** of 520 (median 0.89; De Bruyne ≈ 13%).
+
+  As in P4o: high sensitivity, but few normal sides are left unflagged. Items 4–5 wait for G
+  and E.
 
 - [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 
@@ -1155,6 +1166,50 @@ been looked at (`all.json`).
      and from M2b `tcn5` (share within 40–150 bpm; no truth, a plausibility check);
   5. with G decided: the run's predicted side against the authors' tag.
 - Rows are cached per run (resumable); runs that cannot be measured are reported by reason.
+- [x] **Result, items 1–4** (run once, 2026-11-03, commit c009897, clean;
+  `reports/p4o_cardiosyntax.md`): 1,616 of 1,644 runs measured (223 studies, 443 sides; 28
+  ValueError).
+  1. False alarms: SYNTAX-0 sides flagged **93%** (298/320); by a lesion ≥ 50% 93%, by FFR
+     ≤ 0.80 84%.
+  2. Sensitivity: SYNTAX > 0 sides flagged **95%** (117/123); SYNTAX 1–7 100%, 8–14 85%,
+     ≥ 15 100%.
+  3. Runs of SYNTAX-0 sides with FFR ≤ 0.80: **50%** of 1,027 (median 0.81; De Bruyne ≈ 13%).
+  4. ED without an ECG: M0 gives a heart rate on 1,027 runs (median 100 bpm, 88% within
+     40–150); M2b `tcn5` on 1,608 (median 60 bpm, 70% within).
+
+  The product flags almost every side, normal or not: it does not separate SYNTAX 0 from
+  SYNTAX > 0 here. Item 5 waits for G.
+
+  **Exploratory, after the result (post hoc; no decision taken from it):** on SYNTAX-0 runs the
+  share with FFR ≤ 0.80 rises with the automatic path's length (< 40 mm: 4%, n = 147; 40–70:
+  26%; 70–100: 48%; > 100 mm: 64%, n = 612), and so does the share with a marked lesion
+  (22% → 85%). The median path is 113 mm at the assumed 0.30 mm per pixel. The false alarms
+  come from long paths into thin distal vessels, not from the proximal vessel.
+
+## P4p: Where the false alarms arise (added 2026-11-03, after P4o's and J's results; exploratory)
+
+Why: on both external sets the product flags most normal sides (P4o: 93% of SYNTAX-0 sides;
+J: 81% of normal sides), and P4o's rows tie it to long paths into thin vessels. This stage is
+**exploratory, on development data**: CardioSYNTAX parts 0 and 9, already reported once.
+
+- **Sample:** 60 SYNTAX-0 and 40 SYNTAX > 0 sides of P4o's set (seed 0), every run of each,
+  through the product again with each run's vessel profile on a 1 mm grid: lumen and
+  reference diameter, the FFR pullback, and the lesions (`data/derived/cardiosyntax/
+  profiles.json`).
+- **Rules, fixed before the profiles are seen** (re-read from the saved profiles; the product
+  is unchanged):
+  1. the product (every lesion; FFR at the path's end);
+  2. lesions count only where the reference diameter at the narrowest point is ≥ 2 mm;
+  3. the FFR read at the last point with reference ≥ 2 mm, from the whole path's pullback
+     (where a wire would sit, D68's point, without cutting the vessel);
+  4. both at 2 mm (FAVOR II's vessel size);
+  5. both at 1.5 mm (SYNTAX's vessel size).
+- **Reported:** per rule, the false alarms (SYNTAX-0 sides flagged), the sensitivity (SYNTAX
+  > 0 sides flagged), SYNTAX-0 runs with FFR ≤ 0.80, and the side-level AUC (lowest FFR,
+  deepest counted %DS); the marked lesions of SYNTAX-0 runs by reference diameter.
+- [ ] `vstent false-alarms --workers 3` → `reports/p4p_false_alarms_dev.md`.
+- [ ] A product change from this needs its own pre-registration before it is tested:
+  CardioSYNTAX parts not used so far (1–8) and CADICA's C3 rule, run once.
 
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 

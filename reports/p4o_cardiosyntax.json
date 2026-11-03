@@ -1,0 +1,115 @@
+{
+ "summary": {
+  "runs": 1644,
+  "measured": 1616,
+  "studies": 223,
+  "sides": 443,
+  "false_alarm": {
+   "flagged": {
+    "n": 320,
+    "k": 298,
+    "share": 0.93125
+   },
+   "by_marks": {
+    "n": 320,
+    "k": 298,
+    "share": 0.93125
+   },
+   "by_ffr": {
+    "n": 320,
+    "k": 268,
+    "share": 0.8375
+   }
+  },
+  "sensitivity": {
+   "flagged": {
+    "n": 123,
+    "k": 117,
+    "share": 0.9512195121951219
+   },
+   "by_marks": {
+    "n": 123,
+    "k": 117,
+    "share": 0.9512195121951219
+   },
+   "by_ffr": {
+    "n": 123,
+    "k": 110,
+    "share": 0.8943089430894309
+   }
+  },
+  "by_syntax": {
+   "1\u20137": {
+    "n": 65,
+    "k": 65,
+    "share": 1.0
+   },
+   "8\u201314": {
+    "n": 40,
+    "k": 34,
+    "share": 0.85
+   },
+   "\u2265 15": {
+    "n": 18,
+    "k": 18,
+    "share": 1.0
+   }
+  },
+  "by_side": {
+   "left": {
+    "zero": {
+     "n": 146,
+     "k": 143,
+     "share": 0.9794520547945206
+    },
+    "positive": {
+     "n": 77,
+     "k": 77,
+     "share": 1.0
+    }
+   },
+   "right": {
+    "zero": {
+     "n": 174,
+     "k": 155,
+     "share": 0.8908045977011494
+    },
+    "positive": {
+     "n": 46,
+     "k": 40,
+     "share": 0.8695652173913043
+    }
+   }
+  },
+  "zero_runs_ffr": {
+   "n": 1027,
+   "le_080": 0.49756572541382665,
+   "median": 0.8062412657789548
+  },
+  "ed_m0": {
+   "runs": 1616,
+   "with_rate": 1027,
+   "median_bpm": 100.0,
+   "in_range": 0.875365141187926
+  },
+  "ed_m2": {
+   "runs": 1616,
+   "with_rate": 1608,
+   "median_bpm": 59.99999999999999,
+   "in_range": 0.7033582089552238
+  },
+  "errors": {
+   "ValueError": 28
+  }
+ },
+ "product": {
+  "lesion_reader": "models/lesion/lesion_cnn_v2-20261102-194645",
+  "outflow": "murray",
+  "wire": false,
+  "lesion_min_ref_mm": 2.0
+ },
+ "git": {
+  "git_commit": "c009897f2661bb4fb28d8683e583562f024d60b9",
+  "git_dirty": false
+ }
+}

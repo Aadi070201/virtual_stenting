@@ -1500,3 +1500,21 @@ external test. E remains the final word.
 - **P4k-I:** TIMI frame count median |error| 0.5–1.0 frames at every frame rate.
 - GPU: the MiT-B2 detector resumes from epoch 15 (best validation Dice 0.344 so far, ResNet34
   0.31), then the remaining encoders.
+
+**Evening (2026-11-03)**
+- **P4o, CardioSYNTAX (run once; `reports/p4o_cardiosyntax.md`):** 1,616 runs, 223 studies,
+  443 sides. SYNTAX-0 sides flagged 93% (false alarms), SYNTAX > 0 sides 95% (sensitivity);
+  SYNTAX-0 runs read FFR ≤ 0.80 in 50% (De Bruyne ≈ 13%). ED without an ECG at 15 fps: M0
+  median 100 bpm (88% within 40–150), M2b `tcn5` 60 bpm (70%).
+- **P4k-J, AngioCAD (run once; `reports/p4k_angiocad.md`):** 816 sides of 412 patients.
+  Significant sides flagged 88%, normal sides 81%; normal sides' series FFR ≤ 0.80 31%.
+- Both external sets say the same: sensitivity is high, specificity is low. On P4o's rows,
+  SYNTAX-0 runs with FFR ≤ 0.80 rise with path length (4% below 40 mm, 64% above 100 mm).
+- **P4p (exploratory, development data):** vessel profiles of a sample of P4o's sides, five
+  reading rules fixed before the profiles are seen (`vstent false-alarms`).
+- GPU detectors (validation Dice): ResNet34 0.310, MiT-B2 0.357, DenseNet121 0.337;
+  MobileNetV3 training, then EfficientNet-B4, then the vessel-identity encoders.
+
+**Open issues**
+- Low specificity on external data is now the product's main weakness, alongside the
+  under-read severe lesions (CADICA). P4p looks for where it arises before any change.

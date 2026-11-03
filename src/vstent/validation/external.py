@@ -28,9 +28,36 @@ def product_state(seg_dir: str) -> dict[str, Any]:
     return _STATE
 
 
-def product_on_run(run, seg_dir: str):
+PROFILE_STEP_MM = 1.0
+
+
+def profile_of(analysis, step_mm: float = PROFILE_STEP_MM) -> dict[str, Any]:
+    """The analysed vessel of a :class:`~vstent.inference.pipeline.VesselAnalysis` on a
+    ``step_mm`` grid: arc length, lumen and reference diameter (mm), the solver's FFR pullback,
+    and each lesion's start, narrowest point and end (mm), %DS, MLD and reference there (mm)."""
+    import numpy as np
+
+    from vstent.units import m_to_mm
+
+    q = analysis.qca
+    s = q.s_mm
+    grid = np.arange(0.0, float(s[-1]) + 1e-9, step_mm)
+    ref = np.broadcast_to(q.reference_diameter_mm, s.shape)
+    ffr = np.interp(grid, m_to_mm(np.asarray(analysis.solver.s)), analysis.solver.ffr)
+    lesions = [[m_to_mm(les.s_start), m_to_mm(les.s_mld), m_to_mm(les.s_end),
+                float(les.max_ds_pct), m_to_mm(les.mld),
+                float(np.interp(m_to_mm(les.s_mld), s, ref))]
+               for les in q.lesions]  # fmt: skip
+    r3 = lambda a: [round(float(x), 3) for x in a]  # noqa: E731
+    return {"s_mm": r3(grid), "d_mm": r3(np.interp(grid, s, q.diameter_mm)),
+            "ref_mm": r3(np.interp(grid, s, ref)), "ffr": r3(ffr),
+            "lesions": [r3(les) for les in lesions]}  # fmt: skip
+
+
+def product_on_run(run, seg_dir: str, *, detail: bool = False):
     """(measurements, the run's frame analysis) of one :class:`~vstent.imaging.image_io.RunInput`
-    through the product's steps. Raises if the run cannot be measured."""
+    through the product's steps. Raises if the run cannot be measured. With ``detail``, the
+    measurements also hold the chosen heartbeat's :func:`profile_of` (``"profile"``)."""
     from vstent.app.guided import MARK_MIN_DS, auto_path, lesion_marks
     from vstent.imaging.run_analysis import analyse_frames
     from vstent.inference.consensus import run_consensus
@@ -62,4 +89,6 @@ def product_on_run(run, seg_dir: str):
         "marked": len(severe), "length_mm": float(q.s_mm[-1]),
     }  # fmt: skip
     out["flagged"] = bool(severe) or round(out["ffr"], 2) <= 0.80
+    if detail:
+        out["profile"] = profile_of(cons.chosen.analysis)
     return out, rf
