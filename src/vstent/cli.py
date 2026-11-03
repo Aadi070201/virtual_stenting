@@ -484,6 +484,25 @@ def angiocad(
 
 
 @data_app.command()
+def cardiag(
+    out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path("data/raw/cardiag"),
+) -> None:
+    """Download (4.6 GB) and verify (MD5) the CARDIAG dataset (CC BY 4.0; 114 patients, SYNTAX
+    segment masks, catheter masks, C-arm geometry with pixel spacing). Extraction is a separate
+    step."""
+    from urllib.error import URLError
+
+    from vstent.data.cardiag import fetch_cardiag
+
+    try:
+        source = fetch_cardiag(out, log=typer.echo)
+    except (URLError, OSError, ValueError) as exc:
+        typer.echo(f"CARDIAG download failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Verified {len(source['files'])} file in {out} ({source['licence']})")
+
+
+@data_app.command()
 def cardiosyntax(
     out: Annotated[Path, typer.Option("--out", help="Target folder.")] = Path(
         "data/raw/cardiosyntax"
