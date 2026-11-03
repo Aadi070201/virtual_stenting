@@ -1,0 +1,18 @@
+# Learned end-diastolic frames, M2b variant "gru" (docs/PLAN.md, P4l M2b), as pre-registered.
+# Do not change without a new pre-registration. Data: `vstent ed-data` (synthetic, seeds 20000-20359).
+name: ed_m2b_gru
+seed: 0
+epochs: 40
+batch_runs: 4
+lr: 0.001
+weight_decay: 0.0001
+pos_weight: 5.0
+features: 64
+pretrained: true
+temporal: gru
+soft_sigma: 0.6
+augment: true
+schedule: cosine
+data_dir: data/derived/ed
+runs_dir: runs
+device: auto

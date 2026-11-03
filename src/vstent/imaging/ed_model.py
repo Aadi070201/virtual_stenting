@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import torch
@@ -61,16 +61,37 @@ class EdTrainConfig(StrictModel):
     pos_weight: float = Field(5.0, gt=0)
     features: int = Field(64, ge=1)
     pretrained: bool = True
+    # M2b (docs/PLAN.md, P4l); the defaults reproduce M2
+    temporal: Literal["tcn3", "tcn5", "gru", "transformer"] = "tcn3"
+    soft_sigma: float = Field(0.0, ge=0)  # frames; 0: one positive frame per beat
+    augment: bool = False
+    schedule: Literal["constant", "cosine"] = "constant"
     data_dir: str = str(ed_data.OUT_DIR)
     runs_dir: str = "runs"
     device: str = "auto"
 
 
-class EdNet(nn.Module):
-    """MobileNetV3-Small per frame (one input channel), 64 features + the frame time, three
-    dilated temporal convolutions (kernel 5; dilation 1, 2, 4) and a per-frame logit."""
+DILATIONS = {"tcn3": (1, 2, 4), "tcn5": (1, 2, 4, 8, 16)}
+PE_PERIODS_S = (0.05, 10.0)  # transformer: time encodings with periods from 50 ms to 10 s
 
-    def __init__(self, features: int = 64, pretrained: bool = True) -> None:
+
+def time_encoding(t_s: torch.Tensor, dim: int) -> torch.Tensor:
+    """Sinusoidal encodings (…, dim) of times in seconds, periods log-spaced over
+    :data:`PE_PERIODS_S`."""
+    k = dim // 2
+    periods = torch.logspace(np.log10(PE_PERIODS_S[0]), np.log10(PE_PERIODS_S[1]), k,
+                             device=t_s.device)  # fmt: skip
+    ang = 2.0 * np.pi * t_s[..., None] / periods
+    return torch.cat([torch.sin(ang), torch.cos(ang)], dim=-1)
+
+
+class EdNet(nn.Module):
+    """MobileNetV3-Small per frame (one input channel), 64 features + the frame time, then a
+    temporal head and a per-frame logit. Heads: ``tcn3`` (M2: dilated convolutions, kernel 5,
+    dilation 1, 2, 4), ``tcn5`` (dilation up to 16), ``gru`` (two-layer bidirectional GRU) or
+    ``transformer`` (two encoder layers on time encodings in seconds)."""
+
+    def __init__(self, features: int = 64, pretrained: bool = True, temporal: str = "tcn3") -> None:
         super().__init__()
         import torchvision
 
@@ -82,24 +103,89 @@ class EdNet(nn.Module):
         m.features[0][0] = one
         self.encoder = nn.Sequential(m.features, nn.AdaptiveAvgPool2d(1), nn.Flatten())
         self.proj = nn.Linear(576, features)
-        layers: list[nn.Module] = []
-        c = features + 1
-        for d in (1, 2, 4):
-            layers += [nn.Conv1d(c, features, 5, padding=2 * d, dilation=d), nn.ReLU()]
-            c = features
-        self.temporal = nn.Sequential(*layers, nn.Conv1d(features, 1, 1))
+        self.kind = temporal
+        if temporal in DILATIONS:
+            layers: list[nn.Module] = []
+            c = features + 1
+            for d in DILATIONS[temporal]:
+                layers += [nn.Conv1d(c, features, 5, padding=2 * d, dilation=d), nn.ReLU()]
+                c = features
+            self.temporal = nn.Sequential(*layers, nn.Conv1d(features, 1, 1))
+        elif temporal == "gru":
+            self.temporal = nn.GRU(features + 1, features, num_layers=2, batch_first=True,
+                                   bidirectional=True)  # fmt: skip
+            self.head = nn.Linear(2 * features, 1)
+        elif temporal == "transformer":
+            self.inp = nn.Linear(features + 1, features)
+            layer = nn.TransformerEncoderLayer(features, 4, 2 * features, dropout=0.1,
+                                               batch_first=True)  # fmt: skip
+            self.temporal = nn.TransformerEncoder(layer, 2, enable_nested_tensor=False)
+            self.head = nn.Linear(features, 1)
+        else:
+            raise ValueError(f"unknown temporal head {temporal!r}")
 
-    def forward(self, frames: torch.Tensor, frame_time: torch.Tensor) -> torch.Tensor:
-        """``frames`` (B, T, 1, H, W) standardised, ``frame_time`` (B,) s → logits (B, T)."""
+    def forward(self, frames: torch.Tensor, frame_time: torch.Tensor,
+                lengths: torch.Tensor | None = None) -> torch.Tensor:  # fmt: skip
+        """``frames`` (B, T, 1, H, W) standardised, ``frame_time`` (B,) s, ``lengths`` (B,)
+        frames per run (padding after) → logits (B, T)."""
         b, t = frames.shape[:2]
         f = self.proj(self.encoder(frames.flatten(0, 1))).view(b, t, -1)
-        ft = frame_time.view(b, 1, 1).expand(b, t, 1)
-        return self.temporal(torch.cat([f, ft], dim=-1).transpose(1, 2))[:, 0]
+        x = torch.cat([f, frame_time.view(b, 1, 1).expand(b, t, 1)], dim=-1)
+        if self.kind in DILATIONS:
+            return self.temporal(x.transpose(1, 2))[:, 0]
+        if lengths is None:
+            lengths = torch.full((b,), t, dtype=torch.long)
+        if self.kind == "gru":
+            packed = nn.utils.rnn.pack_padded_sequence(x, lengths.cpu(), batch_first=True,
+                                                       enforce_sorted=False)  # fmt: skip
+            out, _ = self.temporal(packed)
+            out, _ = nn.utils.rnn.pad_packed_sequence(out, batch_first=True, total_length=t)
+            return self.head(out)[..., 0]
+        times = torch.arange(t, device=x.device)[None] * frame_time.view(b, 1)
+        h = self.inp(x) + time_encoding(times, x.shape[-1] - 1)
+        pad = torch.arange(t, device=x.device)[None] >= lengths.to(x.device)[:, None]
+        return self.head(self.temporal(h, src_key_padding_mask=pad))[..., 0]
 
 
 def run_tensor(frames: np.ndarray) -> torch.Tensor:
     """(T, 1, 128, 128) float32 through the shared pre-processing."""
     return torch.from_numpy(np.stack([preprocess_image(f, ed_data.SIZE) for f in frames]))
+
+
+def targets(ed: tuple[int, ...], n: int, sigma: float) -> np.ndarray:
+    """(n,) per-frame targets: 1 at each ED frame, spread as exp(−Δ²/(2σ²)) to its neighbours
+    if ``sigma`` > 0 (the maximum over beats)."""
+    y = np.zeros(n, np.float32)
+    idx = np.arange(n)
+    for e in ed:
+        if 0 <= e < n:
+            y = np.maximum(
+                y, (idx == e) if sigma <= 0 else np.exp(-((idx - e) ** 2) / (2 * sigma**2))
+            )
+    return y.astype(np.float32)
+
+
+def augment(frames: np.ndarray, ed: tuple[int, ...], gen: torch.Generator):
+    """M2b's augmentation of one training run (uint8 frames): the same flips on every frame,
+    brightness, contrast, gamma, noise, and a contiguous crop of 70–100% of the frames."""
+
+    def u(lo: float, hi: float) -> float:
+        return lo + (hi - lo) * float(torch.rand(1, generator=gen))
+
+    n = len(frames)
+    keep = max(1, int(round(n * u(0.7, 1.0))))
+    first = int(torch.randint(0, n - keep + 1, (1,), generator=gen))
+    x = frames[first : first + keep].astype(np.float32) / 255.0
+    if u(0, 1) < 0.5:
+        x = x[:, :, ::-1]
+    if u(0, 1) < 0.5:
+        x = x[:, ::-1, :]
+    x = np.clip(x, 0, 1) ** u(0.8, 1.25)
+    mean = x.mean()
+    x = (x - mean) * u(0.8, 1.2) + mean * u(0.9, 1.1)
+    noise = torch.randn(x.shape, generator=gen).numpy() * (u(0.0, 3.0) / 255.0)
+    out = np.clip((x + noise) * 255.0, 0, 255).astype(np.uint8)
+    return np.ascontiguousarray(out), tuple(e - first for e in ed if first <= e < first + keep)
 
 
 def decode(prob: np.ndarray) -> tuple[int, ...]:
@@ -176,8 +262,11 @@ def _fit(cfg: EdTrainConfig, run_dir: Path, ckpt: Path, log, *, resume: bool) ->
     val = ed_data.load_split("val", cfg.data_dir)
     if not train or not val:
         raise ValueError(f"no ED data in {cfg.data_dir} (run `vstent ed-data`)")
-    model = EdNet(cfg.features, pretrained=cfg.pretrained and not resume).to(device)
+    model = EdNet(cfg.features, pretrained=cfg.pretrained and not resume,
+                  temporal=cfg.temporal).to(device)  # fmt: skip
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    sched = (torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.epochs)
+             if cfg.schedule == "cosine" else None)  # fmt: skip
     gen = torch.Generator().manual_seed(cfg.seed)
     state: dict[str, Any] = {"epoch": 0, "history": [], "best": -1.0, "best_epoch": None,
                              "resumes": [], "seconds": 0.0}  # fmt: skip
@@ -185,6 +274,8 @@ def _fit(cfg: EdTrainConfig, run_dir: Path, ckpt: Path, log, *, resume: bool) ->
         saved = load_state(ckpt)
         model.load_state_dict(saved["model"])
         opt.load_state_dict(saved["optimizer"])
+        if sched is not None:
+            sched.load_state_dict(saved["scheduler"])
         restore_rng_states(saved["rng"], gen)
         state = saved["state"]
         commit = git_info()["git_commit"]
@@ -200,6 +291,7 @@ def _fit(cfg: EdTrainConfig, run_dir: Path, ckpt: Path, log, *, resume: bool) ->
 
     def checkpoint(s: str) -> None:
         save_state(ckpt, {"model": model.state_dict(), "optimizer": opt.state_dict(),
+                          "scheduler": None if sched is None else sched.state_dict(),
                           "rng": rng_states(gen), "state": state}, status(s))  # fmt: skip
 
     clear_stop(ckpt)
@@ -214,24 +306,29 @@ def _fit(cfg: EdTrainConfig, run_dir: Path, ckpt: Path, log, *, resume: bool) ->
         total = 0.0
         for i in range(0, len(order), cfg.batch_runs):
             batch = [train[j] for j in order[i : i + cfg.batch_runs]]
-            t_max = max(len(r["frames"]) for r in batch)
+            items = [augment(r["frames"], r["ed"], gen) if cfg.augment else (r["frames"], r["ed"])
+                     for r in batch]  # fmt: skip
+            t_max = max(len(f) for f, _ in items)
             x = torch.zeros(len(batch), t_max, 1, ed_data.SIZE, ed_data.SIZE)
             y = torch.zeros(len(batch), t_max)
             mask = torch.zeros(len(batch), t_max)
-            for b, r in enumerate(batch):
-                n = len(r["frames"])
-                x[b, :n] = run_tensor(r["frames"])
-                y[b, list(r["ed"])] = 1.0
+            for b, (frames, ed) in enumerate(items):
+                n = len(frames)
+                x[b, :n] = run_tensor(frames)
+                y[b, :n] = torch.from_numpy(targets(ed, n, cfg.soft_sigma))
                 mask[b, :n] = 1.0
             ft = torch.tensor([1.0 / r["fps"] for r in batch])
-            logits = model(x.to(device), ft.to(device))
+            lengths = torch.tensor([len(f) for f, _ in items])
+            logits = model(x.to(device), ft.to(device), lengths)
             loss = nn.functional.binary_cross_entropy_with_logits(
                 logits, y.to(device), weight=mask.to(device), pos_weight=pos
             )
             opt.zero_grad(set_to_none=True)
             loss.backward()
             opt.step()
-            total += float(loss) * len(batch)
+            total += float(loss.detach()) * len(batch)
+        if sched is not None:
+            sched.step()
         probs = predict(model, val, device)
         sc = score(val, [decode(p) for p in probs])
         seconds = time.perf_counter() - t0
@@ -263,6 +360,7 @@ def _fit(cfg: EdTrainConfig, run_dir: Path, ckpt: Path, log, *, resume: bool) ->
 def load_best(run_dir: str | Path, device="cpu") -> EdNet:
     """The kept epoch of a run, in eval mode (no weight download)."""
     ck = torch.load(Path(run_dir) / BEST, map_location=device, weights_only=True)
-    model = EdNet(ck["config"]["features"], pretrained=False)
+    model = EdNet(ck["config"]["features"], pretrained=False,
+                  temporal=ck["config"].get("temporal", "tcn3"))  # fmt: skip
     model.load_state_dict(ck["state_dict"])
     return model.to(device).eval()
