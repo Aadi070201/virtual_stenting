@@ -14,6 +14,7 @@ repository.** All data lives under the git-ignored `data/` folder.
 | DEFINE-FLOW | Dryad doi:10.5061/dryad.h18931zm6 (Zenodo record 5508241), `DFLOW_data.tgz`, `DFLOW_tracings.tgz` | CC0 1.0; cite Johnson et al., JACC Cardiovasc Interv 2021 | `data/raw/define_flow/` | the model's physiology assumptions against invasive pressure, Doppler flow and ECG (P4e) | downloaded and MD5-verified (P4e) |
 | CONTRAST | Dryad doi:10.5061/dryad.f76nv (Zenodo record 4992130), `CONTRAST.tgz` | CC0 1.0; cite Johnson et al., JACC Cardiovasc Interv 2016 | `data/raw/contrast/` | rest / contrast / adenosine pressures (P4e; no condition markers, not used yet) | downloaded and MD5-verified (P4e) |
 | ARCADE | Zenodo record 10390295 (DOI 10.5281/zenodo.10390295), `arcade.zip` | CC0 1.0 (Zenodo licence `cc-zero`) | `data/raw/arcade/` | vessel segmentation (`syntax` task), stenosis overlays (`stenosis` task) | downloaded and verified (M5) |
+| CardioSYNTAX | Zenodo record 14005818 (DOI 10.5281/zenodo.14005818), `all.json`, `three_experts.json`, zip parts `0.zip`–`9.zip` | CC BY 4.0 (Zenodo licence `cc-by-4.0`); cite Ponomarchuk et al., WACV 2025 | `data/raw/cardiosyntax/` | external check against SYNTAX per side (P4o) | metadata and parts 9, 0 downloading, MD5-verified |
 
 ## Synthetic vessels v1
 
@@ -249,3 +250,23 @@ the frames and label files are extracted.
   - Three frames that cross the archive's volume boundaries could not be decoded:
     `203/6/frame_0019.png`, `297/1/frame_0002.png`, `385/1/frame_0032.png`. They are
     excluded.
+
+## CardioSYNTAX (P4o; external check against SYNTAX per side)
+
+- **Source:** "CardioSyntax: end-to-end SYNTAX score prediction — dataset, benchmark and
+  method" (Ponomarchuk, Kruzhilov, Zubkova, Shadrin, Utegenov, Bessonov, Blinov; WACV 2025).
+  Sber AI Lab and the Tyumen Cardiology Research Center (Tomsk National Research Medical
+  Center). Zenodo doi:10.5281/zenodo.14005818, CC BY 4.0 (licence field checked 2026-11-03).
+- **Content** (metadata inspected; no model run on it before P4o was pre-registered):
+  - 1,844 studies (2016–2023), 14,219 cine runs, 512 × 512, 15 frames/s (the paper), median
+    48 frames; Philips Allura Clarity and Azurion;
+  - per run: the authors' LCA / RCA tag (a classifier's RCA probability) and the C-arm angles;
+  - per study: SYNTAX score in all and for the left and right arteries (an interventional
+    cardiologist), dominance on 400 studies, a bypass tag (187); 60 studies scored by three
+    experts (`three_experts.json`);
+  - no ECG, no lesion boxes, no FFR, no pixel size.
+- **Files:** ten zip parts of NumPy `.npy` runs (144.6 GB in all); runs are read from the zips
+  with `allow_pickle=False`, never extracted or run. `vstent data cardiosyntax --parts 9,0`
+  downloads and MD5-checks the chosen parts.
+- **Use:** P4o (parts 0 and 9), an external check run once; parts 1–8 reserved.
+
