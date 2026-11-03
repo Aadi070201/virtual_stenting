@@ -730,10 +730,22 @@ optimiser, 40 epochs, 5 development folds, seed 0, and how the product uses the 
     stenoses read ≥ 50% in 80% vs 40%.
   - Not met: distant candidates read ≥ 50% in 30% vs 9% (limit 19%); v1 had 46%.
   - C3 judges it end to end next, as pre-registered.
-- [ ] **Test:**
+- [x] **Test:**
   - P4i's sets with P4i's targets (a second look);
   - **fresh:** candidates on the CADICA test patients' lesion-free runs read ≥ 50%
     (target ≤ 20%; the edges reported too).
+
+  **Result** (`reports/lesion_reading_v2.md`; run once, 2026-11-03; the product uses v2 since
+  D69):
+  - CADICA test patients (a second look): kappa 0.29 (target 0.40; v1 0.32), AUC 0.86;
+    median %DS 70–90% lesions 46%, 90–98% 57% (targets 60%, 70%; edges 40%, 44%); 0–20% 15%
+    (target ≤ 30%, met).
+  - ARCADE test: stenosis boxes read ≥ 50% 70% (target 70%, met); distant candidates 20%
+    (target ≤ 20%, met).
+  - Kemerovo: lesions read ≥ 50% 51% (target 70%; v1 54%).
+  - Fresh: CADICA test patients' lesion-free candidates read ≥ 50%: 7% (target ≤ 20%, met;
+    edges 5%).
+  - Few false alarms; severe lesions are still read too shallow.
 
 ### B. Automatic target vessel (CPU)
 "Lesion-seeking" path:
