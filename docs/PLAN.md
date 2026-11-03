@@ -1246,6 +1246,15 @@ code or training; development data only):
   | `transformer` (`ed_m2b_transformer-20261103-031846`) | 91.3 | 88.5 | 71.9 | 55.4 | 77.2 | 55.4 |
 
   **Chosen: `tcn5`.** It now stands for "M2" in the P4l choice (real reproducibility vs M0).
+- **Real runs** (`reports/ed_m2b/ed_model_dev.md`; 205 CADICA development runs, 10 fps): the
+  P4l rule keeps **M0**.
+  - `tcn5` transfers far better than M2: 4.5 ED frames per run, median implied heart rate
+    60 bpm (M0 100 bpm), a value on 108 runs (M2 14).
+  - Reproducibility on 86 paired runs: mean ratio M0 1.041, `tcn5` 1.165 (difference +0.125,
+    95% patient bootstrap −0.023 to +0.278); `tcn5` lower on 38% of runs.
+  - Caveat: the reproducibility measure has not been checked against true ED frames, and M0's
+    median of 100 bpm is high for patients at rest. Checking the measure on synthetic runs,
+    where the truth is known, comes before relying on it further.
 
 **Choice and targets**
 - **Choice:** the method with the best synthetic development ±1-frame accuracy among those
