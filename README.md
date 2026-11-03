@@ -201,6 +201,20 @@ Trainings can be paused and resumed exactly:
 | `vstent synth-angio [--config configs/synth_angio_v1.yaml]` | render synthetic angiograms with vessel labels for segmentation training → `data/synth_angio/v1/` + `reports/synth_angio_card.md` | P8 |
 | `vstent train-seg --config configs/seg_synth.yaml` | train the segmenter with rendered angiograms added to ARCADE (`--resume <run-name>`) | P8 |
 | `vstent sim-to-real-report --base runs/<M5> --new runs/<new>` | both segmenters on ARCADE val / test and rendered test, paired differences, the adoption rule → `reports/sim_to_real.md` | P8 |
+| `vstent data kemerovo` / `vstent data angiocad` | download and verify Kemerovo (lesion boxes, external) and AngioCAD (413 patients, segment grades; CC BY 4.0) | P4i, P4k-J |
+| `vstent lesion-data [--version 2]` / `vstent train-lesion` / `vstent export-lesion --run runs/<name>` | lesion patches from CADICA, ARCADE and Kemerovo; the learned lesion reader (5 patient folds) and its ONNX export | P4i, P4k-A |
+| `vstent lesion-report --stage dev\|test [--version 2]` | learned lesion reading vs the experts' grades → `reports/lesion_reading*.md` | P4i, P4k-A |
+| `vstent vessel-coverage --stage dev\|test` | does the segmentation reach the experts' lesions (model vs vesselness hybrid) | P4j |
+| `vstent physics-check --stage dev\|test --part c\|c2\|c3 [--reader DIR] [--min-ref-mm 2]` | outflow and wire arms against De Bruyne and FAME (no FFR) → `reports/p4k_*.md` | P4k-C |
+| `vstent stent-check --stage dev\|test [--min-ref-mm 2]` | virtual stenting on CADICA's 70–98% lesions: stent on the experts' lesion, post-PCI FFR vs FFR-SEARCH → `reports/stent_check*.md` | P4m, P4n |
+| `vstent artery-velocity` | hyperemic velocity by artery from DEFINE-FLOW → `reports/artery_velocity.md` | P4k-C4 |
+| `vstent train-seg --config configs/lesion_det*.yaml` / `configs/vessel_id*.yaml`, then `vstent export-map --run runs/<name>` | whole-image lesion detector and LAD / LCx / RCA vessel identity (5 encoders each) → `models/lesion_det/`, `models/vessel_id/` | P4k-E, G |
+| `vstent lesion-detection --stage dev\|test` / `vstent vessel-id-report --stage dev\|test` | detector vs expert boxes; vessel identity on ARCADE and CADICA → `reports/lesion_detection*.md`, `reports/vessel_id*.md` | P4k-E, G |
+| `vstent target-path --stage dev\|test` | the lesion-seeking automatic path vs the main trunk on CADICA's lesion runs → `reports/p4k_target_path*.md` | P4k-B |
+| `vstent angiocad-check [--workers N]` | the product on AngioCAD against the experts' segment grades (external, run once) → `reports/p4k_angiocad.md` | P4k-J |
+| `vstent ed-data --split train\|val\|test` / `vstent train-ed --config configs/ed*.yaml` | synthetic runs at 7.5–30 fps with a known ECG; the learned ED-frame model (M2, M2b; `--resume <name>`) | P4l |
+| `vstent ed-report --run runs/<name> --stage dev\|test` | learned vs image-based ED frames per frame rate, and beat-to-beat reproducibility on CADICA without labels → `reports/ed_model*.md` | P4l |
+| `vstent label-ed` | expert ED-frame labelling page on http://localhost:8502 → `data/labels/ed/<reader>/` | P4l |
 | `vstent regulatory [--check]` | regulatory drafts: requirements, hazards, traceability, SOUP list and SBOM → `docs/regulatory/`; fails on any broken reference (`--check`: write nothing, fail if out of date) | P8 |
 | `vstent data arcade` | download, MD5-verify and extract the ARCADE dataset (CC0) into `data/raw/arcade/` | M5 |
 | `vstent train-seg --config configs/seg.yaml` | train vessel segmentation (`--resume <run-name>` to continue) | M5 |

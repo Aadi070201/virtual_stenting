@@ -219,9 +219,27 @@ uv run vstent physics-nozzle      # P4b: loss model vs FDA nozzle experiments �
 uv run vstent synth-angio        # P8: rendered angiograms → data/synth_angio/v1 + reports/synth_angio_card.md
 uv run vstent train-seg --config configs/seg_synth.yaml   # P8: ARCADE + rendered angiograms
 uv run vstent sim-to-real-report --base runs/<M5> --new runs/<new>   # → reports/sim_to_real.md
+uv run vstent data kemerovo       # P4i: external lesion boxes; also `data angiocad` (P4k-J)
+uv run vstent lesion-data --version 2 && uv run vstent train-lesion --config configs/lesion_v2.yaml
+uv run vstent lesion-report --stage dev --version 2 --model models/lesion/<run>   # then --stage test
+uv run vstent physics-check --stage dev --part c3 --reader models/lesion/<run> --min-ref-mm 2
+uv run vstent stent-check --stage dev --min-ref-mm 2   # P4m: virtual stenting on CADICA (no FFR)
+uv run vstent train-seg --config configs/lesion_det.yaml   # P4k-E detector; vessel_id*.yaml: P4k-G
+uv run vstent export-map --run runs/<name>          # → models/lesion_det/ or models/vessel_id/
+uv run vstent lesion-detection --stage dev          # also vessel-id-report; then --stage test
+uv run vstent target-path --stage dev               # P4k-B: lesion-seeking path vs main trunk
+uv run vstent angiocad-check --workers 2            # P4k-J: external AngioCAD check (run once)
+uv run vstent ed-data --split train --workers 2     # P4l: synthetic runs (train, val, test)
+uv run vstent train-ed --config configs/ed.yaml     # P4l M2 (ed_tcn5 / ed_gru / ed_transformer: M2b)
+uv run vstent ed-report --run runs/<name> --stage dev   # → reports/ed_model_dev.md
+uv run vstent label-ed                              # P4l: expert ED labels on localhost:8502
 uv run vstent regulatory [--check]  # P8: docs/regulatory/ from its YAML sources + uv.lock; fails on
                                   # broken references (edit the YAML, never the generated .md)
 ```
+
+The product's FFR pipeline settings (learned lesion reader, outflow model, where the FFR is
+read, the thin-vessel guard) are in `configs/product.yaml`, applied by the app, `vstent analyse`
+and `vstent validate`; each changes only through a pre-registered decision (D69, D70).
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)
 
