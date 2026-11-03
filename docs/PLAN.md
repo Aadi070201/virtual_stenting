@@ -1017,12 +1017,22 @@ are reported.
   Otherwise a research option.
 
 ### H. Frame rates (7.5, 10, 15, 30 fps)
-- [ ] The synthetic cine evaluation (`vstent cine-synthetic`) also at 10 fps, CADICA's rate,
+- [x] The synthetic cine evaluation (`vstent cine-synthetic`) also at 10 fps, CADICA's rate,
   on new seeds. ED frames and flow velocity reported per frame rate.
-- [ ] Two steps count frames, not seconds: the 3-frame median of the contrast curve and the
+
+  **Result** (`reports/fps/cine_synthetic.md`; seeds 9300–9359, run once): every P7 target met
+  (ECG ED 100%; image-based ED at 15 fps 82%; analysis frame within ±1 frame 91%; two views:
+  median |velocity error| 4.7%, 94% within ±25%, interval coverage 94%, FFR difference 0.007;
+  one view coverage 95%; 9% of runs rejected). Image-based ED within ±1 frame by frame rate
+  (7.5 / 10 / 15 / 30 fps): 74 / 88 / 82 / 77%; one-view median |velocity error| 17 / 17 /
+  17 / 13%.
+- [x] Two steps count frames, not seconds: the 3-frame median of the contrast curve and the
   3-frame minimum heart period. If any frame rate's image-based ED result is ≥ 10 points
   below the others, both become times (0.2 s, 0.3 s) and are re-evaluated on further new
   seeds.
+
+  **Result:** does not fire. 7.5 fps (74%) is the lowest, 3 points below 30 fps (77%) and 8
+  below the others' mean; no rate is ≥ 10 points below all the others.
 - F (a learned ED model) is the main route to better ED frames: image-based ED is within
   ±1 frame for 75–79% of beats at every rate now.
 
@@ -1032,8 +1042,13 @@ are reported.
   for the target vessel, not the whole image.
 - **TIMI frame count** (Gibson 1996): the frames from contrast entering the path to reaching
   its end, corrected to 30 fps (× 30 / fps).
-- [ ] Reported on synthetic runs, where the truth is known: TIMI frame count error per frame
+- [x] Reported on synthetic runs, where the truth is known: TIMI frame count error per frame
   rate.
+
+  **Result** (`reports/fps/cine_synthetic.md`, the H run): median error −0.8 / −0.3 / −0.3 /
+  −0.5 frames, median |error| 1.0 / 0.9 / 0.6 / 0.5, within ±4 frames 95 / 94 / 92 / 100% at
+  7.5 / 10 / 15 / 30 fps (measured on 111 of 115 runs with a truth; median true count 8–10
+  frames). In the guided app since commit 479a42a (display only).
 
 ### J. AngioCAD: an external, segment-level test (CPU; after G)
 - **Data:** AngioCAD (Zenodo 10.5281/zenodo.15826856; CC BY 4.0). 413 patients' cine frames,
