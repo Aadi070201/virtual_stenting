@@ -1111,7 +1111,20 @@ the planner cannot size a stent below 2.25 mm.
 
   Also: plans reaching 0.90 66% → 72%; median post-PCI FFR 0.91 → 0.93; cases below 0.5
   six → four.
-- [ ] Test patients once for an adopted guard: C3 and P4m.
+- [x] Test patients once for an adopted guard: C3 and P4m.
+
+  **Result** (`reports/p4k_reader_lesion_cnn_v2-20261102-194645_ref2.md`,
+  `reports/stent_check_ref2.md`; CADICA test patients, run once):
+  - C3 (reader v2 + Murray, without → with the guard): lesion-free ≤ 0.80 20% → 16%;
+    50–70 / 70–90 / 90–98% ≤ 0.80 36 / 40 / 52% → 31 / 37 / 52% (FAME 35 / 80 / 96%); FAME
+    distance 28 → 30 points; combined distance 0.35 → 0.34. C3's rule still holds against the
+    product before D69.
+  - P4m (pipeline arm; first test run of P4m): 33 planned lesions; post-PCI ≤ 0.80 12% (target
+    ≤ 15%: met); mean post-PCI 0.85 ± 0.22, median 0.92 (target mean 0.88–0.94: not met);
+    plans reaching 0.90 73%; stent on the experts' lesion 82% (target ≥ 90%: not met); median
+    total stent 26 mm (product before D69: 38 mm); three lesions still below 0.5.
+  - Severe lesions stay under-called (70–90%: 37%, 90–98%: 52% vs FAME 80 / 96%): the main
+    open weakness.
 
 ## P4l: End-diastolic frames without an ECG (added 2026-11-02; pre-registered before any code)
 

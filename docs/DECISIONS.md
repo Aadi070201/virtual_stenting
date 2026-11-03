@@ -1444,3 +1444,8 @@ P4m).
 **Note:** 70–90% lesions read ≤ 0.80 a little less often (52 → 44%). Some under-call remains;
 the rule accepted the trade.
 
+**Test patients (run once, 2026-11-03):** lesion-free ≤ 0.80 20% → 16%; combined distance
+0.35 → 0.34; FAME distance 28 → 30 points. P4m pipeline arm: post-PCI ≤ 0.80 12%, median
+post-PCI 0.92, plans reaching 0.90 73%, stent on the experts' lesion 82%. The guard holds on
+test patients. Severe lesions remain under-called (70–90%: 37%, 90–98%: 52%).
+
