@@ -1082,6 +1082,11 @@ are reported.
   There are no targets; this is the external description of where the product stands. Run
   once.
 
+  **Amendment (2026-11-03, before any model was run on AngioCAD):** items 1–3 run now with the
+  product as it is (B was not adopted, so G changes no flag); items 4–5 are added later on the
+  same cached analysis frames and paths (`data/derived/angiocad/rows.json`), without running
+  the product again. Reason: the GPU queue for G and E takes days.
+
 - [ ] Report: `reports/p4k.md` (A–C, E, G–J), each part as it finishes.
 
 ## P4m: Virtual stenting checked on real angiograms without FFR (added 2026-11-02; pre-registered before any code)
