@@ -28,34 +28,14 @@ from vstent.data.angiocad import GRADES, SIDES, PatientLabels, series_dir
 DISCLAIMER = "Research use only — not for clinical decisions."
 ROWS_FILE = Path("data/derived/angiocad/rows.json")
 DE_BRUYNE = 0.13
-_WORKER: dict[str, Any] = {}
-
-
-def _worker(seg_dir: str):
-    if not _WORKER:
-        from vstent.app.core import load_settings
-        from vstent.inference.onnx_runtime import SegmentationRunner
-        from vstent.inference.product import product_config, product_params, product_reader
-
-        cfg = product_config()
-        _WORKER.update(
-            seg=SegmentationRunner.from_dir(seg_dir), cfg=cfg,
-            params=product_params(load_settings()[0], cfg),  # as the app
-            reader=product_reader(cfg.lesion_reader),
-        )  # fmt: skip
-    return _WORKER
 
 
 def series_row(patient: str, side: str, series: int, raw_dir: str, seg_dir: str) -> dict[str, Any]:
-    """One series through the product's steps."""
-    from vstent.app.guided import MARK_MIN_DS, auto_path, lesion_marks
+    """One series through the product's steps (:func:`~vstent.validation.external.
+    product_on_run`)."""
     from vstent.imaging.image_io import read_run
-    from vstent.imaging.run_analysis import analyse_frames
-    from vstent.inference.consensus import run_consensus
-    from vstent.inference.pipeline import analyse_vessel
+    from vstent.validation.external import product_on_run
 
-    w = _worker(seg_dir)
-    seg, cfg, params, reader = w["seg"], w["cfg"], w["params"], w["reader"]
     row: dict[str, Any] = {"key": f"{patient}_{series}", "patient": patient, "side": side,
                            "series": series}  # fmt: skip
     folder = series_dir(raw_dir, patient, series)
@@ -63,31 +43,7 @@ def series_row(patient: str, side: str, series: int, raw_dir: str, seg_dir: str)
         row["error"] = "missing: no frame folder"
         return row
     try:
-        run = read_run(folder)
-        rf = analyse_frames(run, seg.predict)
-        frame = rf.analysis_frame
-        image = run.frames[frame]
-        prob = seg.predict(image)
-        start, end = auto_path(prob, run.pixel_spacing_mm)
-
-        def one(p, im, a, b):
-            return analyse_vessel(p, a, b, params=params, mm_per_px=run.pixel_spacing_mm,
-                                  image=im, lesion_reader=reader, wire=cfg.wire,
-                                  lesion_min_ref_mm=cfg.lesion_min_ref_mm)  # fmt: skip
-
-        cons = run_consensus(rf, frame, start, end, seg.predict, one,
-                             reference_analysis=one(prob, image, start, end))  # fmt: skip
-        q = cons.chosen.analysis.qca
-        marks = lesion_marks(q, 0.0)
-        severe = [m for m in marks if m.ds_pct >= MARK_MIN_DS]
-        row.update(
-            frames=len(run), frame=int(frame), chosen=int(cons.chosen.frame),
-            start=list(map(int, cons.chosen.start)), end=list(map(int, cons.chosen.end)),
-            heartbeats=len(cons.used), ffr=float(cons.ffr),
-            max_ds=float(max((m.ds_pct for m in marks), default=0.0)),
-            marked=len(severe), length_mm=float(q.s_mm[-1]),
-        )  # fmt: skip
-        row["flagged"] = bool(severe) or round(row["ffr"], 2) <= 0.80
+        row.update(product_on_run(read_run(folder), seg_dir)[0])
     except Exception as exc:  # noqa: BLE001 — a series that cannot be measured is reported
         row["error"] = f"{type(exc).__name__}: {exc}"
     return row

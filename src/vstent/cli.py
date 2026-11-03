@@ -2015,6 +2015,54 @@ def target_path(
 
 
 @app.command()
+def cardiosyntax_check(
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CardioSYNTAX folder.")] = Path(
+        "data/raw/cardiosyntax"
+    ),
+    ed_model: Annotated[
+        Path | None, typer.Option("--ed-model", help="Learned ED model run (M2b).")
+    ] = Path("runs/ed_m2b_tcn5-20261103-023054"),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """The product on CardioSYNTAX against SYNTAX per side (P4o; external, run once;
+    resumable) → reports/p4o_cardiosyntax.md."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.cardiosyntax import load_studies
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+    from vstent.inference.product import product_config
+    from vstent.validation import cardiosyntax_check as cc
+
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    studies = load_studies(raw_dir)
+    missing = [p for p in cc.PARTS if not (raw_dir / f"{p}.zip").exists()]
+    if missing:
+        typer.echo(f"Zip parts {missing} missing: `vstent data cardiosyntax --parts 0,9`.",
+                   err=True)  # fmt: skip
+        raise typer.Exit(code=1)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+    ed_dir = str(ed_model) if ed_model and ed_model.exists() else None
+    typer.echo(f"{len(cc.tasks(studies))} runs …")
+
+    def progress(k, n):
+        if k % 50 == 0 or k == n:
+            typer.echo(f"  {k} / {n} runs")
+
+    rows = cc.rows(studies, raw_dir, seg_dir, ed_dir, workers=workers, progress=progress)
+    summary = cc.summarise(studies, rows)
+    product = product_config().model_dump()
+    path = cc.write_report(report_dir / "p4o_cardiosyntax.md", summary,
+                           seg_model=seg_dir.as_posix(), ed_model=ed_dir, product=product,
+                           git=git)  # fmt: skip
+    payload = {"summary": summary, "product": product, "git": git}
+    path.with_suffix(".json").write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
 def angiocad_check(
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="AngioCAD folder.")] = Path(
