@@ -200,7 +200,7 @@ def ffr_guide() -> None:
 @st.fragment
 def frame_picker(run, rf, sha: str, expert: frozenset) -> None:
     """Slide through every frame (fast: nothing is measured), with each frame's contrast and
-    whether it is end-diastolic; "Analyse this frame" commits it. ``expert``: the frames with
+    whether it is a heartbeat frame; "Analyse this frame" commits it. ``expert``: the frames with
     an expert lesion box (CADICA)."""
     key, skey = f"frame_{sha}", f"slide_{sha}"
     current = st.session_state.get(key, rf.analysis_frame)
@@ -208,11 +208,12 @@ def frame_picker(run, rf, sha: str, expert: frozenset) -> None:
     if skey not in st.session_state:
         st.session_state[skey] = current
     f0 = st.session_state[skey]
+    tag, name = ("ED", rf.ed.name()) if rf.ed.timed else ("Beat", rf.ed.name())
     b1, b2, b3, _ = st.columns([1, 1, 1, 4])
-    if b1.button("◀ ED", key=f"prev_{sha}", help="Previous end-diastolic frame",
+    if b1.button(f"◀ {tag}", key=f"prev_{sha}", help=f"Previous {name}",
                  disabled=not any(e < f0 for e in eds)):  # fmt: skip
         st.session_state[skey] = max(e for e in eds if e < f0)
-    if b2.button("ED ▶", key=f"next_{sha}", help="Next end-diastolic frame",
+    if b2.button(f"{tag} ▶", key=f"next_{sha}", help=f"Next {name}",
                  disabled=not any(e > f0 for e in eds)):  # fmt: skip
         st.session_state[skey] = min(e for e in eds if e > f0)
     if b3.button("★", key=f"best_{sha}", help="The recommended frame"):
@@ -225,15 +226,17 @@ def frame_picker(run, rf, sha: str, expert: frozenset) -> None:
         state, pct = guided.contrast_state(rf, f)
         marks = (" ★" if f == rf.analysis_frame else "") + (" ◆" if f in expert else "")
         st.markdown(f"**Frame {f}**{marks}")
-        st.markdown(f"{'✓' if f in eds else '✗'} end-diastole")
+        st.markdown(f"{'✓' if f in eds else '✗'} {name}")
         st.markdown(f"{'✓' if state == 'full' else '⚠'} contrast {state} ({pct:.0f}%)")
         if f == current:
             st.success("Analysed below")
         elif st.button("Analyse this frame", type="primary", key=f"use_{sha}_{f}"):
             st.session_state[key] = f
             st.rerun()
-        st.caption("★ = the end-diastolic frame with full contrast and the most vessel. "
-                   "◆ = an expert marked a lesion.")  # fmt: skip
+        st.caption("★ = the recommended frame: full contrast and the most vessel. "
+                   + ("" if rf.ed.timed else "Heartbeat frames: each beat's frame with the most "
+                      "vessel, found from the images (no ECG), not a verified end-diastole. ")
+                   + "◆ = an expert marked a lesion.")  # fmt: skip
 
 
 def go_to_frame(sha: str, frame: int) -> None:

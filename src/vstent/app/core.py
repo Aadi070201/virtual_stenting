@@ -410,7 +410,7 @@ def profile_figure(
 
 def opacification_figure(rf, frame: int) -> go.Figure:
     """A cine run's vessel area per frame (``rf``:
-    :class:`~vstent.imaging.run_analysis.RunFrames`), the opacified window, the end-diastolic
+    :class:`~vstent.imaging.run_analysis.RunFrames`), the opacified window, the heartbeat
     frames and the analysed ``frame`` (P7)."""
     op = rf.opacification
     t = np.arange(op.smoothed.size)
@@ -422,7 +422,7 @@ def opacification_figure(rf, frame: int) -> go.Figure:
                     line={"color": SERIES_1, "width": 2})  # fmt: skip
     ed = [f for f in rf.ed.frames if 0 <= f < t.size]
     fig.add_scatter(x=ed, y=[100 * op.smoothed[f] / peak for f in ed], mode="markers",
-                    name=f"End-diastolic ({rf.ed.source})",
+                    name=f"{rf.ed.name(plural=True).capitalize()} ({rf.ed.source})",
                     marker={"color": SERIES_2, "symbol": "diamond", "size": 9})  # fmt: skip
     fig.add_vline(x=frame, line={"color": INK_MUTED, "width": 1.2, "dash": "dash"})
     fig.update_layout(**{**_LAYOUT, "height": 240}, xaxis_title="Frame (0-based)",

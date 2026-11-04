@@ -102,7 +102,7 @@ class Consensus:
     Attributes:
         frames: every frame tried, the reference frame (the user's points) first.
         k: the number of frames asked for.
-        source: where the frames came from (the ED frames' source, or why only one).
+        source: where the frames came from (the heartbeat frames' source, or why only one).
     """
 
     frames: tuple[FrameResult, ...]
@@ -147,7 +147,7 @@ class Consensus:
         n = len(self.used)
         vals = ", ".join(f"frame {f.frame}: {f.values.ffr:.3f}" for f in self.used)
         if n > 1:
-            head = f"{label}, median of {n} end-diastolic frames: {self.ffr:.3f} ({vals})"
+            head = f"{label}, median of {n} heartbeats: {self.ffr:.3f} ({vals})"
         else:
             head = f"{label} on one frame only ({self.source}): {self.ffr:.3f}"
         out = [head + "."]
@@ -190,20 +190,20 @@ def opacified_frames(rf: RunFrames, filled: int | None) -> tuple[int, int]:
 def consensus_frames(
     rf: RunFrames, reference: int, k: int = CONSENSUS_K, filled: int | None = None
 ) -> tuple[list[int], str]:
-    """``reference`` (where the points were placed), then the other ED frames on which the
+    """``reference`` (where the points were placed), then the other heartbeat frames on which the
     path is fully opacified (:func:`opacified_frames`) with the most vessel (smoothed area), up
     to ``k`` frames; and the source of the frames."""
     op, ed = rf.opacification, rf.ed
     if k <= 1:
         return [reference], "one frame asked for"
     if not ed.found:
-        return [reference], "end-diastolic frames unknown"
+        return [reference], "heartbeat frames unknown"
     lo, hi = opacified_frames(rf, filled)
     others = sorted((f for f in ed.frames if lo <= f <= hi and f != reference),
                     key=lambda f: (-op.smoothed[f], f))  # fmt: skip
     frames = [reference, *others[: k - 1]]
-    source = (f"end-diastolic frames from the {ed.source}" if len(frames) > 1 else
-              "no other end-diastolic frame with the path fully opacified")  # fmt: skip
+    source = (f"{ed.name(plural=True)} from the {ed.source}" if len(frames) > 1 else
+              f"no other {ed.name()} with the path fully opacified")  # fmt: skip
     return frames, source
 
 

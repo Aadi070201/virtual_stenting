@@ -2,12 +2,13 @@
 
 0. A case: from the library (:func:`case_library`: synthetic beating hearts, CADICA's real
    runs if downloaded) or an uploaded run.
-1. Frame: scroll the end-diastolic (ED) frames, the recommended one marked
+1. Frame: scroll the heartbeat frames (each beat's frame with the most vessel; "end-diastolic"
+   only with an ECG), the recommended one marked
    (:func:`frame_label`).
 2. Vessel and lesions: an automatic path (:func:`auto_path`) the user can change; lesions
    numbered on the image (:func:`lesion_marks`) and shown enlarged with the measured edges
    (:func:`lesion_zoom`); the experts' boxes on CADICA's keyframes.
-3. Virtual FFR: the median over the run's ED frames (P4g), read against the FFR guide
+3. Virtual FFR: the median over the run's heartbeats (P4g), read against the FFR guide
    (:data:`FFR_GUIDE`, :func:`verdict`).
 4. Stent: the planner's suggestion, adjustable, before and after.
 5. Report.
@@ -162,13 +163,13 @@ def run_summary(run: RunInput, rf) -> list[str]:
 
 def frame_label(f: int, rf, all_frames: bool = False, expert: frozenset = frozenset()) -> str:
     """A frame on the scroll bar: its number, ★ for the recommended one, ◆ where experts marked a
-    lesion, ED (when every frame is shown) and faint marks."""
+    lesion, ED or beat (when every frame is shown; ED only with an ECG) and faint marks."""
     lo, hi = opacified_frames(rf, None)
     tags = ["★"] if f == rf.analysis_frame else []
     if f in expert:
         tags.append("◆")
     if all_frames and rf.ed.found and f in rf.ed.frames:
-        tags.append("ED")
+        tags.append("ED" if rf.ed.timed else "beat")
     if not lo <= f <= hi:
         tags.append("faint")
     return " ".join([str(f), *tags])
@@ -761,7 +762,7 @@ def contrast_state(rf, f: int) -> tuple[str, float]:
 
 def frame_chart(rf, frame: int) -> go.Figure:
     """Contrast per frame (% of peak vessel area), the full-contrast frames shaded, the
-    end-diastolic frames (diamonds), the recommended one (★) and ``frame`` (line)."""
+    heartbeat frames (diamonds), the recommended one (★) and ``frame`` (line)."""
     op = rf.opacification
     t = np.arange(op.smoothed.size)
     peak = max(float(op.smoothed.max()), 1.0)
@@ -773,8 +774,8 @@ def frame_chart(rf, frame: int) -> go.Figure:
                     line={"color": HEX["blue"], "width": 2})  # fmt: skip
     eds = [f for f in (rf.ed.frames if rf.ed.found else ()) if 0 <= f < t.size]
     fig.add_scatter(x=eds, y=[100 * op.smoothed[f] / peak for f in eds], mode="markers",
-                    name="end-diastole", marker={"color": HEX["orange"], "symbol": "diamond",
-                                                 "size": 9})  # fmt: skip
+                    name=rf.ed.name(plural=True),
+                    marker={"color": HEX["orange"], "symbol": "diamond", "size": 9})  # fmt: skip
     r = rf.analysis_frame
     fig.add_scatter(x=[r], y=[100 * op.smoothed[r] / peak], mode="markers+text", text=["★"],
                     textposition="top center", name="recommended",

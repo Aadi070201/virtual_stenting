@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from vstent.imaging.cardiac import EndDiastole
 from vstent.imaging.synthetic_cine import (
     CineSynthConfig,
     render_run,
@@ -34,8 +35,8 @@ def test_consensus_median_choice_and_flag():
     tie = pc.Consensus((_frame(10, 0.5), _frame(22, 0.75)), 3, "ED")
     assert tie.ffr == pytest.approx(0.625) and tie.chosen.frame == 10 and not tie.flagged
     assert "2 of the 3 frames" in tie.note()
-    one = pc.Consensus((_frame(5, 0.7),), 3, "end-diastolic frames unknown")
-    assert "on one frame only (end-diastolic frames unknown)" in one.note("Main-path FFR")
+    one = pc.Consensus((_frame(5, 0.7),), 3, "heartbeat frames unknown")
+    assert "on one frame only (heartbeat frames unknown)" in one.note("Main-path FFR")
     assert not pc.straddles([0.80, 0.79]) and pc.straddles([0.80, 0.81])
 
 
@@ -44,7 +45,7 @@ def _fake_run():
     smoothed[14:56] = 92.0
     smoothed[[16, 27, 38, 49]] = (95.0, 99.0, 100.0, 97.0)
     op = SimpleNamespace(window=(12, 60), smoothed=smoothed)
-    ed = SimpleNamespace(found=True, frames=(5, 16, 27, 38, 49, 60), source="R-wave pointer")
+    ed = EndDiastole((5, 16, 27, 38, 49, 60), "R-wave pointer", 11.0, "")
     return SimpleNamespace(opacification=op, ed=ed)
 
 
@@ -55,7 +56,7 @@ def test_consensus_frames_on_the_fully_opacified_path():
                                               "R-wave pointer")  # fmt: skip
     assert pc.consensus_frames(rf, 38, 3, filled=30)[0] == [38, 49]  # 16, 27: still filling
     assert pc.consensus_frames(rf, 38, 1) == ([38], "one frame asked for")
-    rf.ed.found = False
+    rf.ed = EndDiastole((), "none", None, "")
     assert pc.consensus_frames(rf, 38, 3)[0] == [38]
     tr = SimpleNamespace(filled=np.array([10.0, 11.0, np.nan, 12.0, 20.0]))
     assert pc.filled_frame(tr) == 19 and pc.filled_frame(None) is None

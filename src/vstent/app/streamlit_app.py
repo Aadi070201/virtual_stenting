@@ -102,10 +102,10 @@ def run_velocity(key: str, _rf, _centerline, frame: int, mm_per_px, hyperemic: b
                         single_view=False, hyperemic_run=hyperemic)  # fmt: skip
 
 
-@st.cache_resource(max_entries=16, show_spinner="Measuring the other end-diastolic frames…")
+@st.cache_resource(max_entries=16, show_spinner="Measuring the other heartbeats…")
 def consensus_cached(key: str, _rf, frame: int, start, end, mm_per_px, pa, pv, lumen,
                      tree: bool, v_hyp=None, _reference=None):  # fmt: skip
-    """P4g: the vessel on up to K end-diastolic frames of the run, the points following the
+    """P4g: the vessel on up to K heartbeat frames of the run, the points following the
     heart; ``_reference``: the analysis already done on ``frame``."""
     pressures = {"pa_mmhg": pa_to_mmhg(pa), "pv_mmhg": pa_to_mmhg(pv)}
     params = get_settings()[0].model_copy(update=pressures | ({"v_hyp": v_hyp} if v_hyp else {}))
@@ -702,7 +702,7 @@ if mode == "Angiogram image":
                 width=DISPLAY_WIDTH,
             )  # fmt: skip
             st.caption(
-                f"Frame {c.frame}: the end-diastolic frame closest to the median FFR, with your "
+                f"Frame {c.frame}: the heartbeat frame closest to the median FFR, with your "
                 "points moved here with the heart. The curves, intervals and plans use it."
             )
         if image_input2 is not None:

@@ -11,6 +11,7 @@ from streamlit.testing.v1 import AppTest
 from vstent.app import core, guided
 from vstent.cli import GUIDED_SCRIPT
 from vstent.data import cadica
+from vstent.imaging.cardiac import EndDiastole
 from vstent.imaging.centerline import main_trunk_endpoints
 from vstent.inference import consensus as pc
 from vstent.planning.stent import Stent
@@ -53,9 +54,11 @@ def test_plain_language_helpers():
     smoothed = np.zeros(60)
     smoothed[10:50] = 100.0
     rf = SimpleNamespace(opacification=SimpleNamespace(smoothed=smoothed, window=(8, 52)),
-                         ed=SimpleNamespace(found=True, frames=(3, 14, 25, 36, 47, 58)),
+                         ed=EndDiastole((3, 14, 25, 36, 47, 58), "images", 11.0, ""),
                          analysis_frame=25)  # fmt: skip
     assert guided.frame_label(25, rf) == "25 ★" and guided.frame_label(3, rf) == "3 faint"
+    assert guided.frame_label(14, rf, all_frames=True) == "14 beat"  # no ECG: not called ED
+    rf.ed = EndDiastole(rf.ed.frames, "ECG", 11.0, "")
     assert guided.frame_label(14, rf, all_frames=True) == "14 ED"
     assert guided.frame_label(25, rf, expert=frozenset({25})) == "25 ★ ◆"
     assert guided.severity("70–90%") == 70.0 and guided.severity("99%") == 99.0
@@ -133,7 +136,8 @@ def test_guided_app_whole_flow(guided_env):
     assert len(dias) == 2 and dias[0] != dias[1]
     assert any("S2:" in c.value for c in at.caption)
     text = " ".join(m.value for m in at.markdown)
-    assert "end-diastole" in text and "contrast" in text  # the frame's state is shown
+    assert "heartbeat frame" in text or "end-diastolic frame" in text  # the frame's state
+    assert "contrast" in text
     assert len(at.get("download_button")) == 2
 
 
@@ -144,7 +148,7 @@ def test_frame_states_and_no_plan_reasons():
 
     smoothed = np.array([0, 0, 5, 30, 80, 95, 100, 98, 92, 60, 20, 5], float)
     rf = NS(opacification=NS(smoothed=smoothed, arrival=3, window=(3, 10)),
-            ed=NS(found=True, frames=(2, 6, 10)), analysis_frame=6)  # fmt: skip
+            ed=EndDiastole((2, 6, 10), "images", 4.0, ""), analysis_frame=6)  # fmt: skip
     assert guided.contrast_state(rf, 1)[0] == "no contrast yet"
     assert guided.contrast_state(rf, 3)[0] == "filling"
     assert guided.contrast_state(rf, 6) == ("full", 100.0)

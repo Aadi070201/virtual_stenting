@@ -429,11 +429,11 @@ def test_cine_and_flow_captions():
     op = opacification(area)
     ed = EndDiastole((5,), "images", None, "Image-based: frames [5].")
     run = RunInput(np.zeros((10, 4, 4), np.uint8), "run", "x")
-    rf = RunFrames(run, area, area, [], op, ed, 5, "End-diastolic frame (images) in the window.")
+    rf = RunFrames(run, area, area, [], op, ed, 5, "Heartbeat frame (images) in the window.")
     text = core.cine_caption(10, rf)
     assert "Cine run of 10 frames" in text and "Frame 5 (0-based) is analysed" in text
     fig = core.opacification_figure(rf, 5)
-    assert [d.name for d in fig.data] == ["Vessel area (smoothed)", "End-diastolic (images)"]
+    assert [d.name for d in fig.data] == ["Vessel area (smoothed)", "Heartbeat frames (images)"]
     assert list(fig.data[1].x) == [5]
     assert "Image-based" in text
     nan = float("nan")

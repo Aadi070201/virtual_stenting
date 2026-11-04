@@ -68,6 +68,17 @@ class EndDiastole:
     def found(self) -> bool:
         return bool(self.frames)
 
+    @property
+    def timed(self) -> bool:
+        """Timed by an ECG or the DICOM's R-wave pointer (a real end-diastole)."""
+        return self.source in ("R-wave pointer", "ECG")
+
+    def name(self, plural: bool = False) -> str:
+        """What the screen calls these frames: "end-diastolic frame" only when :attr:`timed`;
+        found from the images (each heartbeat's frame with the most vessel), "heartbeat frame",
+        since that is not a verified end-diastole (D71)."""
+        return ("end-diastolic frame" if self.timed else "heartbeat frame") + "s" * plural
+
 
 def _number(value) -> float | None:
     try:
@@ -286,7 +297,7 @@ def ed_analysis_frame(op: Opacification, ed: EndDiastole) -> tuple[int, str]:
     inside = [f for f in ed.frames if lo <= f <= hi]
     if inside:
         frame = max(inside, key=lambda f: (op.smoothed[f], -f))
-        return frame, f"End-diastolic frame ({ed.source}) in the opacified window."
-    reason = ("no end-diastolic frame lies in the opacified window" if ed.found
-              else "end-diastolic frames unknown")  # fmt: skip
+        return frame, f"{ed.name().capitalize()} ({ed.source}) in the opacified window."
+    reason = (f"no {ed.name()} lies in the opacified window" if ed.found
+              else "heartbeat frames unknown")  # fmt: skip
     return op.analysis_frame, f"The most opacified frame: {reason}."

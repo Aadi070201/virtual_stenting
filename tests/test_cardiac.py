@@ -107,7 +107,8 @@ def test_ed_from_spread_finds_the_largest_tree():
     assert ed.source == "images" and ed.period_frames == pytest.approx(period, abs=1)
     assert all(min(abs(f - g) for g in ed.frames) <= 1 for f in truth[1:-1])
     frame, note = ed_analysis_frame(op, ed)
-    assert frame in ed.frames and op.window[0] <= frame <= op.window[1] and "End-diastolic" in note
+    assert frame in ed.frames and op.window[0] <= frame <= op.window[1]
+    assert "Heartbeat frame" in note
     none = ed_from_spread(spread, np.zeros(80))
     assert not none.found and ed_analysis_frame(op, none)[0] == op.analysis_frame
 
@@ -292,7 +293,7 @@ def test_cli_analyse_beating_heart_run_with_measured_flow(dark_seg_dir, tiny_exp
         and f"Analysis frame {rf.analysis_frame}:" in out.output
     )
     assert "Contrast flow velocity" in out.output and "Flow: fixed" in out.output
-    assert re.search(r"Distal FFR(, median of \d end-diastolic frames| on one frame only)",
+    assert re.search(r"Distal FFR(, median of \d heartbeats| on one frame only)",
                      out.output)  # P4g  # fmt: skip
     one = CliRunner().invoke(app, [*args, "--consensus", "1", "--tree"])
     assert one.exit_code == 0, one.output
