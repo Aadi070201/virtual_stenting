@@ -185,8 +185,8 @@ def write_report(path: str | Path, s: dict[str, Any], *, product: dict,
         "automatic path may not follow the graded vessel; the pixel size is assumed, so the "
         "reference diameter's mm limits are approximate. A rule chosen here needs a "
         "pre-registered test on unseen data.", "",
-        f"Product: `{json.dumps(product)}`. Commit `{git.get('commit')}` (dirty: "
-        f"{git.get('dirty')}).",
+        f"Product: `{json.dumps(product)}`. Commit `{git.get('git_commit')}` (dirty: "
+        f"{git.get('git_dirty')}).",
     ]  # fmt: skip
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

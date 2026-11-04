@@ -45,6 +45,16 @@ def test_summary_per_rule():
     assert s["product_flag_agrees"] == 1.0
 
 
+def test_report_names_the_commit(tmp_path):
+    studies = [cs.Study("a", 0, 0.0, 0.0, None, False, ())]
+    p = _profile([3.0, 3.0], [1.0, 0.9], [])
+    s = fa.summarise(studies, [{"key": "1", "study": "a", "side": "left", "flagged": False,
+                                "profile": p}])  # fmt: skip
+    path = fa.write_report(tmp_path / "r.md", s, product={},
+                           git={"git_commit": "abc123", "git_dirty": False})  # fmt: skip
+    assert "Commit `abc123` (dirty: False)" in path.read_text(encoding="utf-8")
+
+
 def test_sample_tasks_takes_whole_sides(monkeypatch):
     v = lambda path: cs.Video(path, "LCA", 0.0, 20, 0.0, 0.0)  # noqa: E731
     studies = [cs.Study(u, sx, sx, 0.0, None, False, (v(f"0/{u}/1.npy"), v(f"0/{u}/2.npy")))
