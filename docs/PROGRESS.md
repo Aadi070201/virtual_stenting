@@ -1587,4 +1587,10 @@ external test. E remains the final word.
   vessel widths (with vessel identity, P4k-G) or the catheter could calibrate the scale from
   the image itself; both need their own pre-registration and a dataset with trusted geometry.
 - The input intervals' pixel-size range (0.30 ± 10%) is too narrow for any of these datasets.
+- **P4q exploratory (`reports/p4q_why_dev.md`; development rows, test data not used):** with
+  the gate, all 35 of 60 SYNTAX-0 sides still flagged are flagged by a ≥ 50% mark the
+  detector confirmed; none by FFR alone. The remaining false alarms are sites where the
+  detector and the width measurement agree: detector false positives, or real mild plaque
+  that SYNTAX does not count (< 50%) read as ≥ 50%. Six SYNTAX > 0 sides (SYNTAX 2.5–12.5)
+  are no longer flagged.
 
