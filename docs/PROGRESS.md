@@ -1545,3 +1545,13 @@ external test. E remains the final word.
   rules do not fix them.
 - The pixel size is assumed (0.30 mm); the true scale differs by dataset and must be measured
   (DICOM geometry or catheter) before mm-based rules mean what they say.
+- **P4q development (`reports/p4q_lesion_gate_dev.md`; P4p's sample, 386 of 394 runs, 99
+  sides):** the gate cuts false alarms. SYNTAX-0 sides flagged: product 95%, A (DenseNet121,
+  t = 0.5) 58%, B (mean of five, t = 0.05) 83%; sensitivity 97%, 82%, 95%; Youden J 0.02,
+  0.24, 0.12. SYNTAX-0 runs with FFR ≤ 0.80: 48%, 16%, 30%. A is chosen by the registered
+  rule (paired ΔJ +0.21, 95% CI +0.03 to +0.38); the test may run once on part 1. A keeps
+  21% of the candidate narrowings; its sensitivity drops most on SYNTAX 1–14 sides (83%, 75%).
+  The run was paused at 75 of 394 runs and resumed from its cache (the first 75 at ed75283,
+  the rest at 32d597c; only the downloader changed in between).
+- Downloads now continue an interrupted `.part` (HTTP Range); CardioSYNTAX part 1 resumed at
+  5.0 of 16 GB.

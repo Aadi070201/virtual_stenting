@@ -1287,7 +1287,9 @@ it is.
 - **Limits:** SYNTAX is per side, and a run's automatic path may not follow the graded vessel.
   The pixel size is assumed (0.30 mm). Without FFR or lesion positions, this measures flags
   per side, not lesions found.
-- [ ] Development: `vstent lesion-gate --stage dev` → `reports/p4q_lesion_gate_dev.md`.
+- [x] Development: `vstent lesion-gate --stage dev` → `reports/p4q_lesion_gate_dev.md`.
+  Result (2026-11-04): J product 0.02, A 0.24, B 0.12; **A chosen** (paired ΔJ +0.21, 95% CI
+  +0.03 to +0.38); the test may run.
 - [ ] Test (once): `vstent data cardiosyntax --parts 1`, then `vstent lesion-gate --stage
   test` → `reports/p4q_lesion_gate.md`.
 
