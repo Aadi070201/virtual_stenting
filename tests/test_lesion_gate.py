@@ -117,3 +117,12 @@ def test_product_without_detector_has_no_gate():
     assert product_gate(ProductConfig()) is None
     cfg = ProductConfig(lesion_detector=["a", "b"], detector_threshold=0.05)
     assert cfg.lesion_detector == ("a", "b")
+
+
+def test_checks_build_the_gate_from_its_settings(monkeypatch):
+    from vstent.inference import product
+    from vstent.validation import physics_check as pc
+
+    monkeypatch.setattr(product, "lesion_gate", lambda dirs, t: ("gate", dirs, t))
+    assert pc._gate(None) is None
+    assert pc._gate((["a", "b"], 0.5)) == ("gate", ("a", "b"), 0.5)

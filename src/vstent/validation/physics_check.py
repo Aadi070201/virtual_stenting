@@ -81,10 +81,22 @@ def _reader(reader_dir: str | None):
     return _READERS[reader_dir]
 
 
+def _gate(spec: tuple[tuple[str, ...], float] | None):
+    """The lesion gate of ``spec`` (detector dirs, threshold; D72), loaded once per process."""
+    if spec is None:
+        return None
+    from vstent.inference.product import lesion_gate
+
+    return lesion_gate(tuple(spec[0]), float(spec[1]))
+
+
 def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams,
-                    reader=None, min_ref_mm: float | None = None) -> dict[str, Any]:  # fmt: skip
+                    reader=None, min_ref_mm: float | None = None,
+                    gate: tuple[tuple[str, ...], float] | None = None,
+                    ) -> dict[str, Any]:  # fmt: skip
     """One lesion-free run through the product's steps; every arm on each heartbeat. With
-    ``reader``, the learned lesion reading is applied to every measurement (P4k-C3)."""
+    ``reader``, the learned lesion reading is applied to every measurement (P4k-C3); with
+    ``gate`` (detector dirs, threshold), the lesion gate after it (D72)."""
     from vstent.app.guided import auto_path
     from vstent.imaging.image_io import read_run
     from vstent.imaging.run_analysis import analyse_frames
@@ -103,7 +115,8 @@ def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams,
         def one(p, im, a, b):
             return analyse_vessel(p, a, b, params=params, mm_per_px=run.pixel_spacing_mm,
                                   image=im, lesion_reader=reader, wire=False,
-                                  lesion_min_ref_mm=min_ref_mm)  # fmt: skip
+                                  lesion_min_ref_mm=min_ref_mm,
+                                  lesion_gate=_gate(gate))  # fmt: skip
 
         cons = run_consensus(rf, frame, start, end, segmenter.predict, one,
                              reference_analysis=one(prob, image, start, end))  # fmt: skip
@@ -117,7 +130,7 @@ def lesion_free_row(run_meta, split: str, segmenter, params: PhysicsParams,
 
 
 def _box_task(img, prob, items, params_dict, reader_dir=None,
-              min_ref_mm=None) -> list[dict[str, Any]]:  # fmt: skip
+              min_ref_mm=None, gate=None) -> list[dict[str, Any]]:  # fmt: skip
     from vstent.app.guided import box_path
     from vstent.inference.pipeline import analyse_vessel
 
@@ -133,7 +146,8 @@ def _box_task(img, prob, items, params_dict, reader_dir=None,
                 raise ValueError("no vessel in the box")
             analysis = analyse_vessel(prob, path[0], path[1], params=params, image=img,
                                       lesion_reader=reader, wire=False,
-                                      lesion_min_ref_mm=min_ref_mm)  # fmt: skip
+                                      lesion_min_ref_mm=min_ref_mm,
+                                      lesion_gate=_gate(gate))  # fmt: skip
             row.update({f"ffr_{o}": v for o, v in distal_ffr(analysis.qca.profile, params).items()})
         except Exception as exc:  # noqa: BLE001
             row["error"] = f"{type(exc).__name__}: {exc}"
@@ -143,8 +157,9 @@ def _box_task(img, prob, items, params_dict, reader_dir=None,
 
 def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
                 workers: int = 1, progress: Callable[[int, int], None] | None = None,
-                reader_dir: str | None = None,
-                min_ref_mm: float | None = None) -> list[dict[str, Any]]:  # fmt: skip
+                reader_dir: str | None = None, min_ref_mm: float | None = None,
+                gate: tuple[tuple[str, ...], float] | None = None,
+                ) -> list[dict[str, Any]]:  # fmt: skip
     """One row per expert box (graded 50–98%) of the ``stage`` patients; segmentation here,
     measurements in ``workers`` processes."""
     from concurrent.futures import ProcessPoolExecutor
@@ -167,7 +182,7 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
         for k, (image, items) in enumerate(frames):
             img = read_image_file(image).image
             results[k] = _box_task(img, segmenter.predict(img), items, pd, reader_dir,
-                                   min_ref_mm)  # fmt: skip
+                                   min_ref_mm, gate)  # fmt: skip
             if progress:
                 progress(k + 1, len(frames))
     else:
@@ -179,7 +194,7 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
             for k, (image, items) in enumerate(frames):
                 img = read_image_file(image).image
                 fut = pool.submit(_box_task, img, segmenter.predict(img), items, pd,
-                                  reader_dir, min_ref_mm)  # fmt: skip
+                                  reader_dir, min_ref_mm, gate)  # fmt: skip
                 pending[fut] = k
                 while len(pending) >= 2 * workers:
                     fut = next(iter(pending))
@@ -197,8 +212,9 @@ def graded_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None, *,
 
 def lesion_free_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None,
                      progress: Callable[[int, int], None] | None = None,
-                     reader_dir: str | None = None,
-                     min_ref_mm: float | None = None) -> list[dict[str, Any]]:  # fmt: skip
+                     reader_dir: str | None = None, min_ref_mm: float | None = None,
+                     gate: tuple[tuple[str, ...], float] | None = None,
+                     ) -> list[dict[str, Any]]:  # fmt: skip
     """One row per lesion-free selected run of the ``stage`` patients (patients without a
     graded lesion have no split and are left out)."""
     from vstent.data import cadica
@@ -210,7 +226,7 @@ def lesion_free_rows(stage: str, segmenter, params: PhysicsParams, raw_dir=None,
     rows = []
     for k, r in enumerate(runs):
         rows.append(lesion_free_row(r, stage, segmenter, params, _reader(reader_dir),
-                                    min_ref_mm))  # fmt: skip
+                                    min_ref_mm, gate))  # fmt: skip
         if progress:
             progress(k + 1, len(runs))
     return rows
