@@ -2243,6 +2243,36 @@ def lesion_gate(
 
 
 @app.command()
+def pixel_size(
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CARDIAG folder.")] = Path(
+        "data/raw/cardiag"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """The true pixel size on CARDIAG and a catheter calibration check (P4r; no model run)
+    → reports/pixel_size.md and .json."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.uncertainty.greyzone import load_uncertainty
+    from vstent.validation import pixel_size as ps
+
+    git = git_info()
+    typer.echo(DISCLAIMER)
+    archive = raw_dir / "CARDIAG.zip"
+    if not archive.exists():
+        raise typer.BadParameter(f"{archive} not found (run `vstent data cardiag`)")
+    samples = ps.read_samples(archive)
+    s = ps.summarise(samples, input_rel=load_uncertainty()[0].inputs.pixel_size_rel)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    md = "\n".join(ps.report_lines(s, git)) + "\n"
+    (report_dir / "pixel_size.md").write_text(md, encoding="utf-8")
+    (report_dir / "pixel_size.json").write_text(json.dumps({"summary": s, "git": git}, indent=1),
+                                                encoding="utf-8")  # fmt: skip
+    typer.echo(f"Wrote {report_dir / 'pixel_size.md'}")
+
+
+@app.command()
 def angiocad_check(
     workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
     raw_dir: Annotated[Path, typer.Option("--raw-dir", help="AngioCAD folder.")] = Path(
