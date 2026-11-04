@@ -1255,6 +1255,10 @@ it is.
   stretch (where its %DS is ≥ half its deepest). An unconfirmed narrowing is set to its
   reference diameter (as if healthy), for the marks and for the physics. Then the learned
   reader and every other step as now (D69, D70).
+  - *Implementation detail, fixed before any run (2026-11-04):* the gate runs after the
+    learned reader, on its candidates, so the reader cannot deepen what is left of a removed
+    narrowing (`imaging/lesion_gate.py`). In the product it is off until adopted
+    (`lesion_detector` in `configs/product.yaml`).
 - **Variants:**
   - A: DenseNet121 (amendment 2's choice) at t = 0.5;
   - B: the mean of the five detectors' maps at t = 0.05.

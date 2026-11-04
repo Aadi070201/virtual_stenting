@@ -89,9 +89,11 @@ def rows(studies: list[Study], raw_dir: str | Path, seg_dir: str | Path,
          ed_model_dir: str | None, *, cache_file: str | Path = ROWS_FILE, workers: int = 1,
          progress: Callable[[int, int], None] | None = None,
          task_list: list[tuple[str, str, Video]] | None = None,
-         detail: bool = False) -> list[dict[str, Any]]:  # fmt: skip
+         detail: bool = False, row_fn: Callable[..., dict[str, Any]] | None = None,
+         row_extra: tuple = ()) -> list[dict[str, Any]]:  # fmt: skip
     """:func:`run_row` for every task (or ``task_list``), cached in ``cache_file`` (saved every
-    10 runs)."""
+    10 runs). ``row_fn``: another per-run function, called as ``row_fn(study, side, run,
+    raw_dir, seg_dir, *row_extra)`` (P4q)."""
     cache_file = Path(cache_file)
     cache = json.loads(cache_file.read_text(encoding="utf-8")) if cache_file.exists() else {}
     cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -109,17 +111,19 @@ def rows(studies: list[Study], raw_dir: str | Path, seg_dir: str | Path,
         if progress:
             progress(len(all_tasks) - len(todo) + done, len(all_tasks))
 
-    args = [(u, side, v, str(raw_dir), str(seg_dir), ed_model_dir, detail) for u, side, v in todo]
+    fn = row_fn or run_row
+    extra = row_extra if row_fn else (ed_model_dir, detail)
+    args = [(u, side, v, str(raw_dir), str(seg_dir), *extra) for u, side, v in todo]
     if workers <= 1:
         for a in args:
-            keep(run_row(*a))
+            keep(fn(*a))
     else:
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
         for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
             os.environ.setdefault(var, "1")
         with ProcessPoolExecutor(max_workers=workers) as pool:
-            for f in as_completed([pool.submit(run_row, *a) for a in args]):
+            for f in as_completed([pool.submit(fn, *a) for a in args]):
                 keep(f.result())
     cache_file.write_text(json.dumps(cache), encoding="utf-8")
     return [cache[v.path] for _u, _s, v in all_tasks if v.path in cache]

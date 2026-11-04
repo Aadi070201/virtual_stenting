@@ -54,18 +54,26 @@ def profile_of(analysis, step_mm: float = PROFILE_STEP_MM) -> dict[str, Any]:
             "lesions": [r3(les) for les in lesions]}  # fmt: skip
 
 
-def product_on_run(run, seg_dir: str, *, detail: bool = False):
+PRODUCT = "product"
+
+
+def product_on_run(run, seg_dir: str, *, detail: bool = False, gate=PRODUCT, rf=None):
     """(measurements, the run's frame analysis) of one :class:`~vstent.imaging.image_io.RunInput`
     through the product's steps. Raises if the run cannot be measured. With ``detail``, the
-    measurements also hold the chosen heartbeat's :func:`profile_of` (``"profile"``)."""
+    measurements also hold the chosen heartbeat's :func:`profile_of` (``"profile"``). ``gate``:
+    a :class:`~vstent.imaging.lesion_gate.LesionGate` or ``None`` in place of the product's
+    (P4q); ``rf``: the run's frame analysis, if already done (it does not depend on ``gate``)."""
     from vstent.app.guided import MARK_MIN_DS, auto_path, lesion_marks
     from vstent.imaging.run_analysis import analyse_frames
     from vstent.inference.consensus import run_consensus
     from vstent.inference.pipeline import analyse_vessel
+    from vstent.inference.product import product_gate
 
     w = product_state(seg_dir)
     seg, cfg, params, reader = w["seg"], w["cfg"], w["params"], w["reader"]
-    rf = analyse_frames(run, seg.predict)
+    if gate == PRODUCT:
+        gate = product_gate(cfg)
+    rf = rf if rf is not None else analyse_frames(run, seg.predict)
     frame = rf.analysis_frame
     image = run.frames[frame]
     prob = seg.predict(image)
@@ -74,7 +82,8 @@ def product_on_run(run, seg_dir: str, *, detail: bool = False):
     def one(p, im, a, b):
         return analyse_vessel(p, a, b, params=params, mm_per_px=run.pixel_spacing_mm, image=im,
                               lesion_reader=reader, wire=cfg.wire,
-                              lesion_min_ref_mm=cfg.lesion_min_ref_mm)  # fmt: skip
+                              lesion_min_ref_mm=cfg.lesion_min_ref_mm,
+                              lesion_gate=gate)  # fmt: skip
 
     cons = run_consensus(rf, frame, start, end, seg.predict, one,
                          reference_analysis=one(prob, image, start, end))  # fmt: skip
@@ -87,6 +96,7 @@ def product_on_run(run, seg_dir: str, *, detail: bool = False):
         "heartbeats": len(cons.used), "ffr": float(cons.ffr),
         "max_ds": float(max((m.ds_pct for m in marks), default=0.0)),
         "marked": len(severe), "length_mm": float(q.s_mm[-1]),
+        "gate": None if cons.chosen.analysis.gate is None else list(cons.chosen.analysis.gate),
     }  # fmt: skip
     out["flagged"] = bool(severe) or round(out["ffr"], 2) <= 0.80
     if detail:

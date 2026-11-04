@@ -163,6 +163,14 @@ def apply_learned(
             continue  # P4n: a thin vessel keeps the edges' depth
         r = rescale(VesselProfile(profile.s, r, profile.reference_radius()), c, float(p),
                     MIN_DIAMETER_PX * m_per_px / 2.0)  # fmt: skip
+    return with_radii(qca, r, "learned"), list(zip(cands, preds.tolist(), strict=True))
+
+
+def with_radii(qca: QCAResult, r: np.ndarray, lumen_method: str) -> QCAResult:
+    """``qca`` with the physics profile's radii ``r`` (m) and the image diameters to match (the
+    reference unchanged; each edge pair moved symmetrically about its midpoint)."""
+    profile = qca.profile
+    m_per_px = qca.mm_per_px * qca.size_factor * 1e-3
     new_profile = VesselProfile(profile.s, r, profile.reference_radius())
     d_px = 2.0 * r / m_per_px
     old = qca.diameters
@@ -175,6 +183,4 @@ def apply_learned(
         fallback=old.fallback,
         branch=old.branch,
     )
-    return replace(qca, diameters=diam, profile=new_profile, lumen_method="learned"), list(
-        zip(cands, preds.tolist(), strict=True)
-    )
+    return replace(qca, diameters=diam, profile=new_profile, lumen_method=lumen_method)

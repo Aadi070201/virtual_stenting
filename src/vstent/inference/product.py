@@ -1,8 +1,9 @@
 """The product's FFR pipeline settings (``configs/product.yaml``): which learned lesion reader
-measures the lesions' depth, which outflow model the solver uses, and whether the FFR is read
-where a pressure wire would sit. Kept apart from ``configs/physics.yaml``, which also drives
-the synthetic data and the physics checks. Each setting changes only through a pre-registered
-decision (docs/DECISIONS.md). Torch-free.
+measures the lesions' depth, which outflow model the solver uses, whether the FFR is read where
+a pressure wire would sit, and whether a lesion detector must confirm each narrowing (P4q).
+Kept apart from ``configs/physics.yaml``, which also drives the synthetic data and the physics
+checks. Each setting changes only through a pre-registered decision (docs/DECISIONS.md).
+Torch-free.
 """
 
 from functools import lru_cache
@@ -22,6 +23,8 @@ class ProductConfig(StrictModel):
     outflow: Literal["none", "murray"] = "none"
     wire: bool = True  # D68
     lesion_min_ref_mm: float | None = None  # P4n: the learned depth only in vessels ≥ this
+    lesion_detector: tuple[str, ...] | None = None  # P4q: detector dirs (the mean of their maps)
+    detector_threshold: float = 0.5  # P4q: detections are the pixels ≥ this
 
 
 @lru_cache(maxsize=4)
@@ -45,3 +48,28 @@ def product_reader(reader_dir: str | None):
     from vstent.inference.lesion_runtime import LesionRunner
 
     return LesionRunner.from_dir(reader_dir)
+
+
+@lru_cache(maxsize=4)
+def lesion_gate(detector_dirs: tuple[str, ...] | None, threshold: float):
+    """P4q's gate: the mean of the detectors' lesion maps, detections ≥ ``threshold`` (loaded
+    once), or ``None`` without detectors."""
+    if not detector_dirs:
+        return None
+    import numpy as np
+
+    from vstent.imaging.lesion_gate import LesionGate
+    from vstent.inference.onnx_runtime import MapRunner
+
+    runners = [MapRunner.from_dir(d) for d in detector_dirs]
+
+    def predict(image: np.ndarray) -> np.ndarray:
+        return np.mean([r.predict(image)[0] for r in runners], axis=0)
+
+    return LesionGate(predict, threshold)
+
+
+def product_gate(cfg: ProductConfig | None = None):
+    """The product's lesion gate (P4q), or ``None``."""
+    cfg = cfg or product_config()
+    return lesion_gate(cfg.lesion_detector, cfg.detector_threshold)

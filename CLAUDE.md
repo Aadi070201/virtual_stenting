@@ -105,6 +105,7 @@ vstent/
                         # pass over a run's frames: the product's cine steps, P7),
                         # synthetic_cine.py + cine_report.py (beating-heart synthetic runs, P7),
                         # qca_tree.py (side branches from the skeleton, P2), image_io.py (one loader),
+                        # lesion_patch.py (learned reader patches), lesion_gate.py (P4q),
                         # projection.py (DICOM C-arm geometry, magnification, P5), twoview.py (two-view
                         # 3D centreline + lumen profile, P5), synthetic3d.py + twoview_report.py
                         # (synthetic two-view cases), sim_to_real.py (segmenter comparison, P8)
@@ -128,7 +129,8 @@ vstent/
                         # frame vs the clinicians' frames, contrast transit, P4d),
                         # physiology_real.py (model assumptions vs DEFINE-FLOW, P4e),
                         # repeatability.py (frame / operator repeatability on CADICA, P4f),
-                        # consensus.py (split-half repeatability of the K-frame median, P4g)
+                        # consensus.py (split-half repeatability of the K-frame median, P4g),
+                        # false_alarms.py (P4p), lesion_gate_check.py (P4q)
     config.py           # StrictModel base, YAML loader, save_run_metadata (config + git hash)
     plotting.py         # shared chart style for report figures
     reporting/          # demo.py (vstent demo), mvp.py (assembled MVP report)
@@ -224,6 +226,9 @@ uv run vstent lesion-data --version 2 && uv run vstent train-lesion --config con
 uv run vstent lesion-report --stage dev --version 2 --model models/lesion/<run>   # then --stage test
 uv run vstent physics-check --stage dev --part c3 --reader models/lesion/<run> --min-ref-mm 2
 uv run vstent stent-check --stage dev --min-ref-mm 2   # P4m: virtual stenting on CADICA (no FFR)
+uv run vstent false-alarms --workers 3              # P4p: reading rules on CardioSYNTAX profiles
+uv run vstent lesion-gate --stage dev --workers 3   # P4q: narrowings confirmed by the detector;
+                                                    # then --stage test (once, CardioSYNTAX part 1)
 uv run vstent train-seg --config configs/lesion_det.yaml   # P4k-E detector; vessel_id*.yaml: P4k-G
 uv run vstent export-map --run runs/<name>          # → models/lesion_det/ or models/vessel_id/
 uv run vstent lesion-detection --stage dev          # also vessel-id-report; then --stage test

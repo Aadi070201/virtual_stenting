@@ -1250,15 +1250,20 @@ def analyse(
                           figure, plan_cfg, lumen)  # fmt: skip
         return
     surrogate = SurrogateRunner.from_dir(sur_dir)
-    from vstent.inference.product import product_config, product_params, product_reader
+    from vstent.inference.product import (
+        product_config,
+        product_gate,
+        product_params,
+        product_reader,
+    )
 
     prod = product_config()  # the product's FFR pipeline (configs/product.yaml)
     params = product_params(params, prod)
-    reader = product_reader(prod.lesion_reader)
+    reader, gate = product_reader(prod.lesion_reader), product_gate(prod)
     result = analyse_vessel(
         prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px, image=img,
         lumen=lumen, lesion_reader=reader, wire=prod.wire,
-        lesion_min_ref_mm=prod.lesion_min_ref_mm,
+        lesion_min_ref_mm=prod.lesion_min_ref_mm, lesion_gate=gate,
     )  # fmt: skip
     q = result.qca
     fv, fixed_v = None, params.v_hyp
@@ -1273,7 +1278,7 @@ def analyse(
             result = analyse_vessel(
                 prob, start, end, params=params, surrogate=surrogate, mm_per_px=mm_per_px,
                 image=img, lumen=lumen, lesion_reader=reader, wire=prod.wire,
-        lesion_min_ref_mm=prod.lesion_min_ref_mm,
+                lesion_min_ref_mm=prod.lesion_min_ref_mm, lesion_gate=gate,
             )  # fmt: skip
             q = result.qca
         elif flow == "measured":
@@ -1286,7 +1291,8 @@ def analyse(
             return analyse_vessel(p, a, b, params=params, surrogate=surrogate,
                                   mm_per_px=mm_per_px, image=im, lumen=lumen,
                                   lesion_reader=reader, wire=prod.wire,
-        lesion_min_ref_mm=prod.lesion_min_ref_mm)  # fmt: skip
+                                  lesion_min_ref_mm=prod.lesion_min_ref_mm,
+                                  lesion_gate=gate)  # fmt: skip
 
         cons = run_consensus(run_frames, run_t, start, end, segmenter.predict, one_frame,
                              k=consensus or CONSENSUS_K, reference_analysis=result)  # fmt: skip
@@ -2120,6 +2126,91 @@ def false_alarms(
                            git=git)  # fmt: skip
     payload = {"summary": summary, "product": product, "git": git}
     path.with_suffix(".json").write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    typer.echo(f"Wrote {path}")
+
+
+@app.command()
+def lesion_gate(
+    stage: Annotated[str, typer.Option("--stage", help="dev, then test (once, if dev allows).")],
+    workers: Annotated[int, typer.Option("--workers", min=1)] = 1,
+    raw_dir: Annotated[Path, typer.Option("--raw-dir", help="CardioSYNTAX folder.")] = Path(
+        "data/raw/cardiosyntax"
+    ),
+    report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+) -> None:
+    """A narrowing counts only where the lesion detector agrees (P4q; resumable): variants A and
+    B on P4p's sample → reports/p4q_lesion_gate_dev.md; the chosen one against the product on
+    CardioSYNTAX part 1 → reports/p4q_lesion_gate.md."""
+    import json
+
+    from vstent.config import git_info
+    from vstent.data.cardiosyntax import load_studies
+    from vstent.inference.onnx_runtime import SEG_ONNX_FILE
+    from vstent.validation import cardiosyntax_check as cc
+    from vstent.validation import false_alarms as fa
+    from vstent.validation import lesion_gate_check as lg
+
+    if stage not in ("dev", "test"):
+        raise typer.BadParameter("--stage is dev or test")
+    git = git_info()  # before anything is written
+    typer.echo(DISCLAIMER)
+    studies = load_studies(raw_dir)
+    seg_dir = _latest_model_dir(Path("models/seg"), SEG_ONNX_FILE)
+
+    def progress(k, n):
+        if k % 25 == 0 or k == n:
+            typer.echo(f"  {k} / {n} runs")
+
+    names = {"product": "Product", "A": "A: DenseNet121, t = 0.5",
+             "B": "B: mean of five, t = 0.05"}  # fmt: skip
+    if stage == "dev":
+        task_list = fa.sample_tasks(studies)
+        typer.echo(f"{len(task_list)} runs …")
+        arms = {"A": lg.VARIANTS["A"], "B": lg.VARIANTS["B"]}
+        new = cc.rows(studies, raw_dir, seg_dir, None, cache_file=lg.DEV_ROWS, workers=workers,
+                      progress=progress, task_list=task_list, row_fn=lg.run_row,
+                      row_extra=(arms,))  # fmt: skip
+        p4p = json.loads(fa.PROFILES_FILE.read_text(encoding="utf-8"))  # P4p's product rows
+        base = lg.from_p4p([p4p[v.path] for _u, _s, v in task_list if v.path in p4p])
+        s = lg.summarise(studies, lg.merge(base, new), ["product", "A", "B"], base="product")
+        d = lg.dev_decision(s)
+        lg.DECISION.write_text(json.dumps({"decision": d, "summary": s, "git": git}, indent=1),
+                               encoding="utf-8")  # fmt: skip
+        lines = [f"**Decision (P4q, development):** {d['reason']}."]
+        path = lg.write_report(
+            report_dir / "p4q_lesion_gate_dev.md", s, title="P4q: narrowings confirmed by the "
+            "lesion detector (development)", intro="CardioSYNTAX parts 0 and 9, P4p's sample "
+            "(seen before). The product's rows are P4p's.", names=names, decision_lines=lines,
+            git=git)  # fmt: skip
+    else:
+        d = lg.load_decision()["decision"]
+        if d["chosen"] is None:
+            raise typer.BadParameter("development did not allow the test (P4q)")
+        dirs, t = d["variant"]
+        names["gated"] = names[d["chosen"]]
+        arms = {"product": None, "gated": (tuple(dirs), float(t))}
+        task_list = cc.tasks(studies, parts=lg.TEST_PARTS)
+        typer.echo(f"{len(task_list)} runs …")
+        rows = cc.rows(studies, raw_dir, seg_dir, None, cache_file=lg.TEST_ROWS, workers=workers,
+                       progress=progress, task_list=task_list, row_fn=lg.run_row,
+                       row_extra=(arms,))  # fmt: skip
+        s = lg.summarise(studies, rows, ["product", "gated"], base="product")
+        td = lg.test_decision(s, "gated")
+        ok = ["met" if c else "not met" for c in td["criteria"]]
+        lines = [
+            f"**Decision (P4q, test):** {'adopt' if td['adopt'] else 'not adopted'}. "
+            f"1. False alarms fall by ≥ {lg.MIN_DROP:.0%}: {td['drop']:.1%} ({ok[0]}). "
+            f"2. Paired J difference above 0: {td['dj']:+.3f} "
+            f"({td['dj_interval'][0]:+.3f} to {td['dj_interval'][1]:+.3f}; {ok[1]})."
+        ]
+        path = lg.write_report(
+            report_dir / "p4q_lesion_gate.md", s, title="P4q: narrowings confirmed by the "
+            "lesion detector (test, run once)", intro=f"CardioSYNTAX part 1 (never used), "
+            f"variant {d['chosen']} chosen on development.", names=names, decision_lines=lines,
+            git=git)  # fmt: skip
+        (report_dir / "p4q_lesion_gate.json").write_text(
+            json.dumps({"summary": s, "decision": td, "git": git}, indent=1), encoding="utf-8"
+        )
     typer.echo(f"Wrote {path}")
 
 

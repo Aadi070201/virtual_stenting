@@ -72,6 +72,7 @@ class VesselAnalysis:
         full_qca: the whole measured path when ``qca`` was cut at the wire position (D68:
             the last point with a reference diameter ≥ 2 mm); ``None`` when nothing was cut.
             Shown, not used for the FFR.
+        gate: (confirmed, candidate) narrowings when a lesion detector gated them (P4q).
     """
 
     prob: np.ndarray
@@ -84,6 +85,7 @@ class VesselAnalysis:
     surrogate_std: np.ndarray | None = None
     model_interval: Interval | None = None
     full_qca: QCAResult | None = None
+    gate: tuple[int, int] | None = None
 
     @property
     def ffr_distal_solver(self) -> float:
@@ -165,6 +167,7 @@ def analyse_vessel(
     lesion_reader=None,
     wire: bool = True,
     lesion_min_ref_mm: float | None = None,
+    lesion_gate=None,
 ) -> VesselAnalysis:
     """QCA + FFR for the vessel between ``start`` and ``end`` ((row, col) px) on ``prob``.
     ``image``: the angiogram ``prob`` was segmented from (lumen edges from its intensity);
@@ -173,7 +176,9 @@ def analyse_vessel(
     a :class:`~vstent.inference.lesion_runtime.LesionRunner` whose predicted %DS sets each
     candidate lesion's depth (P4i; a research option, not adopted, D63). ``wire``: read the
     FFR where a pressure wire would sit (D68; the vessel cut at the last point with a reference
-    diameter ≥ 2 mm, the whole path kept in ``full_qca``)."""
+    diameter ≥ 2 mm, the whole path kept in ``full_qca``). ``lesion_gate``: a
+    :class:`~vstent.imaging.lesion_gate.LesionGate`; a narrowing the detector does not confirm
+    is set to its reference diameter (P4q; after the learned reader)."""
     params = params or PhysicsParams()
     qca = run_qca(prob, start, end, mm_per_px=mm_per_px, image=image,
                   lumen=_lumen(image, lumen))  # fmt: skip
@@ -182,6 +187,12 @@ def analyse_vessel(
 
         qca, _ = apply_learned(qca, image, prob, lesion_reader.predict,
                                min_ref_mm=lesion_min_ref_mm)  # fmt: skip
+    gate = None
+    if lesion_gate is not None and image is not None:
+        from vstent.imaging.lesion_gate import apply_gate
+
+        qca, pairs = apply_gate(qca, image, lesion_gate)
+        gate = (sum(ok for _c, ok in pairs), len(pairs))
     full_qca = None
     if wire:  # D68: the FFR where a pressure wire would sit
         cut, _ = at_wire(qca)
@@ -225,7 +236,7 @@ def analyse_vessel(
             "is still ≥ 2 mm wide (as a pressure wire would be); the thinner rest is shown only"
         )
     return VesselAnalysis(prob, qca, solver, s, ffr, params, warnings, std, interval,
-                          full_qca)  # fmt: skip
+                          full_qca, gate)  # fmt: skip
 
 
 @dataclass(frozen=True, eq=False)
