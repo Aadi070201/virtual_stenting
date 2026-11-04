@@ -64,6 +64,9 @@ def download(
     """Stream ``url`` to ``dest`` via ``dest.part``; rename only if the checksum matches (SHA-256
     if given, else MD5; one of them is required).
 
+    A ``dest.part`` shorter than ``expected_size`` (an interrupted download) is continued with
+    an HTTP Range request when the server answers 206; otherwise the download starts over.
+
     Raises ``ValueError`` on a checksum or size mismatch (the partial file is removed).
     """
     if expected_md5 is None and expected_sha256 is None:
@@ -74,17 +77,24 @@ def download(
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_name(dest.name + ".part")
     h = hashlib.new(algorithm)
-    done, next_report = 0, 0
-    request = urllib.request.Request(url, headers={"User-Agent": "vstent-research-prototype"})
-    with urllib.request.urlopen(request, timeout=timeout) as resp, part.open("wb") as f:
-        total = int(resp.headers.get("Content-Length") or 0) or expected_size
-        for block in iter(lambda: resp.read(CHUNK), b""):
-            f.write(block)
-            h.update(block)
-            done += len(block)
-            if total and done >= next_report:
-                log(f"  {done / 1e6:7.1f} / {total / 1e6:.1f} MB")
-                next_report += total // 10
+    done = part.stat().st_size if part.exists() else 0
+    if not (expected_size and 0 < done < expected_size):
+        done = 0
+    headers = {"User-Agent": "vstent-research-prototype"}
+    if done:
+        headers["Range"] = f"bytes={done}-"
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=timeout) as resp:
+        if done and getattr(resp, "status", None) == 206:
+            log(f"  resuming at {done / 1e6:.1f} MB")
+            with part.open("rb") as f:
+                for block in iter(lambda: f.read(CHUNK), b""):
+                    h.update(block)
+        else:
+            done = 0
+        total = expected_size or int(resp.headers.get("Content-Length") or 0)
+        with part.open("ab" if done else "wb") as f:
+            done = _stream(resp, f, h, done, total, log)
     if expected_size is not None and done != expected_size:
         part.unlink()
         raise ValueError(f"{url}: got {done} bytes, expected {expected_size}")
@@ -93,6 +103,20 @@ def download(
         raise ValueError(f"{url}: {algorithm.upper()} {h.hexdigest()} != expected {expected}")
     part.replace(dest)
     return dest
+
+
+def _stream(resp, f, h, done: int, total: int, log: Callable[[str], None]) -> int:
+    """Copy ``resp`` to ``f`` in 1 MiB blocks, updating ``h``; log about every tenth of
+    ``total`` bytes. Returns the bytes in ``f`` (``done`` before the copy)."""
+    next_report = done
+    for block in iter(lambda: resp.read(CHUNK), b""):
+        f.write(block)
+        h.update(block)
+        done += len(block)
+        if total and done >= next_report:
+            log(f"  {done / 1e6:7.1f} / {total / 1e6:.1f} MB")
+            next_report += total // 10
+    return done
 
 
 def safe_extract(archive: str | Path, out_dir: str | Path) -> list[str]:

@@ -51,3 +51,39 @@ def test_safe_extract_rejects_path_traversal(tmp_path):
     with pytest.raises(ValueError, match="unsafe"):
         safe_extract(bad, tmp_path / "out")
     assert not (tmp_path / "evil.txt").exists()
+
+
+class _Resp:
+    def __init__(self, data, status):
+        self.data, self.status, self.headers, self.pos = data, status, {}, 0
+
+    def read(self, n):
+        block, self.pos = self.data[self.pos : self.pos + n], self.pos + n
+        return block
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+@pytest.mark.parametrize("honours_range", [True, False])
+def test_download_resumes_an_interrupted_part(tmp_path, monkeypatch, honours_range):
+    from vstent.data import arcade
+
+    data = bytes(range(256)) * 40
+    seen = []
+
+    def urlopen(request, timeout):
+        rng = request.get_header("Range")
+        seen.append(rng)
+        start = int(rng.split("=")[1].rstrip("-")) if rng and honours_range else 0
+        return _Resp(data[start:], 206 if start else 200)
+
+    monkeypatch.setattr(arcade.urllib.request, "urlopen", urlopen)
+    dest = tmp_path / "f.zip"
+    (tmp_path / "f.zip.part").write_bytes(b"\xff" * 7 if not honours_range else data[:3000])
+    arcade.download("http://x/f.zip", dest, expected_md5=hashlib.md5(data).hexdigest(),
+                    expected_size=len(data))  # fmt: skip
+    assert dest.read_bytes() == data and seen == ["bytes=3000-" if honours_range else "bytes=7-"]
