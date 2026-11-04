@@ -31,3 +31,6 @@ Thumbs.db
 
 # presentations made from docs/presentation (local; the brief and figures are tracked)
 docs/presentation/*.pptx
+
+# virtual cath lab (cathlab/): generated data
+/cathlab/data/

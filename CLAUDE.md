@@ -142,6 +142,9 @@ vstent/
     cli.py
   tests/
   reports/              # generated metrics (*.md, *.json) and figures/
+  cathlab/              # the virtual cath lab: a SEPARATE app (package vcathlab, own pyproject,
+                        # env, tests, CLAUDE.md). Never import it from vstent or vstent from it;
+                        # the link is its exported dataset format (cathlab/docs/DATA_FORMAT.md)
   data/  models/  runs/ # git-ignored; data/raw/arcade/ (ARCADE, see docs/DATA.md);
                         # models/surrogate/<run-name>/{surrogate.onnx, norm_stats.json, config.yaml,
                         # export_meta.json}, ensembles also {screen.onnx, conformal.json,
