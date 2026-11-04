@@ -1240,6 +1240,53 @@ J: 81% of normal sides), and P4o's rows tie it to long paths into thin vessels. 
 - [ ] A product change from this needs its own pre-registration before it is tested:
   CardioSYNTAX parts not used so far (1–8) and CADICA's C3 rule, run once.
 
+## P4q: A narrowing counts only where the lesion detector agrees (added 2026-11-04; pre-registered before any code or runs)
+
+Why: P4p found that the false alarms come from narrowings read in the main vessels, and no
+reading rule removes them. P4k-E's whole-image detector, trained on the experts' boxes, makes
+0.45 detections per lesion-free validation frame and finds 84% of CADICA's 70–98% lesions. The
+width measurement sees narrowings almost everywhere; the detector rarely invents one. So the
+detector decides whether a narrowing is real, and the width measurement says how deep and long
+it is.
+
+- **Rule:** on each analysed frame, the detector's probability map; detections are the pixels
+  ≥ t. A candidate narrowing (the learned reader's candidates: local deepest points with %DS
+  ≥ 15%) is **confirmed** when a detection lies within one reference diameter of its narrowed
+  stretch (where its %DS is ≥ half its deepest). An unconfirmed narrowing is set to its
+  reference diameter (as if healthy), for the marks and for the physics. Then the learned
+  reader and every other step as now (D69, D70).
+- **Variants:**
+  - A: DenseNet121 (amendment 2's choice) at t = 0.5;
+  - B: the mean of the five detectors' maps at t = 0.05.
+- **Development (choosing A or B):** P4p's sample (CardioSYNTAX parts 0 and 9, 100 sides,
+  seen before). Per variant: SYNTAX-0 sides flagged (false alarms), SYNTAX > 0 sides flagged
+  (sensitivity) and Youden's J (sensitivity − false alarms); the product's numbers from P4p's
+  rows.
+  - The higher J wins; within 0.02 of each other, A (one model).
+  - If neither raises J by ≥ 0.10 over the product, stop: no test is run, and the result is
+    reported.
+- **Test (run once, only if development allows):** CardioSYNTAX part 1, never used: 200
+  studies, 262 SYNTAX-0 and 138 SYNTAX > 0 sides by `all.json`, before P4o's run selection
+  (no bypass, ≥ 10 frames, a confident LCA / RCA tag). Every run goes through the product and
+  through the product with the chosen variant, on the same analysis frame and path. A side is
+  flagged if any of its runs is.
+- **Adopt** (into `configs/product.yaml`, and so the app and `vstent analyse`) only if both
+  hold:
+  1. false alarms fall by ≥ 20 percentage points;
+  2. J rises, with the 95% interval of the paired difference above 0 (bootstrap by study,
+     2,000 resamples, seed 0).
+- **Also reported:**
+  - sensitivity by SYNTAX bin (1–7, 8–14, ≥ 15);
+  - the side-level AUC of the lowest FFR;
+  - SYNTAX-0 runs with FFR ≤ 0.80, and marks per SYNTAX-0 run;
+  - the share of candidate narrowings confirmed.
+- **Limits:** SYNTAX is per side, and a run's automatic path may not follow the graded vessel.
+  The pixel size is assumed (0.30 mm). Without FFR or lesion positions, this measures flags
+  per side, not lesions found.
+- [ ] Development: `vstent lesion-gate --stage dev` → `reports/p4q_lesion_gate_dev.md`.
+- [ ] Test (once): `vstent data cardiosyntax --parts 1`, then `vstent lesion-gate --stage
+  test` → `reports/p4q_lesion_gate.md`.
+
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 
 Why (disclosed; found on development data after D69): in P4m's development run, about 8 of
