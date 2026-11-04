@@ -958,9 +958,22 @@ tuned to the anchors.
     validation Dice for early stopping).
 - **Operating point:** the highest t with validation sensitivity ≥ 95% of boxes. False alarms:
   per lesion-free frame, and per annotated frame (an upper bound: not every lesion is boxed).
-- [ ] **Shown in the app** (flags to review, each with "measure this", and B's path through
+- [x] **Shown in the app** (flags to review, each with "measure this", and B's path through
   the strongest flag) if, at t, false alarms are ≤ 2 per lesion-free validation frame.
   Otherwise a research option.
+
+  **Result: research option** (`reports/lesion_detection_dev.md`, 2026-11-04). No candidate
+  reaches 95% validation sensitivity at any t, so amendment 2's fallback chose DenseNet121
+  (highest sensitivity at t = 0.5).
+  1. DenseNet121 at t = 0.5: 61.3% of boxes found, 0.45 detections per lesion-free frame.
+     By source: ARCADE 79.1%, CADICA 56.3%, Kemerovo 51.9%.
+  2. CADICA by grade: 0–20% 44%, 20–50% 39%, 50–70% 46%, 70–90% 85%, 90–98% 74%.
+  3. Every single encoder plateaus at 53–66% even at t = 0.05 (the maps are near 0 or 1).
+     The mean of the five maps at t = 0.05 finds 83.8% with 1.44 per lesion-free frame
+     (observed on validation; not the registered choice).
+
+  The test below was not run: validation sensitivity is far below its 90% target, and the
+  CADICA test patients' lesion-free frames are still fresh.
 - [ ] **Test:**
   - sensitivity (target ≥ 90%) on CADICA test patients, ARCADE test and Kemerovo's test
     half (all second looks, except Kemerovo's half, which was a P4i test once);

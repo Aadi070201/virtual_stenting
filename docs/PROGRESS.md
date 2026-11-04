@@ -1531,6 +1531,14 @@ external test. E remains the final word.
   (epoch 31); MiT-B2 (0.357) stays the best. Vessel identity: MiT-B2 training (0.815 at epoch
   41; ResNet34 0.816), then DenseNet121, MobileNetV3, EfficientNet-B4.
 - CARDIAG downloaded and MD5-verified (`docs/DATA.md`); not extracted, no model run on it.
+- **P4k-E detectors on validation (`reports/lesion_detection_dev.md`):** no encoder reaches
+  95% sensitivity at any threshold; the fallback picks DenseNet121: at t = 0.5 it finds 61%
+  of expert boxes (ARCADE 79%, CADICA 56%, Kemerovo 52%) with 0.45 detections per
+  lesion-free frame. CADICA lesions of 70–98% are found 84% of the time, those below 70%
+  about 44%. The mean of the five maps at t = 0.05 finds 84% with 1.44 per lesion-free frame
+  (observed, not registered). App: research option. Test held (far below its 90% target).
+- Full fast suite: 413 passed; the two regulatory failures (torchvision imported by the
+  analysis-frame model, not declared as SOUP) fixed.
 
 **Open issues**
 - False alarms on normal vessels come from false narrowings in the main vessels; reading
