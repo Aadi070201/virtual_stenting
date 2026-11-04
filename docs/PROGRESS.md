@@ -1593,4 +1593,20 @@ external test. E remains the final word.
   detector and the width measurement agree: detector false positives, or real mild plaque
   that SYNTAX does not count (< 50%) read as ≥ 50%. Six SYNTAX > 0 sides (SYNTAX 2.5–12.5)
   are no longer flagged.
+- **D72 checked post hoc on CADICA's expert-graded lesions** (no rule applied; the paths run
+  through the experts' boxes; `reports/p4k_reader_..._ref2_gated[_dev].md`,
+  `reports/stent_check_ref2_gated[_dev].md`). Product arm (reader v2, Murray, ≥ 2 mm), test
+  patients, without → with the gate: lesion-free vessels FFR ≤ 0.80 16% → 0% (anchor ≈ 13%);
+  lesions 50–70% 31% → 8% (FAME 35%), 70–90% 37% → 20% (FAME 80%), 90–98% 52% → 33% (FAME
+  96%); distance from FAME 30 → 50 points. Stenting check: 70–98% lesions read ≤ 0.80 34 → 20
+  of 72; stent on the experts' lesion 82% → 75%. Development patients point the same way
+  (90–98%: 66% → 59%). **The gate removes real severe lesions on the vessel through them**:
+  the side-level CardioSYNTAX test (D72) could not show this, since another run of the same
+  side can carry the flag. A safety finding; for the human to decide.
+- App latency re-measured: unchanged (median 70 / 125 ms); it times the advanced view, which
+  does not run the gate. These reports say `dirty: True` because the new report files were
+  untracked when they ran; the code was committed (ab795fa).
+- **Virtual cath lab (separate app, `cathlab/`):** C1 and C3 done (see
+  `cathlab/docs/PROGRESS.md`); lesion dataset v1 (3,000 / 300 / 300 simulated images) is read
+  by `vstent.data.cathlab`.
 
