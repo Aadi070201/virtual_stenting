@@ -1569,4 +1569,22 @@ external test. E remains the final word.
 - Reports from the D69/D70 pipeline (C3, P4m, repeatability, app latency) are not yet
   regenerated with the gate.
 - The pixel size is still assumed (0.30 mm).
+- **App and CLI wording:** frames are called end-diastolic only when an ECG or the DICOM's
+  R-wave pointer times them; otherwise "heartbeat frames" (each beat's frame with the most
+  vessel). The FFR is "the median of N heartbeats".
+- **P4r, the true pixel size (`reports/pixel_size.md`; CARDIAG, 645 frames, 9 centres, no
+  model run):** the geometry (imager spacing × SOD / SID) gives a median 0.205 mm/px, but the
+  pre-registered catheter check fails: the experts' catheter masks are 1.11 mm wide at that
+  scale (5–7 F is 1.67–2.33 mm). Post hoc (after the failure, disclosed): the left main and
+  proximal LAD masks are 1.97× and 2.16× narrower than their normal diameters, the catheter
+  1.80×. The released PNGs were most likely halved after the spacing was recorded, so their
+  scale is about 0.4 mm/px. The catheter-calibration rule is not met, but its reference was
+  wrong, so it says nothing about catheter calibration itself.
+
+**Open issues**
+- The true scale of the images we test on (CADICA, CardioSYNTAX, ARCADE) is still unknown.
+  Metadata of a released PNG cannot be trusted without an image check (CARDIAG). Proximal
+  vessel widths (with vessel identity, P4k-G) or the catheter could calibrate the scale from
+  the image itself; both need their own pre-registration and a dataset with trusted geometry.
+- The input intervals' pixel-size range (0.30 ± 10%) is too narrow for any of these datasets.
 

@@ -1330,7 +1330,13 @@ this was written: two frames' metadata (0.196 and 0.215 mm/px) and an ad-hoc med
 - **Limits:** the isocentre is not the vessel's depth (P5: about 4% median error at the
   vessel). The catheter's French size is not recorded, so 6 F is an assumption (5–7 F span
   ± 17%). The catheter sits near the aortic root, not always at the isocentre.
-- [ ] `vstent pixel-size` → `reports/pixel_size.md` (+ `.json`).
+- [x] `vstent pixel-size` → `reports/pixel_size.md` (+ `.json`). Result (2026-11-04): A 0.205
+  mm/px (IQR 0.196–0.221); B **fails**: the experts' catheters are 1.11 mm wide at A (1% inside
+  5–7 F), so A is not the PNGs' scale; C's rule is not met, but C is uninformative, since its
+  reference failed B. Post hoc (disclosed): the left main and proximal LAD masks are 1.97× and
+  2.16× narrower than normal at A (catheter 1.80×), consistent with images halved after the
+  spacing was recorded (true scale about 0.4 mm/px). No catheter calibration is built from this;
+  the default is unchanged.
 
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 

@@ -289,6 +289,10 @@ the frames and label files are extracted.
   - acquisition geometry: primary and secondary angle (degrees), SID, SOD and imager pixel
     spacing (mm): the pixel size at the isocentre is spacing × SOD / SID;
   - hashed centre names (a mapping to five sites in the record); no ECG, no FFR.
+- **Scale (P4r, `reports/pixel_size.md`):** spacing × SOD / SID gives 0.205 mm/px (median),
+  but the released 512 × 512 PNGs do not keep that grid: catheters and proximal segments
+  measure about half their real size at it. Treat the PNGs' scale as about 0.4 mm/px
+  (uncertain), not as the metadata says.
 - **Files:** `CARDIAG.zip`, 4,569,236,433 bytes, MD5 1aa8f3b77c1d8dd6b101410a496728f3.
   `vstent data cardiag` downloads and MD5-checks it; the archive is listed before it is
   extracted, and nothing in it is run. The authors' weights (`models.zip`, 17.9 GB) are not
