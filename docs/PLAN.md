@@ -1295,6 +1295,43 @@ it is.
   Result (2026-11-04): false alarms 95% → 60%, sensitivity 96% → 88%, J 0.00 → 0.28 (ΔJ
   +0.275, 95% CI +0.196 to +0.353); both rules met: **adopted** (D72).
 
+## P4r: The true pixel size, and whether a catheter can measure it (added 2026-11-04; pre-registered before any measurement)
+
+Why: every millimetre in the product rests on an assumed 0.30 mm per pixel (lengths, reference
+diameters, the 2 mm thin-vessel guard, stent sizes, and the FFR through the vessel's size).
+CARDIAG gives each frame's acquisition geometry, so the true scale can be measured. Seen before
+this was written: two frames' metadata (0.196 and 0.215 mm/px) and an ad-hoc median of about
+0.205 mm/px, computed outside the repo.
+
+- **Data:** CARDIAG (Zenodo 19958730, CC BY 4.0), read inside `CARDIAG.zip` without
+  extracting it: each sample's `metadata.json`, `catheter.png` (the experts' catheter mask) and
+  the size of `img.png`. All 645 samples; no model is run.
+- **A. True pixel size** of each `img.png` at the isocentre: imager spacing × SOD / SID (mm per
+  pixel), assuming the PNG keeps the imager's pixel grid (checked by B). Reported:
+  - median, interquartile range and range, per frame and per centre;
+  - the assumed 0.30 mm against it: the median factor by which it overstates sizes;
+  - the share of frames inside the input intervals' pixel-size range (0.30 ± 10%,
+    `configs/uncertainty.yaml`).
+- **B. Scale check from the catheter:** catheter width in pixels = the median of 2·d − 1 over
+  the mask's skeleton (d: Euclidean distance to the background), on masks with ≥ 20 skeleton
+  pixels. Width in mm = pixels × A. Catheters are 5–7 F (1.67–2.33 mm). If the median width
+  lies in that range, A's scale holds. If it does not, the factor is reported, and A is not
+  rescaled to fit.
+- **C. Catheter calibration** (what an image without DICOM geometry could do): mm per pixel =
+  2.0 mm (6 F) / width in pixels, against A. Reported: median absolute error (%), and the share
+  of frames within 10% and within 20%.
+  - **Rule:** with the experts' masks, a median absolute error ≤ 10% and ≥ 70% of frames
+    within 20% make an automatic catheter calibration worth building (a catheter detector,
+    pre-registered separately). Otherwise it is not built, and the product keeps DICOM geometry
+    where it exists and the assumed scale elsewhere.
+- **Not decided here:** the product's default 0.30 mm and the input intervals' ± 10% are not
+  changed from one dataset (one vendor, one region). A change needs its own pre-registered
+  decision. This report gives the numbers for it.
+- **Limits:** the isocentre is not the vessel's depth (P5: about 4% median error at the
+  vessel). The catheter's French size is not recorded, so 6 F is an assumption (5–7 F span
+  ± 17%). The catheter sits near the aortic root, not always at the isocentre.
+- [ ] `vstent pixel-size` → `reports/pixel_size.md` (+ `.json`).
+
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 
 Why (disclosed; found on development data after D69): in P4m's development run, about 8 of
