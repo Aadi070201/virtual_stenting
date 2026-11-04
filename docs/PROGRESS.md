@@ -1555,3 +1555,18 @@ external test. E remains the final word.
   the rest at 32d597c; only the downloader changed in between).
 - Downloads now continue an interrupted `.part` (HTTP Range); CardioSYNTAX part 1 resumed at
   5.0 of 16 GB.
+- **P4q test (CardioSYNTAX part 1, run once; `reports/p4q_lesion_gate.md`):** 1,285 of 1,304
+  runs measured (19: no segmented vessel), 347 sides (232 SYNTAX 0, 115 > 0). SYNTAX-0 sides
+  flagged 95% → 60%; sensitivity 96% → 88% (SYNTAX 1–7: 94 → 87%, 8–14: 96 → 91%, ≥ 15:
+  100 → 87%); J 0.00 → 0.28 (ΔJ +0.275, 95% CI +0.196 to +0.353); AUC (lowest FFR) 0.61 →
+  0.73; SYNTAX-0 runs with FFR ≤ 0.80 51% → 19%. Both rules met: **adopted** (D72,
+  `configs/product.yaml`).
+
+**Open issues**
+- 60% of normal sides are still flagged; the gate removes most false narrowings but not all.
+- Severe disease is now missed on 3 of 23 SYNTAX ≥ 15 sides; mild lesions remain the
+  detector's weakness.
+- Reports from the D69/D70 pipeline (C3, P4m, repeatability, app latency) are not yet
+  regenerated with the gate.
+- The pixel size is still assumed (0.30 mm).
+

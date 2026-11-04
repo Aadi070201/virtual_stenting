@@ -1308,6 +1308,11 @@ def analyse(
         f"max DS {q.max_percent_stenosis:.0f}%; lesions {len(q.lesions)}; lumen: "
         f"{q.lumen_method}"
     )
+    if result.gate is not None:
+        typer.echo(
+            f"{where}Lesion detector: {result.gate[0]} of {result.gate[1]} narrowings confirmed "
+            "(the rest read as healthy; D72)"
+        )
     typer.echo(
         f"{where}Distal FFR: solver {result.ffr_distal_solver:.3f}, surrogate "
         f"{result.ffr_distal_surrogate:.3f}"

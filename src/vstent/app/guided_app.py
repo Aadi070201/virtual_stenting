@@ -79,7 +79,7 @@ def _min_ref() -> float | None:
 def _gate():
     from vstent.inference.product import product_gate
 
-    return product_gate()  # P4q: None until adopted
+    return product_gate()  # P4q, adopted in D72
 
 
 def _wire(manual: bool) -> bool:
@@ -387,6 +387,12 @@ def main() -> None:
                         f"{m.mld_mm:.2f} mm")  # fmt: skip
         if q0 is not None and not lesions:
             st.markdown("No narrowing ≥ 50%")
+        if analysis is not None and analysis.gate is not None:
+            st.caption(f"Lesion detector: {analysis.gate[0]} of {analysis.gate[1]} narrowings "
+                       "confirmed; the rest read as healthy",
+                       help="A narrowing counts only where the whole-image lesion detector "
+                       "agrees (D72). This removes most false narrowings; some mild lesions "
+                       "are missed.")  # fmt: skip
         expert_frames = sorted({b[0] for b in (case.boxes if case else ())})
         if expert_frames and not boxes:
             grades = sorted({b[5] for b in case.boxes}, key=guided.severity)

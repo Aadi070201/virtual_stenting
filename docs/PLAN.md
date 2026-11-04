@@ -1290,8 +1290,10 @@ it is.
 - [x] Development: `vstent lesion-gate --stage dev` → `reports/p4q_lesion_gate_dev.md`.
   Result (2026-11-04): J product 0.02, A 0.24, B 0.12; **A chosen** (paired ΔJ +0.21, 95% CI
   +0.03 to +0.38); the test may run.
-- [ ] Test (once): `vstent data cardiosyntax --parts 1`, then `vstent lesion-gate --stage
+- [x] Test (once): `vstent data cardiosyntax --parts 1`, then `vstent lesion-gate --stage
   test` → `reports/p4q_lesion_gate.md`.
+  Result (2026-11-04): false alarms 95% → 60%, sensitivity 96% → 88%, J 0.00 → 0.28 (ΔJ
+  +0.275, 95% CI +0.196 to +0.353); both rules met: **adopted** (D72).
 
 ## P4n: The learned depth only in vessels ≥ 2 mm (added 2026-11-03; pre-registered before code or runs)
 

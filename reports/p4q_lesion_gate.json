@@ -1,0 +1,86 @@
+{
+ "summary": {
+  "runs": 1304,
+  "measured": 1285,
+  "sides": 347,
+  "zero_sides": 232,
+  "positive_sides": 115,
+  "arms": {
+   "product": {
+    "false_alarm": 0.9525862068965517,
+    "sensitivity": 0.9565217391304348,
+    "j": 0.003935532233883099,
+    "by_bin": [
+     {
+      "bin": "1\u20137",
+      "n": 69,
+      "sensitivity": 0.9420289855072463
+     },
+     {
+      "bin": "8\u201314",
+      "n": 23,
+      "sensitivity": 0.9565217391304348
+     },
+     {
+      "bin": "\u2265 15",
+      "n": 23,
+      "sensitivity": 1.0
+     }
+    ],
+    "auc_low_ffr": 0.6131934032983508,
+    "zero_runs_le_080": 0.514018691588785,
+    "marks_per_zero_run": 1.595460614152203,
+    "confirmed": null
+   },
+   "gated": {
+    "false_alarm": 0.5991379310344828,
+    "sensitivity": 0.8782608695652174,
+    "j": 0.27912293853073467,
+    "by_bin": [
+     {
+      "bin": "1\u20137",
+      "n": 69,
+      "sensitivity": 0.8695652173913043
+     },
+     {
+      "bin": "8\u201314",
+      "n": 23,
+      "sensitivity": 0.9130434782608695
+     },
+     {
+      "bin": "\u2265 15",
+      "n": 23,
+      "sensitivity": 0.8695652173913043
+     }
+    ],
+    "auc_low_ffr": 0.7342578710644677,
+    "zero_runs_le_080": 0.19359145527369825,
+    "marks_per_zero_run": 0.5046728971962616,
+    "confirmed": 0.21854204476709013,
+    "dj": 0.27518740629685157,
+    "dj_interval": [
+     0.1956128985344475,
+     0.35300105954404165
+    ],
+    "dj_replicates": 2000
+   }
+  }
+ },
+ "decision": {
+  "drop": 0.35344827586206895,
+  "dj": 0.27518740629685157,
+  "dj_interval": [
+   0.1956128985344475,
+   0.35300105954404165
+  ],
+  "criteria": [
+   true,
+   true
+  ],
+  "adopt": true
+ },
+ "git": {
+  "git_commit": "6cb8536d35e9986809af84e2190c8aa5e2a164b6",
+  "git_dirty": false
+ }
+}
