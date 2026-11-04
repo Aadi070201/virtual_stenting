@@ -32,12 +32,12 @@ output only through `docs/DATA_FORMAT.md`. Check in with the human after each st
 
 ## C3: Dataset format and a lesion dataset
 
-- [ ] `docs/DATA_FORMAT.md` fixed; `vcathlab dataset --config …` writes images, labels and a
+- [x] `docs/DATA_FORMAT.md` fixed; `vcathlab dataset --config …` writes images, labels and a
   manifest (config, seeds, git commit, hashes).
-- [ ] Lesion dataset v1 with hard cases: mild plaque (< 50%, unlabelled), crossings,
+- [x] Lesion dataset v1 with hard cases: mild plaque (< 50%, unlabelled), crossings,
   foreshortened segments, eccentric lesions, a range of pixel sizes. Dataset card with the
   distributions.
-- [ ] vstent side (in vstent's PLAN): a loader that reads the format.
+- [x] vstent side: `vstent.data.cathlab` reads the format (checks format, version, SHA-256).
 
 ## C4: vstent's lesion detector with cath lab data (planned in vstent's PLAN)
 

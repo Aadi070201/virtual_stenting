@@ -22,16 +22,27 @@ def load_yaml(path: str | Path, model: type[StrictModel]) -> StrictModel:
     return model.model_validate(yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {})
 
 
+APP_ROOT = Path(__file__).resolve().parents[2]  # cathlab/
+
+
 def git_info() -> dict[str, Any]:
-    """The repository's commit and whether the working tree has changes (``None`` outside
-    git)."""
+    """The repository's commit and whether the cath lab's own folder has changes (files of
+    the parent project do not count; ``None`` outside git)."""
     try:
         commit = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=APP_ROOT,
         ).stdout.strip()
         dirty = bool(
             subprocess.run(
-                ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+                ["git", "status", "--porcelain", "--", "."],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=APP_ROOT,
             ).stdout.strip()
         )
     except (OSError, subprocess.CalledProcessError):
