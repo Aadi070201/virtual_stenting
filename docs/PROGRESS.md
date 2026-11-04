@@ -1518,3 +1518,22 @@ external test. E remains the final word.
 **Open issues**
 - Low specificity on external data is now the product's main weakness, alongside the
   under-read severe lesions (CADICA). P4p looks for where it arises before any change.
+
+**2026-11-04**
+- **P4p (exploratory, development data; `reports/p4p_false_alarms_dev.md`):** no reading
+  rule reduces the false alarms (SYNTAX-0 sides flagged 93–95%, sensitivity 97%); side-level
+  AUC 0.62–0.63 (lowest FFR) and 0.58–0.59 (deepest %DS). 95% of the ≥ 50% marks on SYNTAX-0
+  runs sit where the reference diameter is ≥ 2 mm (68% ≥ 2.5 mm, at the assumed scale). The
+  false narrowings are in the main vessels, so the next work is lesion detection itself.
+- Report footer fixed (it printed `Commit None`); the report was re-summarised from the
+  cached profiles, numbers unchanged.
+- GPU detectors (best validation Dice): MobileNetV3 0.276 (epoch 17), EfficientNet-B4 0.319
+  (epoch 31); MiT-B2 (0.357) stays the best. Vessel identity: MiT-B2 training (0.815 at epoch
+  41; ResNet34 0.816), then DenseNet121, MobileNetV3, EfficientNet-B4.
+- CARDIAG downloaded and MD5-verified (`docs/DATA.md`); not extracted, no model run on it.
+
+**Open issues**
+- False alarms on normal vessels come from false narrowings in the main vessels; reading
+  rules do not fix them.
+- The pixel size is assumed (0.30 mm); the true scale differs by dataset and must be measured
+  (DICOM geometry or catheter) before mm-based rules mean what they say.

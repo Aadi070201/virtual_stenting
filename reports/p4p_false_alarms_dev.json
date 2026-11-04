@@ -1,0 +1,101 @@
+{
+ "summary": {
+  "runs": 394,
+  "measured": 386,
+  "sides": 99,
+  "zero_sides": 60,
+  "positive_sides": 39,
+  "rules": [
+   {
+    "name": "Product (every lesion, FFR at the path's end)",
+    "marks_ref_mm": null,
+    "ffr_ref_mm": null,
+    "false_alarm": 0.95,
+    "sensitivity": 0.9743589743589743,
+    "zero_runs_le_080": 0.4858490566037736,
+    "zero_runs_median": 0.8145,
+    "auc_ffr": 0.6243589743589744,
+    "auc_ds": 0.5858974358974359
+   },
+   {
+    "name": "Lesions in vessels \u2265 2 mm",
+    "marks_ref_mm": 2.0,
+    "ffr_ref_mm": null,
+    "false_alarm": 0.95,
+    "sensitivity": 0.9743589743589743,
+    "zero_runs_le_080": 0.4858490566037736,
+    "zero_runs_median": 0.8145,
+    "auc_ffr": 0.6243589743589744,
+    "auc_ds": 0.5863247863247864
+   },
+   {
+    "name": "FFR at the last point \u2265 2 mm",
+    "marks_ref_mm": null,
+    "ffr_ref_mm": 2.0,
+    "false_alarm": 0.95,
+    "sensitivity": 0.9743589743589743,
+    "zero_runs_le_080": 0.4339622641509434,
+    "zero_runs_median": 0.8545,
+    "auc_ffr": 0.6318376068376068,
+    "auc_ds": 0.5858974358974359
+   },
+   {
+    "name": "Both at 2 mm (FAVOR II)",
+    "marks_ref_mm": 2.0,
+    "ffr_ref_mm": 2.0,
+    "false_alarm": 0.9333333333333333,
+    "sensitivity": 0.9743589743589743,
+    "zero_runs_le_080": 0.4339622641509434,
+    "zero_runs_median": 0.8545,
+    "auc_ffr": 0.6318376068376068,
+    "auc_ds": 0.5863247863247864
+   },
+   {
+    "name": "Both at 1.5 mm (SYNTAX)",
+    "marks_ref_mm": 1.5,
+    "ffr_ref_mm": 1.5,
+    "false_alarm": 0.95,
+    "sensitivity": 0.9743589743589743,
+    "zero_runs_le_080": 0.4669811320754717,
+    "zero_runs_median": 0.826,
+    "auc_ffr": 0.6173076923076923,
+    "auc_ds": 0.5790598290598291
+   }
+  ],
+  "zero_marks_by_ref": [
+   {
+    "lo": 0.0,
+    "hi": 1.5,
+    "n": 2
+   },
+   {
+    "lo": 1.5,
+    "hi": 2.0,
+    "n": 12
+   },
+   {
+    "lo": 2.0,
+    "hi": 2.5,
+    "n": 83
+   },
+   {
+    "lo": 2.5,
+    "hi": 99.0,
+    "n": 206
+   }
+  ],
+  "zero_marks": 303,
+  "zero_runs": 212,
+  "product_flag_agrees": 1.0
+ },
+ "product": {
+  "lesion_reader": "models/lesion/lesion_cnn_v2-20261102-194645",
+  "outflow": "murray",
+  "wire": false,
+  "lesion_min_ref_mm": 2.0
+ },
+ "git": {
+  "git_commit": "b947b18029fe44e552b00901e120157e2e8647b5",
+  "git_dirty": false
+ }
+}

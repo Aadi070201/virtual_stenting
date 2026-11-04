@@ -1207,7 +1207,23 @@ J: 81% of normal sides), and P4o's rows tie it to long paths into thin vessels. 
 - **Reported:** per rule, the false alarms (SYNTAX-0 sides flagged), the sensitivity (SYNTAX
   > 0 sides flagged), SYNTAX-0 runs with FFR ≤ 0.80, and the side-level AUC (lowest FFR,
   deepest counted %DS); the marked lesions of SYNTAX-0 runs by reference diameter.
-- [ ] `vstent false-alarms --workers 3` → `reports/p4p_false_alarms_dev.md`.
+- [x] `vstent false-alarms --workers 3` → `reports/p4p_false_alarms_dev.md`.
+
+  **Result (exploratory):** 386 of 394 runs measured, 99 sides (60 SYNTAX 0, 39 > 0).
+  1. No rule helps: SYNTAX-0 sides flagged 95% (product), 95%, 95%, 93% (both at 2 mm), 95%
+     (both at 1.5 mm); sensitivity 97% under every rule.
+  2. Side-level AUC is near chance under every rule: lowest FFR 0.62–0.63, deepest %DS
+     0.58–0.59.
+  3. Reading the FFR at the 2 mm point lowers SYNTAX-0 runs with FFR ≤ 0.80 only from 49% to
+     43%.
+  4. The false marks are not in thin vessels: of 303 marked lesions (≥ 50%) on 212 SYNTAX-0
+     runs, 95% sit where the reference diameter is ≥ 2 mm and 68% where it is ≥ 2.5 mm (at the
+     assumed 0.30 mm per pixel).
+
+  So the false alarms come from narrowings read in the main vessels, not from where the path
+  ends or which vessel sizes count: the fix has to be in lesion detection itself, not in a
+  reading rule. The profiles were computed at fe2acbe; the report was re-summarised from
+  them at b947b18 (footer fix only).
 - [ ] A product change from this needs its own pre-registration before it is tested:
   CardioSYNTAX parts not used so far (1–8) and CADICA's C3 rule, run once.
 
