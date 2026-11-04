@@ -48,3 +48,16 @@ def test_wrong_version_or_changed_file_is_refused(tmp_path):
     (tmp_path / "d" / "train.jsonl").write_text("{}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="SHA-256"):
         cathlab.load_split(tmp_path / "d", "train")
+
+
+def test_p9_training_config_reads_the_cath_lab_data():
+    from pathlib import Path
+
+    from vstent.config import load_config
+    from vstent.imaging.seg_train import SegConfig
+
+    cfg = load_config(Path("configs/lesion_det_dn121_sim.yaml"), SegConfig)
+    base = load_config(Path("configs/lesion_det_dn121.yaml"), SegConfig)
+    assert cfg.labels == "lesion_boxes" and cfg.cathlab.dir == "cathlab/data/lesion_v1"
+    assert (cfg.cathlab.min_ds, cfg.cathlab.min_inside) == (50.0, 0.5)
+    assert cfg.model == base.model and cfg.train == base.train and cfg.augment == base.augment

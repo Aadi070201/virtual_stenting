@@ -94,6 +94,17 @@ class SegSyntheticData(StrictModel):
     n_train: int = Field(1000, gt=0)
 
 
+class CathlabData(StrictModel):
+    """Simulated images from the virtual cath lab (format ``vcathlab-frames`` v1) added to the
+    lesion detector's training images (P9). Boxes: lesions with a true diameter stenosis ≥
+    ``min_ds`` % and at least ``min_inside`` inside the image; milder lesions are unmarked."""
+
+    dir: str = "cathlab/data/lesion_v1"
+    n_train: int | None = None
+    min_ds: float = 50.0
+    min_inside: float = 0.5
+
+
 class SegConfig(StrictModel):
     """Full segmentation-training config (``configs/seg.yaml``)."""
 
@@ -105,6 +116,7 @@ class SegConfig(StrictModel):
     train: SegTrainConfig = SegTrainConfig()
     augment: AugmentConfig = AugmentConfig()
     synthetic: SegSyntheticData | None = None  # P8: rendered training images
+    cathlab: CathlabData | None = None  # P9: simulated lesions (lesion_boxes only)
     labels: Literal["vessel", "vessel_id", "lesion_boxes"] = "vessel"
     # vessel_id: ARCADE SYNTAX vessel classes (P4k-G); lesion_boxes: filled expert lesion
     # boxes on CADICA, ARCADE stenosis and Kemerovo (the whole-image detector, P4k-E)
@@ -315,6 +327,8 @@ def _fit(
     device = resolve_device(tc.device)
     use_amp = tc.amp and device.type == "cuda"
 
+    if config.cathlab is not None and config.labels != "lesion_boxes":
+        raise ValueError("cathlab data goes with labels: lesion_boxes")
     multi = config.labels == "vessel_id"
     if multi:  # P4k-G: vessel classes from the SYNTAX segments
         from vstent.data.vessel_id import N_CLASSES, load_labels
@@ -330,6 +344,17 @@ def _fit(
             raise ValueError("lesion_boxes needs model.classes = 1 and no synthetic data")
         images, masks = dataset("train", max_images=tc.max_train_images)
         val_images, val_masks = dataset("val", max_images=tc.max_val_images)
+        if config.cathlab is not None:  # P9: simulated lesions, training only
+            from vstent.data import cathlab
+            from vstent.data.lesion_boxes import BoxMasks
+
+            c = config.cathlab
+            sim, sim_boxes, _ = cathlab.load_split(c.dir, "train", min_ds=c.min_ds,
+                                                   min_inside=c.min_inside,
+                                                   max_images=c.n_train)  # fmt: skip
+            log(f"Training images: {len(images)} real + {len(sim)} simulated (cath lab)")
+            images = np.concatenate([images, sim])
+            masks = BoxMasks(list(masks.boxes) + sim_boxes)
     else:
         train_split = load_split(config.raw_dir, "syntax", "train", tc.max_train_images)
         val_split = load_split(config.raw_dir, "syntax", "val", tc.max_val_images)

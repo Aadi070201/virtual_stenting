@@ -1297,6 +1297,37 @@ it is.
   **Suspended (D73, 2026-11-04):** post hoc, the gate erases real severe lesions on CADICA's
   expert-graded lesions; the product runs without it until a fixed gate passes a new test.
 
+## P9: The lesion detector with the virtual cath lab's simulated cases (added 2026-11-04; pre-registered before training)
+
+Why: the detector misses real lesions (P4k-E validation: 61% of expert boxes found at t = 0.5;
+CADICA lesions below 70% about 44%), so the gate erased severe lesions (D73), and the remaining
+false alarms are narrowings that the detector and the width measurement agree on (P4q,
+exploratory). The virtual cath lab (`cathlab/`, a separate app) gives labelled hard cases:
+mild plaque left unmarked, crossings, foreshortened segments and eccentric lumens.
+
+- **Model:** P4k-E's DenseNet121 recipe unchanged (`configs/lesion_det_dn121.yaml`: seed 0,
+  60 epochs, patience 15, the same real training and validation images), plus the cath lab's
+  lesion dataset v1 training split (3,000 simulated images, `cathlab/data/lesion_v1`, format
+  `vcathlab-frames` v1). Simulated boxes: lesions with a true diameter stenosis ≥ 50% and at
+  least half inside the image; milder lesions are left unmarked. The checkpoint is chosen on
+  the real validation set, as before. → `configs/lesion_det_dn121_sim.yaml`.
+- **Development:** P4k-E's real validation set (ARCADE, CADICA, Kemerovo; `vstent
+  lesion-detection --stage dev`): pooled sensitivity (expert boxes found) and detections per
+  lesion-free frame at t = 0.5, by source and by CADICA grade, against DenseNet121 (61.3%,
+  0.45).
+- **Rule:** the simulated cases help if, at t = 0.5, sensitivity rises by ≥ 5 points while
+  detections per lesion-free frame rise by ≤ 0.10. Then the new model replaces DenseNet121 as
+  the research detector (exported to `models/lesion_det/`), and P4k-E's held test set is run
+  once for both (paired). Otherwise the result is reported, and the cath lab's realism comes
+  next (small branches, diffuse disease, calcium, motion blur).
+- **Not decided here:** the gate stays off (D73). A fixed gate is planned separately, after this
+  result, with a per-lesion safety criterion and data not used before.
+- **Limits:** CADICA's validation is 5 patients; simulated images are simpler than real ones
+  (`cathlab/docs/PROGRESS.md`); no simulated test numbers decide anything.
+- [ ] Training (GPU, resumable): `vstent train-seg --config configs/lesion_det_dn121_sim.yaml`.
+- [ ] Development: export, then `vstent lesion-detection --stage dev` with both models →
+  `reports/lesion_detection_dev.md`; the decision recorded here.
+
 ## P4r: The true pixel size, and whether a catheter can measure it (added 2026-11-04; pre-registered before any measurement)
 
 Why: every millimetre in the product rests on an assumed 0.30 mm per pixel (lengths, reference
