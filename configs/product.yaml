@@ -4,6 +4,6 @@ lesion_reader: models/lesion/lesion_cnn_v2-20261102-194645   # D69 (P4k-C3, end 
 outflow: murray          # D69: Murray side-branch outflow, with the learned reader
 wire: false              # D69 supersedes D68 for the product (an option: true)
 lesion_min_ref_mm: 2.0   # D70 (P4n): the learned depth only in vessels >= 2 mm
-lesion_detector:         # D72 (P4q): a narrowing counts only where the detector agrees
-  - models/lesion_det/lesion_det_dn121-20261103-170432
-detector_threshold: 0.5  # D72: variant A, chosen on development
+# lesion_detector: off. D72 (P4q) adopted the detector gate; D73 suspends it on a safety
+# finding (it erases real severe lesions on CADICA). The research option stays in the code.
+lesion_detector: null    # D73

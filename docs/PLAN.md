@@ -1294,6 +1294,8 @@ it is.
   test` → `reports/p4q_lesion_gate.md`.
   Result (2026-11-04): false alarms 95% → 60%, sensitivity 96% → 88%, J 0.00 → 0.28 (ΔJ
   +0.275, 95% CI +0.196 to +0.353); both rules met: **adopted** (D72).
+  **Suspended (D73, 2026-11-04):** post hoc, the gate erases real severe lesions on CADICA's
+  expert-graded lesions; the product runs without it until a fixed gate passes a new test.
 
 ## P4r: The true pixel size, and whether a catheter can measure it (added 2026-11-04; pre-registered before any measurement)
 

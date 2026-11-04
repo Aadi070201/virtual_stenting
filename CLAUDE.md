@@ -249,7 +249,7 @@ uv run vstent regulatory [--check]  # P8: docs/regulatory/ from its YAML sources
 The product's FFR pipeline settings (learned lesion reader, outflow model, where the FFR is
 read, the thin-vessel guard, the lesion-detector gate) are in `configs/product.yaml`, applied by
 the app, `vstent analyse` and `vstent validate`; each changes only through a pre-registered
-decision (D69, D70, D72).
+decision (D69, D70, D72; the gate is suspended by D73).
 
 ## Physics in one paragraph (full spec in PLAN.md, M1)
 

@@ -1609,4 +1609,6 @@ external test. E remains the final word.
 - **Virtual cath lab (separate app, `cathlab/`):** C1 and C3 done (see
   `cathlab/docs/PROGRESS.md`); lesion dataset v1 (3,000 / 300 / 300 simulated images) is read
   by `vstent.data.cathlab`.
+- **D73:** the lesion gate is switched off in the product (the human's decision after the
+  CADICA finding). The app was restarted without it.
 
