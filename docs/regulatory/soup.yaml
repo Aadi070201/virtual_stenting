@@ -123,11 +123,12 @@ soup:
     hazards: [H-07, H-18]
     anomalies: Not yet reviewed.
   - name: torchvision
-    imports: []
+    imports: [torchvision]
     purpose: >-
-      Not imported; installed for segmentation-models-pytorch and pinned to the same CUDA
-      build as torch.
-    relied_on: Compatibility with the locked torch.
+      MobileNetV3-Small image encoder of the research analysis-frame model
+      (imaging/ed_model.py, training only; not in the product's analysis path); also installed
+      for segmentation-models-pytorch and pinned to the same CUDA build as torch.
+    relied_on: Compatibility with the locked torch; the documented architecture and weights.
     anomalies: Not yet reviewed.
   - name: segmentation-models-pytorch
     imports: [segmentation_models_pytorch]
