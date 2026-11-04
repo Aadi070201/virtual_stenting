@@ -4,6 +4,9 @@ P4r). Torch-free.
 
 CARDIAG is read inside ``CARDIAG.zip``: each sample's ``metadata.json``, ``catheter.png`` and
 the size of ``img.png``. Nothing is extracted and no model is run.
+
+Post hoc (added after the catheter check failed; not pre-registered): the experts' masks of the
+left main and the proximal LAD against their normal diameters (Dodge et al., Circulation 1992).
 """
 
 from __future__ import annotations
@@ -24,7 +27,9 @@ from skimage.morphology import skeletonize
 ASSUMED_MM = 0.30  # the product's assumed pixel size (mm per pixel)
 CATHETER_MM = 2.0  # 6 F
 FRENCH_MM = (5 / 3, 7 / 3)  # 5–7 F (1 F = 1/3 mm)
-MIN_SKELETON = 20  # skeleton pixels for a catheter width
+MIN_SKELETON = 20  # skeleton pixels for a width
+# post hoc: SYNTAX segment masks and normal diameters (mm; Dodge et al., Circulation 1992)
+SEGMENTS = {"05": ("left main", 4.5), "06": ("proximal LAD", 3.7)}
 ARCHIVE = Path("data/raw/cardiag/CARDIAG.zip")
 
 
@@ -32,7 +37,8 @@ ARCHIVE = Path("data/raw/cardiag/CARDIAG.zip")
 class Sample:
     """One CARDIAG frame: ``mm_per_px`` at the isocentre (imager spacing × SOD / SID, ``None``
     if the geometry is missing), the PNG's shape, and the experts' catheter width (pixels,
-    ``None`` if not measurable) with its skeleton length (pixels)."""
+    ``None`` if not measurable) with its skeleton length (pixels); ``segments``: the width
+    (pixels) of each :data:`SEGMENTS` mask present and measurable (post hoc)."""
 
     name: str
     centre: str
@@ -41,6 +47,7 @@ class Sample:
     shape: tuple[int, int] | None
     catheter_px: float | None
     skeleton_px: int
+    segments: tuple[tuple[str, float], ...] = ()
 
 
 def _numbers(value) -> list[float]:
@@ -64,10 +71,10 @@ def isocentre_mm(meta: dict[str, Any]) -> float | None:
     return float(np.mean(spacing)) * sod / sid
 
 
-def catheter_width_px(mask: np.ndarray) -> tuple[float | None, int]:
-    """The catheter's width (pixels): the median of 2·d − 1 over the mask's skeleton (d: the
-    Euclidean distance to the background); ``None`` below :data:`MIN_SKELETON` skeleton
-    pixels. Also the skeleton's length (pixels)."""
+def mask_width_px(mask: np.ndarray) -> tuple[float | None, int]:
+    """A tube mask's width (pixels; the catheter, a vessel segment): the median of 2·d − 1 over
+    the mask's skeleton (d: the Euclidean distance to the background); ``None`` below
+    :data:`MIN_SKELETON` skeleton pixels. Also the skeleton's length (pixels)."""
     m = np.asarray(mask) > 0
     if not m.any():
         return None, 0
@@ -95,10 +102,14 @@ def read_samples(archive: str | Path = ARCHIVE) -> list[Sample]:
             meta = json.loads(zf.read(f"{f}/metadata.json"))
             img = _png(zf, f"{f}/img.png") if f"{f}/img.png" in names else None
             cat = _png(zf, f"{f}/catheter.png") if f"{f}/catheter.png" in names else None
-            width, n = catheter_width_px(cat) if cat is not None else (None, 0)
+            width, n = mask_width_px(cat) if cat is not None else (None, 0)
+            seg = []
+            for k in SEGMENTS:
+                if f"{f}/{k}.png" in names and (w := mask_width_px(_png(zf, f"{f}/{k}.png"))[0]):
+                    seg.append((k, w))
             out.append(Sample(f, str(meta.get("center_id", "")), str(meta.get("patient_id", "")),
                               isocentre_mm(meta), None if img is None else img.shape[:2],
-                              width, n))  # fmt: skip
+                              width, n, tuple(seg)))  # fmt: skip
     return out
 
 
@@ -156,7 +167,15 @@ def summarise(samples: list[Sample], input_rel: float = 0.10) -> dict[str, Any]:
         c["worth_building"] = bool(c["median_abs_error"] <= 0.10 and c["within_20"] >= 0.70)
     else:
         c["worth_building"] = False
-    return {"a": a, "b": b, "c": c}
+    vessels = []
+    for k, (label, normal) in SEGMENTS.items():
+        px = [(dict(s.segments)[k], s.mm_per_px) for s in true if k in dict(s.segments)]
+        mm_a = [w * m for w, m in px]
+        vessels.append({"segment": k, "label": label, "normal_mm": normal,
+                        "width_px": _spread([w for w, _m in px]), "width_mm": _spread(mm_a),
+                        "factor": _spread([normal / x for x in mm_a])})  # fmt: skip
+    cat_factor = _spread([CATHETER_MM / x for x in width_mm]) if width_mm.size else _spread([])
+    return {"a": a, "b": b, "c": c, "post_hoc": {"vessels": vessels, "catheter": cat_factor}}
 
 
 def _f(x, fmt=".3f") -> str:
@@ -213,6 +232,27 @@ def report_lines(s: dict[str, Any], git: dict[str, Any]) -> list[str]:
         f"{_f(c.get('within_20') and 100 * c['within_20'], '.0f')}%.", "",
         f"**Rule (P4r):** median absolute error ≤ 10% and ≥ 70% of frames within 20% → "
         f"{verdict}.", "",
+        "## Post hoc: vessel widths (added after B failed; not pre-registered)", "",
+        "After the catheter check failed, one frame was looked at (frame 000: the proximal "
+        "right coronary artery about 11 pixels wide, 2.3 mm at A). The experts' masks of two "
+        "proximal segments are measured as the catheter was, against their normal diameters "
+        "(Dodge et al., Circulation 1992). Factor = normal ÷ width at A: about 1 if A is the "
+        "image's scale, about 2 if the images were halved after the spacing was recorded.", "",
+        "| Segment | Frames | Width, pixels | Width at A, mm | Normal, mm | Factor (median, IQR) |",
+        "|---|---:|---:|---:|---:|---:|",
+        *(f"| {v['segment']} ({v['label']}) | {v['width_px']['n']} | "
+          f"{_f(v['width_px']['median'], '.1f')} | {_f(v['width_mm']['median'], '.2f')} | "
+          f"{v['normal_mm']:.1f} | {_f(v['factor']['median'], '.2f')} "
+          f"({_f(v['factor']['q1'], '.2f')}–{_f(v['factor']['q3'], '.2f')}) |"
+          for v in s["post_hoc"]["vessels"]),
+        f"| Catheter (6 F) | {b['measured']} | {_f(wp['median'], '.1f')} | "
+        f"{_f(w['median'], '.2f')} | {CATHETER_MM:.1f} | "
+        f"{_f(s['post_hoc']['catheter']['median'], '.2f')} "
+        f"({_f(s['post_hoc']['catheter']['q1'], '.2f')}–"
+        f"{_f(s['post_hoc']['catheter']['q3'], '.2f')}) |", "",
+        "Normal diameters are population means (men and women differ; diseased segments are "
+        "narrower), so the factor is approximate. The paper (arXiv:2607.22139) gives neither the "
+        "original image size nor the grid the spacing refers to.", "",
         "**Limits:** the isocentre is not the vessel's depth (P5: about 4% median error at the "
         "vessel). The catheter's French size is not recorded (6 F assumed; 5–7 F span ± 17%), "
         "and the catheter sits near the aortic root. The width rule (2·d − 1 on the skeleton) "

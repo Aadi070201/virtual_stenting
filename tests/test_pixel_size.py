@@ -17,10 +17,10 @@ def _bar(width: int, shape=(120, 200)) -> np.ndarray:
 
 
 def test_catheter_width_of_a_bar():
-    assert ps.catheter_width_px(_bar(9))[0] == pytest.approx(9.0)
-    assert ps.catheter_width_px(_bar(10))[0] == pytest.approx(9.0)  # even widths: one narrow
-    assert ps.catheter_width_px(np.zeros((50, 50))) == (None, 0)
-    width, n = ps.catheter_width_px(_bar(9, (60, 30)))  # a short stub: too few skeleton pixels
+    assert ps.mask_width_px(_bar(9))[0] == pytest.approx(9.0)
+    assert ps.mask_width_px(_bar(10))[0] == pytest.approx(9.0)  # even widths: one narrow
+    assert ps.mask_width_px(np.zeros((50, 50))) == (None, 0)
+    width, n = ps.mask_width_px(_bar(9, (60, 30)))  # a short stub: too few skeleton pixels
     assert width is None and 0 < n < ps.MIN_SKELETON
 
 
@@ -49,6 +49,7 @@ def test_read_and_summarise_a_small_archive(tmp_path):
             zf.writestr(f"{k:03d}/img.png", _png(np.zeros((512, 512), np.uint8)))
             zf.writestr(f"{k:03d}/catheter.png", _png(_bar(width) if width else
                                                       np.zeros((120, 200), np.uint8)))  # fmt: skip
+        zf.writestr("000/05.png", _png(_bar(23)))  # left main: 23 px = 4.6 mm at 0.2 mm/px
         zf.writestr("other_keyframes", "")
     samples = ps.read_samples(zp)
     assert [s.name for s in samples] == ["000", "001", "002"]
@@ -65,5 +66,9 @@ def test_read_and_summarise_a_small_archive(tmp_path):
         (abs(2 / 11 / 0.2 - 1) + abs(2 / 9 / 0.2 - 1)) / 2
     )
     assert c["within_10"] == 0.5 and c["within_20"] == 1.0 and not c["worth_building"]
+    lm, lad = s["post_hoc"]["vessels"]
+    assert lm["width_px"]["n"] == 1 and lm["factor"]["median"] == pytest.approx(4.5 / 4.6)
+    assert lad["width_px"]["n"] == 0
     md = "\n".join(ps.report_lines(s, {"git_commit": "abc", "git_dirty": False}))
     assert "Research use only" in md and "Scale holds" in md and "not met" in md
+    assert "Post hoc" in md and "left main" in md
