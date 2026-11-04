@@ -30,3 +30,16 @@ def test_counts_operating_point_and_rule():
     assert d["pooled"]["sensitivity"] == 1.0 and d["pooled"]["by_grade"]["p90_98"]["n"] == 1
     assert d["pooled"]["alarms_per_free_frame"] == 2.0 and d["shown_in_app"]  # 0.45 and 0.30
     assert ld.test_results(rows, k)["cadica"]["boxes"] == 2
+
+
+def test_candidate_table_reports_every_candidate():
+    it = BoxImage(Path("x.png"), ((10, 10, 8, 8),), "cadica", "p1", "val")
+    free = BoxImage(Path("y.png"), (), "cadica", "p1", "val", lesion_free=True)
+    prob = np.zeros((64, 64))
+    prob[12:16, 12:16] = 0.3  # found at t = 0.05, missed at t = 0.5
+    prob[55:58, 2:5] = 0.6
+    base = {"source": "cadica", "patient": "p1", "role": "val", "grades": []}
+    rows = [{**base, "lesion_free": False, **ld.frame_counts(prob, it)},
+            {**base, "lesion_free": True, **ld.frame_counts(prob, free)}]  # fmt: skip
+    lines = ld.candidate_table({"a": rows})
+    assert lines[0].count("|") == 6 and lines[2] == "| a | 100.0% | 2.00 | 0.0% | 1.00 |"

@@ -2386,9 +2386,16 @@ def lesion_detection(
             typer.echo(f"  {k} / {n} frames")
 
     if stage == "dev":
-        items = [it for it in all_items() if it.role == "val"]
-        preds = {n: (lambda img, r=r: r.predict(img)[0]) for n, r in runners.items()}
-        rows = ld.measure_candidates(items, preds, progress)
+        rows_file = out / "detection_dev_rows.json"  # per-frame counts: re-summarised later
+        cached = json.loads(rows_file.read_text(encoding="utf-8")) if rows_file.exists() else {}
+        if cached.get("models") == sorted(runners):
+            rows = cached["rows"]
+        else:
+            items = [it for it in all_items() if it.role == "val"]
+            preds = {n: (lambda img, r=r: r.predict(img)[0]) for n, r in runners.items()}
+            rows = ld.measure_candidates(items, preds, progress)
+            rows_file.write_text(json.dumps({"models": sorted(runners), "rows": rows}),
+                                 encoding="utf-8")  # fmt: skip
         decisions = {n: ld.dev_decision(r) for n, r in rows.items()}
         chosen = ld.choose(decisions, rows)
         d = decisions[chosen]
@@ -2406,9 +2413,15 @@ def lesion_detection(
             lines.append(f"| {n} | {x.get('threshold', '–')} | "
                          f"{'–' if sens is None else f'{100 * sens:.1f}%'} | "
                          f"{'–' if al is None else f'{al:.2f}'} |")  # fmt: skip
-        lines += ["", f"**Chosen (amendment 2):** {chosen}.", ""]
+        lines += ["", "## Validation: every candidate at fixed thresholds", ""]
+        lines += ld.candidate_table(rows)
+        lines += [f"**Chosen (amendment 2):** {chosen}.", ""]
         if d["threshold_index"] is not None:
             lines += ld.section("Validation", chosen, d["per_source"])
+        else:  # amendment 2's fallback point
+            k5 = ld.THRESHOLDS.index(0.5)
+            lines += ld.section("Validation at t = 0.5", chosen,
+                                ld.test_results(rows[chosen], k5))  # fmt: skip
         shown = "shown in the app" if d["shown_in_app"] else "research option"
         lines += [f"**App rule** (≤ {ld.MAX_FREE_ALARMS} detections per lesion-free frame): "
                   f"{d['reason']} → {shown}.",

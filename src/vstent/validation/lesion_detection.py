@@ -149,6 +149,23 @@ def choose(decisions: dict[str, dict[str, Any]], rows: dict[str, list]) -> str:
     return max(close, key=lambda n: ok[n]["pooled"]["sensitivity"])
 
 
+def candidate_table(rows: dict[str, list[dict[str, Any]]],
+                    thresholds: tuple[float, ...] = (0.05, 0.5)) -> list[str]:  # fmt: skip
+    """Report lines: every candidate's pooled sensitivity and detections per lesion-free frame
+    at each of ``thresholds`` (amendment 2 reports every candidate, also when none reaches the
+    95% point: 0.5 is its fallback, 0.05 the most sensitive point measured)."""
+    head = " | ".join(f"Sensitivity, t = {t} | Per lesion-free frame, t = {t}" for t in thresholds)
+    lines = [f"| Candidate | {head} |", "|---|" + "---:|" * (2 * len(thresholds))]
+    for n, r in rows.items():
+        cells = []
+        for t in thresholds:
+            x = at_threshold(r, THRESHOLDS.index(t))
+            s, a = x["sensitivity"], x["alarms_per_free_frame"]
+            cells += ["–" if s is None else f"{100 * s:.1f}%", "–" if a is None else f"{a:.2f}"]
+        lines.append(f"| {n} | " + " | ".join(cells) + " |")
+    return lines + [""]
+
+
 def section(title: str, name: str, res: dict[str, Any]) -> list[str]:
     """Report lines: one table row per source (and pooled) at the operating point."""
     lines = [f"### {title}: {name}", "",
