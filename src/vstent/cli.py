@@ -2165,10 +2165,13 @@ def lesion_gate(
         "data/raw/cardiosyntax"
     ),
     report_dir: Annotated[Path, typer.Option("--report-dir")] = Path("reports"),
+    why: Annotated[
+        bool, typer.Option("--why", help="dev: why normal sides are still flagged (exploratory).")
+    ] = False,
 ) -> None:
     """A narrowing counts only where the lesion detector agrees (P4q; resumable): variants A and
     B on P4p's sample → reports/p4q_lesion_gate_dev.md; the chosen one against the product on
-    CardioSYNTAX part 1 → reports/p4q_lesion_gate.md."""
+    CardioSYNTAX part 1 → reports/p4q_lesion_gate.md; ``--why`` → reports/p4q_why_dev.md."""
     import json
 
     from vstent.config import git_info
@@ -2191,6 +2194,18 @@ def lesion_gate(
 
     names = {"product": "Product", "A": "A: DenseNet121, t = 0.5",
              "B": "B: mean of five, t = 0.05"}  # fmt: skip
+    if why:  # exploratory, from the saved development rows only
+        if stage != "dev":
+            raise typer.BadParameter("--why reads the development rows only")
+        saved = json.loads(lg.DEV_ROWS.read_text(encoding="utf-8"))
+        p4p = json.loads(fa.PROFILES_FILE.read_text(encoding="utf-8"))
+        rows = lg.merge(lg.from_p4p(list(p4p.values())),
+                        saved if isinstance(saved, list) else list(saved.values()))  # fmt: skip
+        path = report_dir / "p4q_why_dev.md"
+        path.write_text("\n".join(lg.why_lines(lg.why(studies, rows), git)) + "\n",
+                        encoding="utf-8")  # fmt: skip
+        typer.echo(f"Wrote {path}")
+        return
     if stage == "dev":
         task_list = fa.sample_tasks(studies)
         typer.echo(f"{len(task_list)} runs …")

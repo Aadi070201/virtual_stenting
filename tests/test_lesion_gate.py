@@ -126,3 +126,29 @@ def test_checks_build_the_gate_from_its_settings(monkeypatch):
     monkeypatch.setattr(product, "lesion_gate", lambda dirs, t: ("gate", dirs, t))
     assert pc._gate(None) is None
     assert pc._gate((["a", "b"], 0.5)) == ("gate", ("a", "b"), 0.5)
+
+
+def test_why_normal_sides_are_still_flagged():
+    from vstent.data import cardiosyntax as cs
+
+    studies = [cs.Study(u, sx, sx, 0.0, None, False, ())
+               for u, sx in (("a", 0.0), ("b", 0.0), ("c", 0.0), ("d", 12.0))]  # fmt: skip
+
+    def arm(flagged, ffr, marked, gate, length=50.0):
+        return {"flagged": flagged, "ffr": ffr, "marked": marked, "max_ds": 30.0,
+                "length_mm": length, "heartbeats": 1, "gate": gate}  # fmt: skip
+
+    def row(key, study, product, a):
+        return {"key": key, "study": study, "side": "left", "arms": {"product": product, "A": a}}
+
+    rows = [row("1", "a", arm(True, 0.7, 1, None), arm(True, 0.75, 1, [1, 3])),  # a mark
+            row("2", "b", arm(True, 0.7, 1, None), arm(True, 0.78, 0, [0, 2], 140.0)),  # FFR
+            row("3", "c", arm(True, 0.7, 1, None), arm(False, 0.9, 0, [0, 1], 60.0)),
+            row("4", "d", arm(True, 0.7, 1, None), arm(False, 0.9, 0, [0, 1]))]  # fmt: skip
+    w = lg.why(studies, rows)
+    assert (w["zero_sides"], w["flagged"], w["mark_sides"], w["ffr_only_sides"]) == (3, 2, 1, 1)
+    assert (w["ffr_only_runs"], w["ffr_only_no_confirmed"]) == (1, 1)
+    assert w["length_ffr_only"] == 140.0 and w["length_quiet"] == 60.0
+    assert w["missed"] == 1 and w["missed_syntax"] == [12.0]
+    md = "\n".join(lg.why_lines(w, {"git_commit": "x", "git_dirty": False}))
+    assert "Exploratory" in md and "2 of 3" in md
