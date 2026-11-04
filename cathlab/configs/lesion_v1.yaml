@@ -1,0 +1,9 @@
+# Lesion dataset v1 (docs/PLAN.md, C3): random virtual patients, one view each, every lesion
+# labelled with its true severity. Mild plaque (< 50%), crossings, foreshortening and eccentric
+# lumens come from the scene sampler's defaults (src/vcathlab/scene.py, SceneConfig).
+name: lesion_v1
+out_dir: data/lesion_v1
+seed: 20261104
+n: {train: 3000, val: 300, test: 300}
+shard: 200
+workers: 4

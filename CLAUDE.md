@@ -85,6 +85,7 @@ vstent/
                         # fda_nozzle.py (public validation data, P4b), physiology.py (DEFINE-FLOW,
                         # CONTRAST: open invasive physiology, P4e), synth_angio.py (rendered
                         # angiograms with vessel labels for segmentation, P8)
+                        # cathlab.py (reads the virtual cath lab's exported datasets; no import of it)
     surrogate/          # features.py (shared pre-processing), model.py, dataset.py, train.py,
                         # baseline.py, evaluate.py, export.py (single model + ensemble),
                         # ensemble.py (5-seed ensemble trainer, resumable),

@@ -315,3 +315,16 @@ the frames and label files are extracted.
   `np.frombuffer`), which a small frame-index array needs.
 - **Use:** none for now. With no normal patients it can measure only sensitivity, which is
   already high on P4o and J; specificity is the open problem.
+
+## Virtual cath lab datasets (simulated; `cathlab/`)
+
+- **Source:** our own simulator, the virtual cath lab (`cathlab/`, a separate app; see
+  `cathlab/docs/`). Simulated patients only: no patient data, no licence restrictions.
+- **Format:** `vcathlab-frames` v1 (`cathlab/docs/DATA_FORMAT.md`): images, vessel, segment,
+  overlap and catheter masks, and per image the full scene and truth (every lesion's true
+  severity, box, overlap and foreshortening, the true pixel size). Read in vstent by
+  `vstent.data.cathlab` (format, version and SHA-256 of every file checked).
+- **Lesion dataset v1:** `cathlab/data/lesion_v1/` (git-ignored), `vcathlab dataset --config
+  configs/lesion_v1.yaml` from `cathlab/`: 3,000 / 300 / 300 images (train / val / test), one
+  simulated patient each. Its card is `card.md` next to the data.
+

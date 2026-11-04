@@ -58,3 +58,29 @@ def frame(
         f"{scene.artery} coronary, {f.truth['view']}, {f.truth['iso_pixel_mm']:.3f} mm/px "
         f"at the isocentre; {len(f.lesions)} lesions → {out}"
     )
+
+
+@app.command()
+def dataset(
+    config: Annotated[Path, typer.Option("--config")] = Path("configs/lesion_v1.yaml"),
+    n: Annotated[int | None, typer.Option("--n", help="Images per split (a quick try).")] = None,
+    out: Annotated[Path | None, typer.Option("--out")] = None,
+    workers: Annotated[int | None, typer.Option("--workers")] = None,
+) -> None:
+    """Render a dataset in the exported format (docs/DATA_FORMAT.md) with its card."""
+    from vcathlab.config import load_yaml
+    from vcathlab.dataset import DatasetConfig, write_dataset
+
+    cfg = load_yaml(config, DatasetConfig)
+    update = {}
+    if n is not None:
+        update["n"] = dict.fromkeys(cfg.n, n)
+    if out is not None:
+        update["out_dir"] = str(out)
+    if workers is not None:
+        update["workers"] = workers
+    cfg = cfg.model_copy(update=update)
+    typer.echo(DISCLAIMER)
+    manifest = write_dataset(cfg, typer.echo)
+    sizes = ", ".join(f"{k} {v['n']}" for k, v in manifest["splits"].items())
+    typer.echo(f"Wrote {cfg.out_dir}: {sizes}; card {cfg.out_dir}/card.md")
